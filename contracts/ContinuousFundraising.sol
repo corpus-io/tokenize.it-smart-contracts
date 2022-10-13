@@ -22,7 +22,7 @@ A company will create only one ContinuousFundraising contract for their token (o
 The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support
 
  */
-contract ContinuousFundraising is Ownable, Pausable, ReentrancyGuard, ERC2771Context {
+contract ContinuousFundraising is ERC2771Context, Ownable, Pausable, ReentrancyGuard {
     /// @notice address that receives the currency when tokens are bought
     address public currencyReceiver;
     /// @notice smallest amount of tokens that can be minted, in bits (bit = smallest subunit of token)

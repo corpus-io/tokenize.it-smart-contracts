@@ -17,7 +17,7 @@ interface MintableERC20 is IERC20Metadata {
     It is likely a company will create many PersonalInvites for specific investors to buy their one corpusToken.
 
  */
-contract PersonalInvite is Ownable, ERC2771Context {
+contract PersonalInvite is ERC2771Context, Ownable {
     // @dev: address that calls the deal function, pays with currency and receives tokens
     address payable public buyer;
     // @dev: address that receives the currency
