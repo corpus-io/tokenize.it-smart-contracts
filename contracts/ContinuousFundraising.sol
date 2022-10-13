@@ -6,6 +6,9 @@ import "./PersonalInvite.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
+
+
 
 /*
 This contract represents the offer to buy an amount of tokens at a preset price. It can be used by anyone and there is no limit to the number of times it can be used.
@@ -15,8 +18,11 @@ The contract can be paused at any time by the owner, which will prevent any new 
 The contract can be unpaused after "delay", which will allow new deals to be made again.
 
 A company will create only one ContinuousFundraising contract for their token (or one for each currency if they want to accept multiple currencies).
+
+The contract inherits from ERC2771Context in order to be usable with Gas Station Network https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support
+
  */
-contract ContinuousFundraising is Ownable, Pausable, ReentrancyGuard {
+contract ContinuousFundraising is Ownable, Pausable, ReentrancyGuard, ERC2771Context {
     /// @notice address that receives the currency when tokens are bought
     address public currencyReceiver;
     /// @notice smallest amount of tokens that can be minted, in bits (bit = smallest subunit of token)
@@ -87,11 +93,11 @@ contract ContinuousFundraising is Ownable, Pausable, ReentrancyGuard {
                 = a * p * [currency_bits] / (10**token.decimals)
          */
         require((_amount * tokenPrice) % (10**token.decimals()) == 0, "Amount * tokenprice needs to be a multiple of 10**token.decimals()");
-        require(tokensBought[msg.sender] + _amount <= maxAmountPerBuyer, "Total amount of bought tokens needs to be lower than or equal to maxAmount");
+        require(tokensBought[_msgSender()] + _amount <= maxAmountPerBuyer, "Total amount of bought tokens needs to be lower than or equal to maxAmount");
         tokensSold += _amount;
-        tokensBought[msg.sender] += _amount;
-        require(currency.transferFrom(msg.sender, currencyReceiver,(_amount * tokenPrice) / (10**token.decimals())), "Sending defined currency tokens failed");
-        require(token.mint(msg.sender, _amount), "Minting new tokens failed");
+        tokensBought[_msgSender()] += _amount;
+        require(currency.transferFrom(_msgSender(), currencyReceiver,(_amount * tokenPrice) / (10**token.decimals())), "Sending defined currency tokens failed");
+        require(token.mint(_msgSender(), _amount), "Minting new tokens failed");
         return true;
     }
 

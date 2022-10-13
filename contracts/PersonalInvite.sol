@@ -3,6 +3,8 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
+
 
 interface MintableERC20 is IERC20Metadata {
     function mint(address, uint256) external returns (bool);
@@ -15,7 +17,7 @@ interface MintableERC20 is IERC20Metadata {
     It is likely a company will create many PersonalInvites for specific investors to buy their one corpusToken.
 
  */
-contract PersonalInvite is Ownable {
+contract PersonalInvite is Ownable, ERC2771Context {
     // @dev: address that calls the deal function, pays with currency and receives tokens
     address payable public buyer;
     // @dev: address that receives the currency
