@@ -177,4 +177,18 @@ contract ContinuousFundraising is Ownable, Pausable, ReentrancyGuard, ERC2771Con
         require(block.timestamp > lastPause + delay, "There needs to be at minumum one day to change parameters");
         _unpause();
     }
+
+    /**
+     * @dev both Ownable and ERC2771Context have a _msgSender() function, so we need to override and select which one to use.
+     */ 
+    function _msgSender() internal view override(Context, ERC2771Context) returns (address) {
+        return ERC2771Context._msgSender();
+    }
+
+    /**
+     * @dev both Ownable and ERC2771Context have a _msgData() function, so we need to override and select which one to use.
+     */
+    function _msgData() internal view override(Context, ERC2771Context) returns (bytes calldata) {
+        return ERC2771Context._msgData();
+    }
 }

@@ -23,6 +23,7 @@ contract PersonalInviteTest is Test {
     address public constant owner = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
     address public constant receiver = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
     address public constant paymentTokenProvider = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
+    address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
 
 
     uint256 public constant price = 10000000;
@@ -34,7 +35,7 @@ contract PersonalInviteTest is Test {
         vm.prank(owner);
 
         
-        invite = new PersonalInvite( payable(buyer), payable(receiver), 1, 1000000000000000, price, block.timestamp + 1 days, currency, MintableERC20(address(token)));
+        invite = new PersonalInvite(trustedForwarder, payable(buyer), payable(receiver), 1, 1000000000000000, price, block.timestamp + 1 days, currency, MintableERC20(address(token)));
 
         // allow invite contract to mint
         bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
@@ -63,7 +64,7 @@ contract PersonalInviteTest is Test {
 
     function testConstructor() public {
         PersonalInvite inviteLocal;
-        inviteLocal = new PersonalInvite( payable(buyer), payable(receiver), 1, 1000, 10, block.timestamp + 1 days, currency, MintableERC20(address(token)));
+        inviteLocal = new PersonalInvite(trustedForwarder, payable(buyer), payable(receiver), 1, 1000, 10, block.timestamp + 1 days, currency, MintableERC20(address(token)));
         assertTrue(inviteLocal.owner() == address(this));
         assertTrue(inviteLocal.buyer() == buyer);
         assertTrue(inviteLocal.receiver() == receiver);
@@ -152,7 +153,7 @@ contract PersonalInviteTest is Test {
 
             
 
-            invite = new PersonalInvite( payable(buyer), payable(receiver), 1, maxMintAmount, _price, block.timestamp + 1 days, paymentToken, MintableERC20(address(token)));
+            invite = new PersonalInvite(trustedForwarder, payable(buyer), payable(receiver), 1, maxMintAmount, _price, block.timestamp + 1 days, paymentToken, MintableERC20(address(token)));
 
             // allow invite contract to mint
             bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
@@ -192,7 +193,7 @@ contract PersonalInviteTest is Test {
         token = new CorpusToken(admin, list, 0x0, "TESTTOKEN", "TEST");
         currency = new CorpusToken(admin, list, 0x0, "CURRENCY", "CUR");
         vm.prank(owner);
-        invite = new PersonalInvite( payable(buyer), payable(receiver), 1, MAX_INT, 100, block.timestamp + 1 days, currency, MintableERC20(address(token)));
+        invite = new PersonalInvite(trustedForwarder, payable(buyer), payable(receiver), 1, MAX_INT, 100, block.timestamp + 1 days, currency, MintableERC20(address(token)));
 
         // allow invite contract to mint
         bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
@@ -226,7 +227,7 @@ contract PersonalInviteTest is Test {
         token = new CorpusToken(admin, list, 0x0, "TESTTOKEN", "TEST");
         currency = new CorpusToken(admin, list, 0x0, "CURRENCY", "CUR");
         vm.prank(owner);
-        invite = new PersonalInvite( payable(buyer), payable(receiver), 10000000000000000000, 200000000000000000000, 2, block.timestamp + 1 days, currency, MintableERC20(address(token)));
+        invite = new PersonalInvite(trustedForwarder, payable(buyer), payable(receiver), 10000000000000000000, 200000000000000000000, 2, block.timestamp + 1 days, currency, MintableERC20(address(token)));
 
         // allow invite contract to mint
         bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
@@ -260,7 +261,7 @@ contract PersonalInviteTest is Test {
         token = new CorpusToken(admin, list, 0x0, "TESTTOKEN", "TEST");
         currency = new CorpusToken(admin, list, 0x0, "CURRENCY", "CUR");
         vm.prank(owner);
-        invite = new PersonalInvite( payable(buyer), payable(receiver), 10000000000000000000, 200000000000000000000, 2000000000000, block.timestamp + 1 days, currency, MintableERC20(address(token)));
+        invite = new PersonalInvite(trustedForwarder, payable(buyer), payable(receiver), 10000000000000000000, 200000000000000000000, 2000000000000, block.timestamp + 1 days, currency, MintableERC20(address(token)));
 
         // allow invite contract to mint
         bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();

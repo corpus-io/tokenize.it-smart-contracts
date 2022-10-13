@@ -105,6 +105,20 @@ contract PersonalInvite is Ownable, ERC2771Context {
     }
 
     /**
+     * @dev both Ownable and ERC2771Context have a _msgSender() function, so we need to override and select which one to use.
+     */ 
+    function _msgSender() internal view override(Context, ERC2771Context) returns (address) {
+        return ERC2771Context._msgSender();
+    }
+
+    /**
+     * @dev both Ownable and ERC2771Context have a _msgData() function, so we need to override and select which one to use.
+     */
+    function _msgData() internal view override(Context, ERC2771Context) returns (bytes calldata) {
+        return ERC2771Context._msgData();
+    }
+
+    /**
      @notice Contract can be destroyed by owner, which would prevent the deal from being dealt
      @dev Can also be called at any time to help reduce ethereum state bloat.
     */
