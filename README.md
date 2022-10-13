@@ -22,7 +22,7 @@ The following resources are available regarding the contracts:
 - Basic overview: see below
 - [Usage walkthrough](docs/using_the_contracts.md)
 - [Price format explainer](docs/price.md)
-- In-depth explanation: please read the [contracts](https://github.com/corpus-ventures/corpus/tree/main/contracts)
+- In-depth explanation: please read the [contracts](contracts/)
 - [Specification](docs/specification.md)  
 - Remaining questions: please get in touch: [info@corpus.io](mailto:info@corpus.io)
 
