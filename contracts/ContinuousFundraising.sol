@@ -19,7 +19,7 @@ The contract can be unpaused after "delay", which will allow new deals to be mad
 
 A company will create only one ContinuousFundraising contract for their token (or one for each currency if they want to accept multiple currencies).
 
-The contract inherits from ERC2771Context in order to be usable with Gas Station Network https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support
+The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support
 
  */
 contract ContinuousFundraising is Ownable, Pausable, ReentrancyGuard, ERC2771Context {
@@ -58,7 +58,10 @@ contract ContinuousFundraising is Ownable, Pausable, ReentrancyGuard, ERC2771Con
     event MaxAmountOfTokenToBeSoldChanged(uint);
     event CurrencyChanged(IERC20);
 
-    constructor(address payable _currencyReceiver, uint _minAmountPerBuyer, uint _maxAmountPerBuyer, uint _tokenPrice, uint _maxAmountOfTokenToBeSold, IERC20 _currency, MintableERC20 _token){
+    /**
+     * @dev Constructor that passes the trusted forwarder to the ERC2771Context constructor
+     */
+    constructor(address _trustedForwarder, address payable _currencyReceiver, uint _minAmountPerBuyer, uint _maxAmountPerBuyer, uint _tokenPrice, uint _maxAmountOfTokenToBeSold, IERC20 _currency, MintableERC20 _token) ERC2771Context(_trustedForwarder) {
         currencyReceiver = _currencyReceiver;
         minAmountPerBuyer = _minAmountPerBuyer;
         maxAmountPerBuyer = _maxAmountPerBuyer;

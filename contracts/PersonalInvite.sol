@@ -42,7 +42,7 @@ contract PersonalInvite is Ownable, ERC2771Context {
 
     event Deal(address indexed buyer, uint amount, uint tokenPrice, IERC20 currency, MintableERC20 indexed token);
 
-    constructor(address payable _buyer, address payable _receiver, uint _minAmount, uint _maxAmount, uint _tokenPrice, uint _expiration, IERC20 _currency, MintableERC20 _token){
+    constructor(address _trustedForwarder, address payable _buyer, address payable _receiver, uint _minAmount, uint _maxAmount, uint _tokenPrice, uint _expiration, IERC20 _currency, MintableERC20 _token) ERC2771Context(_trustedForwarder) {
         buyer = _buyer;
         receiver = _receiver;
         minAmount = _minAmount;
@@ -69,7 +69,7 @@ contract PersonalInvite is Ownable, ERC2771Context {
     function deal(uint _tokenAmount) public {
         require(active == true, "Deal needs to be in an active state"); //reentrancy protection
         active = false;
-        require(buyer == msg.sender, "Only the personally invited buyer can take this deal");
+        require(buyer == _msgSender(), "Only the personally invited buyer can take this deal");
         require(minAmount <= _tokenAmount && _tokenAmount <= maxAmount, "Amount needs to be inbetween minAmount and maxAmount");
         require(block.timestamp <= expiration, "Deal expired");
 
