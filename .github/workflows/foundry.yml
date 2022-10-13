@@ -1,0 +1,33 @@
+on: [push, workflow_dispatch]
+
+name: test
+
+jobs:
+  check:
+    name: Foundry project
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install
+        working-directory: .
+        run: yarn install
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Run tests
+        working-directory: .
+        run: yarn test &&  forge coverage --report lcov
+      - name: Coverage
+        uses: VeryGoodOpenSource/very_good_coverage@v1
+        with:
+          path: '.lcov.info'
+          min_coverage: 50
+      - name: Run snapshot
+        working-directory: .
+        run: forge snapshot
