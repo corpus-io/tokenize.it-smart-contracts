@@ -21,6 +21,8 @@ contract ContinuousFundraisingTest is Test {
     address public constant owner = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
     address public constant receiver = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
     address public constant paymentTokenProvider = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
+    address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
+
 
     uint8 public constant paymentTokenDecimals = 6;
     uint256 public constant paymentTokenAmount = 1000 * 10**paymentTokenDecimals;
@@ -46,7 +48,7 @@ contract ContinuousFundraisingTest is Test {
         assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
 
         vm.prank(owner);
-        raise = new ContinuousFundraising( payable(receiver), minAmountPerBuyer, maxAmountPerBuyer, price, maxAmountOfTokenToBeSold, paymentToken, MintableERC20(address(token)));
+        raise = new ContinuousFundraising(trustedForwarder, payable(receiver), minAmountPerBuyer, maxAmountPerBuyer, price, maxAmountOfTokenToBeSold, paymentToken, MintableERC20(address(token)));
 
         // allow raise contract to mint
         bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
@@ -62,7 +64,7 @@ contract ContinuousFundraisingTest is Test {
     }
 
     function testConstructor() public {
-        ContinuousFundraising _raise = new ContinuousFundraising( payable(receiver), minAmountPerBuyer, maxAmountPerBuyer, price, maxAmountOfTokenToBeSold, paymentToken, MintableERC20(address(token)));
+        ContinuousFundraising _raise = new ContinuousFundraising(trustedForwarder, payable(receiver), minAmountPerBuyer, maxAmountPerBuyer, price, maxAmountOfTokenToBeSold, paymentToken, MintableERC20(address(token)));
         assertTrue(_raise.owner() == address(this));
         assertTrue(_raise.currencyReceiver() == receiver);
         assertTrue(_raise.minAmountPerBuyer() == minAmountPerBuyer);   
@@ -104,7 +106,7 @@ contract ContinuousFundraisingTest is Test {
 
             
             
-            ContinuousFundraising _raise = new ContinuousFundraising( payable(receiver), 1, _maxMintAmount/100, _price, _maxMintAmount, _paymentToken, MintableERC20(address(_token)));
+            ContinuousFundraising _raise = new ContinuousFundraising(trustedForwarder, payable(receiver), 1, _maxMintAmount/100, _price, _maxMintAmount, _paymentToken, MintableERC20(address(_token)));
 
             // allow invite contract to mint
             bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
@@ -165,7 +167,7 @@ contract ContinuousFundraisingTest is Test {
         _paymentToken = new MaliciousPaymentToken(_paymentTokenAmount);
         vm.prank(owner);
 
-        ContinuousFundraising _raise = new ContinuousFundraising( payable(receiver), 1, _maxMintAmount/100, _price, _maxMintAmount, _paymentToken, MintableERC20(address(_token)));
+        ContinuousFundraising _raise = new ContinuousFundraising(trustedForwarder, payable(receiver), 1, _maxMintAmount/100, _price, _maxMintAmount, _paymentToken, MintableERC20(address(_token)));
 
         // allow invite contract to mint
         bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
@@ -301,13 +303,32 @@ contract ContinuousFundraisingTest is Test {
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
 
         vm.prank(buyer);
-        vm.expectRevert("Amount needs to be larger than or equal to minAmount");
+        vm.expectRevert("Buyer needs to buy at least minAmount");
         raise.buy(minAmountPerBuyer / 2);
         assertTrue(paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore);
         assertTrue(token.balanceOf(buyer) == 0);
         assertTrue(paymentToken.balanceOf(receiver) == 0);
         assertTrue(raise.tokensSold() == 0);
         assertTrue(raise.tokensBought(buyer) == 0);
+    }
+
+    function testBuySmallAmountAfterInitialInvestment() public {
+        uint256 tokenBuyAmount = minAmountPerBuyer;
+        uint256 costInPaymentTokenForMinAmount = tokenBuyAmount * price / 10**18;
+        uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
+
+        vm.prank(buyer);
+        raise.buy(minAmountPerBuyer);
+
+        // buy less than minAmount -> should be okay because minAmount has already been bought.
+        vm.prank(buyer);
+        raise.buy(minAmountPerBuyer / 2);
+
+        assertTrue(paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore - costInPaymentTokenForMinAmount * 3 / 2);
+        assertTrue(token.balanceOf(buyer) == minAmountPerBuyer * 3 / 2);
+        assertTrue(paymentToken.balanceOf(receiver) == costInPaymentTokenForMinAmount * 3 / 2);
+        assertTrue(raise.tokensSold() == minAmountPerBuyer * 3 / 2);
+        assertTrue(raise.tokensBought(buyer) == raise.tokensSold());
     }
 
     function testAmountWithRest() public {

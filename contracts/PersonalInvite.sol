@@ -3,6 +3,8 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
+
 
 interface MintableERC20 is IERC20Metadata {
     function mint(address, uint256) external returns (bool);
@@ -15,7 +17,7 @@ interface MintableERC20 is IERC20Metadata {
     It is likely a company will create many PersonalInvites for specific investors to buy their one corpusToken.
 
  */
-contract PersonalInvite is Ownable {
+contract PersonalInvite is ERC2771Context, Ownable {
     // @dev: address that calls the deal function, pays with currency and receives tokens
     address payable public buyer;
     // @dev: address that receives the currency
@@ -40,7 +42,7 @@ contract PersonalInvite is Ownable {
 
     event Deal(address indexed buyer, uint amount, uint tokenPrice, IERC20 currency, MintableERC20 indexed token);
 
-    constructor(address payable _buyer, address payable _receiver, uint _minAmount, uint _maxAmount, uint _tokenPrice, uint _expiration, IERC20 _currency, MintableERC20 _token){
+    constructor(address _trustedForwarder, address payable _buyer, address payable _receiver, uint _minAmount, uint _maxAmount, uint _tokenPrice, uint _expiration, IERC20 _currency, MintableERC20 _token) ERC2771Context(_trustedForwarder) {
         buyer = _buyer;
         receiver = _receiver;
         minAmount = _minAmount;
@@ -67,7 +69,7 @@ contract PersonalInvite is Ownable {
     function deal(uint _tokenAmount) public {
         require(active == true, "Deal needs to be in an active state"); //reentrancy protection
         active = false;
-        require(buyer == msg.sender, "Only the personally invited buyer can take this deal");
+        require(buyer == _msgSender(), "Only the personally invited buyer can take this deal");
         require(minAmount <= _tokenAmount && _tokenAmount <= maxAmount, "Amount needs to be inbetween minAmount and maxAmount");
         require(block.timestamp <= expiration, "Deal expired");
 
@@ -100,6 +102,20 @@ contract PersonalInvite is Ownable {
         delete token;
         
         //selfdestruct(buyer); // this should give the caller a gas refund, but in my tests it increased the gas costs
+    }
+
+    /**
+     * @dev both Ownable and ERC2771Context have a _msgSender() function, so we need to override and select which one to use.
+     */ 
+    function _msgSender() internal view override(Context, ERC2771Context) returns (address) {
+        return ERC2771Context._msgSender();
+    }
+
+    /**
+     * @dev both Ownable and ERC2771Context have a _msgData() function, so we need to override and select which one to use.
+     */
+    function _msgData() internal view override(Context, ERC2771Context) returns (bytes calldata) {
+        return ERC2771Context._msgData();
     }
 
     /**
