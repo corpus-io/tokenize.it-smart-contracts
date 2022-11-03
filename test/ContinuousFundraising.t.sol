@@ -14,7 +14,7 @@ contract ContinuousFundraisingTest is Test {
     CorpusToken token;
     FakePaymentToken paymentToken;
 
-    address public constant turstedForwarder = 0x84a0856b038eaad1cc7e297cf34a7e72685a8693;
+    address public constant turstedForwarder = 0x84a0856b038eaAd1cC7E297cF34A7e72685A8693;
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant buyer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
     address public constant minterAdmin = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;

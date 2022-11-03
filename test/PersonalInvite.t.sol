@@ -16,7 +16,7 @@ contract PersonalInviteTest is Test {
 
     uint256 MAX_INT = 115792089237316195423570985008687907853269984665640564039457584007913129639935;
 
-    address public constant turstedForwarder = 0x84a0856b038eaad1cc7e297cf34a7e72685a8693;
+    address public constant turstedForwarder = 0x84a0856b038eaAd1cC7E297cF34A7e72685A8693;
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant buyer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
     address public constant minterAdmin = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
