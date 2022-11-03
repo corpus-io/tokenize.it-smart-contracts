@@ -108,7 +108,7 @@ contract CorpusToken is ERC20Pausable, AccessControl {
     */
     function setUpMinter(address _minter, uint256 _allowance) public onlyRole(getRoleAdmin(MINTER_ROLE)){
         _grantRole(MINTER_ROLE, _minter);
-        require(mintingAllowance[_minter] == 0); // to prevent frontrunning when setting a new allowance, see https://www.adrianhetman.com/unboxing-erc20-approve-issues/
+        require(mintingAllowance[_minter] == 0 || _allowance == 0); // to prevent frontrunning when setting a new allowance, see https://www.adrianhetman.com/unboxing-erc20-approve-issues/
         mintingAllowance[_minter] = _allowance;
         emit MintingAllowanceChanged(_minter, _allowance);
     }
