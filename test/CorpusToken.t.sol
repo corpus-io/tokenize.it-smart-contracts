@@ -197,6 +197,14 @@ contract corpusTokenTest is Test {
         assertTrue(token.requirements() == 3);
     }
 
+    function testUpdateAllowList() public {
+        AllowList newAllowList = new AllowList(); // deploy new AllowList
+        assertTrue(token.allowList() != newAllowList);
+        vm.prank(admin);
+        token.setAllowList(newAllowList); 
+        assertTrue(token.allowList() == newAllowList);
+    }
+
     function testSetUpMinter() public {
         bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
 
