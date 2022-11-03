@@ -134,7 +134,7 @@ contract CorpusToken is ERC20Permit, AccessControl, Pausable {
         uint256 _amount
     ) internal virtual override {
         super._beforeTokenTransfer(_from, _to, _amount);
-        _requirePaused();
+        _requireNotPaused();
         require(
             hasRole(BURNER_ROLE, msg.sender) || hasRole(TRANSFERER_ROLE, _from) || allowList.map(_from) & requirements == requirements || _from == address(0),
             "Sender is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
