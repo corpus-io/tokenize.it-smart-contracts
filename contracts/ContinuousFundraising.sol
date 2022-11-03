@@ -84,7 +84,7 @@ contract ContinuousFundraising is ERC2771Context, Ownable, Pausable, ReentrancyG
      */
     function buy(uint _amount) public whenNotPaused nonReentrant returns(bool) {
         require(tokensSold + _amount <= maxAmountOfTokenToBeSold, "Not enough tokens to sell left");
-        require(minAmountPerBuyer <= _amount, "Amount needs to be larger than or equal to minAmount");
+        require(tokensBought[msg.sender] + _amount >= minAmountPerBuyer, "Buyer needs to buy at least minAmount");
          /**
         @dev To avoid rounding errors, tokenprice needs to be multiple of 10**token.decimals(). This is checked for here. 
             With:
