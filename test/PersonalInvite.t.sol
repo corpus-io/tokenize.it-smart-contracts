@@ -303,9 +303,10 @@ contract PersonalInviteTest is Test {
         assertTrue(currency.balanceOf(buyer) == 10000000000 - (100000000000000 * 10000000) / (10**token.decimals()));
         assertTrue(token.balanceOf(buyer) == 100000000000000);
         assertTrue(currency.balanceOf(receiver) == (100000000000000 * 10000000) / (10**token.decimals()));
-        vm.expectRevert("Only the personally invited buyer can take this deal");
+        // after deal, all state variables are deleted. Therefore, even buyer can not buy anymore, rendering the deal unusable.
+        vm.expectRevert("Only the personally invited buyer can take this deal"); 
         vm.prank(buyer);
-        invite.deal(100);
+        invite.deal(100000000000000);
 
     }
     
