@@ -70,7 +70,7 @@ contract CorpusToken is ERC20Permit, AccessControl, Pausable {
     @param _requirements requirements an address has to meet for sending or receiving tokens
     @param _admin address of the admin. Admin will initially have all roles and can grant roles to other addresses.
     */
-    constructor(address _admin, AllowList _allowList, uint256 _requirements, string memory _name, string memory _symbol) ERC20Permit("TokenizeToken") ERC20(_name, _symbol) {
+    constructor(address _admin, AllowList _allowList, uint256 _requirements, string memory _name, string memory _symbol) ERC20Permit(_name) ERC20(_name, _symbol) {
         // Grant admin roles
         _setupRole(DEFAULT_ADMIN_ROLE, _admin); // except for the Minter and Transferer role, the _admin is the roles admin for all other roles
         _setRoleAdmin(MINTER_ROLE, MINTERADMIN_ROLE);
