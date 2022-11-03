@@ -3,7 +3,10 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
 
 
 interface MintableERC20 is IERC20Metadata {
@@ -17,7 +20,8 @@ interface MintableERC20 is IERC20Metadata {
     It is likely a company will create many PersonalInvites for specific investors to buy their one corpusToken.
 
  */
-contract PersonalInvite is ERC2771Context, Ownable {
+contract PersonalInvite is ERC2771Context, Ownable, ReentrancyGuard {
+    using SafeERC20 for IERC20;
     // @dev: address that calls the deal function, pays with currency and receives tokens
     address payable public buyer;
     // @dev: address that receives the currency
@@ -37,8 +41,6 @@ contract PersonalInvite is ERC2771Context, Ownable {
     IERC20 public currency;
     /// @dev token to be minted
     MintableERC20 public token;
-    /// @dev deal will be deactivated first thing when it is calles, to prevent reentrancy. This also means the invite can only be claimed once.
-    bool public active;
 
     event Deal(address indexed buyer, uint amount, uint tokenPrice, IERC20 indexed currency, MintableERC20 indexed token);
 
@@ -51,8 +53,7 @@ contract PersonalInvite is ERC2771Context, Ownable {
         expiration = _expiration;
         currency = _currency;
         token = _token;
-        active = true;
-        
+
         require(_buyer != address(0), "_buyer can not be zero address");
         require(_receiver != address(0), "_receiver can not be zero address");
         require(_minAmount <= _maxAmount, "_minAmount needs to be smaller or equal to _maxAmount");
@@ -66,9 +67,7 @@ contract PersonalInvite is ERC2771Context, Ownable {
     @notice Allows the invited investor (buyer) to buy tokens from the contract. The currency used for payment are transferred to the receiver and the tokens are minted to the buyer.
     @param _tokenAmount Amount of tokens to buy, bits (bit = smallest subunit of token). [tok_bits]
      */
-    function deal(uint _tokenAmount) public {
-        require(active == true, "Deal needs to be in an active state"); //reentrancy protection
-        active = false;
+    function deal(uint _tokenAmount) nonReentrant public {
         require(buyer == _msgSender(), "Only the personally invited buyer can take this deal");
         require(minAmount <= _tokenAmount && _tokenAmount <= maxAmount, "Amount needs to be inbetween minAmount and maxAmount");
         require(block.timestamp <= expiration, "Deal expired");
@@ -84,7 +83,7 @@ contract PersonalInvite is ERC2771Context, Ownable {
                 = a * p * [currency_bits] / (10**token.decimals)
          */
         require((_tokenAmount * tokenPrice) % (10**token.decimals()) == 0, "Amount * tokenprice needs to be a multiple of 10**token.decimals()");
-        require(currency.transferFrom(buyer, receiver, (_tokenAmount * tokenPrice) / (10**token.decimals()) ), "Sending defined currency tokens failed");
+        currency.safeTransferFrom(buyer, receiver, (_tokenAmount * tokenPrice) / (10**token.decimals()) );
         require(token.mint(buyer, _tokenAmount), "Minting new tokens failed");
 
         emit Deal(buyer, _tokenAmount, tokenPrice, currency, token);

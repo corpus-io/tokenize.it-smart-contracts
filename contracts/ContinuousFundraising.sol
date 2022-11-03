@@ -4,11 +4,10 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./PersonalInvite.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
-
-
 
 /*
 This contract represents the offer to buy an amount of tokens at a preset price. It can be used by anyone and there is no limit to the number of times it can be used.
@@ -23,6 +22,9 @@ The contract inherits from ERC2771Context in order to be usable with Gas Station
 
  */
 contract ContinuousFundraising is ERC2771Context, Ownable, Pausable, ReentrancyGuard {
+
+    using SafeERC20 for IERC20;
+
     /// @notice address that receives the currency when tokens are bought
     address public currencyReceiver;
     /// @notice smallest amount of tokens that can be minted, in bits (bit = smallest subunit of token)
@@ -99,7 +101,7 @@ contract ContinuousFundraising is ERC2771Context, Ownable, Pausable, ReentrancyG
         require(tokensBought[_msgSender()] + _amount <= maxAmountPerBuyer, "Total amount of bought tokens needs to be lower than or equal to maxAmount");
         tokensSold += _amount;
         tokensBought[_msgSender()] += _amount;
-        require(currency.transferFrom(_msgSender(), currencyReceiver,(_amount * tokenPrice) / (10**token.decimals())), "Sending defined currency tokens failed");
+        currency.safeTransferFrom(_msgSender(), currencyReceiver,(_amount * tokenPrice) / (10**token.decimals()));
         require(token.mint(_msgSender(), _amount), "Minting new tokens failed");
         return true;
     }
