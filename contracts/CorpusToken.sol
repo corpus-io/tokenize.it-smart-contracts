@@ -2,8 +2,9 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 
 import "./AllowList.sol";
@@ -21,7 +22,7 @@ import "./AllowList.sol";
     The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support and meta-transactions.
 
  */
-contract CorpusToken is ERC2771Context, ERC20Pausable, AccessControl {
+contract CorpusToken is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     /// @notice The role that has the ability to define which requirements an address must satisfy to receive tokens
     bytes32 public constant REQUIREMENT_ROLE = keccak256("REQUIREMENT_ROLE");
     /// @notice The role that has the ability to grant the minter role
@@ -74,7 +75,7 @@ contract CorpusToken is ERC2771Context, ERC20Pausable, AccessControl {
     @param _requirements requirements an address has to meet for sending or receiving tokens
     @param _admin address of the admin. Admin will initially have all roles and can grant roles to other addresses.
     */
-    constructor(address _trustedForwarder, address _admin, AllowList _allowList, uint256 _requirements, string memory _name, string memory _symbol) ERC2771Context(_trustedForwarder) ERC20(_name, _symbol) {
+    constructor(address _trustedForwarder, address _admin, AllowList _allowList, uint256 _requirements, string memory _name, string memory _symbol) ERC2771Context(_trustedForwarder) ERC20Permit(_name) ERC20(_name, _symbol) {
         // Grant admin roles
         _setupRole(DEFAULT_ADMIN_ROLE, _admin); // except for the Minter and Transferer role, the _admin is the roles admin for all other roles
         _setRoleAdmin(MINTER_ROLE, MINTERADMIN_ROLE);
@@ -138,7 +139,7 @@ contract CorpusToken is ERC2771Context, ERC20Pausable, AccessControl {
         uint256 _amount
     ) internal virtual override {
         super._beforeTokenTransfer(_from, _to, _amount);
-
+        _requireNotPaused();
         require(
             hasRole(BURNER_ROLE, _msgSender()) || hasRole(TRANSFERER_ROLE, _from) || allowList.map(_from) & requirements == requirements || _from == address(0),
             "Sender is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
