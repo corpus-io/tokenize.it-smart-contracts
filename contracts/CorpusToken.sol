@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
+import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
+
 import "./AllowList.sol";
 
 /**
@@ -16,8 +18,10 @@ import "./AllowList.sol";
     - allow list (documents which address satisfies which requirement)
     Decimals is inherited as 18 from ERC20. This should be the standard to adhere by for all deployments of this token.
 
+    The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support and meta-transactions.
+
  */
-contract CorpusToken is ERC20Pausable, AccessControl {
+contract CorpusToken is ERC2771Context, ERC20Pausable, AccessControl {
     /// @notice The role that has the ability to define which requirements an address must satisfy to receive tokens
     bytes32 public constant REQUIREMENT_ROLE = keccak256("REQUIREMENT_ROLE");
     /// @notice The role that has the ability to grant the minter role
@@ -62,14 +66,15 @@ contract CorpusToken is ERC20Pausable, AccessControl {
 
 
     /**
-    @notice Constructor for the corpus token 
+    @notice Constructor for the corpus token
+    @param _trustedForwarder trusted forwarder for the ERC2771Context constructor - used for meta-transactions /
     @param _name name of the specific token, e.g. "MyGmbH Token"
     @param _symbol symbol of the token, e.g. "MGT"
     @param _allowList address of the allowList contract
     @param _requirements requirements an address has to meet for sending or receiving tokens
     @param _admin address of the admin. Admin will initially have all roles and can grant roles to other addresses.
     */
-    constructor(address _admin, AllowList _allowList, uint256 _requirements, string memory _name, string memory _symbol) ERC20(_name, _symbol) {
+    constructor(address _trustedForwarder, address _admin, AllowList _allowList, uint256 _requirements, string memory _name, string memory _symbol) ERC2771Context(_trustedForwarder) ERC20(_name, _symbol) {
         // Grant admin roles
         _setupRole(DEFAULT_ADMIN_ROLE, _admin); // except for the Minter and Transferer role, the _admin is the roles admin for all other roles
         _setRoleAdmin(MINTER_ROLE, MINTERADMIN_ROLE);
@@ -113,8 +118,8 @@ contract CorpusToken is ERC20Pausable, AccessControl {
     }
 
     function mint(address _to, uint256 _amount) public onlyRole(MINTER_ROLE) returns (bool) {
-        require(mintingAllowance[msg.sender] >= _amount, "MintingAllowance too low");
-        mintingAllowance[msg.sender] -= _amount;
+        require(mintingAllowance[_msgSender()] >= _amount, "MintingAllowance too low");
+        mintingAllowance[_msgSender()] -= _amount;
         _mint(_to, _amount);
         return true;
     }
@@ -135,7 +140,7 @@ contract CorpusToken is ERC20Pausable, AccessControl {
         super._beforeTokenTransfer(_from, _to, _amount);
 
         require(
-            hasRole(BURNER_ROLE, msg.sender) || hasRole(TRANSFERER_ROLE, _from) || allowList.map(_from) & requirements == requirements || _from == address(0),
+            hasRole(BURNER_ROLE, _msgSender()) || hasRole(TRANSFERER_ROLE, _from) || allowList.map(_from) & requirements == requirements || _from == address(0),
             "Sender is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
         ); // address(0), because this is the _from address in case of minting new tokens
         require(
@@ -150,5 +155,19 @@ contract CorpusToken is ERC20Pausable, AccessControl {
 
     function unpause() public onlyRole(PAUSER_ROLE) {
         _unpause();
+    }
+
+    /**
+     * @dev both ERC20Pausable and ERC2771Context have a _msgSender() function, so we need to override and select which one to use.
+     */ 
+    function _msgSender() internal view override(Context, ERC2771Context) returns (address) {
+        return ERC2771Context._msgSender();
+    }
+
+    /**
+     * @dev both ERC20Pausable and ERC2771Context have a _msgData() function, so we need to override and select which one to use.
+     */
+    function _msgData() internal view override(Context, ERC2771Context) returns (bytes calldata) {
+        return ERC2771Context._msgData();
     }
 }
