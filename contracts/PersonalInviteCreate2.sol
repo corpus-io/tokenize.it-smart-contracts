@@ -17,7 +17,7 @@ interface MintableERC20 is IERC20Metadata {
     It is likely a company will create many PersonalInvites for specific investors to buy their one corpusToken.
 
  */
-contract PersonalInvite is ERC2771Context, Ownable {
+contract PersonalInvite is ERC2771Context {
 
     event Deal(address indexed buyer, uint amount, uint tokenPrice, IERC20 currency, MintableERC20 indexed token);
 
@@ -44,19 +44,5 @@ contract PersonalInvite is ERC2771Context, Ownable {
         require(_token.mint(_buyer, _amount), "Minting new tokens failed");
 
         emit Deal(_buyer, _amount, _tokenPrice, _currency, _token);
-    }
-
-    /**
-     * @dev both Ownable and ERC2771Context have a _msgSender() function, so we need to override and select which one to use.
-     */ 
-    function _msgSender() internal view override(Context, ERC2771Context) returns (address) {
-        return ERC2771Context._msgSender();
-    }
-
-    /**
-     * @dev both Ownable and ERC2771Context have a _msgData() function, so we need to override and select which one to use.
-     */
-    function _msgData() internal view override(Context, ERC2771Context) returns (bytes calldata) {
-        return ERC2771Context._msgData();
     }
 }
