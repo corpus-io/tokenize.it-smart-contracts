@@ -24,10 +24,11 @@ jobs:
         working-directory: .
         run: yarn test &&  forge coverage --report lcov
       - name: Coverage
-        uses: VeryGoodOpenSource/very_good_coverage@v1
+        uses: VeryGoodOpenSource/very_good_coverage@v2
         with:
           path: './lcov.info'
-          min_coverage: 50
+          min_coverage: 95
+          exclude: 'test/*'
       - name: Run snapshot
         working-directory: .
         run: forge snapshot
