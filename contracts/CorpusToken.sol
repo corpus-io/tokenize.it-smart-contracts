@@ -2,8 +2,9 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 import "./AllowList.sol";
 
 /**
@@ -17,7 +18,7 @@ import "./AllowList.sol";
     Decimals is inherited as 18 from ERC20. This should be the standard to adhere by for all deployments of this token.
 
  */
-contract CorpusToken is ERC20Pausable, AccessControl {
+contract CorpusToken is ERC20Permit, AccessControl, Pausable {
     /// @notice The role that has the ability to define which requirements an address must satisfy to receive tokens
     bytes32 public constant REQUIREMENT_ROLE = keccak256("REQUIREMENT_ROLE");
     /// @notice The role that has the ability to grant the minter role
@@ -69,7 +70,7 @@ contract CorpusToken is ERC20Pausable, AccessControl {
     @param _requirements requirements an address has to meet for sending or receiving tokens
     @param _admin address of the admin. Admin will initially have all roles and can grant roles to other addresses.
     */
-    constructor(address _admin, AllowList _allowList, uint256 _requirements, string memory _name, string memory _symbol) ERC20(_name, _symbol) {
+    constructor(address _admin, AllowList _allowList, uint256 _requirements, string memory _name, string memory _symbol) ERC20Permit("TokenizeToken") ERC20(_name, _symbol) {
         // Grant admin roles
         _setupRole(DEFAULT_ADMIN_ROLE, _admin); // except for the Minter and Transferer role, the _admin is the roles admin for all other roles
         _setRoleAdmin(MINTER_ROLE, MINTERADMIN_ROLE);
@@ -133,7 +134,7 @@ contract CorpusToken is ERC20Pausable, AccessControl {
         uint256 _amount
     ) internal virtual override {
         super._beforeTokenTransfer(_from, _to, _amount);
-
+        _requirePaused();
         require(
             hasRole(BURNER_ROLE, msg.sender) || hasRole(TRANSFERER_ROLE, _from) || allowList.map(_from) & requirements == requirements || _from == address(0),
             "Sender is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
