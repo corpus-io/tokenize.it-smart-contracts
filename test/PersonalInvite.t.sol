@@ -16,6 +16,7 @@ contract PersonalInviteTest is Test {
 
     uint256 MAX_INT = 115792089237316195423570985008687907853269984665640564039457584007913129639935;
 
+    address public constant turstedForwarder = 0x84a0856b038eaad1cc7e297cf34a7e72685a8693;
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant buyer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
     address public constant minterAdmin = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
@@ -29,8 +30,8 @@ contract PersonalInviteTest is Test {
 
     function setUp() public {
         list = new AllowList();
-        token = new CorpusToken(admin, list, 0x0, "TESTTOKEN", "TEST");
-        currency = new CorpusToken(admin, list, 0x0, "CURRENCY", "CUR");
+        token = new CorpusToken(turstedForwarder, admin, list, 0x0, "TESTTOKEN", "TEST");
+        currency = new CorpusToken(turstedForwarder, admin, list, 0x0, "CURRENCY", "CUR");
         vm.prank(owner);
 
         
@@ -145,7 +146,7 @@ contract PersonalInviteTest is Test {
             uint256 _paymentTokenAmount = 1000 * 10**paymentTokenDecimals;
 
             list = new AllowList();
-            token = new CorpusToken(admin, list, 0x0, "TESTTOKEN", "TEST");
+            token = new CorpusToken(turstedForwarder, admin, list, 0x0, "TESTTOKEN", "TEST");
             vm.prank(paymentTokenProvider);
             paymentToken = new FakePaymentToken(_paymentTokenAmount, paymentTokenDecimals);
             vm.prank(owner);
@@ -189,8 +190,8 @@ contract PersonalInviteTest is Test {
 
     function testFailOverflow() public {
         list = new AllowList();
-        token = new CorpusToken(admin, list, 0x0, "TESTTOKEN", "TEST");
-        currency = new CorpusToken(admin, list, 0x0, "CURRENCY", "CUR");
+        token = new CorpusToken(turstedForwarder, admin, list, 0x0, "TESTTOKEN", "TEST");
+        currency = new CorpusToken(turstedForwarder, admin, list, 0x0, "CURRENCY", "CUR");
         vm.prank(owner);
         invite = new PersonalInvite( payable(buyer), payable(receiver), 1, MAX_INT, 100, block.timestamp + 1 days, currency, MintableERC20(address(token)));
 
@@ -223,8 +224,8 @@ contract PersonalInviteTest is Test {
     function testEzCodeUseCase() public {
         // ["0x9be15eeadcE10d16aee7eF765f55c5BEDb410204","0x6aEe7ebe278bBd044Ae837cA82E84b210620Cad1","10000000000000000000","200000000000000000000",2,1654695694774,"0x07865c6E87B9F70255377e024ace6630C1Eaa37F","0x512681E4ecd449069282101FA3e482827528B062"]
         list = new AllowList();
-        token = new CorpusToken(admin, list, 0x0, "TESTTOKEN", "TEST");
-        currency = new CorpusToken(admin, list, 0x0, "CURRENCY", "CUR");
+        token = new CorpusToken(turstedForwarder, admin, list, 0x0, "TESTTOKEN", "TEST");
+        currency = new CorpusToken(turstedForwarder, admin, list, 0x0, "CURRENCY", "CUR");
         vm.prank(owner);
         invite = new PersonalInvite( payable(buyer), payable(receiver), 10000000000000000000, 200000000000000000000, 2, block.timestamp + 1 days, currency, MintableERC20(address(token)));
 
@@ -257,8 +258,8 @@ contract PersonalInviteTest is Test {
     function testEzCodeUseCase2() public {
   //  ["0x9be15eeadcE10d16aee7eF765f55c5BEDb410204","0x6aEe7ebe278bBd044Ae837cA82E84b210620Cad1","10000000000000000000","200000000000000000000",2e12,1654940279453,"0x07865c6E87B9F70255377e024ace6630C1Eaa37F","0x3fe4799d41cb26e6bc1aa113e31c24ac492ec72b"]
         list = new AllowList();
-        token = new CorpusToken(admin, list, 0x0, "TESTTOKEN", "TEST");
-        currency = new CorpusToken(admin, list, 0x0, "CURRENCY", "CUR");
+        token = new CorpusToken(turstedForwarder, admin, list, 0x0, "TESTTOKEN", "TEST");
+        currency = new CorpusToken(turstedForwarder, admin, list, 0x0, "CURRENCY", "CUR");
         vm.prank(owner);
         invite = new PersonalInvite( payable(buyer), payable(receiver), 10000000000000000000, 200000000000000000000, 2000000000000, block.timestamp + 1 days, currency, MintableERC20(address(token)));
 

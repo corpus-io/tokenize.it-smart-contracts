@@ -8,6 +8,7 @@ import "../contracts/CorpusToken.sol";
 contract corpusTokenTest is Test {
     CorpusToken token;
     AllowList allowList;
+    address public constant turstedForwarder = 0x84a0856b038eaad1cc7e297cf34a7e72685a8693;
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant requirer =
         0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
@@ -26,7 +27,7 @@ contract corpusTokenTest is Test {
     function setUp() public {
         vm.prank(admin);
         allowList = new AllowList();
-        token = new CorpusToken(admin, allowList, 0x0, "testToken", "TEST");
+        token = new CorpusToken(turstedForwarder,admin, allowList, 0x0, "testToken", "TEST");
         console.log(msg.sender);
 
         // set up roles

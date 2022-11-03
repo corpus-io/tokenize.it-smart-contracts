@@ -14,6 +14,7 @@ contract ContinuousFundraisingTest is Test {
     CorpusToken token;
     FakePaymentToken paymentToken;
 
+    address public constant turstedForwarder = 0x84a0856b038eaad1cc7e297cf34a7e72685a8693;
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant buyer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
     address public constant minterAdmin = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
@@ -35,7 +36,7 @@ contract ContinuousFundraisingTest is Test {
 
     function setUp() public {
         list = new AllowList();
-        token = new CorpusToken(admin, list, 0x0, "TESTTOKEN", "TEST");
+        token = new CorpusToken(turstedForwarder, admin, list, 0x0, "TESTTOKEN", "TEST");
 
         // set up currency
         vm.prank(paymentTokenProvider);
@@ -97,7 +98,7 @@ contract ContinuousFundraisingTest is Test {
 
 
             list = new AllowList();
-            CorpusToken _token = new CorpusToken(admin, list, 0x0, "TESTTOKEN", "TEST");
+            CorpusToken _token = new CorpusToken(turstedForwarder, admin, list, 0x0, "TESTTOKEN", "TEST");
             vm.prank(paymentTokenProvider);
             _paymentToken = new FakePaymentToken(_paymentTokenAmount, _paymentTokenDecimals);
             vm.prank(owner);
@@ -160,7 +161,7 @@ contract ContinuousFundraisingTest is Test {
 
 
         list = new AllowList();
-        CorpusToken _token = new CorpusToken(admin, list, 0x0, "TESTTOKEN", "TEST");
+        CorpusToken _token = new CorpusToken(turstedForwarder, admin, list, 0x0, "TESTTOKEN", "TEST");
         vm.prank(paymentTokenProvider);
         _paymentToken = new MaliciousPaymentToken(_paymentTokenAmount);
         vm.prank(owner);
