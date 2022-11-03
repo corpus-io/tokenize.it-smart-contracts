@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
-
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 interface MintableERC20 is IERC20Metadata {
     function mint(address, uint256) external returns (bool);
@@ -18,6 +16,8 @@ interface MintableERC20 is IERC20Metadata {
 
  */
 contract PersonalInvite {
+
+    using SafeERC20 for IERC20;
 
     event Deal(address indexed buyer, uint amount, uint tokenPrice, IERC20 currency, MintableERC20 indexed token);
 
@@ -39,7 +39,7 @@ contract PersonalInvite {
                 = a * p * [currency_bits] / (10**token.decimals)
          */
         require((_amount * _tokenPrice) % (10**_token.decimals()) == 0, "Amount * tokenprice needs to be a multiple of 10**token.decimals()");
-        require(_currency.transferFrom(_buyer, _receiver, (_amount * _tokenPrice) / (10**_token.decimals()) ), "Sending defined currency tokens failed");
+        _currency.safeTransferFrom(_buyer, _receiver, (_amount * _tokenPrice) / (10**_token.decimals()) );
         require(_token.mint(_buyer, _amount), "Minting new tokens failed");
 
         emit Deal(_buyer, _amount, _tokenPrice, _currency, _token);
