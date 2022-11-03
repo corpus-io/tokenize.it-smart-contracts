@@ -296,5 +296,17 @@ contract PersonalInviteTest is Test {
         invite.revoke();
     }
 
-    // TODO: add tests for all requirements and edge cases
+    function testDealOnlyPossibleOnce() public {
+        assertTrue(currency.balanceOf(buyer) == 10000000000);
+        vm.prank(buyer);
+        invite.deal(100000000000000);
+        assertTrue(currency.balanceOf(buyer) == 10000000000 - (100000000000000 * 10000000) / (10**token.decimals()));
+        assertTrue(token.balanceOf(buyer) == 100000000000000);
+        assertTrue(currency.balanceOf(receiver) == (100000000000000 * 10000000) / (10**token.decimals()));
+        vm.expectRevert("Only the personally invited buyer can take this deal");
+        vm.prank(buyer);
+        invite.deal(100);
+
+    }
+    
 }
