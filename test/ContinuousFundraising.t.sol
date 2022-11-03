@@ -301,13 +301,32 @@ contract ContinuousFundraisingTest is Test {
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
 
         vm.prank(buyer);
-        vm.expectRevert("Amount needs to be larger than or equal to minAmount");
+        vm.expectRevert("Buyer needs to buy at least minAmount");
         raise.buy(minAmountPerBuyer / 2);
         assertTrue(paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore);
         assertTrue(token.balanceOf(buyer) == 0);
         assertTrue(paymentToken.balanceOf(receiver) == 0);
         assertTrue(raise.tokensSold() == 0);
         assertTrue(raise.tokensBought(buyer) == 0);
+    }
+
+    function testBuySmallAmountAfterInitialInvestment() public {
+        uint256 tokenBuyAmount = minAmountPerBuyer;
+        uint256 costInPaymentTokenForMinAmount = tokenBuyAmount * price / 10**18;
+        uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
+
+        vm.prank(buyer);
+        raise.buy(minAmountPerBuyer);
+
+        // buy less than minAmount -> should be okay because minAmount has already been bought.
+        vm.prank(buyer);
+        raise.buy(minAmountPerBuyer / 2);
+
+        assertTrue(paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore - costInPaymentTokenForMinAmount * 3 / 2);
+        assertTrue(token.balanceOf(buyer) == minAmountPerBuyer * 3 / 2);
+        assertTrue(paymentToken.balanceOf(receiver) == costInPaymentTokenForMinAmount * 3 / 2);
+        assertTrue(raise.tokensSold() == minAmountPerBuyer * 3 / 2);
+        assertTrue(raise.tokensBought(buyer) == raise.tokensSold());
     }
 
     function testAmountWithRest() public {
