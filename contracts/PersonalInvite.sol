@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
@@ -20,6 +21,7 @@ interface MintableERC20 is IERC20Metadata {
 
  */
 contract PersonalInvite is ERC2771Context, Ownable, ReentrancyGuard {
+    using SafeERC20 for IERC20;
     // @dev: address that calls the deal function, pays with currency and receives tokens
     address payable public buyer;
     // @dev: address that receives the currency
@@ -81,7 +83,7 @@ contract PersonalInvite is ERC2771Context, Ownable, ReentrancyGuard {
                 = a * p * [currency_bits] / (10**token.decimals)
          */
         require((_tokenAmount * tokenPrice) % (10**token.decimals()) == 0, "Amount * tokenprice needs to be a multiple of 10**token.decimals()");
-        require(currency.transferFrom(buyer, receiver, (_tokenAmount * tokenPrice) / (10**token.decimals()) ), "Sending defined currency tokens failed");
+        currency.safeTransferFrom(buyer, receiver, (_tokenAmount * tokenPrice) / (10**token.decimals()) );
         require(token.mint(buyer, _tokenAmount), "Minting new tokens failed");
 
         emit Deal(buyer, _tokenAmount, tokenPrice, currency, token);
