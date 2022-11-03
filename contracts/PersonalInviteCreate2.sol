@@ -17,16 +17,15 @@ interface MintableERC20 is IERC20Metadata {
     It is likely a company will create many PersonalInvites for specific investors to buy their one corpusToken.
 
  */
-contract PersonalInvite is ERC2771Context {
+contract PersonalInvite {
 
     event Deal(address indexed buyer, uint amount, uint tokenPrice, IERC20 currency, MintableERC20 indexed token);
 
-    constructor(address _trustedForwarder, address payable _buyer, address payable _receiver, uint _amount, uint _tokenPrice, uint _expiration, IERC20 _currency, MintableERC20 _token) ERC2771Context(_trustedForwarder) {
+    constructor(address payable _buyer, address payable _receiver, uint _amount, uint _tokenPrice, uint _expiration, IERC20 _currency, MintableERC20 _token) {
         
         require(_buyer != address(0), "_buyer can not be zero address");
         require(_receiver != address(0), "_receiver can not be zero address");
         require(_tokenPrice != 0, "_tokenPrice can not be zero");
-        require(_buyer == _msgSender(), "Only the personally invited buyer can take this deal");
         require(block.timestamp <= _expiration, "Deal expired");
 
         /**
