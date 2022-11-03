@@ -40,7 +40,7 @@ contract PersonalInvite is ERC2771Context, Ownable {
     /// @dev deal will be deactivated first thing when it is calles, to prevent reentrancy. This also means the invite can only be claimed once.
     bool public active;
 
-    event Deal(address indexed buyer, uint amount, uint tokenPrice, IERC20 currency, MintableERC20 indexed token);
+    event Deal(address indexed buyer, uint amount, uint tokenPrice, IERC20 indexed currency, MintableERC20 indexed token);
 
     constructor(address _trustedForwarder, address payable _buyer, address payable _receiver, uint _minAmount, uint _maxAmount, uint _tokenPrice, uint _expiration, IERC20 _currency, MintableERC20 _token) ERC2771Context(_trustedForwarder) {
         buyer = _buyer;

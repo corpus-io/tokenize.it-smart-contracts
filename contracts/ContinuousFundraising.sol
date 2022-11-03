@@ -51,12 +51,12 @@ contract ContinuousFundraising is ERC2771Context, Ownable, Pausable, ReentrancyG
     // keeps track of how much each buyer has bought, in order to enforce maxAmountPerBuyer
     mapping(address => uint256) public tokensBought;
 
-    event CurrencyReceiverChanged(address);
+    event CurrencyReceiverChanged(address indexed);
     event MinAmountPerBuyerChanged(uint);
     event MaxAmountPerBuyerChanged(uint);
     event TokenPriceChanged(uint);
     event MaxAmountOfTokenToBeSoldChanged(uint);
-    event CurrencyChanged(IERC20);
+    event CurrencyChanged(IERC20 indexed);
 
     /**
      * @dev Constructor that passes the trusted forwarder to the ERC2771Context constructor
