@@ -10,12 +10,8 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "../contracts/PrivateInvite.sol";
 
 
-// interface MintableERC20 is IERC20Metadata {
-//     function mint(address, uint256) external returns (bool);
-// }
-
 /*
-    One deployment of this contract can be used for deployment of any number of contracts using create2.
+    One deployment of this contract can be used for deployment of any number of PrivateInvites using create2.
 */
 contract DeterministicDeployFactory {
     event Deploy(address addr);
@@ -23,24 +19,36 @@ contract DeterministicDeployFactory {
     /**
      * @notice Deploys a contract using create2.
      */
-    function deploy(bytes memory bytecode, bytes32 _salt, address payable buyer, address payable _receiver, uint _amount, uint _tokenPrice, uint _expiration, IERC20 _currency, MintableERC20 _token) external {
+    function deploy(bytes32 _salt, address payable buyer, address payable _receiver, uint _amount, uint _tokenPrice, uint _expiration, IERC20 _currency, MintableERC20 _token) external {
+        
+        // calculate expected address
+        address expectedAddress = getAddress(_salt, buyer, _receiver, _amount, _tokenPrice, _expiration, _currency, _token);
+        
         // for syntax, see: https://solidity-by-example.org/app/create2/
-        address addr = address(new PrivateInvite{salt: _salt}(buyer, _receiver, _amount, _tokenPrice, _expiration, _currency, _token));
-        // assembly {
-        //     addr := create2(0, add(bytecode, 0x20), mload(bytecode), _salt)
-        //     if iszero(extcodesize(addr)) {
-        //         revert(0, 0)
-        //     }
-        // }
-        emit Deploy(addr);
+        address actualAddress = address(new PrivateInvite{salt: _salt}(buyer, _receiver, _amount, _tokenPrice, _expiration, _currency, _token));
+        
+        // make sure some code has been uploaded to the address
+        uint len;
+        assembly { len := extcodesize(actualAddress) }
+        require(len != 0);
+
+        // make sure actual address matches expected address
+        require(actualAddress == expectedAddress, "Actual address does not match expected address");
+        
+        emit Deploy(actualAddress);
         //return addr;
     }
 
     /**
      * @notice Computes the address of a contract to be deployed using create2.
      */
-    function getAddress(bytes memory bytecode, bytes32 _salt) external view returns (address) {
-        bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), address(this), _salt, keccak256(bytecode)));
+    function getAddress(bytes32 _salt, address payable buyer, address payable _receiver, uint _amount, uint _tokenPrice, uint _expiration, IERC20 _currency, MintableERC20 _token) public view returns (address) {
+        bytes memory bytecodeRuntime = getBytecode(buyer, _receiver, _amount, _tokenPrice, _expiration, _currency, _token);
+        bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), address(this), _salt, keccak256(bytecodeRuntime)));
         return address(uint160(uint256(hash)));
+    }
+
+    function getBytecode(address payable buyer, address payable _receiver, uint _amount, uint _tokenPrice, uint _expiration, IERC20 _currency, MintableERC20 _token) private pure returns (bytes memory) {
+        return abi.encodePacked(type(PrivateInvite).creationCode, abi.encode(buyer, _receiver, _amount, _tokenPrice, _expiration, _currency, _token));
     }
 }

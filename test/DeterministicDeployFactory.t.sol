@@ -62,37 +62,24 @@ contract DeterministicDeployFactoryTest is Test {
         currency = new CorpusToken(admin, list, 0x0, "currency", "CUR");
     }
 
-    function testGetAddressCorrect(uint rawSalt) public {
-        bytes memory bytecode = type(PrivateInvite).creationCode;
-        //uint rawSalt = 0;
-        
-        // follows the definition of create2
-        bytes32 salt = bytes32(rawSalt);
-        bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), address(factory), salt, keccak256(bytecode)));
-        address expected = address(uint160(uint256(hash)));
-
-        address actual = factory.getAddress(bytecode, bytes32(rawSalt));
-
-        console.log("expected: ", expected);
-        console.log("actual: ", actual);
-
-        assertEq(expected, actual);
-    }
-
     function testDeployContract() public {
         uint rawSalt = 0;
         bytes32 salt = bytes32(rawSalt);
 
 
-        bytes memory bytecode = type(PrivateInvite).creationCode;
-
-        address expected = factory.getAddress(bytecode, salt);
-
-        uint amount = 10000000000000;
+        //bytes memory creationCode = type(PrivateInvite).creationCode;
+        uint amount = 20000000000000;
         uint expiration = block.timestamp + 1000;
 
+        address expectedAddress = factory.getAddress(salt, payable(buyer), payable(receiver), amount, price, expiration, currency, MintableERC20(address(token)));
+
+        // make sure no contract lives here yet
+        uint len;
+        assembly { len := extcodesize(expectedAddress) }
+        assert(len == 0);
+
         vm.prank(admin);
-        token.setUpMinter(expected, amount);
+        token.setUpMinter(expectedAddress, amount);
 
         vm.prank(admin);
         currency.setUpMinter(admin, amount*price);
@@ -100,30 +87,13 @@ contract DeterministicDeployFactoryTest is Test {
         vm.prank(admin);
         currency.mint(buyer, amount*price);
         vm.prank(buyer);
-        currency.approve(expected, amount*price);
+        currency.approve(expectedAddress, amount*price);
 
-        factory.deploy(bytecode, salt, payable(buyer), payable(receiver), amount, price, expiration, currency, MintableERC20(address(token)));
+        factory.deploy(salt, payable(buyer), payable(receiver), amount, price, expiration, currency, MintableERC20(address(token)));
 
-        // console.log("expected: ", expected);
-        // console.log("actual: ", actual);
+        // make sure contract lives here now
+        assembly { len := extcodesize(expectedAddress) }
+        assert(len != 0);
 
-        // assertEq(expected, actual);
     }
-    // function testGetAddressCorrect() public {
-    //     bytes memory bytecode = type(PrivateInvite).creationCode;
-    //     uint rawSalt = 0;
-        
-    //     // follows the definition of create2
-    //     bytes32 salt = bytes32(rawSalt);
-    //     bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), address(factory), salt, keccak256(bytecode)));
-    //     address expected = address(uint160(uint256(hash)));
-
-    //     address actual = factory.getAddress(bytecode, rawSalt);
-
-    //     console.log("expected: ", expected);
-    //     console.log("actual: ", actual);
-
-    //     assertEq(expected, actual);
-    // }
-    
 }
