@@ -8,7 +8,7 @@ import "../contracts/DeterministicDeployFactory.sol";
 
 
 
-contract DeterministicDeployFactoryTest is Test {
+contract PrivateInviteTest is Test {
     DeterministicDeployFactory factory;
 
     AllowList list;
@@ -35,25 +35,6 @@ contract DeterministicDeployFactoryTest is Test {
         return address(uint160(uint256(hash)));
     }
     
-    // function testCalcAddressWithExample() public view {
-    //     // example taken from https://docs.ethers.io/v5/api/utils/address/#utils-getCreate2Address
-    //     address sender = 0x8ba1f109551bD432803012645Ac136ddd64DBA72;
-    //     uint salt = 0x7c5ea36004851c764c44143b1dcb59679b11c9a68e5f41497f6cf3d480715331;
-    //     string memory hexString = "0x6394198df16000526103ff60206004601c335afa6040516060f3";
-    //     bytes memory bytecode = bytes(hexString);
-
-    //     address actual = calcAddress(bytecode, salt, sender);
-    //     address expected = 0x533ae9d683B10C02EbDb05471642F85230071FC3;
-
-    //     console.log("bytecode: %s", string(bytecode));
-
-    //     console.log("actual: %s", actual);
-    //     console.log("expected: %s", expected);
-    //     //assertEq(actual, expected);
-
-    //     // TODO: figure out why this fails
-
-    // }
 
     function setUp() public {
         factory = new DeterministicDeployFactory();
@@ -62,10 +43,9 @@ contract DeterministicDeployFactoryTest is Test {
         currency = new CorpusToken(admin, list, 0x0, "currency", "CUR");
     }
 
-    function testDeployContract() public {
+    function testAcceptDeal() public {
         uint rawSalt = 0;
         bytes32 salt = bytes32(rawSalt);
-
 
         //bytes memory creationCode = type(PrivateInvite).creationCode;
         uint amount = 20000000000000;
@@ -73,27 +53,34 @@ contract DeterministicDeployFactoryTest is Test {
 
         address expectedAddress = factory.getAddress(salt, payable(buyer), payable(receiver), amount, price, expiration, currency, MintableERC20(address(token)));
 
-        // make sure no contract lives here yet
-        uint len;
-        assembly { len := extcodesize(expectedAddress) }
-        assert(len == 0);
-
         vm.prank(admin);
         token.setUpMinter(expectedAddress, amount);
 
         vm.prank(admin);
         currency.setUpMinter(admin, amount*price);
 
+        uint tokenDecimals = token.decimals();
+
         vm.prank(admin);
-        currency.mint(buyer, amount*price);
+        currency.mint(buyer, amount*price / 10**tokenDecimals);
         vm.prank(buyer);
-        currency.approve(expectedAddress, amount*price);
+        currency.approve(expectedAddress, amount*price / 10**tokenDecimals);
 
-        factory.deploy(salt, payable(buyer), payable(receiver), amount, price, expiration, currency, MintableERC20(address(token)));
+        // make sure balances are as expected before deployment
+        assertEq(currency.balanceOf(buyer), amount*price / 10**tokenDecimals);
+        assertEq(currency.balanceOf(receiver), 0);
+        assertEq(token.balanceOf(buyer), 0);
 
-        // make sure contract lives here now
-        assembly { len := extcodesize(expectedAddress) }
-        assert(len != 0);
+        address inviteAddress = factory.deploy(salt, payable(buyer), payable(receiver), amount, price, expiration, currency, MintableERC20(address(token)));
 
+        assertEq(inviteAddress, expectedAddress, "deployed contract address is not correct");
+
+        // make sure balances are as expected after deployment
+        console.log("buyer balance: %s", currency.balanceOf(buyer));
+        console.log("receiver balance: %s", currency.balanceOf(receiver));
+        console.log("buyer token balance: %s", token.balanceOf(buyer));
+        assertEq(currency.balanceOf(buyer), 0);
+        assertEq(currency.balanceOf(receiver), amount*price / 10**tokenDecimals);
+        assertEq(token.balanceOf(buyer), amount);
     }
 }

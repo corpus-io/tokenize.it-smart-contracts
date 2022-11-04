@@ -19,7 +19,7 @@ contract DeterministicDeployFactory {
     /**
      * @notice Deploys a contract using create2.
      */
-    function deploy(bytes32 _salt, address payable buyer, address payable _receiver, uint _amount, uint _tokenPrice, uint _expiration, IERC20 _currency, MintableERC20 _token) external {
+    function deploy(bytes32 _salt, address payable buyer, address payable _receiver, uint _amount, uint _tokenPrice, uint _expiration, IERC20 _currency, MintableERC20 _token) external returns (address) {
         
         // calculate expected address
         //address expectedAddress = getAddress(_salt, buyer, _receiver, _amount, _tokenPrice, _expiration, _currency, _token);
@@ -36,7 +36,7 @@ contract DeterministicDeployFactory {
         // require(actualAddress == expectedAddress, "Actual address does not match expected address");
         
         emit Deploy(actualAddress);
-        //return addr;
+        return actualAddress;
     }
 
     /**
