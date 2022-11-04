@@ -283,6 +283,8 @@ contract ContinuousFundraisingTest is Test {
     function testExceedMintingAllowance() public {
         // reduce minting allowance of fundraising contract, so the revert happens in CorpusToken
         vm.prank(minterAdmin);
+        token.setUpMinter(address(raise), 0);
+        vm.prank(minterAdmin);
         token.setUpMinter(address(raise), maxAmountPerBuyer/2);
         
         vm.prank(buyer);
