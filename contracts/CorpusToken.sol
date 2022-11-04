@@ -54,7 +54,6 @@ contract CorpusToken is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         With requirements 0b0000000000000000000000000000000000000000000000000000000000000000, even french hedgehogs will be allowed to send or receive tokens.
 
         Keep in mind that addresses with the TRANSFERER_ROLE do not need to satisfy any requirements to send or receive tokens.
-    @notice initialized as 0 (=no requirements), so needs updating if applicable
     */
     uint256 public requirements;
 
@@ -62,9 +61,8 @@ contract CorpusToken is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     mapping(address => uint256) public mintingAllowance; // used for token generating events such as vesting or new financing rounds
 
     event RequirementsChanged(uint newRequirements);
-    event AllowListChanged(AllowList allowList);
-    event MintingAllowanceChanged(address minter, uint256 newAllowance);
-
+    event AllowListChanged(AllowList indexed allowList);
+    event MintingAllowanceChanged(address indexed minter, uint256 newAllowance);
 
     /**
     @notice Constructor for the corpus token
@@ -114,6 +112,7 @@ contract CorpusToken is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     */
     function setUpMinter(address _minter, uint256 _allowance) public onlyRole(getRoleAdmin(MINTER_ROLE)){
         _grantRole(MINTER_ROLE, _minter);
+        require(mintingAllowance[_minter] == 0 || _allowance == 0); // to prevent frontrunning when setting a new allowance, see https://www.adrianhetman.com/unboxing-erc20-approve-issues/
         mintingAllowance[_minter] = _allowance;
         emit MintingAllowanceChanged(_minter, _allowance);
     }

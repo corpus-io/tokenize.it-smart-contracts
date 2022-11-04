@@ -198,6 +198,14 @@ contract corpusTokenTest is Test {
         assertTrue(token.requirements() == 3);
     }
 
+    function testUpdateAllowList() public {
+        AllowList newAllowList = new AllowList(); // deploy new AllowList
+        assertTrue(token.allowList() != newAllowList);
+        vm.prank(admin);
+        token.setAllowList(newAllowList); 
+        assertTrue(token.allowList() == newAllowList);
+    }
+
     function testSetUpMinter() public {
         bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
 
@@ -742,6 +750,40 @@ contract corpusTokenTest is Test {
         already minted once a new allowance is set
     */
     function testExceedMintingAllowance() public {
+        address person1 = vm.addr(1);
+        address person2 = vm.addr(2);
+
+        vm.prank(minterAdmin);
+        token.setUpMinter(minter, 100);
+        assertTrue(token.mintingAllowance(minter) == 100);
+
+        // //testSetRequirements
+        vm.prank(requirer);
+        token.setRequirements(11);
+        assertTrue(token.requirements() == 11); // 0x1011
+
+        vm.prank(admin);
+        allowList.set(person1, 27); // 0x0111 -> includes required 0x0011
+        vm.prank(admin);
+        allowList.set(person2, 11); // 0x1011
+
+        vm.prank(minter);
+        token.mint(person1, 50);
+        assertTrue(token.balanceOf(person1) == 50);
+
+        vm.prank(minterAdmin);
+        token.setUpMinter(minter, 0);
+        vm.prank(minterAdmin);
+        token.setUpMinter(minter, 10);
+        assertTrue(token.mintingAllowance(minter) == 10);
+
+        vm.prank(minter);
+        //vm.expectRevert("Minting allowance exceeded");
+        token.mint(person2, 3);
+        assertTrue(token.balanceOf(person2) == 3);
+    }
+
+    function testFailSetAllowanceTo0BeforeResetting() public {
         address person1 = vm.addr(1);
         address person2 = vm.addr(2);
 
