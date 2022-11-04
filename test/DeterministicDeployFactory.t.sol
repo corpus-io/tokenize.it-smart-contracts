@@ -29,11 +29,11 @@ contract DeterministicDeployFactoryTest is Test {
 
     uint256 public constant price = 10000000;
 
-    function calcAddress(bytes memory bytecode, uint salt, address sender) public pure returns (address) {
-        bytes32 saltBytes = bytes32(salt);
-        bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), sender, saltBytes, keccak256(bytecode)));
-        return address(uint160(uint256(hash)));
-    }
+    // function calcAddress(bytes memory bytecode, uint salt, address sender) public pure returns (address) {
+    //     bytes32 saltBytes = bytes32(salt);
+    //     bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), sender, saltBytes, keccak256(bytecode)));
+    //     return address(uint160(uint256(hash)));
+    // }
     
     // function testCalcAddressWithExample() public view {
     //     // example taken from https://docs.ethers.io/v5/api/utils/address/#utils-getCreate2Address

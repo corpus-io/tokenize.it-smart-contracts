@@ -28,13 +28,7 @@ contract PrivateInviteTest is Test {
 
 
     uint256 public constant price = 10000000;
-
-    function calcAddress(bytes memory bytecode, uint salt, address sender) public pure returns (address) {
-        bytes32 saltBytes = bytes32(salt);
-        bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), sender, saltBytes, keccak256(bytecode)));
-        return address(uint160(uint256(hash)));
-    }
-    
+ 
 
     function setUp() public {
         factory = new DeterministicDeployFactory();
