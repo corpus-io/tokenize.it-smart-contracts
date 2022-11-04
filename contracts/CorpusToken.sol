@@ -49,7 +49,6 @@ contract CorpusToken is ERC20Pausable, AccessControl {
         With requirements 0b0000000000000000000000000000000000000000000000000000000000000000, even french hedgehogs will be allowed to send or receive tokens.
 
         Keep in mind that addresses with the TRANSFERER_ROLE do not need to satisfy any requirements to send or receive tokens.
-    @notice initialized as 0 (=no requirements), so needs updating if applicable
     */
     uint256 public requirements;
 
@@ -59,7 +58,6 @@ contract CorpusToken is ERC20Pausable, AccessControl {
     event RequirementsChanged(uint newRequirements);
     event AllowListChanged(AllowList allowList);
     event MintingAllowanceChanged(address minter, uint256 newAllowance);
-
 
     /**
     @notice Constructor for the corpus token 
