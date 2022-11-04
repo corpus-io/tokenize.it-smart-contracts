@@ -21,7 +21,7 @@ contract PersonalInvite {
 
     event Deal(address indexed buyer, uint amount, uint tokenPrice, IERC20 currency, MintableERC20 indexed token);
 
-    constructor(address payable _buyer, address payable _receiver, uint _amount, uint _tokenPrice, uint _expiration, IERC20 _currency, MintableERC20 _token) {
+    constructor(address _buyer, address _receiver, uint _amount, uint _tokenPrice, uint _expiration, IERC20 _currency, MintableERC20 _token) {
         
         require(_buyer != address(0), "_buyer can not be zero address");
         require(_receiver != address(0), "_receiver can not be zero address");
