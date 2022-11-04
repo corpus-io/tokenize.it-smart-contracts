@@ -56,8 +56,8 @@ contract CorpusToken is ERC20Pausable, AccessControl {
     mapping(address => uint256) public mintingAllowance; // used for token generating events such as vesting or new financing rounds
 
     event RequirementsChanged(uint newRequirements);
-    event AllowListChanged(AllowList allowList);
-    event MintingAllowanceChanged(address minter, uint256 newAllowance);
+    event AllowListChanged(AllowList indexed allowList);
+    event MintingAllowanceChanged(address indexed minter, uint256 newAllowance);
 
     /**
     @notice Constructor for the corpus token 
