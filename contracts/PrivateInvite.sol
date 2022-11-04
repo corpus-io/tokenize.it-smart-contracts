@@ -15,7 +15,7 @@ interface MintableERC20 is IERC20Metadata {
     It is likely a company will create many PersonalInvites for specific investors to buy their one corpusToken.
 
  */
-contract PersonalInvite {
+contract PrivateInvite {
 
     using SafeERC20 for IERC20;
 
