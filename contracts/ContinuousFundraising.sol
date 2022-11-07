@@ -2,12 +2,12 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./PersonalInvite.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
+import "./MintableERC20.sol";
 
 /*
 This contract represents the offer to buy an amount of tokens at a preset price. It can be used by anyone and there is no limit to the number of times it can be used.
@@ -63,7 +63,7 @@ contract ContinuousFundraising is ERC2771Context, Ownable, Pausable, ReentrancyG
     /**
      * @dev Constructor that passes the trusted forwarder to the ERC2771Context constructor
      */
-    constructor(address _trustedForwarder, address payable _currencyReceiver, uint _minAmountPerBuyer, uint _maxAmountPerBuyer, uint _tokenPrice, uint _maxAmountOfTokenToBeSold, IERC20 _currency, MintableERC20 _token) ERC2771Context(_trustedForwarder) {
+    constructor(address _trustedForwarder, address _currencyReceiver, uint _minAmountPerBuyer, uint _maxAmountPerBuyer, uint _tokenPrice, uint _maxAmountOfTokenToBeSold, IERC20 _currency, MintableERC20 _token) ERC2771Context(_trustedForwarder) {
         currencyReceiver = _currencyReceiver;
         minAmountPerBuyer = _minAmountPerBuyer;
         maxAmountPerBuyer = _maxAmountPerBuyer;

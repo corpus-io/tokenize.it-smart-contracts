@@ -5,7 +5,7 @@ These smart contracts implement [corpus.io](https://corpus.io/)'s tokenized cap 
 #  Main Concept
 1. All shares of a company are tokenized using the [CorpusToken.sol](contracts/CorpusToken.sol) contract
 2. Funds are raised through selling of these tokens:
-    - a customized deal to a specific investor can be realized through the [PersonalInvite.sol](contracts/PersonalInvite.sol) contract
+    - a customized deal to a specific investor can be realized through the [PersonalInvite.sol](contracts/archive/PersonalInvite.sol) contract
     - continuous fundraising, which is open to everyone meeting the requirements, is done through the [ContinuousFundraising.sol](contracts/ContinuousFundraising.sol) contract
 3. Employee participation is easy:
     - direct distribution of tokens (does not need another smart contract)

@@ -814,4 +814,16 @@ contract corpusTokenTest is Test {
         token.mint(person2, 3);
         assertTrue(token.balanceOf(person2) == 3);
     }
+
+    function testDeployerDoesNotGetRole() public {
+        CorpusToken localToken = new CorpusToken(admin, allowList, 0x0, "testToken", "TEST");
+        address deployer = msg.sender;
+        assertFalse(localToken.hasRole(localToken.REQUIREMENT_ROLE(), deployer));
+        assertFalse(localToken.hasRole(localToken.MINTERADMIN_ROLE(), deployer));
+        assertFalse(localToken.hasRole(localToken.MINTER_ROLE(), deployer));
+        assertFalse(localToken.hasRole(localToken.BURNER_ROLE(), deployer));
+        assertFalse(localToken.hasRole(localToken.TRANSFERERADMIN_ROLE(), deployer));
+        assertFalse(localToken.hasRole(localToken.TRANSFERER_ROLE(), deployer));
+        assertFalse(localToken.hasRole(localToken.PAUSER_ROLE(), deployer));
+    }
 }
