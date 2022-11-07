@@ -4,12 +4,12 @@ pragma solidity ^0.8.13;
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/CorpusToken.sol";
 import "../contracts/PersonalInvite.sol";
-import "../contracts/DeterministicDeployFactory.sol";
+import "../contracts/PersonalInviteFactory.sol";
 
 
 
-contract DeterministicDeployFactoryTest is Test {
-    DeterministicDeployFactory factory;
+contract PersonalInviteFactoryTest is Test {
+    PersonalInviteFactory factory;
 
     AllowList list;
     CorpusToken token;
@@ -56,7 +56,7 @@ contract DeterministicDeployFactoryTest is Test {
     // }
 
     function setUp() public {
-        factory = new DeterministicDeployFactory();
+        factory = new PersonalInviteFactory();
         list = new AllowList();
         token = new CorpusToken(admin, list, 0x0, "token", "TOK");
         currency = new CorpusToken(admin, list, 0x0, "currency", "CUR");
