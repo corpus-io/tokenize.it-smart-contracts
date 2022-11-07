@@ -16,7 +16,7 @@ contract PersonalInviteFactory {
     /**
      * @notice Deploys a contract using create2.
      */
-    function deploy(bytes32 _salt, address payable buyer, address payable _receiver, uint _amount, uint _tokenPrice, uint _expiration, IERC20 _currency, MintableERC20 _token) external returns (address) {       
+    function deploy(bytes32 _salt, address  buyer, address  _receiver, uint _amount, uint _tokenPrice, uint _expiration, IERC20 _currency, MintableERC20 _token) external returns (address) {       
         // for syntax, see: https://solidity-by-example.org/app/create2/
         //address actualAddress = address(new PersonalInvite{salt: _salt}(buyer, _receiver, _amount, _tokenPrice, _expiration, _currency, _token));
         address actualAddress = Create2.deploy(0, _salt, getBytecode(buyer, _receiver, _amount, _tokenPrice, _expiration, _currency, _token));
@@ -28,14 +28,14 @@ contract PersonalInviteFactory {
     /**
      * @notice Computes the address of a contract to be deployed using create2.
      */
-    function getAddress(bytes32 _salt, address payable buyer, address payable _receiver, uint _amount, uint _tokenPrice, uint _expiration, IERC20 _currency, MintableERC20 _token) public view returns (address) {
+    function getAddress(bytes32 _salt, address  buyer, address  _receiver, uint _amount, uint _tokenPrice, uint _expiration, IERC20 _currency, MintableERC20 _token) public view returns (address) {
         bytes memory bytecode = getBytecode(buyer, _receiver, _amount, _tokenPrice, _expiration, _currency, _token);
         //bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), address(this), _salt, keccak256(bytecode)));
         //return address(uint160(uint256(hash)));
         return Create2.computeAddress(_salt, keccak256(bytecode));
     }
 
-    function getBytecode(address payable buyer, address payable _receiver, uint _amount, uint _tokenPrice, uint _expiration, IERC20 _currency, MintableERC20 _token) private pure returns (bytes memory) {
+    function getBytecode(address  buyer, address  _receiver, uint _amount, uint _tokenPrice, uint _expiration, IERC20 _currency, MintableERC20 _token) private pure returns (bytes memory) {
         return abi.encodePacked(type(PersonalInvite).creationCode, abi.encode(buyer, _receiver, _amount, _tokenPrice, _expiration, _currency, _token));
     }
 }

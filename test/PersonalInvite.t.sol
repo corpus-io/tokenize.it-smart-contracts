@@ -73,6 +73,9 @@ contract PersonalInviteTest is Test {
         console.log("buyer balance: %s", currency.balanceOf(buyer));
         console.log("receiver balance: %s", currency.balanceOf(receiver));
         console.log("buyer token balance: %s", token.balanceOf(buyer));
+        uint256 len;
+        assembly { len := extcodesize(expectedAddress) }
+        console.log("Deployed contract size: %s", len);
         assertEq(currency.balanceOf(buyer), 0);
         assertEq(currency.balanceOf(receiver), amount*price / 10**tokenDecimals);
         assertEq(token.balanceOf(buyer), amount);
