@@ -55,9 +55,9 @@ After enforcing that this integer division does not yield a remainder:
 - investor wants to buy 150 corpus tokens
 - they call ContinuousFundraising.buy(150 \* 10\*\*18)
 - so \_amount is 150 \* 10\*\*18
-- 150 _ 10^18 _ 2 _ 10^8 = 300 _ 10^26 = 3 \* 10^28
-- calculate amount due in USDC bits: 3*10^28/10^18 = 3*10^10
-- amount due in USDC: 3*10^10 / 10^6 = 3*10^4 = 30000 USDC
+- 150 \* 10^18 \* 2 \* 10^8 = 300 \* 10^26 = 3 \* 10^28
+- calculate amount due in USDC bits: 3 \* 10^28/10^18 = 3 \* 10^10
+- amount due in USDC: 3 \* 10^10 / 10^6 = 3 \* 10^4 = 30000 USDC
 - 30000 USDC / (200 USDC/T) = 150T -> this worked well
 
 ## Enforcement
