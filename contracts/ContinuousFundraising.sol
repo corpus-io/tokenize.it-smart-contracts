@@ -63,7 +63,7 @@ contract ContinuousFundraising is ERC2771Context, Ownable, Pausable, ReentrancyG
     /**
      * @dev Constructor that passes the trusted forwarder to the ERC2771Context constructor
      */
-    constructor(address _trustedForwarder, address payable _currencyReceiver, uint _minAmountPerBuyer, uint _maxAmountPerBuyer, uint _tokenPrice, uint _maxAmountOfTokenToBeSold, IERC20 _currency, MintableERC20 _token) ERC2771Context(_trustedForwarder) {
+    constructor(address _trustedForwarder, address _currencyReceiver, uint _minAmountPerBuyer, uint _maxAmountPerBuyer, uint _tokenPrice, uint _maxAmountOfTokenToBeSold, IERC20 _currency, MintableERC20 _token) ERC2771Context(_trustedForwarder) {
         currencyReceiver = _currencyReceiver;
         minAmountPerBuyer = _minAmountPerBuyer;
         maxAmountPerBuyer = _maxAmountPerBuyer;
