@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/CorpusToken.sol";
-import "../contracts/PrivateInvite.sol";
+import "../contracts/PersonalInvite.sol";
 import "../contracts/DeterministicDeployFactory.sol";
 
 
@@ -67,7 +67,7 @@ contract DeterministicDeployFactoryTest is Test {
         bytes32 salt = bytes32(rawSalt);
 
 
-        //bytes memory creationCode = type(PrivateInvite).creationCode;
+        //bytes memory creationCode = type(PersonalInvite).creationCode;
         uint amount = 20000000000000;
         uint expiration = block.timestamp + 1000;
 

@@ -3,11 +3,11 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "../contracts/PrivateInvite.sol";
+import "../contracts/PersonalInvite.sol";
 
 
 /*
-    One deployment of this contract can be used for deployment of any number of PrivateInvites using create2.
+    One deployment of this contract can be used for deployment of any number of PersonalInvites using create2.
 */
 contract DeterministicDeployFactory {
     event Deploy(address addr);
@@ -21,7 +21,7 @@ contract DeterministicDeployFactory {
         //address expectedAddress = getAddress(_salt, buyer, _receiver, _amount, _tokenPrice, _expiration, _currency, _token);
         
         // for syntax, see: https://solidity-by-example.org/app/create2/
-        address actualAddress = address(new PrivateInvite{salt: _salt}(buyer, _receiver, _amount, _tokenPrice, _expiration, _currency, _token));
+        address actualAddress = address(new PersonalInvite{salt: _salt}(buyer, _receiver, _amount, _tokenPrice, _expiration, _currency, _token));
         
         // // make sure some code has been uploaded to the address
         // uint len;
@@ -45,6 +45,6 @@ contract DeterministicDeployFactory {
     }
 
     function getBytecode(address payable buyer, address payable _receiver, uint _amount, uint _tokenPrice, uint _expiration, IERC20 _currency, MintableERC20 _token) private pure returns (bytes memory) {
-        return abi.encodePacked(type(PrivateInvite).creationCode, abi.encode(buyer, _receiver, _amount, _tokenPrice, _expiration, _currency, _token));
+        return abi.encodePacked(type(PersonalInvite).creationCode, abi.encode(buyer, _receiver, _amount, _tokenPrice, _expiration, _currency, _token));
     }
 }
