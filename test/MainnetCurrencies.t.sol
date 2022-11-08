@@ -109,19 +109,19 @@ contract MainnetCurrencies is Test {
         assertEq(_currency.balanceOf(buyer), _currencyAmount - _currencyCost);
     }
 
-    function testContinuousFundraisingWithUSDC() public {
+    function testContinuousFundraisingWithMainnetUSDC() public {
         continuousFundraisingWithRealERC20Currency(usdc);
     }
 
-    function testContinuousFundraisingWithWETH() public {
+    function testContinuousFundraisingWithMainnetWETH() public {
         continuousFundraisingWithRealERC20Currency(weth);
     }
 
-    function testContinuousFundraisingWithWBTC() public {
+    function testContinuousFundraisingWithMainnetWBTC() public {
         continuousFundraisingWithRealERC20Currency(wbtc);
     }
 
-    function testContinuousFundraisingWithEURC() public {
+    function testContinuousFundraisingWithMainnetEURC() public {
         continuousFundraisingWithRealERC20Currency(eurc);
     }
 
