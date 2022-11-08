@@ -31,4 +31,4 @@ jobs:
           exclude: 'test/* test/resources/*'
       - name: Run snapshot
         working-directory: .
-        run: forge snapshot
+        run: forge snapshot --no-match-test Mainnet
