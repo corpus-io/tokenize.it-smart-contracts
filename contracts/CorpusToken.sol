@@ -38,6 +38,7 @@ contract CorpusToken is ERC20Pausable, AccessControl {
     /**
     @notice  defines requirements to send or receive tokens for non-TRANSFERER_ROLE. If zero, everbody can transfer the token. If non-zero, then only those who have met the requirements can send or receive tokens. 
         Requirements can be defined by the REQUIREMENT_ROLE, and are validated against the allowList. They can include things like "must have a verified email address", "must have a verified phone number", "must have a verified identity", etc. 
+        Also, tiers from 0 to four can be used.
     @dev Requirements are defined as bit mask, with the bit position encoding it's meaning and the bit's value whether this requirement will be enforced. 
         Example:
         - position 0: 1 = must be KYCed (0 = no KYC required)
@@ -47,6 +48,14 @@ contract CorpusToken is ERC20Pausable, AccessControl {
         With requirements 0b0000000000000000000000000000000000000000000000000000000000000101, only KYCed penguins will be allowed to send or receive tokens.
         With requirements 0b0000000000000000000000000000000000000000000000000000000000000111, only KYCed american penguins will be allowed to send or receive tokens.
         With requirements 0b0000000000000000000000000000000000000000000000000000000000000000, even french hedgehogs will be allowed to send or receive tokens.
+
+        The highest four bits are defined as tiers as follows:
+        - 0b0000000000000000000000000000000000000000000000000000000000000000 = tier 0 is required
+        - 0b0001000000000000000000000000000000000000000000000000000000000000 = tier 1 is required
+        - 0b0010000000000000000000000000000000000000000000000000000000000000 = tier 2 is required
+        - 0b0100000000000000000000000000000000000000000000000000000000000000 = tier 3 is required
+        - 0b1000000000000000000000000000000000000000000000000000000000000000 = tier 4 is required
+        This very simple definition allows for a maximum of 5 tiers, even though 4 bits are used for encoding. By sacrificing some space it can be implemented without code changes.
 
         Keep in mind that addresses with the TRANSFERER_ROLE do not need to satisfy any requirements to send or receive tokens.
     */
