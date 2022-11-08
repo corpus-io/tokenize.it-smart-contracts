@@ -80,11 +80,16 @@ contract ContinuousFundraisingTest is Test {
 
         /*
          register domain separator - does not work yet
+         encodes which contract to call
         */
-        string memory name = "ContinuousFundraising";
+        string memory name = "ContinuousFundraising"; // 
+        // https://eips.ethereum.org/EIPS/eip-712#definition-of-domainseparator
+        // use chainId, address, name 
         uint version = 1; 
     
         trustedForwarder.registerDomainSeparator(name, version);
+
+        // use expectEmit to get domainValue
 
         uint256 chainId;
         /* solhint-disable-next-line no-inline-assembly */
@@ -99,6 +104,12 @@ contract ContinuousFundraisingTest is Test {
 
         bytes32 domainHash = keccak256(domainValue); // we need this domain hash for our call to execute later
 
+        /* 
+         register request type - does not work yet
+         Might encode which function to call and which parameters to pass
+        */
+        trustedForwarder.registerRequestType("BuyRequest", "address buyer,uint256 amount");
+    
         /*
             create data and signature for execution - does not work yet
         */
