@@ -6,7 +6,9 @@ import "../lib/forge-std/src/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../contracts/CorpusToken.sol";
 import "../contracts/ContinuousFundraising.sol";
-import "./resources/USDC.sol";
+import "../contracts/PersonalInvite.sol";
+import "../contracts/PersonalInviteFactory.sol";
+
 
 
 contract MainnetCurrencies is Test {
@@ -15,6 +17,7 @@ contract MainnetCurrencies is Test {
 
     AllowList list;
     CorpusToken token;
+    PersonalInviteFactory factory;
 
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant buyer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
@@ -33,15 +36,16 @@ contract MainnetCurrencies is Test {
     uint256 public constant amountOfTokenToBuy = maxAmountPerBuyer;
 
     // test currencies
-    IERC20 usdc = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
-    IERC20 weth = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
-    IERC20 wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
-    IERC20 eurc = IERC20(0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c);
+    IERC20 USDC = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
+    IERC20 WETH = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+    IERC20 WBTC = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
+    IERC20 EUROC = IERC20(0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c);
 
 
     function setUp() public {
         list = new AllowList();
         token = new CorpusToken(admin, list, 0x0, "TESTTOKEN", "TEST");
+        factory = new PersonalInviteFactory();
         
     }
 
@@ -64,7 +68,7 @@ contract MainnetCurrencies is Test {
             .checked_write(amount);
     }
 
-    function continuousFundraisingWithRealERC20Currency(IERC20 _currency) public {
+    function continuousFundraisingWithIERC20Currency(IERC20 _currency) public {
         // some math
         //uint _decimals = _currency.decimals(); // can't get decimals from IERC20
         //uint _price = 7 * 10**_decimals; // 7 payment tokens per token
@@ -110,21 +114,80 @@ contract MainnetCurrencies is Test {
     }
 
     function testContinuousFundraisingWithMainnetUSDC() public {
-        continuousFundraisingWithRealERC20Currency(usdc);
+        continuousFundraisingWithIERC20Currency(USDC);
     }
 
     function testContinuousFundraisingWithMainnetWETH() public {
-        continuousFundraisingWithRealERC20Currency(weth);
+        continuousFundraisingWithIERC20Currency(WETH);
     }
 
     function testContinuousFundraisingWithMainnetWBTC() public {
-        continuousFundraisingWithRealERC20Currency(wbtc);
+        continuousFundraisingWithIERC20Currency(WBTC);
     }
 
-    function testContinuousFundraisingWithMainnetEURC() public {
-        continuousFundraisingWithRealERC20Currency(eurc);
+    function testContinuousFundraisingWithMainnetEUROC() public {
+        continuousFundraisingWithIERC20Currency(EUROC);
     }
 
+    function personalInviteWithIERC20Currency(IERC20 _currency) public {
+        // some math
+        //uint _decimals = _currency.decimals(); // can't get decimals from IERC20
+        //uint _price = 7 * 10**_decimals; // 7 payment tokens per token
+        uint _price = 7 * 10**18;
+        uint _currencyCost = amountOfTokenToBuy * _price / 10**token.decimals();
+        uint _currencyAmount = _currencyCost * 2;
 
+        // generate address of invite
+        bytes32 salt = bytes32(0);
 
+        //bytes memory creationCode = type(PersonalInvite).creationCode;
+        uint expiration = block.timestamp + 1000;
+
+        address expectedAddress = factory.getAddress(salt, payable(buyer), payable(receiver), amountOfTokenToBuy, _price, expiration, _currency, MintableERC20(address(token)));
+
+        // grant mint allowance to invite
+        vm.prank(admin);
+        token.setUpMinter(expectedAddress, amountOfTokenToBuy);
+
+        // give the buyer funds and approve invite
+        writeERC20Balance(buyer, address(_currency), _currencyAmount);
+        vm.prank(buyer);
+        _currency.approve(address(expectedAddress), _currencyCost);
+
+        // make sure balances are as expected before deployment
+        assertEq(_currency.balanceOf(buyer), _currencyAmount);
+        assertEq(_currency.balanceOf(receiver), 0);
+        assertEq(token.balanceOf(buyer), 0);
+        assertEq(token.balanceOf(receiver), 0);
+
+        // deploy invite
+        address inviteAddress = factory.deploy(salt, payable(buyer), payable(receiver), amountOfTokenToBuy, _price, expiration, _currency, MintableERC20(address(token)));
+
+        // check situation after deployment
+        assertEq(inviteAddress, expectedAddress, "deployed contract address is not correct");
+        // check buyer has tokens and receiver has _currency afterwards
+        assertEq(token.balanceOf(buyer), amountOfTokenToBuy);
+        assertEq(token.balanceOf(receiver), 0);
+        assertEq(_currency.balanceOf(receiver), _currencyCost);
+        assertEq(_currency.balanceOf(buyer), _currencyAmount - _currencyCost);
+
+        // log buyers token balance
+        console.log("buyer's token balance: ", token.balanceOf(buyer));
+    }
+
+    function testPersonalInviteWithMainnetUSDC() public {
+        personalInviteWithIERC20Currency(USDC);
+    }
+
+    function testPersonalInviteWithMainnetWETH() public {
+        personalInviteWithIERC20Currency(WETH);
+    }
+
+    function testPersonalInviteWithMainnetWBTC() public {
+        personalInviteWithIERC20Currency(WBTC);
+    }
+
+    function testPersonalInviteWithMainnetEUROC() public {
+        personalInviteWithIERC20Currency(EUROC);
+    }
 }

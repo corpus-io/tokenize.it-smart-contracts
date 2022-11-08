@@ -37,8 +37,8 @@ contract PersonalInviteTest is Test {
         currency = new CorpusToken(admin, list, 0x0, "currency", "CUR");
     }
 
-    function testAcceptDeal() public {
-        uint rawSalt = 0;
+    function testAcceptDeal(uint rawSalt) public {
+        //uint rawSalt = 0;
         bytes32 salt = bytes32(rawSalt);
 
         //bytes memory creationCode = type(PersonalInvite).creationCode;
