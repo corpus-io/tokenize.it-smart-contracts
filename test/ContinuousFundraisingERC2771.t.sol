@@ -6,7 +6,7 @@ import "../contracts/CorpusToken.sol";
 import "../contracts/ContinuousFundraising.sol";
 import "./FakePaymentToken.sol";
 import "./MaliciousPaymentToken.sol";
-import "@opengsn/gsn/contracts/src/forwarderForwarder.sol";
+import "@opengsn/contracts/src/forwarder/Forwarder.sol";
 
 
 contract ContinuousFundraisingTest is Test {
@@ -78,35 +78,52 @@ contract ContinuousFundraisingTest is Test {
 
         vm.prank(sender);
 
-        // register domainseparator
-        
+        // register domain separator
+        string memory name = "ContinuousFundraising";
+        uint version = 1; 
+    
+        trustedForwarder.registerDomainSeparator(name, version);
 
-        // https://github.com/foundry-rs/foundry/issues/3330
-        // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/cryptography/ECDSA.sol
-        bytes32 digest = ECDSA.toTypedDataHash(domainSeparator, keccak256(payload));
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privKey, digest);
+        uint256 chainId;
+        /* solhint-disable-next-line no-inline-assembly */
+        assembly { chainId := chainid() }
 
-        // register 
+        bytes memory domainValue = abi.encode(
+            keccak256(bytes(EIP712_DOMAIN_TYPE)),
+            keccak256(bytes(name)),
+            keccak256(bytes(version)),
+            chainId,
+            address(trustedForwarder));
 
-        // encode buy call and sign it https://book.getfoundry.sh/cheatcodes/sign
-        bytes memory buyCallData = abi.encodeWithSignature("buy(uint256)", tokenBuyAmount);
-
-        address _buyer = vm.addr(1);
-        bytes32 hash = keccak256(buyCallData);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, hash);
-
-        address signer = ecrecover(hash, v, r, s);
-        assertEq(alice, signer); // [PASS]
-
-        // send call through forwarder contract
-        raise.buy(tokenBuyAmount); // this test fails if 5 * 10**18 is replaced with 5 * 10**token.decimals() for this argument, even though they should be equal
+        bytes32 domainHash = keccak256(domainValue); // we need this domain hash for our call to execute later
 
 
-        assertTrue(paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore - costInPaymentToken);
-        assertTrue(token.balanceOf(buyer) == tokenBuyAmount);
-        assertTrue(paymentToken.balanceOf(receiver) == costInPaymentToken);
-        assertTrue(raise.tokensSold() == tokenBuyAmount);
-        assertTrue(raise.tokensBought(buyer) == tokenBuyAmount);
+        // // https://github.com/foundry-rs/foundry/issues/3330
+        // // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/cryptography/ECDSA.sol
+        // bytes32 digest = ECDSA.toTypedDataHash(domainSeparator, keccak256(payload));
+        // (uint8 v, bytes32 r, bytes32 s) = vm.sign(privKey, digest);
+
+        // // register 
+
+        // // encode buy call and sign it https://book.getfoundry.sh/cheatcodes/sign
+        // bytes memory buyCallData = abi.encodeWithSignature("buy(uint256)", tokenBuyAmount);
+
+        // address _buyer = vm.addr(1);
+        // bytes32 hash = keccak256(buyCallData);
+        // (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, hash);
+
+        // address signer = ecrecover(hash, v, r, s);
+        // assertEq(alice, signer); // [PASS]
+
+        // // send call through forwarder contract
+        // raise.buy(tokenBuyAmount); // this test fails if 5 * 10**18 is replaced with 5 * 10**token.decimals() for this argument, even though they should be equal
+
+
+        // assertTrue(paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore - costInPaymentToken);
+        // assertTrue(token.balanceOf(buyer) == tokenBuyAmount);
+        // assertTrue(paymentToken.balanceOf(receiver) == costInPaymentToken);
+        // assertTrue(raise.tokensSold() == tokenBuyAmount);
+        // assertTrue(raise.tokensBought(buyer) == tokenBuyAmount);
     }
 
     // function testBuyTooMuch() public {
