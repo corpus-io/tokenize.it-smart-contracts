@@ -9,7 +9,9 @@ import "../contracts/ContinuousFundraising.sol";
 import "../contracts/PersonalInvite.sol";
 import "../contracts/PersonalInviteFactory.sol";
 
-
+/**
+ * @dev These tests need a mainnet fork of the blockchain, as they access contracts deployed on mainnet. Take a look at docs/testing.md for more information.
+ */
 
 contract MainnetCurrencies is Test {
     using SafeERC20 for IERC20;
