@@ -4,9 +4,9 @@ pragma solidity ^0.8.13;
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/CorpusToken.sol";
 import "../contracts/ContinuousFundraising.sol";
-import "./FakePaymentToken.sol";
-import "./MaliciousPaymentToken.sol";
-import "./fixtures/USDC.sol";
+import "./resources/FakePaymentToken.sol";
+import "./resources/MaliciousPaymentToken.sol";
+import "./resources/USDC.sol";
 
 
 contract MetaTxTest is Test {
