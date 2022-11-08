@@ -28,7 +28,7 @@ jobs:
         with:
           path: './lcov.info'
           min_coverage: 95
-          exclude: 'test/*'
+          exclude: 'test/* test/resources/*'
       - name: Run snapshot
         working-directory: .
         run: forge snapshot
