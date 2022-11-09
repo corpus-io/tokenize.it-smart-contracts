@@ -133,8 +133,15 @@ contract ContinuousFundraisingTest is Test {
          register request type - does not work yet
          Might encode which function to call and which parameters to pass
         */
-        //trustedForwarder.registerRequestType("BuyRequest", "address buyer,uint256 amount");
-    
+        vm.recordLogs();
+        trustedForwarder.registerRequestType("buy", "address buyer,uint256 amount");
+        logs = vm.getRecordedLogs();
+        bytes32 requestType = logs[0].topics[1]; // internally, the forwarder calls this domainHash in registerDomainSeparator. But expects is as domainSeparator in execute().
+        //bytes32 domainHash = keccak256(abi.encodePacked(domainValue));
+        console.log("requestType", vm.toString(requestType));
+        console.log("requestType registered: ", trustedForwarder.typeHashes(requestType));
+
+
         /*
             create data and signature for execution - does not work yet
         */
