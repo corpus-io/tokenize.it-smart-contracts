@@ -10,21 +10,38 @@ import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific versi
 
 
 contract ContinuousFundraisingTest is Test {
+
+    using ECDSA for bytes32; // for verify with var.recover()
+
     ContinuousFundraising raise;
     AllowList list;
     CorpusToken token;
     FakePaymentToken paymentToken;
     Forwarder trustedForwarder;
 
+    // copied from openGSN IForwarder
+    struct ForwardRequest {
+        address from;
+        address to;
+        uint256 value;
+        uint256 gas;
+        uint256 nonce;
+        bytes data;
+        uint256 validUntil;
+    }
+
 
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
-    address public constant buyer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
     address public constant minterAdmin = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
     address public constant minter = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
     address public constant owner = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
     address public constant receiver = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
     address public constant paymentTokenProvider = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
     address public constant sender = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
+
+    // DO NOT USE IN PRODUCTION! Key was generated online for testing only.
+    uint256 public constant buyerPrivateKey = 0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
+    address public buyer; // = 0x38d6703d37988C644D6d31551e9af6dcB762E618; 
 
 
 
@@ -43,6 +60,8 @@ contract ContinuousFundraisingTest is Test {
         list = new AllowList();
         token = new CorpusToken(admin, list, 0x0, "TESTTOKEN", "TEST");
         trustedForwarder = new Forwarder();
+
+        buyer = vm.addr(buyerPrivateKey);
 
         // set up currency
         vm.prank(paymentTokenProvider);
@@ -68,6 +87,7 @@ contract ContinuousFundraisingTest is Test {
         paymentToken.approve(address(raise), paymentTokenAmount);
     }
 
+
     function testBuyWithERC2771() public {
         uint256 tokenBuyAmount = 5 * 10**token.decimals();
         uint256 costInPaymentToken = tokenBuyAmount * price / 10**18;
@@ -85,6 +105,7 @@ contract ContinuousFundraisingTest is Test {
         string memory name = "ContinuousFundraising"; // 
         // https://eips.ethereum.org/EIPS/eip-712#definition-of-domainseparator
         // use chainId, address, name for proper implementation. 
+        // opengsn suggests different contents: https://docs.opengsn.org/soldoc/contracts/forwarder/iforwarder.html#registerdomainseparator-string-name-string-version
         uint version = 1; 
         bytes32 domainSeparatorName = keccak256(abi.encode(
             keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
@@ -150,6 +171,36 @@ contract ContinuousFundraisingTest is Test {
         // bytes32 digest = ECDSA.toTypedDataHash(domainSeparator, keccak256(payload));
         // (uint8 v, bytes32 r, bytes32 s) = vm.sign(privKey, digest);
 
+        // todo: get nonce from forwarder
+
+        // build request
+        bytes memory payload = abi.encodeWithSelector(raise.buy.selector, tokenBuyAmount);
+        IForwarder.ForwardRequest memory request = IForwarder.ForwardRequest({
+            from: buyer,
+            to: address(raise),
+            value: 0,
+            gas: 1000000,
+            nonce: 0,
+            data: payload,
+            validUntil: 0
+        });
+
+        bytes memory suffixData = "0";
+
+        // pack and hash request
+        bytes32 digest = keccak256(abi.encodePacked(
+                "\x19\x01", domainSeparator,
+                keccak256(trustedForwarder._getEncoded(request, requestType, suffixData))
+            ));
+
+        // sign request
+        //bytes memory signature 
+        (uint8 v, bytes32 r, bytes32 s)= vm.sign(buyerPrivateKey, digest);
+
+        bytes memory signature = abi.encodePacked(v, r, s); // https://docs.openzeppelin.com/contracts/2.x/utilities
+
+        require(digest.recover(signature) == request.from, "FWD: signature mismatch");
+
         // // encode buy call and sign it https://book.getfoundry.sh/cheatcodes/sign
         // bytes memory buyCallData = abi.encodeWithSignature("buy(uint256)", tokenBuyAmount);
 
@@ -161,8 +212,7 @@ contract ContinuousFundraisingTest is Test {
         // assertEq(alice, signer); // [PASS]
 
         // // send call through forwarder contract
-        // raise.buy(tokenBuyAmount); // this test fails if 5 * 10**18 is replaced with 5 * 10**token.decimals() for this argument, even though they should be equal
-
+        trustedForwarder.execute(request, domainSeparator, requestType, suffixData, signature);
 
         // assertTrue(paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore - costInPaymentToken);
         // assertTrue(token.balanceOf(buyer) == tokenBuyAmount);
