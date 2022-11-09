@@ -165,7 +165,7 @@ contract ContinuousFundraisingTest is Test {
             to: address(raise),
             value: 0,
             gas: 1000000,
-            nonce: 0,
+            nonce: trustedForwarder.getNonce(buyer),
             data: payload,
             validUntil: 0
         });
@@ -224,7 +224,14 @@ contract ContinuousFundraisingTest is Test {
 
         
         console.log("paymentToken balance of receiver after: ", paymentToken.balanceOf(receiver));
-        console.log("Token balance of buyer after: ", token.balanceOf(buyer));        
+        console.log("Token balance of buyer after: ", token.balanceOf(buyer));    
+
+
+        /*
+            try to execute request again (must fail)
+        */    
+        vm.expectRevert("FWD: nonce mismatch");
+        trustedForwarder.execute(request, domainSeparator, requestType, suffixData, signature);
     }
 
 }
