@@ -19,6 +19,15 @@ contract AllowList is Ownable {
         value 0b0000000000000000000000000000000000000000000000000000000000000101, means "is KYCed and is a penguin"
         value 0b0000000000000000000000000000000000000000000000000000000000000111, means "is KYCed, is american and is a penguin"
         value 0b0000000000000000000000000000000000000000000000000000000000000000, means "has not proven any relevant attributes to the allowList operator" (default value)
+
+        The highest four bits are defined as tiers as follows:
+        - 0b0000000000000000000000000000000000000000000000000000000000000000 = tier 0 
+        - 0b0001000000000000000000000000000000000000000000000000000000000000 = tier 1 
+        - 0b0011000000000000000000000000000000000000000000000000000000000000 = tier 2 (and 1)
+        - 0b0111000000000000000000000000000000000000000000000000000000000000 = tier 3 (and 2 and 1)
+        - 0b1111000000000000000000000000000000000000000000000000000000000000 = tier 4 (and 3 and 2 and 1)
+        This very simple definition allows for a maximum of 5 tiers, even though 4 bits are used for encoding. By sacrificing some space it can be implemented without code changes.
+
      */
     mapping(address => uint256) public map;
 
