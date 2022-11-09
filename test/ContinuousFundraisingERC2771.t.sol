@@ -197,7 +197,7 @@ contract ContinuousFundraisingTest is Test {
         //bytes memory signature 
         (uint8 v, bytes32 r, bytes32 s)= vm.sign(buyerPrivateKey, digest);
 
-        bytes memory signature = abi.encodePacked(v, r, s); // https://docs.openzeppelin.com/contracts/2.x/utilities
+        bytes memory signature = abi.encodePacked(r, s, v); // https://docs.openzeppelin.com/contracts/2.x/utilities
 
         require(digest.recover(signature) == request.from, "FWD: signature mismatch");
 
