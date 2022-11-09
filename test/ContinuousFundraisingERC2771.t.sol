@@ -4,8 +4,8 @@ pragma solidity ^0.8.13;
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/CorpusToken.sol";
 import "../contracts/ContinuousFundraising.sol";
-import "./FakePaymentToken.sol";
-import "./MaliciousPaymentToken.sol";
+import "./resources/FakePaymentToken.sol";
+import "./resources/MaliciousPaymentToken.sol";
 import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific version to avoid import error: yarn add @opengsn/contracts@2.2.5
 
 
@@ -97,12 +97,11 @@ contract ContinuousFundraisingTest is Test {
          register domain separator
          encodes which contract to call
         */
-        string memory name = "ContinuousFundraising"; // 
         // https://eips.ethereum.org/EIPS/eip-712#definition-of-domainseparator
         // use chainId, address, name for proper implementation. 
         // opengsn suggests different contents: https://docs.opengsn.org/soldoc/contracts/forwarder/iforwarder.html#registerdomainseparator-string-name-string-version
         vm.recordLogs();
-        trustedForwarder.registerDomainSeparator("test", "1");
+        trustedForwarder.registerDomainSeparator(Strings.toHexString(uint256(uint160(address(raise))), 20), "1"); // simply uses address string as name
 
         Vm.Log[] memory logs = vm.getRecordedLogs();
 
