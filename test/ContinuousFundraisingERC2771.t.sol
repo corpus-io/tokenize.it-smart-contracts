@@ -30,7 +30,6 @@ contract ContinuousFundraisingTest is Test {
         uint256 validUntil;
     }
 
-
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant minterAdmin = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
     address public constant minter = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
@@ -42,8 +41,6 @@ contract ContinuousFundraisingTest is Test {
     // DO NOT USE IN PRODUCTION! Key was generated online for testing only.
     uint256 public constant buyerPrivateKey = 0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
     address public buyer; // = 0x38d6703d37988C644D6d31551e9af6dcB762E618; 
-
-
 
     uint8 public constant paymentTokenDecimals = 6;
     uint256 public constant paymentTokenAmount = 1000 * 10**paymentTokenDecimals;
@@ -192,7 +189,7 @@ contract ContinuousFundraisingTest is Test {
         // bytes memory buyCallData = abi.encodeWithSignature("buy(uint256)", tokenBuyAmount);
 
         /*
-            execute request
+            execute request and check results
         */
         vm.prank(buyer);
         assertEq(token.balanceOf(buyer), 0);
@@ -201,6 +198,9 @@ contract ContinuousFundraisingTest is Test {
         assertEq(token.balanceOf(address(raise)), 0);
         assertEq(token.balanceOf(receiver), 0);
         assertEq(token.balanceOf(address(trustedForwarder)), 0);
+        assertTrue(raise.tokensSold() == 0);
+        assertTrue(raise.tokensBought(buyer) == 0);
+        //assertTrue(vm.getNonce(buyer) == 0); // it seems forge does not increase nonces with prank
 
         console.log("Token balance of buyer before: ", token.balanceOf(buyer));
         console.log("eth balance of buyer ", buyer.balance);
@@ -212,22 +212,19 @@ contract ContinuousFundraisingTest is Test {
         // raise.buy(tokenBuyAmount);
         console.log("Gas used: ", gasBefore - gasleft());
 
-        
         assertTrue(token.balanceOf(buyer) == tokenBuyAmount);
         assertEq(paymentToken.balanceOf(receiver), costInPaymentToken);
         assertEq(paymentToken.balanceOf(address(raise)), 0);
         assertEq(token.balanceOf(address(raise)), 0);
         assertEq(token.balanceOf(receiver), 0);
         assertEq(token.balanceOf(address(trustedForwarder)), 0);
-        
-        console.log("paymentToken balance of receiver after: ", paymentToken.balanceOf(receiver));
-        console.log("Token balance of buyer after: ", token.balanceOf(buyer));
-        
-
-        assertTrue(token.balanceOf(buyer) == tokenBuyAmount);
-        assertTrue(paymentToken.balanceOf(receiver) == costInPaymentToken);
         assertTrue(raise.tokensSold() == tokenBuyAmount);
         assertTrue(raise.tokensBought(buyer) == tokenBuyAmount);
+        //assertTrue(vm.getNonce(buyer) == 0);
+
+        
+        console.log("paymentToken balance of receiver after: ", paymentToken.balanceOf(receiver));
+        console.log("Token balance of buyer after: ", token.balanceOf(buyer));        
     }
 
 }
