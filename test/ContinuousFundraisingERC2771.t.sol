@@ -6,7 +6,7 @@ import "../contracts/CorpusToken.sol";
 import "../contracts/ContinuousFundraising.sol";
 import "./FakePaymentToken.sol";
 import "./MaliciousPaymentToken.sol";
-import "@opengsn/contracts/src/forwarder/Forwarder.sol";
+import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific version to avoid import error: yarn add @opengsn/contracts@2.2.5
 
 
 contract ContinuousFundraisingTest is Test {
@@ -53,7 +53,7 @@ contract ContinuousFundraisingTest is Test {
         assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
 
         vm.prank(owner);
-        raise = new ContinuousFundraising(trustedForwarder, payable(receiver), minAmountPerBuyer, maxAmountPerBuyer, price, maxAmountOfTokenToBeSold, paymentToken, MintableERC20(address(token)));
+        raise = new ContinuousFundraising(address(trustedForwarder), payable(receiver), minAmountPerBuyer, maxAmountPerBuyer, price, maxAmountOfTokenToBeSold, paymentToken, MintableERC20(address(token)));
 
         // allow raise contract to mint
         bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
@@ -84,31 +84,56 @@ contract ContinuousFundraisingTest is Test {
         */
         string memory name = "ContinuousFundraising"; // 
         // https://eips.ethereum.org/EIPS/eip-712#definition-of-domainseparator
-        // use chainId, address, name 
+        // use chainId, address, name for proper implementation. 
         uint version = 1; 
-    
-        trustedForwarder.registerDomainSeparator(name, version);
-
-        // use expectEmit to get domainValue
-
-        uint256 chainId;
-        /* solhint-disable-next-line no-inline-assembly */
-        assembly { chainId := chainid() }
-        // regenerate domainValue for use in execute. Why is this not done in the contract?
-        bytes memory domainValue = abi.encode(
-            keccak256(bytes(EIP712_DOMAIN_TYPE)),
+        bytes32 domainSeparatorName = keccak256(abi.encode(
+            keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
             keccak256(bytes(name)),
-            keccak256(bytes(version)),
-            chainId,
-            address(trustedForwarder));
+            keccak256(bytes("1")),
+            1,
+            address(raise)
+        ));
 
-        bytes32 domainHash = keccak256(domainValue); // we need this domain hash for our call to execute later
+        vm.recordLogs();
+        trustedForwarder.registerDomainSeparator("test", "1");
+
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+
+        bytes32 domainSeparator = logs[0].topics[1]; // internally, the forwarder calls this domainHash in registerDomainSeparator. But expects is as domainSeparator in execute().
+        //bytes32 domainHash = keccak256(abi.encodePacked(domainValue));
+        console.log("domainHash", vm.toString(domainSeparator));
+        console.log("Hash registered: ", trustedForwarder.domains(domainSeparator));
+        
+
+        // for (uint i = 0; i < logs.length; i++) {
+        //     Vm.Log memory log = logs[i];
+        //     // if (log.sig == "DomainSeparatorRegistered(bytes32)") {
+        //     //     bytes32 domainSeparator = abi.decode(log.data, (bytes32));
+        //     //     raise.setDomainSeparator(domainSeparator);
+        //     // }
+        //     //console.log(vm.toString(log.sig));
+        //     console.log("Number %i", i);
+        //     console.log(vm.toString(log.data));
+        //     console.log(vm.toString(log.topics.length));
+        //     console.log(vm.toString(log.topics[0]));
+        //     console.log(vm.toString(log.topics[1]));
+        //     bytes32 hash = keccak256(abi.encodePacked(log.topics[1]));
+        //     console.log("Hashed: %s", vm.toString(hash));
+        //     //console.log(vm.toString(log.topics[2]));
+        //     console.log("Hash registered: ", trustedForwarder.domains(log.topics[1]));
+        // }
+
+        // string memory log = vm.toString(logs[0].data);
+
+        // console.log(log);
+
+        // use expectEmit to get domain separator
 
         /* 
          register request type - does not work yet
          Might encode which function to call and which parameters to pass
         */
-        trustedForwarder.registerRequestType("BuyRequest", "address buyer,uint256 amount");
+        //trustedForwarder.registerRequestType("BuyRequest", "address buyer,uint256 amount");
     
         /*
             create data and signature for execution - does not work yet
