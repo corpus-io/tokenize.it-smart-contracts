@@ -94,27 +94,16 @@ contract ContinuousFundraisingTest is Test {
 
         assert(costInPaymentToken == 35 * 10**paymentTokenDecimals); // 35 payment tokens, manually calculated
 
-        uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
-
         vm.prank(sender);
 
         /*
-         register domain separator - does not work yet
+         register domain separator
          encodes which contract to call
         */
         string memory name = "ContinuousFundraising"; // 
         // https://eips.ethereum.org/EIPS/eip-712#definition-of-domainseparator
         // use chainId, address, name for proper implementation. 
         // opengsn suggests different contents: https://docs.opengsn.org/soldoc/contracts/forwarder/iforwarder.html#registerdomainseparator-string-name-string-version
-        uint version = 1; 
-        bytes32 domainSeparatorName = keccak256(abi.encode(
-            keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-            keccak256(bytes(name)),
-            keccak256(bytes("1")),
-            1,
-            address(raise)
-        ));
-
         vm.recordLogs();
         trustedForwarder.registerDomainSeparator("test", "1");
 
@@ -126,6 +115,9 @@ contract ContinuousFundraisingTest is Test {
         console.log("Hash registered: ", trustedForwarder.domains(domainSeparator));
         
 
+        /*
+            helps to examine logs
+        */
         // for (uint i = 0; i < logs.length; i++) {
         //     Vm.Log memory log = logs[i];
         //     // if (log.sig == "DomainSeparatorRegistered(bytes32)") {
@@ -144,14 +136,9 @@ contract ContinuousFundraisingTest is Test {
         //     console.log("Hash registered: ", trustedForwarder.domains(log.topics[1]));
         // }
 
-        // string memory log = vm.toString(logs[0].data);
-
-        // console.log(log);
-
-        // use expectEmit to get domain separator
 
         /* 
-         register request type - does not work yet
+         register request type
          Might encode which function to call and which parameters to pass
         */
         vm.recordLogs();
@@ -164,7 +151,7 @@ contract ContinuousFundraisingTest is Test {
 
 
         /*
-            create data and signature for execution - does not work yet
+            create data and signature for execution 
         */
         // // https://github.com/foundry-rs/foundry/issues/3330
         // // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/cryptography/ECDSA.sol
@@ -175,6 +162,7 @@ contract ContinuousFundraisingTest is Test {
 
         // build request
         bytes memory payload = abi.encodeWithSelector(raise.buy.selector, tokenBuyAmount);
+
         IForwarder.ForwardRequest memory request = IForwarder.ForwardRequest({
             from: buyer,
             to: address(raise),
@@ -196,7 +184,6 @@ contract ContinuousFundraisingTest is Test {
         // sign request
         //bytes memory signature 
         (uint8 v, bytes32 r, bytes32 s)= vm.sign(buyerPrivateKey, digest);
-
         bytes memory signature = abi.encodePacked(r, s, v); // https://docs.openzeppelin.com/contracts/2.x/utilities
 
         require(digest.recover(signature) == request.from, "FWD: signature mismatch");
@@ -204,21 +191,43 @@ contract ContinuousFundraisingTest is Test {
         // // encode buy call and sign it https://book.getfoundry.sh/cheatcodes/sign
         // bytes memory buyCallData = abi.encodeWithSignature("buy(uint256)", tokenBuyAmount);
 
-        // address _buyer = vm.addr(1);
-        // bytes32 hash = keccak256(buyCallData);
-        // (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, hash);
+        /*
+            execute request
+        */
+        vm.prank(buyer);
+        assertEq(token.balanceOf(buyer), 0);
+        assertEq(paymentToken.balanceOf(receiver), 0);
+        assertEq(paymentToken.balanceOf(address(raise)), 0);
+        assertEq(token.balanceOf(address(raise)), 0);
+        assertEq(token.balanceOf(receiver), 0);
+        assertEq(token.balanceOf(address(trustedForwarder)), 0);
 
-        // address signer = ecrecover(hash, v, r, s);
-        // assertEq(alice, signer); // [PASS]
+        console.log("Token balance of buyer before: ", token.balanceOf(buyer));
+        console.log("eth balance of buyer ", buyer.balance);
 
-        // // send call through forwarder contract
+        // send call through forwarder contract
+        uint gasBefore = gasleft();
         trustedForwarder.execute(request, domainSeparator, requestType, suffixData, signature);
+        // vm.prank(buyer);
+        // raise.buy(tokenBuyAmount);
+        console.log("Gas used: ", gasBefore - gasleft());
 
-        // assertTrue(paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore - costInPaymentToken);
-        // assertTrue(token.balanceOf(buyer) == tokenBuyAmount);
-        // assertTrue(paymentToken.balanceOf(receiver) == costInPaymentToken);
-        // assertTrue(raise.tokensSold() == tokenBuyAmount);
-        // assertTrue(raise.tokensBought(buyer) == tokenBuyAmount);
+        
+        assertTrue(token.balanceOf(buyer) == tokenBuyAmount);
+        assertEq(paymentToken.balanceOf(receiver), costInPaymentToken);
+        assertEq(paymentToken.balanceOf(address(raise)), 0);
+        assertEq(token.balanceOf(address(raise)), 0);
+        assertEq(token.balanceOf(receiver), 0);
+        assertEq(token.balanceOf(address(trustedForwarder)), 0);
+        
+        console.log("paymentToken balance of receiver after: ", paymentToken.balanceOf(receiver));
+        console.log("Token balance of buyer after: ", token.balanceOf(buyer));
+        
+
+        assertTrue(token.balanceOf(buyer) == tokenBuyAmount);
+        assertTrue(paymentToken.balanceOf(receiver) == costInPaymentToken);
+        assertTrue(raise.tokensSold() == tokenBuyAmount);
+        assertTrue(raise.tokensBought(buyer) == tokenBuyAmount);
     }
 
 }
