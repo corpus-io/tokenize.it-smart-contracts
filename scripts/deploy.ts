@@ -14,16 +14,16 @@ async function main() {
   // await hre.run('compile');
 
   // We get the contract to deploy
-  const CorpusToken = await ethers.getContractFactory("CorpusToken");
+  const Token = await ethers.getContractFactory("Token");
   
   const signers = await ethers.getSigners();
 
 // address _admin, AllowList _allowList, string memory _name, string memory _symbol
-  const corpusToken = await CorpusToken.deploy(signers[0].address, signers[1].address, 0x0, 'Corpus Token', 'COT');
+  const token = await Token.deploy(signers[0].address, signers[1].address, 0x0, 'Token', 'COT');
 
-  await corpusToken.deployed();
+  await token.deployed();
 
-  console.log("CorpusToken deployed to:", corpusToken.address);
+  console.log("Token deployed to:", token.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

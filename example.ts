@@ -5,7 +5,7 @@
 // copy and paste contract address
 // yarn ts-node example.ts
 
-import {CorpusToken__factory} from './dist/types'
+import {Token__factory} from './dist/types'
 import {ethers} from 'ethers'
 
 const TOKEN_CONTRACT_ADDRESS = '0x5FbDB2315678afecb367f032d93F642f64180aa3'
@@ -20,21 +20,21 @@ async function main() {
         provider
     )
 
-    const corpusTokenContracInstance = CorpusToken__factory.connect(TOKEN_CONTRACT_ADDRESS, signer);
+    const tokenContracInstance = Token__factory.connect(TOKEN_CONTRACT_ADDRESS, signer);
     
     // call contract (read)
-    const symbol = await corpusTokenContracInstance.symbol() 
+    const symbol = await tokenContracInstance.symbol() 
     console.log('Token Symbol: ' + symbol)
 
     // send transaction (write, change contract state)
-    await corpusTokenContracInstance.pause() 
+    await tokenContracInstance.pause() 
     // call contract (read)
-    console.log('Paused: ' + await corpusTokenContracInstance.paused()) 
+    console.log('Paused: ' + await tokenContracInstance.paused()) 
 
     // send transaction (write, change contract state)
-    await corpusTokenContracInstance.unpause() 
+    await tokenContracInstance.unpause() 
     // call contract (read)
-    console.log('Paused: ' + await corpusTokenContracInstance.paused()) 
+    console.log('Paused: ' + await tokenContracInstance.paused()) 
 
 
 }

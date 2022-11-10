@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /*
     The AllowList contract is used to manage a list of addresses and attest each address certain attributes.
     Examples for possible attributes are: is KYCed, is american, is of age, etc.
-    One AllowList managed by one entity (e.g. a corpus.io) can manage up to 256 different attributes and can be used by an unlimited number of other corpusTokens.
+    One AllowList managed by one entity (e.g. tokenize.it) can manage up to 252 different attributes, and one tier with 5 levels, and can be used by an unlimited number of other Tokens.
 */
 contract AllowList is Ownable {
     /**
@@ -15,12 +15,12 @@ contract AllowList is Ownable {
         - position 0: 1 = has been KYCed (0 = not KYCed)
         - position 1: 1 = is american citizen (0 = not american citizen)
         - position 2: 1 = is a penguin (0 = not a penguin)
-        These meanings are not defined within the token contract. They MUST match the definitions used in the corresponding corpusToken contract.
+        These meanings are not defined within the token contract. They MUST match the definitions used in the corresponding Token contract.
         value 0b0000000000000000000000000000000000000000000000000000000000000101, means "is KYCed and is a penguin"
         value 0b0000000000000000000000000000000000000000000000000000000000000111, means "is KYCed, is american and is a penguin"
         value 0b0000000000000000000000000000000000000000000000000000000000000000, means "has not proven any relevant attributes to the allowList operator" (default value)
 
-        The highest four bits are defined as tiers as follows:
+        The highest four bits are defined as tiers as follows (depicted with less bits because 256 is a lot):
         - 0b0000000000000000000000000000000000000000000000000000000000000000 = tier 0 
         - 0b0001000000000000000000000000000000000000000000000000000000000000 = tier 1 
         - 0b0011000000000000000000000000000000000000000000000000000000000000 = tier 2 (and 1)

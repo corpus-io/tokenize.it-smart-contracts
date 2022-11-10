@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/CorpusToken.sol";
+import "../contracts/Token.sol";
 import "../contracts/PersonalInvite.sol";
 import "../contracts/PersonalInviteFactory.sol";
 
@@ -12,8 +12,8 @@ contract PersonalInviteFactoryTest is Test {
     PersonalInviteFactory factory;
 
     AllowList list;
-    CorpusToken token;
-    CorpusToken currency; // todo: add different ERC20 token as currency!
+    Token token;
+    Token currency; // todo: add different ERC20 token as currency!
 
     uint256 MAX_INT = 115792089237316195423570985008687907853269984665640564039457584007913129639935;
 
@@ -58,8 +58,8 @@ contract PersonalInviteFactoryTest is Test {
     function setUp() public {
         factory = new PersonalInviteFactory();
         list = new AllowList();
-        token = new CorpusToken(admin, list, 0x0, "token", "TOK");
-        currency = new CorpusToken(admin, list, 0x0, "currency", "CUR");
+        token = new Token(admin, list, 0x0, "token", "TOK");
+        currency = new Token(admin, list, 0x0, "currency", "CUR");
     }
 
     function testDeployContract() public {

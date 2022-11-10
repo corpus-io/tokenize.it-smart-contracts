@@ -52,7 +52,7 @@ After enforcing that this integer division does not yield a remainder:
    = 2 * 10**8 USDCbit/T
   ```
   The unit is omitted, so the price will be 2\*10^8
-- investor wants to buy 150 corpus tokens
+- investor wants to buy 150 tokens
 - they call ContinuousFundraising.buy(150 \* 10\*\*18)
 - so \_amount is 150 \* 10\*\*18
 - 150 \* 10^18 \* 2 \* 10^8 = 300 \* 10^26 = 3 \* 10^28
@@ -71,4 +71,4 @@ require((_amount * tokenPrice) % (10**token.decimals()) == 0, "Amount * tokenpri
 with:
 
 - `_amount`: quantity of payment currency in smallest subunit
-- `tokenPrice`: amount of currency bits that has to be paid for one corpus token
+- `tokenPrice`: amount of currency bits that has to be paid for one token

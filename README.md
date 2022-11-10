@@ -1,9 +1,9 @@
-# corpus
+# tokenize.it
 
-These smart contracts implement [corpus.io](https://corpus.io/)'s tokenized cap table management.
+These smart contracts implement [tokenize.it](https://tokenize.it/)'s tokenized cap table management.
 
 #  Main Concept
-1. All shares of a company are tokenized using the [CorpusToken.sol](contracts/CorpusToken.sol) contract
+1. All shares of a company are tokenized using the [Token.sol](contracts/Token.sol) contract
 2. Funds are raised through selling of these tokens:
     - a customized deal to a specific investor can be realized through the [PersonalInvite.sol](contracts/archive/PersonalInvite.sol) contract
     - continuous fundraising, which is open to everyone meeting the requirements, is done through the [ContinuousFundraising.sol](contracts/ContinuousFundraising.sol) contract
@@ -11,7 +11,7 @@ These smart contracts implement [corpus.io](https://corpus.io/)'s tokenized cap 
     - direct distribution of tokens (does not need another smart contract)
     - vesting can be realized using the [DssVest.sol](https://github.com/makerdao/dss-vest/blob/master/src/DssVest.sol) contract by MakerDao
 
-The requirements for participation in fundraising are checked against the [AllowList.sol](contracts/AllowList.sol) contract. Corpus will deploy and manage one of these.
+The requirements for participation in fundraising are checked against the [AllowList.sol](contracts/AllowList.sol) contract. Tokenize.it will deploy and manage one of these.
 # Contracts
 
 This is untested code - the initial version of these smart contracts was written in one day as a proof of concept
@@ -24,9 +24,9 @@ The following resources are available regarding the contracts:
 - [Price format explainer](docs/price.md)
 - In-depth explanation: please read the [contracts](contracts/)
 - [Specification](docs/specification.md)  
-- Remaining questions: please get in touch: [info@corpus.io](mailto:info@corpus.io)
+- Remaining questions: please get in touch: [hi@tokenize.it](mailto:hi@tokenize.it)
 
-## CorpusToken.sol
+## Token.sol
 
 Based on the OpenZeppelin ERC20 contract using the AccessControl extension.
 Beyond being an ERC20 token, it has fine graind access control to:
@@ -42,10 +42,10 @@ Each investment or vesting contract also needs minting rights in order to functi
 In addition to the right to mint, there is also a minting allowance, which needs to be issued by the Minteradmin. this is tored in the map `mintingAllowance`
 
 ### Requirements
-We expect that the companies issuing a token through corpus need a control about who can transact with the token for compliance reasons.
+We expect that the companies issuing a token through tokenize.it need a control about who can transact with the token for compliance reasons.
 There are two ways to control who can transact with the token:
 1. The `TransfererRoleAdmin` can give the `Transferer` -role to individual addresses
-2. We as corpus will maintain a list of addresses with fine-grained properties. The `Requirement`-role can then choose which requirements are necessary to transfer the tokens. In case they set requirements to 0, everyone can freely use the token.
+2. We as tokenize.it will maintain a list of addresses with fine-grained properties. The `Requirement`-role can then choose which requirements are necessary to transfer the tokens. In case they set requirements to 0, everyone can freely use the token.
 
 ## Investments
 
@@ -61,7 +61,7 @@ During the deployment all important parameters are set:
 * `maxAmount` - max amount of tokens to be bought denominated in its smallest subunit (e.g. WEI for Ether)
 * `tokenPrice` - price per token denoted in the currency defined in the next field, and denominated in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate). Please refer to the [price explanation](docs/price.md) for more details.
 * `currency` - ERC20 token used for the payment (e.g. USDC, WETH)
-* `token` - Token of the company based on corpustoken.sol
+* `token` - Token of the company based on Token.sol
 
 This contract can be paused and unpaused by the owner (the address of the deployer).
 This contract need to be given minting right with an allowance of `maxAmount` in the `token` contract.

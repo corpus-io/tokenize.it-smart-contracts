@@ -7,8 +7,8 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
 import "./AllowList.sol";
 
 /**
-@title Corpus Token
-@notice This contract implements the corpus token, which follows the ERC20 standard and adds the following features:
+@title tokenize.it Token
+@notice This contract implements the token used to tokenize companies, which follows the ERC20 standard and adds the following features:
     - pausing
     - access control with dedicated roles
     - burning (burner role can burn any token from any address)
@@ -17,7 +17,7 @@ import "./AllowList.sol";
     Decimals is inherited as 18 from ERC20. This should be the standard to adhere by for all deployments of this token.
 
  */
-contract CorpusToken is ERC20Pausable, AccessControl {
+contract Token is ERC20Pausable, AccessControl {
     /// @notice The role that has the ability to define which requirements an address must satisfy to receive tokens
     bytes32 public constant REQUIREMENT_ROLE = keccak256("REQUIREMENT_ROLE");
     /// @notice The role that has the ability to grant the minter role
@@ -33,7 +33,7 @@ contract CorpusToken is ERC20Pausable, AccessControl {
     /// @notice The role that has the ability to pause the token
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
-    // Map managed by corpus, which assigns addresses requirements which they fulfill
+    // Map managed by tokenize.it, which assigns addresses requirements which they fulfill
     AllowList public allowList;
     /**
     @notice  defines requirements to send or receive tokens for non-TRANSFERER_ROLE. If zero, everbody can transfer the token. If non-zero, then only those who have met the requirements can send or receive tokens. 
@@ -69,7 +69,7 @@ contract CorpusToken is ERC20Pausable, AccessControl {
     event MintingAllowanceChanged(address indexed minter, uint256 newAllowance);
 
     /**
-    @notice Constructor for the corpus token 
+    @notice Constructor for the token 
     @param _name name of the specific token, e.g. "MyGmbH Token"
     @param _symbol symbol of the token, e.g. "MGT"
     @param _allowList address of the allowList contract

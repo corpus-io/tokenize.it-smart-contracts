@@ -2,11 +2,11 @@
 pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/CorpusToken.sol";
+import "../contracts/Token.sol";
 
 
-contract corpusTokenTest is Test {
-    CorpusToken token;
+contract tokenTest is Test {
+    Token token;
     AllowList allowList;
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant requirer =
@@ -26,7 +26,7 @@ contract corpusTokenTest is Test {
     function setUp() public {
         vm.prank(admin);
         allowList = new AllowList();
-        token = new CorpusToken(admin, allowList, 0x0, "testToken", "TEST");
+        token = new Token(admin, allowList, 0x0, "testToken", "TEST");
         console.log(msg.sender);
 
         // set up roles
@@ -815,7 +815,7 @@ contract corpusTokenTest is Test {
     }
 
     function testDeployerDoesNotGetRole() public {
-        CorpusToken localToken = new CorpusToken(admin, allowList, 0x0, "testToken", "TEST");
+        Token localToken = new Token(admin, allowList, 0x0, "testToken", "TEST");
         address deployer = msg.sender;
         assertFalse(localToken.hasRole(localToken.REQUIREMENT_ROLE(), deployer));
         assertFalse(localToken.hasRole(localToken.MINTERADMIN_ROLE(), deployer));

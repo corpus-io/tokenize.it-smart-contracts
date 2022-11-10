@@ -1,7 +1,7 @@
 # Invariants
 The following statements about the smart contracts should always be true
 
-## CorpusToken.sol
+## Token.sol
 - Only addresses with MINTER_ROLE are able to mint tokens.
 - An address with MINTER_ROLE can only mint tokens as long as their remaining allowance is > 0.
 - An address can only receive tokens at least one of these statements is true:
