@@ -40,7 +40,7 @@ See [price](price.md) for more background on this.
 
 ## Personal Invites
 
-In order to create a personal investment invite, [PersonalInvite.sol](../contracts/PersonalInvite.sol) needs to be deployed.
+In order to create a personal investment invite this [contract](../contracts/PersonalInvite.sol) needs to be deployed.
 
 Constructor: 
 ```solidity 
@@ -50,10 +50,8 @@ constructor(address payable _buyer, address payable _receiver, uint _minAmount, 
 - `_buyer`: address of the investor
 
 - `_receiver`: address of the recipient of the payment
-- `_minAmount`: Minimal amount of tokens the investor needs to buy, in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate) (smallest subunit of the token, e.g. the equivalent of WEI for Ether)
-
-- `_maxAmount`: Maximal amount of tokens the investor can buy (can be the same as `_minAmount`), in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate)
-`_tokenPrice`: price per token denoted in the currency defined in the next field, and denominated in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate). Please refer to the [price explanation](price.md) for more details.
+- `_amount`: amount of tokens the investor can to buy, in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate) (smallest subunit of the token, e.g. the equivalent of WEI for Ether)
+- `_tokenPrice`: price per token denoted in the currency defined in the next field, and denominated in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate). Please refer to the [price explanation](price.md) for more details.
 
 - `_expiration`: Unix timestamp  at which the offer expires
 
@@ -61,15 +59,17 @@ constructor(address payable _buyer, address payable _receiver, uint _minAmount, 
 
 - `_token` : address of the token deployed when creating the new company
 
-The contract needs to be given minting right in the company token contract by calling `setUpMinter` from an address which has the role of the Minter Admin. In that call, an allowance needs to be given which matches the `_maxAmount` of tokens.
+The investment is executed during deployment of the contract. Therefore, two steps are necessary BEFORE deployment, or the deployment transaction will revert:
+- The future contract address needs to be given minting right in the company token contract by calling `setUpMinter` from an address which has the role of the Minter Admin. In that call, an allowance needs to be given which matches or exceeds the `_amount` of tokens. This step signals the offering company's invitation.
+- The investor needs to give a a sufficient allowance in the currency contract to the future address of the contract. This step signals the investors commitment to the offer.
 
-For the investor to accept the personal invite, the function `deal(uint *amount)` needs to be called, where `*amount`  is the amount of tokens the investor is buying.
-
+Once both steps have been completed, the Personal Invite contract can be deployed by anyone (either of the two parties or a third party) with [CREATE2](https://docs.openzeppelin.com/cli/2.8/deploying-with-create2), through the Personal Invite Factory's deploy() function.
 Limitations apply for `_amount`, see [above](###-Limitations-for-acceptable-amounts)
 
-The investor needs to give a a sufficient allowance in the currency contract to the personalInvite contract for the deal to be successful
-
-The personal investment invite can be withdrawn by the same address who deployed the contract by calling `revoke()` 
+## Personal Invite Factory
+This [contract](../contracts/PersonalInviteFactory.sol) can be used to:
+1. Calculate the future address of a PersonalInvite
+2. Deploy the PersonalInvite to this address
 
 ## Continuous Fundraising / Starting on open round
 
@@ -90,7 +90,6 @@ The parameter are similar to the PersonalInvite constructor, except for:
 - `_currency` : ERC20 token used for the payment. The `_buyer` must first give this contract the allowance to spend the amount he wants to invest.
 
 - `_token` : address of the token deployed when creating the new company
-
 
 
 The contract needs to be given minting right in the company token contract by calling `setUpMinter` from an address which has the role of the Minter Admin. In that call, an allowance needs to be given which matches the `_maxAmountOfTokenToBeSold` of tokens.
