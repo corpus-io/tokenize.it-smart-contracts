@@ -5,7 +5,7 @@ import "../lib/forge-std/src/Test.sol";
 import "../contracts/CorpusToken.sol";
 import "../contracts/ContinuousFundraising.sol";
 import "./resources/FakePaymentToken.sol";
-import "./resources/MaliciousPaymentToken.sol";
+import "./resources/ERC2771Helper.sol";
 import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific version to avoid import error: yarn add @opengsn/contracts@2.2.5
 
 
@@ -18,6 +18,7 @@ contract ContinuousFundraisingTest is Test {
     CorpusToken token;
     FakePaymentToken paymentToken;
     Forwarder trustedForwarder;
+    ERC2771Helper ERC2771helper;
 
     // copied from openGSN IForwarder
     struct ForwardRequest {
@@ -57,6 +58,7 @@ contract ContinuousFundraisingTest is Test {
         list = new AllowList();
         token = new CorpusToken(admin, list, 0x0, "TESTTOKEN", "TEST");
         trustedForwarder = new Forwarder();
+        ERC2771helper = new ERC2771Helper();
 
         buyer = vm.addr(buyerPrivateKey);
 
@@ -91,59 +93,9 @@ contract ContinuousFundraisingTest is Test {
 
         assert(costInPaymentToken == 35 * 10**paymentTokenDecimals); // 35 payment tokens, manually calculated
 
-        vm.prank(sender);
-
-        /*
-         register domain separator
-         encodes which contract to call
-        */
-        // https://eips.ethereum.org/EIPS/eip-712#definition-of-domainseparator
-        // use chainId, address, name for proper implementation. 
-        // opengsn suggests different contents: https://docs.opengsn.org/soldoc/contracts/forwarder/iforwarder.html#registerdomainseparator-string-name-string-version
-        vm.recordLogs();
-        trustedForwarder.registerDomainSeparator(Strings.toHexString(uint256(uint160(address(raise))), 20), "1"); // simply uses address string as name
-
-        Vm.Log[] memory logs = vm.getRecordedLogs();
-
-        bytes32 domainSeparator = logs[0].topics[1]; // internally, the forwarder calls this domainHash in registerDomainSeparator. But expects is as domainSeparator in execute().
-        //bytes32 domainHash = keccak256(abi.encodePacked(domainValue));
-        console.log("domainHash", vm.toString(domainSeparator));
-        console.log("Hash registered: ", trustedForwarder.domains(domainSeparator));
-        
-
-        /*
-            helps to examine logs
-        */
-        // for (uint i = 0; i < logs.length; i++) {
-        //     Vm.Log memory log = logs[i];
-        //     // if (log.sig == "DomainSeparatorRegistered(bytes32)") {
-        //     //     bytes32 domainSeparator = abi.decode(log.data, (bytes32));
-        //     //     raise.setDomainSeparator(domainSeparator);
-        //     // }
-        //     //console.log(vm.toString(log.sig));
-        //     console.log("Number %i", i);
-        //     console.log(vm.toString(log.data));
-        //     console.log(vm.toString(log.topics.length));
-        //     console.log(vm.toString(log.topics[0]));
-        //     console.log(vm.toString(log.topics[1]));
-        //     bytes32 hash = keccak256(abi.encodePacked(log.topics[1]));
-        //     console.log("Hashed: %s", vm.toString(hash));
-        //     //console.log(vm.toString(log.topics[2]));
-        //     console.log("Hash registered: ", trustedForwarder.domains(log.topics[1]));
-        // }
-
-
-        /* 
-         register request type
-         Might encode which function to call and which parameters to pass
-        */
-        vm.recordLogs();
-        trustedForwarder.registerRequestType("buy", "address buyer,uint256 amount");
-        logs = vm.getRecordedLogs();
-        bytes32 requestType = logs[0].topics[1]; // internally, the forwarder calls this domainHash in registerDomainSeparator. But expects is as domainSeparator in execute().
-        //bytes32 domainHash = keccak256(abi.encodePacked(domainValue));
-        console.log("requestType", vm.toString(requestType));
-        console.log("requestType registered: ", trustedForwarder.typeHashes(requestType));
+        // register domain and request type
+        bytes32 domainSeparator = ERC2771helper.registerDomain(trustedForwarder, Strings.toHexString(uint256(uint160(address(raise))), 20), "1");
+        bytes32 requestType = ERC2771helper.registerRequestType(trustedForwarder, "buy", "address buyer,uint256 amount");
 
 
         /*
