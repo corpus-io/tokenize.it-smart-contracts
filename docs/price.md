@@ -65,7 +65,7 @@ After enforcing that this integer division does not yield a remainder:
 The check above is enforced with this requirement:
 
 ```solidity
-require((_amount * tokenPrice) % (10**token.decimals()) == 0, "Amount * tokenprice needs to be a multiple of 10**token.decimals()");
+require((_amount * tokenPrice) % (10**token.decimals()) == 0, "Amount * tokenPrice needs to be a multiple of 10**token.decimals()");
 ```
 
 with:
