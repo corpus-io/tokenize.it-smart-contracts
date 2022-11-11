@@ -22,7 +22,9 @@ contract FeeSettings is Ownable {
     /**
     @notice sets (or updates) the tokenFeeDenominator
     */
-    function setTokenFeeDenominator(uint256 _tokenFeeDenominator) public onlyOwner {
+    function setTokenFeeDenominator(
+        uint256 _tokenFeeDenominator
+    ) public onlyOwner {
         tokenFeeDenominator = _tokenFeeDenominator;
         emit SetTokenFeeDenominator(_tokenFeeDenominator);
     }
@@ -30,14 +32,14 @@ contract FeeSettings is Ownable {
     /**
     @notice sets (or updates) the tokenFeeDenominator
     */
-    function setInvestmentFeeDenominator(uint256 _investmentFeeDenominator) public onlyOwner {
+    function setInvestmentFeeDenominator(
+        uint256 _investmentFeeDenominator
+    ) public onlyOwner {
         investmentFeeDenominator = _investmentFeeDenominator;
         emit SetInvestmentFeeDenominator(_investmentFeeDenominator);
     }
 
-    function setFeeCollector(
-        address _feeCollector
-    ) public onlyOwner {
+    function setFeeCollector(address _feeCollector) public onlyOwner {
         feeCollector = _feeCollector;
         emit FeeCollectorChanged(_feeCollector);
     }
