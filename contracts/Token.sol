@@ -90,6 +90,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     */
     constructor(
         address _trustedForwarder,
+        address _feeSettings,
         address _admin,
         AllowList _allowList,
         uint256 _requirements,
@@ -113,7 +114,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         _grantRole(PAUSER_ROLE, _admin);
 
         // set up fee collection
-        feeSettings = FeeSettings(0x0000000000000000000000000000000000000000); // TODO - replace with tokenize.it multi-sig
+        feeSettings = FeeSettings(_feeSettings); // TODO - replace with tokenize.it multi-sig
 
         allowList = _allowList;
         requirements = _requirements;
