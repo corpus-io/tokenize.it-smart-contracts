@@ -49,11 +49,11 @@ contract ContinuousFundraisingTest is Test {
 
     uint8 public constant paymentTokenDecimals = 6;
     uint256 public constant paymentTokenAmount =
-        1000 * 10**paymentTokenDecimals;
+        1000 * 10 ** paymentTokenDecimals;
 
-    uint256 public constant price = 7 * 10**paymentTokenDecimals; // 7 payment tokens per token
+    uint256 public constant price = 7 * 10 ** paymentTokenDecimals; // 7 payment tokens per token
 
-    uint256 public constant maxAmountOfTokenToBeSold = 20 * 10**18; // 20 token
+    uint256 public constant maxAmountOfTokenToBeSold = 20 * 10 ** 18; // 20 token
     uint256 public constant maxAmountPerBuyer = maxAmountOfTokenToBeSold / 2; // 10 token
     uint256 public constant minAmountPerBuyer = maxAmountOfTokenToBeSold / 200; // 0.1 token
 
@@ -85,8 +85,8 @@ contract ContinuousFundraisingTest is Test {
         paymentToken.transfer(buyer, paymentTokenAmount);
         assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
 
-        tokenBuyAmount = 5 * 10**token.decimals();
-        costInPaymentToken = (tokenBuyAmount * price) / 10**18;
+        tokenBuyAmount = 5 * 10 ** token.decimals();
+        costInPaymentToken = (tokenBuyAmount * price) / 10 ** 18;
     }
 
     // function setUpForwarderAndToken(address forwarder) public {
@@ -145,7 +145,7 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(buyer);
         paymentToken.approve(address(raise), paymentTokenAmount);
 
-        assert(costInPaymentToken == 35 * 10**paymentTokenDecimals); // 35 payment tokens, manually calculated
+        assert(costInPaymentToken == 35 * 10 ** paymentTokenDecimals); // 35 payment tokens, manually calculated
 
         // register domain and request type
         bytes32 domainSeparator = ERC2771helper.registerDomain(
