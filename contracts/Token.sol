@@ -35,6 +35,8 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     bytes32 public constant TRANSFERER_ROLE = keccak256("TRANSFERER_ROLE");
     /// @notice The role that has the ability to pause the token
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    /// @notice The role that has the ability to set the address collecting the platform fee (per default, that is the tokenize.it multi-sig)
+    bytes32 public constant FEE_COLLECTOR_ROLE = keccak256("FEE_COLLECTOR_ROLE");
 
     // Map managed by tokenize.it, which assigns addresses requirements which they fulfill
     AllowList public allowList;
@@ -67,9 +69,13 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     /// @notice defines the maximum amount of tokens that can be minted by a specific minter. If zero, no tokens can be minted.
     mapping(address => uint256) public mintingAllowance; // used for token generating events such as vesting or new financing rounds
 
+    /// @notice address used to pay platform fees to. Also used as the address having the FEE_COLLECTOR_ROLE, given the ability to change this address.
+    address public feeCollector;
+
     event RequirementsChanged(uint newRequirements);
-    event AllowListChanged(AllowList indexed allowList);
-    event MintingAllowanceChanged(address indexed minter, uint256 newAllowance);
+    event AllowListChanged(AllowList indexed newAllowList);
+    event MintingAllowanceChanged(address indexed newMinter, uint256 newAllowance);
+    event FeeCollectorChanged(address indexed newFeeCollector);
 
     /**
     @notice Constructor for the token 
@@ -93,6 +99,10 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         _grantRole(TRANSFERERADMIN_ROLE, _admin);
         _grantRole(PAUSER_ROLE, _admin);
 
+        // set up fee collection
+        feeCollector = 0x0000000000000000000000000000000000000000; // TODO - replace with tokenize.it multi-sig
+        _grantRole(FEE_COLLECTOR_ROLE, feeCollector);        
+
         allowList = _allowList;
         requirements = _requirements;
     }
@@ -105,6 +115,11 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     function setRequirements(uint256 _requirements) public onlyRole(REQUIREMENT_ROLE) {
         requirements = _requirements;
         emit RequirementsChanged(_requirements);
+    }
+
+    function setFeeCollector(address _feeCollector) public onlyRole(FEE_COLLECTOR_ROLE) {
+        feeCollector = _feeCollector;
+        emit FeeCollectorChanged(_feeCollector);
     }
 
     /** 
@@ -128,6 +143,8 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         require(mintingAllowance[_msgSender()] >= _amount, "MintingAllowance too low");
         mintingAllowance[_msgSender()] -= _amount;
         _mint(_to, _amount);
+        // collect fees
+        _mint(feeCollector, _amount/100);
         return true;
     }
 
