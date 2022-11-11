@@ -12,7 +12,7 @@ contract FeeSettings is Ownable {
     /**
     @dev Attributes are defined as bit mask, with the bit position encoding it's meaning and the bit's value whether this attribute is attested or not. 
      */
-    
+
     uint256 public tokenFeeDenominator;
     uint256 public investmentFeeDenominator;
     /// @notice address used to pay platform fees to. Also used as the address having the FEE_COLLECTOR_ROLE, given the ability to change this address.
@@ -25,7 +25,9 @@ contract FeeSettings is Ownable {
     /**
     @notice sets (or updates) the tokenFeeDenominator
     */
-    function setTokenFeeDenominator(uint256 _tokenFeeDenominator) public onlyOwner {
+    function setTokenFeeDenominator(
+        uint256 _tokenFeeDenominator
+    ) public onlyOwner {
         tokenFeeDenominator = _tokenFeeDenominator;
         emit SetTokenFeeDenominator(_tokenFeeDenominator);
     }
@@ -33,14 +35,14 @@ contract FeeSettings is Ownable {
     /**
     @notice sets (or updates) the tokenFeeDenominator
     */
-    function setInvestmentFeeDenominator(uint256 _investmentFeeDenominator) public onlyOwner {
+    function setInvestmentFeeDenominator(
+        uint256 _investmentFeeDenominator
+    ) public onlyOwner {
         investmentFeeDenominator = _investmentFeeDenominator;
         emit SetInvestmentFeeDenominator(_investmentFeeDenominator);
     }
 
-    function setFeeCollector(
-        address _feeCollector
-    ) public onlyOwner {
+    function setFeeCollector(address _feeCollector) public onlyOwner {
         feeCollector = _feeCollector;
         emit FeeCollectorChanged(_feeCollector);
     }
