@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/CorpusToken.sol";
+import "../contracts/Token.sol";
 import "../contracts/ContinuousFundraising.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/ERC2771Helper.sol";
@@ -15,7 +15,7 @@ contract ContinuousFundraisingTest is Test {
 
     ContinuousFundraising raise;
     AllowList list;
-    CorpusToken token;
+    Token token;
     FakePaymentToken paymentToken;
     //Forwarder trustedForwarder;
     ERC2771Helper ERC2771helper;
@@ -56,9 +56,8 @@ contract ContinuousFundraisingTest is Test {
     uint256 costInPaymentToken;
 
     function setUp() public {
-         list = new AllowList();
-        token = new CorpusToken(admin, list, 0x0, "TESTTOKEN", "TEST");
-        //trustedForwarder = new Forwarder();
+        list = new AllowList();
+        token = new Token(admin, list, 0x0, "TESTTOKEN", "TEST");
         ERC2771helper = new ERC2771Helper();
 
         buyer = vm.addr(buyerPrivateKey);

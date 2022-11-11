@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import "../lib/forge-std/src/Test.sol";
 //import "../lib/forge-std/stdlib.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "../contracts/CorpusToken.sol";
+import "../contracts/Token.sol";
 import "../contracts/ContinuousFundraising.sol";
 import "../contracts/PersonalInvite.sol";
 import "../contracts/PersonalInviteFactory.sol";
@@ -18,7 +18,7 @@ contract MainnetCurrencies is Test {
     using stdStorage for StdStorage; // for stdStorage.set()
 
     AllowList list;
-    CorpusToken token;
+    Token token;
     PersonalInviteFactory factory;
 
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
@@ -46,7 +46,7 @@ contract MainnetCurrencies is Test {
 
     function setUp() public {
         list = new AllowList();
-        token = new CorpusToken(admin, list, 0x0, "TESTTOKEN", "TEST");
+        token = new Token(admin, list, 0x0, "TESTTOKEN", "TEST");
         factory = new PersonalInviteFactory();
         
     }

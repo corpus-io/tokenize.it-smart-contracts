@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/CorpusToken.sol";
+import "../contracts/Token.sol";
 import "../contracts/ContinuousFundraising.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
@@ -11,7 +11,7 @@ import "./resources/MaliciousPaymentToken.sol";
 contract ContinuousFundraisingTest is Test {
     ContinuousFundraising raise;
     AllowList list;
-    CorpusToken token;
+    Token token;
     FakePaymentToken paymentToken;
 
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
@@ -37,7 +37,7 @@ contract ContinuousFundraisingTest is Test {
 
     function setUp() public {
         list = new AllowList();
-        token = new CorpusToken(admin, list, 0x0, "TESTTOKEN", "TEST");
+        token = new Token(admin, list, 0x0, "TESTTOKEN", "TEST");
 
         // set up currency
         vm.prank(paymentTokenProvider);
@@ -89,7 +89,7 @@ contract ContinuousFundraisingTest is Test {
 
             /*
             _paymentToken: 1 FPT = 10**_paymentTokenDecimals FPTbits (bit = smallest subunit of token)
-            corpusToken: 1 CT = 10**18 CTbits
+            Token: 1 CT = 10**18 CTbits
             price definition: 30FPT buy 1CT, but must be expressed in FPTbits/CT
             price = 30 * 10**_paymentTokenDecimals
             */
@@ -99,7 +99,7 @@ contract ContinuousFundraisingTest is Test {
 
 
             list = new AllowList();
-            CorpusToken _token = new CorpusToken(admin, list, 0x0, "TESTTOKEN", "TEST");
+            Token _token = new Token(admin, list, 0x0, "TESTTOKEN", "TEST");
             vm.prank(paymentTokenProvider);
             _paymentToken = new FakePaymentToken(_paymentTokenAmount, _paymentTokenDecimals);
             vm.prank(owner);
@@ -151,7 +151,7 @@ contract ContinuousFundraisingTest is Test {
 
         /*
         _paymentToken: 1 FPT = 10**_paymentTokenDecimals FPTbits (bit = smallest subunit of token)
-        corpusToken: 1 CT = 10**18 CTbits
+        Token: 1 CT = 10**18 CTbits
         price definition: 30FPT buy 1CT, but must be expressed in FPTbits/CT
         price = 30 * 10**_paymentTokenDecimals
         */
@@ -162,7 +162,7 @@ contract ContinuousFundraisingTest is Test {
 
 
         list = new AllowList();
-        CorpusToken _token = new CorpusToken(admin, list, 0x0, "TESTTOKEN", "TEST");
+        Token _token = new Token(admin, list, 0x0, "TESTTOKEN", "TEST");
         vm.prank(paymentTokenProvider);
         _paymentToken = new MaliciousPaymentToken(_paymentTokenAmount);
         vm.prank(owner);
@@ -281,7 +281,7 @@ contract ContinuousFundraisingTest is Test {
     }
 
     function testExceedMintingAllowance() public {
-        // reduce minting allowance of fundraising contract, so the revert happens in CorpusToken
+        // reduce minting allowance of fundraising contract, so the revert happens in Token
         vm.prank(minterAdmin);
         token.setUpMinter(address(raise), 0);
         vm.prank(minterAdmin);

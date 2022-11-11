@@ -17,7 +17,7 @@ interface MintableERC20 is IERC20Metadata {
 @notice This contract represents the offer to buy an amount of tokens at a preset price. It is created for a specific buyer and can only be claimed once and only by that buyer.
     The buyer can decide how many tokens to buy, but has to buy at least minAmount and can buy at most maxAmount. The offer expires after a preset time. It can be cancelled before that time, too.
     The currency the offer is denominated in is set at creation time and can not be changed.
-    It is likely a company will create many PersonalInvites for specific investors to buy their one corpusToken.
+    It is likely a company will create many PersonalInvites for specific investors to buy their one token.
 
  */
 contract PersonalInviteOld is ERC2771Context, Ownable, ReentrancyGuard {

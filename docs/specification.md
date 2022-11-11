@@ -1,15 +1,15 @@
 # Invariants
 The following statements about the smart contracts should always be true
 
-## CorpusToken.sol
+## Token.sol
 - Only addresses with MINTER_ROLE are able to mint tokens.
 - An address with MINTER_ROLE can only mint tokens as long as their remaining allowance is > 0.
 - An address can only receive tokens at least one of these statements is true:
-    - The address fullfills the requirements as proven by the allowList.
+    - The address fulfills the requirements as proven by the allowList.
     - The address has the TRANSFERER_ROLE.
     - The address is the 0 address.
 - An address can only send their own tokens if at least one of these statements is true:
-    - The address fullfills the requirements as proven by the allowList.
+    - The address fulfills the requirements as proven by the allowList.
     - The address has the TRANSFERER_ROLE.
     - The address has the BURNER_ROLE.
 - No transfers can be made while the contract is paused.
@@ -21,6 +21,8 @@ The following statements about the smart contracts should always be true
 - Any role can be granted to multiple addresses.
 - Any address can have multiple roles.
 - Any role can be renounced.
+- All functions can be called directly or as meta transaction using ERC2771.
+- Calling a function directly or through ERC2771 yield equivalent results given equivalent inputs.
 
 
 ## AllowList.sol
@@ -30,26 +32,25 @@ The following statements about the smart contracts should always be true
 - Only the owner of AllowList can set or remove addresses.
 
 ## PersonalInvite.sol
-- Only the specific buyer this invite was created for can successfully execute the deal.
-- The deal can only be executed once.
-- To execute the deal, the buyer must have granted the invite a sufficient allowance in currency.
+- If the buyer has not granted the invite a sufficient allowance in currency, the deploy operation reverts.
 - The deal can only be paid for in currency.
-- During the deal, the payment is immediately transferred to the receiver. 
-- During the deal, tokens are minted to the buyer.
+- During deployment, the payment is immediately transferred to the receiver. 
+- During deployment, tokens are minted to the buyer.
 - The currency received by the receiver and the tokens minted to the buyer always exactly correspond to the price set during deployment of the contract.
 - Funds sent to the contract can not be recovered.
-- The deal can not be used after the expiration time has passed.
-- No token amount that is smaller than minAmount can be bought.
-- No token amount that is larger than maxAmount can be bought.
-- maxAmount can not be less than minAmount.
+- The contract does not offer any functions after deployment is complete.
+- Token amount bought is exactly the amount configured.
 - receiver address can never be 0.
 - buyer address can never be 0.
 - tokenPrice can never be 0.
 - tokenPrice can never be negative.
-- No settings can be updated. Once the contract is deployed, only these things are possible to change contract state:
-    - Buyer uses deal.
-    - Owner transfers ownership.
-    - Owner revokes contract.
+- No settings can be updated. 
+- No settings can be changed before deployment without the contract address changing.
+
+## PersonalInviteFactory.sol
+- Contract state cannot be changed.
+- Given equal inputs, getAddress() and deploy() return the same address.
+- Deploy() returns the address the PersonalInvite contract was deployed to.
 
 ## ContinuousFundraising.sol
 - Any address can execute the buy function.
@@ -70,12 +71,14 @@ The following statements about the smart contracts should always be true
 - tokenPrice can never be negative.
 - maxAmountOfTokenToBeSold can never be 0.
 - All settings can be updated when the contract is paused.
-- Pausing the contracts starts the cooldown period of 24h.
-- Each setting update (re-)starts the cooldown period of 24h hours.
-- The contract can only be unpaused after the cooldown period has passed.
+- Pausing the contracts starts the cool down period of 24h.
+- Each setting update (re-)starts the cool down period of 24h hours.
+- The contract can only be unpaused after the cool down period has passed.
 - Only the contract owner can call pause, unpause, or the functions that update settings.
 - In sum, the contract will never mint more tokens than maxAmountOfTokenToBeSold at the time of minting.
 - The contract will not allow an address to buy more tokens than maxAmountPerBuyer, even if the buyer transfers the tokens they bought to another address and calls the buy function again.
+- All functions can be called directly or as meta transaction using ERC2771.
+- Calling a function directly or through ERC2771 yield equivalent results given equivalent inputs.
 
 
 
