@@ -4,16 +4,13 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /*
-    The AllowList contract is used to manage a list of addresses and attest each address certain attributes.
-    Examples for possible attributes are: is KYCed, is american, is of age, etc.
-    One AllowList managed by one entity (e.g. tokenize.it) can manage up to 252 different attributes, and one tier with 5 levels, and can be used by an unlimited number of other Tokens.
+    This FeeSettings contract is used to manage fees paid to the tokenize.it platfom
 */
 contract FeeSettings is Ownable {
-    /**
-    @dev Attributes are defined as bit mask, with the bit position encoding it's meaning and the bit's value whether this attribute is attested or not. 
-     */
     
+    /// @notice Denominator to calculate fees paid Token.sol
     uint256 public tokenFeeDenominator;
+    /// @notice Denominator to calculate fees paid in all investment contracts
     uint256 public investmentFeeDenominator;
     /// @notice address used to pay platform fees to. Also used as the address having the FEE_COLLECTOR_ROLE, given the ability to change this address.
     address public feeCollector;
