@@ -49,7 +49,7 @@ In order to create a personal investment invite this [contract](../contracts/Per
 Constructor:
 
 ```solidity
-constructor(address payable _buyer, address payable _receiver, uint _minAmount, uint _maxAmount, uint _tokenPrice, uint _expiration, IERC20 _currency, MintableERC20 _token)
+constructor(address payable _buyer, address payable _receiver, uint _minAmount, uint _maxAmount, uint _tokenPrice, uint _expiration, IERC20 _currency, Token _token)
 ```
 
 - `_buyer`: address of the investor

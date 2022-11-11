@@ -67,7 +67,7 @@ contract ContinuousFundraisingTest is Test {
             price,
             maxAmountOfTokenToBeSold,
             paymentToken,
-            MintableERC20(address(token))
+            token
         );
 
         // allow raise contract to mint
@@ -92,7 +92,7 @@ contract ContinuousFundraisingTest is Test {
             price,
             maxAmountOfTokenToBeSold,
             paymentToken,
-            MintableERC20(address(token))
+            token
         );
         assertTrue(_raise.owner() == address(this));
         assertTrue(_raise.currencyReceiver() == receiver);
@@ -100,7 +100,7 @@ contract ContinuousFundraisingTest is Test {
         assertTrue(_raise.maxAmountPerBuyer() == maxAmountPerBuyer);
         assertTrue(_raise.tokenPrice() == price);
         assertTrue(_raise.currency() == paymentToken);
-        assertTrue(_raise.token() == MintableERC20(address(token)));
+        assertTrue(_raise.token() == token);
     }
 
     /*
@@ -151,7 +151,7 @@ contract ContinuousFundraisingTest is Test {
                 _price,
                 _maxMintAmount,
                 _paymentToken,
-                MintableERC20(address(_token))
+                _token
             );
 
             // allow invite contract to mint
@@ -232,7 +232,7 @@ contract ContinuousFundraisingTest is Test {
             _price,
             _maxMintAmount,
             _paymentToken,
-            MintableERC20(address(_token))
+            _token
         );
 
         // allow invite contract to mint

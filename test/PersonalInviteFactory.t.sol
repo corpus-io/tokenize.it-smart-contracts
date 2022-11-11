@@ -87,7 +87,7 @@ contract PersonalInviteFactoryTest is Test {
             price,
             expiration,
             currency,
-            MintableERC20(address(token))
+            token
         );
 
         // make sure no contract lives here yet
@@ -116,7 +116,7 @@ contract PersonalInviteFactoryTest is Test {
             price,
             expiration,
             currency,
-            MintableERC20(address(token))
+            token
         );
 
         // make sure contract lives here now

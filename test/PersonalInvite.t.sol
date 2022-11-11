@@ -61,7 +61,7 @@ contract PersonalInviteTest is Test {
             price,
             expiration,
             currency,
-            MintableERC20(address(token))
+            token
         );
 
         vm.prank(admin);
@@ -96,7 +96,7 @@ contract PersonalInviteTest is Test {
             price,
             expiration,
             currency,
-            MintableERC20(address(token))
+            token
         );
 
         assertEq(

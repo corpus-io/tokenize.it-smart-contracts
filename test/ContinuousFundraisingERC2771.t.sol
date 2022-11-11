@@ -106,7 +106,6 @@ contract ContinuousFundraisingTest is Test {
     //     assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
 
     //     vm.prank(owner);
-    //     raise = new ContinuousFundraising(address(trustedForwarder), payable(receiver), minAmountPerBuyer, maxAmountPerBuyer, price, maxAmountOfTokenToBeSold, paymentToken, MintableERC20(address(token)));
 
     //     // allow raise contract to mint
     //     bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
@@ -131,7 +130,7 @@ contract ContinuousFundraisingTest is Test {
             price,
             maxAmountOfTokenToBeSold,
             paymentToken,
-            MintableERC20(address(token))
+            token
         );
 
         // allow raise contract to mint

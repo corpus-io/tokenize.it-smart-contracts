@@ -102,7 +102,7 @@ contract MainnetCurrencies is Test {
             _price,
             maxAmountOfTokenToBeSold,
             _currency,
-            MintableERC20(address(token))
+            token
         );
 
         // allow raise contract to mint
@@ -177,7 +177,7 @@ contract MainnetCurrencies is Test {
             _price,
             expiration,
             _currency,
-            MintableERC20(address(token))
+            token
         );
 
         // grant mint allowance to invite
@@ -204,7 +204,7 @@ contract MainnetCurrencies is Test {
             _price,
             expiration,
             _currency,
-            MintableERC20(address(token))
+            token
         );
 
         // check situation after deployment
