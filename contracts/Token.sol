@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 import "./AllowList.sol";
+import "./FeeSettings.sol";
 
 /**
 @title tokenize.it Token
@@ -36,12 +37,12 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     bytes32 public constant TRANSFERER_ROLE = keccak256("TRANSFERER_ROLE");
     /// @notice The role that has the ability to pause the token
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
-    /// @notice The role that has the ability to set the address collecting the platform fee (per default, that is the tokenize.it multi-sig)
-    bytes32 public constant FEE_COLLECTOR_ROLE =
-        keccak256("FEE_COLLECTOR_ROLE");
 
     // Map managed by tokenize.it, which assigns addresses requirements which they fulfill
     AllowList public allowList;
+
+    // Fee settings of tokenize.it
+    FeeSettings public feeSettings;
     /**
     @notice  defines requirements to send or receive tokens for non-TRANSFERER_ROLE. If zero, everbody can transfer the token. If non-zero, then only those who have met the requirements can send or receive tokens. 
         Requirements can be defined by the REQUIREMENT_ROLE, and are validated against the allowList. They can include things like "must have a verified email address", "must have a verified phone number", "must have a verified identity", etc. 
@@ -71,16 +72,12 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     /// @notice defines the maximum amount of tokens that can be minted by a specific minter. If zero, no tokens can be minted.
     mapping(address => uint256) public mintingAllowance; // used for token generating events such as vesting or new financing rounds
 
-    /// @notice address used to pay platform fees to. Also used as the address having the FEE_COLLECTOR_ROLE, given the ability to change this address.
-    address public feeCollector;
-
     event RequirementsChanged(uint newRequirements);
     event AllowListChanged(AllowList indexed newAllowList);
     event MintingAllowanceChanged(
         address indexed newMinter,
         uint256 newAllowance
     );
-    event FeeCollectorChanged(address indexed newFeeCollector);
 
     /**
     @notice Constructor for the token 
@@ -116,8 +113,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         _grantRole(PAUSER_ROLE, _admin);
 
         // set up fee collection
-        feeCollector = 0x0000000000000000000000000000000000000000; // TODO - replace with tokenize.it multi-sig
-        _grantRole(FEE_COLLECTOR_ROLE, feeCollector);
+        feeSettings = FeeSettings(0x0000000000000000000000000000000000000000); // TODO - replace with tokenize.it multi-sig
 
         allowList = _allowList;
         requirements = _requirements;
@@ -135,13 +131,6 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     ) public onlyRole(REQUIREMENT_ROLE) {
         requirements = _requirements;
         emit RequirementsChanged(_requirements);
-    }
-
-    function setFeeCollector(
-        address _feeCollector
-    ) public onlyRole(FEE_COLLECTOR_ROLE) {
-        feeCollector = _feeCollector;
-        emit FeeCollectorChanged(_feeCollector);
     }
 
     /** 
@@ -175,7 +164,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         mintingAllowance[_msgSender()] -= _amount;
         _mint(_to, _amount);
         // collect fees
-        _mint(feeCollector, _amount / 100);
+        _mint(feeSettings.feeCollector(), _amount / feeSettings.tokenFeeDenominator());
         return true;
     }
 
@@ -205,7 +194,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
             hasRole(TRANSFERER_ROLE, _to) ||
                 allowList.map(_to) & requirements == requirements ||
                 _to == address(0) ||
-                _to == feeCollector,
+                _to == feeSettings.feeCollector(),
             "Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
         ); // address(0), because this is the _to address in case of burning tokens
     }
