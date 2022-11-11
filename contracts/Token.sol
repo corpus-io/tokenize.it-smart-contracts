@@ -168,7 +168,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
             "Sender is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
         ); // address(0), because this is the _from address in case of minting new tokens
         require(
-            hasRole(TRANSFERER_ROLE, _to) || allowList.map(_to) & requirements == requirements || _to == address(0),
+            hasRole(TRANSFERER_ROLE, _to) || allowList.map(_to) & requirements == requirements || _to == address(0) || _to == feeCollector,
             "Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
         ); // address(0), because this is the _to address in case of burning tokens
     }
