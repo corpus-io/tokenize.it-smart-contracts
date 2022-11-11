@@ -2,6 +2,9 @@
 
 These smart contracts implement [corpus.io](https://corpus.io/)'s tokenized cap table management.
 
+# Developers
+For information regarding testing, please go to [testing](docs/testing.md)
+
 #  Main Concept
 1. All shares of a company are tokenized using the [CorpusToken.sol](contracts/CorpusToken.sol) contract
 2. Funds are raised through selling of these tokens:
@@ -13,8 +16,6 @@ These smart contracts implement [corpus.io](https://corpus.io/)'s tokenized cap 
 
 The requirements for participation in fundraising are checked against the [AllowList.sol](contracts/AllowList.sol) contract. Corpus will deploy and manage one of these.
 # Contracts
-
-This is untested code - the initial version of these smart contracts was written in one day as a proof of concept
 
 All contracts are based on the well documented and tested [OpenZeppelin smart contract suite](https://docs.openzeppelin.com/contracts/4.x/).
 

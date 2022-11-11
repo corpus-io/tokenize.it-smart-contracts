@@ -4,8 +4,8 @@ pragma solidity ^0.8.13;
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/CorpusToken.sol";
 import "../contracts/ContinuousFundraising.sol";
-import "./FakePaymentToken.sol";
-import "./MaliciousPaymentToken.sol";
+import "./resources/FakePaymentToken.sol";
+import "./resources/ERC2771Helper.sol";
 import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific version to avoid import error: yarn add @opengsn/contracts@2.2.5
 
 
@@ -17,7 +17,8 @@ contract ContinuousFundraisingTest is Test {
     AllowList list;
     CorpusToken token;
     FakePaymentToken paymentToken;
-    Forwarder trustedForwarder;
+    //Forwarder trustedForwarder;
+    ERC2771Helper ERC2771helper;
 
     // copied from openGSN IForwarder
     struct ForwardRequest {
@@ -51,12 +52,14 @@ contract ContinuousFundraisingTest is Test {
     uint256 public constant maxAmountPerBuyer = maxAmountOfTokenToBeSold / 2; // 10 token
     uint256 public constant minAmountPerBuyer = maxAmountOfTokenToBeSold / 200; // 0.1 token
 
-
+    uint256 tokenBuyAmount;
+    uint256 costInPaymentToken;
 
     function setUp() public {
-        list = new AllowList();
+         list = new AllowList();
         token = new CorpusToken(admin, list, 0x0, "TESTTOKEN", "TEST");
-        trustedForwarder = new Forwarder();
+        //trustedForwarder = new Forwarder();
+        ERC2771helper = new ERC2771Helper();
 
         buyer = vm.addr(buyerPrivateKey);
 
@@ -68,8 +71,49 @@ contract ContinuousFundraisingTest is Test {
         paymentToken.transfer(buyer, paymentTokenAmount);
         assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
 
+        tokenBuyAmount = 5 * 10**token.decimals();
+        costInPaymentToken = tokenBuyAmount * price / 10**18;
+    }
+
+
+    // function setUpForwarderAndToken(address forwarder) public {
+    //     list = new AllowList();
+    //     token = new CorpusToken(admin, list, 0x0, "TESTTOKEN", "TEST");
+    //     trustedForwarder = new Forwarder();
+    //     ERC2771helper = new ERC2771Helper();
+
+    //     buyer = vm.addr(buyerPrivateKey);
+
+    //     // set up currency
+    //     vm.prank(paymentTokenProvider);
+    //     paymentToken = new FakePaymentToken(paymentTokenAmount, paymentTokenDecimals); // 1000 tokens with 6 decimals
+    //     // transfer currency to buyer
+    //     vm.prank(paymentTokenProvider);
+    //     paymentToken.transfer(buyer, paymentTokenAmount);
+    //     assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
+
+    //     vm.prank(owner);
+    //     raise = new ContinuousFundraising(address(trustedForwarder), payable(receiver), minAmountPerBuyer, maxAmountPerBuyer, price, maxAmountOfTokenToBeSold, paymentToken, MintableERC20(address(token)));
+
+    //     // allow raise contract to mint
+    //     bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
+
+    //     vm.prank(admin);
+    //     token.grantRole(roleMinterAdmin, minterAdmin);
+    //     vm.prank(minterAdmin);
+    //     token.setUpMinter(address(raise), maxAmountOfTokenToBeSold);
+
+    //     // give raise contract allowance
+    //     vm.prank(buyer);
+    //     paymentToken.approve(address(raise), paymentTokenAmount);
+    // }
+
+
+    function buyWithERC2771(Forwarder forwarder) public {
+       
+        
         vm.prank(owner);
-        raise = new ContinuousFundraising(address(trustedForwarder), payable(receiver), minAmountPerBuyer, maxAmountPerBuyer, price, maxAmountOfTokenToBeSold, paymentToken, MintableERC20(address(token)));
+        raise = new ContinuousFundraising(address(forwarder), payable(receiver), minAmountPerBuyer, maxAmountPerBuyer, price, maxAmountOfTokenToBeSold, paymentToken, MintableERC20(address(token)));
 
         // allow raise contract to mint
         bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
@@ -82,69 +126,14 @@ contract ContinuousFundraisingTest is Test {
         // give raise contract allowance
         vm.prank(buyer);
         paymentToken.approve(address(raise), paymentTokenAmount);
-    }
 
-
-    function testBuyWithERC2771() public {
-        uint256 tokenBuyAmount = 5 * 10**token.decimals();
-        uint256 costInPaymentToken = tokenBuyAmount * price / 10**18;
+        
 
         assert(costInPaymentToken == 35 * 10**paymentTokenDecimals); // 35 payment tokens, manually calculated
 
-        vm.prank(sender);
-
-        /*
-         register domain separator
-         encodes which contract to call
-        */
-        string memory name = "ContinuousFundraising"; // 
-        // https://eips.ethereum.org/EIPS/eip-712#definition-of-domainseparator
-        // use chainId, address, name for proper implementation. 
-        // opengsn suggests different contents: https://docs.opengsn.org/soldoc/contracts/forwarder/iforwarder.html#registerdomainseparator-string-name-string-version
-        vm.recordLogs();
-        trustedForwarder.registerDomainSeparator("test", "1");
-
-        Vm.Log[] memory logs = vm.getRecordedLogs();
-
-        bytes32 domainSeparator = logs[0].topics[1]; // internally, the forwarder calls this domainHash in registerDomainSeparator. But expects is as domainSeparator in execute().
-        //bytes32 domainHash = keccak256(abi.encodePacked(domainValue));
-        console.log("domainHash", vm.toString(domainSeparator));
-        console.log("Hash registered: ", trustedForwarder.domains(domainSeparator));
-        
-
-        /*
-            helps to examine logs
-        */
-        // for (uint i = 0; i < logs.length; i++) {
-        //     Vm.Log memory log = logs[i];
-        //     // if (log.sig == "DomainSeparatorRegistered(bytes32)") {
-        //     //     bytes32 domainSeparator = abi.decode(log.data, (bytes32));
-        //     //     raise.setDomainSeparator(domainSeparator);
-        //     // }
-        //     //console.log(vm.toString(log.sig));
-        //     console.log("Number %i", i);
-        //     console.log(vm.toString(log.data));
-        //     console.log(vm.toString(log.topics.length));
-        //     console.log(vm.toString(log.topics[0]));
-        //     console.log(vm.toString(log.topics[1]));
-        //     bytes32 hash = keccak256(abi.encodePacked(log.topics[1]));
-        //     console.log("Hashed: %s", vm.toString(hash));
-        //     //console.log(vm.toString(log.topics[2]));
-        //     console.log("Hash registered: ", trustedForwarder.domains(log.topics[1]));
-        // }
-
-
-        /* 
-         register request type
-         Might encode which function to call and which parameters to pass
-        */
-        vm.recordLogs();
-        trustedForwarder.registerRequestType("buy", "address buyer,uint256 amount");
-        logs = vm.getRecordedLogs();
-        bytes32 requestType = logs[0].topics[1]; // internally, the forwarder calls this domainHash in registerDomainSeparator. But expects is as domainSeparator in execute().
-        //bytes32 domainHash = keccak256(abi.encodePacked(domainValue));
-        console.log("requestType", vm.toString(requestType));
-        console.log("requestType registered: ", trustedForwarder.typeHashes(requestType));
+        // register domain and request type
+        bytes32 domainSeparator = ERC2771helper.registerDomain(forwarder, Strings.toHexString(uint256(uint160(address(raise))), 20), "1");
+        bytes32 requestType = ERC2771helper.registerRequestType(forwarder, "buy", "address buyer,uint256 amount");
 
 
         /*
@@ -165,7 +154,7 @@ contract ContinuousFundraisingTest is Test {
             to: address(raise),
             value: 0,
             gas: 1000000,
-            nonce: trustedForwarder.getNonce(buyer),
+            nonce: forwarder.getNonce(buyer),
             data: payload,
             validUntil: 0
         });
@@ -175,7 +164,7 @@ contract ContinuousFundraisingTest is Test {
         // pack and hash request
         bytes32 digest = keccak256(abi.encodePacked(
                 "\x19\x01", domainSeparator,
-                keccak256(trustedForwarder._getEncoded(request, requestType, suffixData))
+                keccak256(forwarder._getEncoded(request, requestType, suffixData))
             ));
 
         // sign request
@@ -197,7 +186,7 @@ contract ContinuousFundraisingTest is Test {
         assertEq(paymentToken.balanceOf(address(raise)), 0);
         assertEq(token.balanceOf(address(raise)), 0);
         assertEq(token.balanceOf(receiver), 0);
-        assertEq(token.balanceOf(address(trustedForwarder)), 0);
+        assertEq(token.balanceOf(address(forwarder)), 0);
         assertTrue(raise.tokensSold() == 0);
         assertTrue(raise.tokensBought(buyer) == 0);
         //assertTrue(vm.getNonce(buyer) == 0); // it seems forge does not increase nonces with prank
@@ -207,7 +196,7 @@ contract ContinuousFundraisingTest is Test {
 
         // send call through forwarder contract
         uint gasBefore = gasleft();
-        trustedForwarder.execute(request, domainSeparator, requestType, suffixData, signature);
+        forwarder.execute(request, domainSeparator, requestType, suffixData, signature);
         // vm.prank(buyer);
         // raise.buy(tokenBuyAmount);
         console.log("Gas used: ", gasBefore - gasleft());
@@ -217,21 +206,29 @@ contract ContinuousFundraisingTest is Test {
         assertEq(paymentToken.balanceOf(address(raise)), 0);
         assertEq(token.balanceOf(address(raise)), 0);
         assertEq(token.balanceOf(receiver), 0);
-        assertEq(token.balanceOf(address(trustedForwarder)), 0);
+        assertEq(token.balanceOf(address(forwarder)), 0);
         assertTrue(raise.tokensSold() == tokenBuyAmount);
         assertTrue(raise.tokensBought(buyer) == tokenBuyAmount);
         //assertTrue(vm.getNonce(buyer) == 0);
 
-        
+
         console.log("paymentToken balance of receiver after: ", paymentToken.balanceOf(receiver));
         console.log("Token balance of buyer after: ", token.balanceOf(buyer));    
-
 
         /*
             try to execute request again (must fail)
         */    
         vm.expectRevert("FWD: nonce mismatch");
-        trustedForwarder.execute(request, domainSeparator, requestType, suffixData, signature);
+        forwarder.execute(request, domainSeparator, requestType, suffixData, signature);
+    }
+
+    function testBuyWithLocalForwarder() public {
+        buyWithERC2771(new Forwarder());
+    }
+
+    function testBuyWithMainnetGSNForwarder() public {
+        // uses deployed forwarder on mainnet with fork. https://docs-v2.opengsn.org/networks/ethereum/mainnet.html
+        buyWithERC2771(Forwarder(payable(0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA)));
     }
 
 }
