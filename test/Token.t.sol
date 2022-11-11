@@ -8,6 +8,7 @@ import "../contracts/Token.sol";
 contract tokenTest is Test {
     Token token;
     AllowList allowList;
+    address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant requirer =
         0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
@@ -26,7 +27,7 @@ contract tokenTest is Test {
     function setUp() public {
         vm.prank(admin);
         allowList = new AllowList();
-        token = new Token(admin, allowList, 0x0, "testToken", "TEST");
+        token = new Token(trustedForwarder, admin, allowList, 0x0, "testToken", "TEST");
         console.log(msg.sender);
 
         // set up roles
@@ -815,7 +816,7 @@ contract tokenTest is Test {
     }
 
     function testDeployerDoesNotGetRole() public {
-        Token localToken = new Token(admin, allowList, 0x0, "testToken", "TEST");
+        Token localToken = new Token(trustedForwarder, admin, allowList, 0x0, "testToken", "TEST");
         address deployer = msg.sender;
         assertFalse(localToken.hasRole(localToken.REQUIREMENT_ROLE(), deployer));
         assertFalse(localToken.hasRole(localToken.MINTERADMIN_ROLE(), deployer));

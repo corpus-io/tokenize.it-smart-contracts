@@ -31,6 +31,7 @@ contract ContinuousFundraisingTest is Test {
         uint256 validUntil;
     }
 
+    address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant minterAdmin = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
     address public constant minter = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
@@ -57,7 +58,7 @@ contract ContinuousFundraisingTest is Test {
 
     function setUp() public {
         list = new AllowList();
-        token = new Token(admin, list, 0x0, "TESTTOKEN", "TEST");
+        token = new Token(trustedForwarder, admin, list, 0x0, "TESTTOKEN", "TEST");
         ERC2771helper = new ERC2771Helper();
 
         buyer = vm.addr(buyerPrivateKey);

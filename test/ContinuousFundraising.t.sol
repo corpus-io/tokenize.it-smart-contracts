@@ -37,7 +37,7 @@ contract ContinuousFundraisingTest is Test {
 
     function setUp() public {
         list = new AllowList();
-        token = new Token(admin, list, 0x0, "TESTTOKEN", "TEST");
+        token = new Token(trustedForwarder, admin, list, 0x0, "TESTTOKEN", "TEST");
 
         // set up currency
         vm.prank(paymentTokenProvider);
@@ -99,7 +99,7 @@ contract ContinuousFundraisingTest is Test {
 
 
             list = new AllowList();
-            Token _token = new Token(admin, list, 0x0, "TESTTOKEN", "TEST");
+            Token _token = new Token(trustedForwarder, admin, list, 0x0, "TESTTOKEN", "TEST");
             vm.prank(paymentTokenProvider);
             _paymentToken = new FakePaymentToken(_paymentTokenAmount, _paymentTokenDecimals);
             vm.prank(owner);
@@ -162,7 +162,7 @@ contract ContinuousFundraisingTest is Test {
 
 
         list = new AllowList();
-        Token _token = new Token(admin, list, 0x0, "TESTTOKEN", "TEST");
+        Token _token = new Token(trustedForwarder, admin, list, 0x0, "TESTTOKEN", "TEST");
         vm.prank(paymentTokenProvider);
         _paymentToken = new MaliciousPaymentToken(_paymentTokenAmount);
         vm.prank(owner);

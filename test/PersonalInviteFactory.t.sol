@@ -58,8 +58,8 @@ contract PersonalInviteFactoryTest is Test {
     function setUp() public {
         factory = new PersonalInviteFactory();
         list = new AllowList();
-        token = new Token(admin, list, 0x0, "token", "TOK");
-        currency = new Token(admin, list, 0x0, "currency", "CUR");
+        token = new Token(trustedForwarder, admin, list, 0x0, "token", "TOK");
+        currency = new Token(trustedForwarder, admin, list, 0x0, "currency", "CUR");
     }
 
     function testDeployContract() public {
