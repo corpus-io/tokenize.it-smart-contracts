@@ -4,8 +4,8 @@ pragma solidity ^0.8.13;
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/Token.sol";
 import "../contracts/ContinuousFundraising.sol";
-import "./FakePaymentToken.sol";
-import "./MaliciousPaymentToken.sol";
+import "./resources/FakePaymentToken.sol";
+import "./resources/MaliciousPaymentToken.sol";
 
 
 contract ContinuousFundraisingTest is Test {
