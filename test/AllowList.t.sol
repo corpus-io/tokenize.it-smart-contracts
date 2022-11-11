@@ -6,6 +6,7 @@ import "../contracts/AllowList.sol";
 
 contract AllowListTest is Test {
     AllowList list;
+
     function setUp() public {
         list = new AllowList();
     }
@@ -44,14 +45,14 @@ contract AllowListTest is Test {
         assertTrue(list.map(address(x)) == 1);
     }
 
-    function testSetFuzzingValue(uint x) public {
+    function testSetFuzzingValue(uint256 x) public {
         assertTrue(list.map(address(0)) == 0);
         list.set(address(0), x);
         assertTrue(list.map(address(0)) == x);
     }
 
     function testRemove(address x) public {
-        if(x == address(0)) return;
+        if (x == address(0)) return;
         assertTrue(list.map(address(0)) == 0);
         list.set(address(0), 1);
         assertTrue(list.map(address(0)) == 1);

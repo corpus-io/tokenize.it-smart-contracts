@@ -21,49 +21,62 @@ A company will create only one ContinuousFundraising contract for their token (o
 The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support
 
  */
-contract ContinuousFundraising is ERC2771Context, Ownable, Pausable, ReentrancyGuard {
-
+contract ContinuousFundraising is
+    ERC2771Context,
+    Ownable,
+    Pausable,
+    ReentrancyGuard
+{
     using SafeERC20 for IERC20;
 
     /// @notice address that receives the currency when tokens are bought
     address public currencyReceiver;
     /// @notice smallest amount of tokens that can be minted, in bits (bit = smallest subunit of token)
-    uint public minAmountPerBuyer;
+    uint256 public minAmountPerBuyer;
     /// @notice largest amount of tokens that can be minted, in bits (bit = smallest subunit of token)
-    uint public maxAmountPerBuyer;
+    uint256 public maxAmountPerBuyer;
     /**
      @notice amount of bits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2*10^6 ). 
      @dev units: [tokenPrice] = [currency_bits]/[token], so for above example: [tokenPrice] = [USDC_bits]/[TOK]
      */
-    uint public tokenPrice;
+    uint256 public tokenPrice;
     /// @notice total amount of tokens that CAN BE minted through this contract, in bits (bit = smallest subunit of token)
-    uint public maxAmountOfTokenToBeSold;
+    uint256 public maxAmountOfTokenToBeSold;
     /// @notice total amount of tokens that HAVE BEEN minted through this contract, in bits (bit = smallest subunit of token)
-    uint public tokensSold;
+    uint256 public tokensSold;
     /// @notice currency used to pay for the token mint. Must be ERC20, so ether can only be used as wrapped ether (WETH)
     IERC20 public currency;
     /// @notice token to be minted
-    MintableERC20 public token; 
+    MintableERC20 public token;
 
-    // delay is calculated from pause or parameter change to unpause. 
-    uint public constant delay = 1 days;
+    // delay is calculated from pause or parameter change to unpause.
+    uint256 public constant delay = 1 days;
     // timestamp of the last time the contract was paused
-    uint public lastPause;
+    uint256 public lastPause;
 
     // keeps track of how much each buyer has bought, in order to enforce maxAmountPerBuyer
     mapping(address => uint256) public tokensBought;
 
     event CurrencyReceiverChanged(address indexed);
-    event MinAmountPerBuyerChanged(uint);
-    event MaxAmountPerBuyerChanged(uint);
-    event TokenPriceChanged(uint);
-    event MaxAmountOfTokenToBeSoldChanged(uint);
+    event MinAmountPerBuyerChanged(uint256);
+    event MaxAmountPerBuyerChanged(uint256);
+    event TokenPriceChanged(uint256);
+    event MaxAmountOfTokenToBeSoldChanged(uint256);
     event CurrencyChanged(IERC20 indexed);
 
     /**
      * @dev Constructor that passes the trusted forwarder to the ERC2771Context constructor
      */
-    constructor(address _trustedForwarder, address _currencyReceiver, uint _minAmountPerBuyer, uint _maxAmountPerBuyer, uint _tokenPrice, uint _maxAmountOfTokenToBeSold, IERC20 _currency, MintableERC20 _token) ERC2771Context(_trustedForwarder) {
+    constructor(
+        address _trustedForwarder,
+        address _currencyReceiver,
+        uint256 _minAmountPerBuyer,
+        uint256 _maxAmountPerBuyer,
+        uint256 _tokenPrice,
+        uint256 _maxAmountOfTokenToBeSold,
+        IERC20 _currency,
+        MintableERC20 _token
+    ) ERC2771Context(_trustedForwarder) {
         currencyReceiver = _currencyReceiver;
         minAmountPerBuyer = _minAmountPerBuyer;
         maxAmountPerBuyer = _maxAmountPerBuyer;
@@ -71,11 +84,20 @@ contract ContinuousFundraising is ERC2771Context, Ownable, Pausable, ReentrancyG
         maxAmountOfTokenToBeSold = _maxAmountOfTokenToBeSold;
         currency = _currency;
         token = _token;
-        
-        require(_currencyReceiver != address(0), "buyer can not be zero address");
-        require(_minAmountPerBuyer <= _maxAmountPerBuyer, "_minAmount needs to be smaller or equal to _maxAmount");
+
+        require(
+            _currencyReceiver != address(0),
+            "buyer can not be zero address"
+        );
+        require(
+            _minAmountPerBuyer <= _maxAmountPerBuyer,
+            "_minAmount needs to be smaller or equal to _maxAmount"
+        );
         require(_tokenPrice != 0, "_tokenPrice needs to be a non-zero amount");
-        require(_maxAmountOfTokenToBeSold != 0, "_maxAmountOfTokenToBeSold needs to be larger than zero");
+        require(
+            _maxAmountOfTokenToBeSold != 0,
+            "_maxAmountOfTokenToBeSold needs to be larger than zero"
+        );
 
         // after creating the contract, it needs to be set up as minter (in the token contract)
     }
@@ -84,10 +106,18 @@ contract ContinuousFundraising is ERC2771Context, Ownable, Pausable, ReentrancyG
      @notice buy tokens
      @param _amount amount of tokens to buy, in bits (smallest subunit of token)
      */
-    function buy(uint _amount) public whenNotPaused nonReentrant returns(bool) {
-        require(tokensSold + _amount <= maxAmountOfTokenToBeSold, "Not enough tokens to sell left");
-        require(tokensBought[msg.sender] + _amount >= minAmountPerBuyer, "Buyer needs to buy at least minAmount");
-         /**
+    function buy(
+        uint256 _amount
+    ) public whenNotPaused nonReentrant returns (bool) {
+        require(
+            tokensSold + _amount <= maxAmountOfTokenToBeSold,
+            "Not enough tokens to sell left"
+        );
+        require(
+            tokensBought[msg.sender] + _amount >= minAmountPerBuyer,
+            "Buyer needs to buy at least minAmount"
+        );
+        /**
         @dev To avoid rounding errors, tokenprice needs to be multiple of 10**token.decimals(). This is checked for here. 
             With:
                 _tokenAmount = a * [token_bits]
@@ -97,11 +127,21 @@ contract ContinuousFundraising is ERC2771Context, Ownable, Pausable, ReentrancyG
                 = a * p * [currency_bits]/[token] * [token_bits]  with 1 [token] = (10**token.decimals) [token_bits]
                 = a * p * [currency_bits] / (10**token.decimals)
          */
-        require((_amount * tokenPrice) % (10**token.decimals()) == 0, "Amount * tokenprice needs to be a multiple of 10**token.decimals()");
-        require(tokensBought[_msgSender()] + _amount <= maxAmountPerBuyer, "Total amount of bought tokens needs to be lower than or equal to maxAmount");
+        require(
+            (_amount * tokenPrice) % (10 ** token.decimals()) == 0,
+            "Amount * tokenprice needs to be a multiple of 10**token.decimals()"
+        );
+        require(
+            tokensBought[_msgSender()] + _amount <= maxAmountPerBuyer,
+            "Total amount of bought tokens needs to be lower than or equal to maxAmount"
+        );
         tokensSold += _amount;
         tokensBought[_msgSender()] += _amount;
-        currency.safeTransferFrom(_msgSender(), currencyReceiver,(_amount * tokenPrice) / (10**token.decimals()));
+        currency.safeTransferFrom(
+            _msgSender(),
+            currencyReceiver,
+            (_amount * tokenPrice) / (10 ** token.decimals())
+        );
         require(token.mint(_msgSender(), _amount), "Minting new tokens failed");
         return true;
     }
@@ -110,8 +150,13 @@ contract ContinuousFundraising is ERC2771Context, Ownable, Pausable, ReentrancyG
      @notice change the currencyReceiver
      @param _currencyReceiver new currencyReceiver
      */
-    function setCurrencyReceiver(address _currencyReceiver) onlyOwner whenPaused public {
-        require(_currencyReceiver != address(0), "receiver can not be zero address");
+    function setCurrencyReceiver(
+        address _currencyReceiver
+    ) public onlyOwner whenPaused {
+        require(
+            _currencyReceiver != address(0),
+            "receiver can not be zero address"
+        );
         currencyReceiver = _currencyReceiver;
         emit CurrencyReceiverChanged(_currencyReceiver);
         lastPause = block.timestamp;
@@ -121,8 +166,13 @@ contract ContinuousFundraising is ERC2771Context, Ownable, Pausable, ReentrancyG
      @notice change the minAmountPerBuyer
      @param _minAmountPerBuyer new minAmountPerBuyer
      */
-    function setMinAmountPerBuyer(uint _minAmountPerBuyer) onlyOwner whenPaused public {
-        require(_minAmountPerBuyer <= maxAmountPerBuyer, "_minAmount needs to be smaller or equal to maxAmount");
+    function setMinAmountPerBuyer(
+        uint256 _minAmountPerBuyer
+    ) public onlyOwner whenPaused {
+        require(
+            _minAmountPerBuyer <= maxAmountPerBuyer,
+            "_minAmount needs to be smaller or equal to maxAmount"
+        );
         minAmountPerBuyer = _minAmountPerBuyer;
         emit MinAmountPerBuyerChanged(_minAmountPerBuyer);
         lastPause = block.timestamp;
@@ -132,8 +182,13 @@ contract ContinuousFundraising is ERC2771Context, Ownable, Pausable, ReentrancyG
      @notice change the maxAmountPerBuyer
      @param _maxAmountPerBuyer new maxAmountPerBuyer
      */
-    function setMaxAmountPerBuyer(uint _maxAmountPerBuyer) onlyOwner whenPaused public {
-        require(minAmountPerBuyer <= _maxAmountPerBuyer, "_maxAmount needs to be larger or equal to minAmount");
+    function setMaxAmountPerBuyer(
+        uint256 _maxAmountPerBuyer
+    ) public onlyOwner whenPaused {
+        require(
+            minAmountPerBuyer <= _maxAmountPerBuyer,
+            "_maxAmount needs to be larger or equal to minAmount"
+        );
         maxAmountPerBuyer = _maxAmountPerBuyer;
         emit MaxAmountPerBuyerChanged(_maxAmountPerBuyer);
         lastPause = block.timestamp;
@@ -144,7 +199,10 @@ contract ContinuousFundraising is ERC2771Context, Ownable, Pausable, ReentrancyG
      @param _currency new currency     
      @param _tokenPrice new tokenPrice
      */
-    function setCurrencyAndTokenPrice(IERC20 _currency, uint _tokenPrice) onlyOwner whenPaused public {
+    function setCurrencyAndTokenPrice(
+        IERC20 _currency,
+        uint256 _tokenPrice
+    ) public onlyOwner whenPaused {
         require(_tokenPrice != 0, "_tokenPrice needs to be a non-zero amount");
         tokenPrice = _tokenPrice;
         emit TokenPriceChanged(_tokenPrice);
@@ -157,8 +215,13 @@ contract ContinuousFundraising is ERC2771Context, Ownable, Pausable, ReentrancyG
      @notice change the maxAmountOfTokenToBeSold
      @param _maxAmountOfTokenToBeSold new maxAmountOfTokenToBeSold
      */
-    function setMaxAmountOfTokenToBeSold(uint _maxAmountOfTokenToBeSold) onlyOwner whenPaused public {
-        require(_maxAmountOfTokenToBeSold != 0, "_maxAmountOfTokenToBeSold needs to be larger than zero");
+    function setMaxAmountOfTokenToBeSold(
+        uint256 _maxAmountOfTokenToBeSold
+    ) public onlyOwner whenPaused {
+        require(
+            _maxAmountOfTokenToBeSold != 0,
+            "_maxAmountOfTokenToBeSold needs to be larger than zero"
+        );
         maxAmountOfTokenToBeSold = _maxAmountOfTokenToBeSold;
         emit MaxAmountOfTokenToBeSoldChanged(_maxAmountOfTokenToBeSold);
         lastPause = block.timestamp;
@@ -176,21 +239,34 @@ contract ContinuousFundraising is ERC2771Context, Ownable, Pausable, ReentrancyG
      @notice unpause the contract
      */
     function unpause() public onlyOwner {
-        require(block.timestamp > lastPause + delay, "There needs to be at minumum one day to change parameters");
+        require(
+            block.timestamp > lastPause + delay,
+            "There needs to be at minumum one day to change parameters"
+        );
         _unpause();
     }
 
     /**
      * @dev both Ownable and ERC2771Context have a _msgSender() function, so we need to override and select which one to use.
-     */ 
-    function _msgSender() internal view override(Context, ERC2771Context) returns (address) {
+     */
+    function _msgSender()
+        internal
+        view
+        override(Context, ERC2771Context)
+        returns (address)
+    {
         return ERC2771Context._msgSender();
     }
 
     /**
      * @dev both Ownable and ERC2771Context have a _msgData() function, so we need to override and select which one to use.
      */
-    function _msgData() internal view override(Context, ERC2771Context) returns (bytes calldata) {
+    function _msgData()
+        internal
+        view
+        override(Context, ERC2771Context)
+        returns (bytes calldata)
+    {
         return ERC2771Context._msgData();
     }
 }

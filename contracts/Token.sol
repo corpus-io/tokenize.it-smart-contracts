@@ -30,13 +30,15 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     /// @notice The role that has the ability to burn tokens from anywhere. Usage is planned for legal purposes and error recovery.
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
     /// @notice The role that has the ability to grant transfer rights to other addresses
-    bytes32 public constant TRANSFERERADMIN_ROLE = keccak256("TRANSFERERADMIN_ROLE");
+    bytes32 public constant TRANSFERERADMIN_ROLE =
+        keccak256("TRANSFERERADMIN_ROLE");
     /// @notice Addresses with this role do not need to satisfy any requirements to send or receive tokens
     bytes32 public constant TRANSFERER_ROLE = keccak256("TRANSFERER_ROLE");
     /// @notice The role that has the ability to pause the token
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     /// @notice The role that has the ability to set the address collecting the platform fee (per default, that is the tokenize.it multi-sig)
-    bytes32 public constant FEE_COLLECTOR_ROLE = keccak256("FEE_COLLECTOR_ROLE");
+    bytes32 public constant FEE_COLLECTOR_ROLE =
+        keccak256("FEE_COLLECTOR_ROLE");
 
     // Map managed by tokenize.it, which assigns addresses requirements which they fulfill
     AllowList public allowList;
@@ -74,7 +76,10 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
 
     event RequirementsChanged(uint newRequirements);
     event AllowListChanged(AllowList indexed newAllowList);
-    event MintingAllowanceChanged(address indexed newMinter, uint256 newAllowance);
+    event MintingAllowanceChanged(
+        address indexed newMinter,
+        uint256 newAllowance
+    );
     event FeeCollectorChanged(address indexed newFeeCollector);
 
     /**
@@ -86,7 +91,18 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     @param _requirements requirements an address has to meet for sending or receiving tokens
     @param _admin address of the admin. Admin will initially have all roles and can grant roles to other addresses.
     */
-    constructor(address _trustedForwarder, address _admin, AllowList _allowList, uint256 _requirements, string memory _name, string memory _symbol) ERC2771Context(_trustedForwarder) ERC20Permit(_name) ERC20(_name, _symbol) {
+    constructor(
+        address _trustedForwarder,
+        address _admin,
+        AllowList _allowList,
+        uint256 _requirements,
+        string memory _name,
+        string memory _symbol
+    )
+        ERC2771Context(_trustedForwarder)
+        ERC20Permit(_name)
+        ERC20(_name, _symbol)
+    {
         // Grant admin roles
         _setupRole(DEFAULT_ADMIN_ROLE, _admin); // except for the Minter and Transferer role, the _admin is the roles admin for all other roles
         _setRoleAdmin(MINTER_ROLE, MINTERADMIN_ROLE);
@@ -101,23 +117,29 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
 
         // set up fee collection
         feeCollector = 0x0000000000000000000000000000000000000000; // TODO - replace with tokenize.it multi-sig
-        _grantRole(FEE_COLLECTOR_ROLE, feeCollector);        
+        _grantRole(FEE_COLLECTOR_ROLE, feeCollector);
 
         allowList = _allowList;
         requirements = _requirements;
     }
 
-    function setAllowList(AllowList _allowList) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setAllowList(
+        AllowList _allowList
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
         allowList = _allowList;
         emit AllowListChanged(_allowList);
     }
 
-    function setRequirements(uint256 _requirements) public onlyRole(REQUIREMENT_ROLE) {
+    function setRequirements(
+        uint256 _requirements
+    ) public onlyRole(REQUIREMENT_ROLE) {
         requirements = _requirements;
         emit RequirementsChanged(_requirements);
     }
 
-    function setFeeCollector(address _feeCollector) public onlyRole(FEE_COLLECTOR_ROLE) {
+    function setFeeCollector(
+        address _feeCollector
+    ) public onlyRole(FEE_COLLECTOR_ROLE) {
         feeCollector = _feeCollector;
         emit FeeCollectorChanged(_feeCollector);
     }
@@ -132,19 +154,28 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         @param _minter address of the minter contract
         @param _allowance maximum amount of tokens that can be minted by this minter IN THIS ROUND
     */
-    function setUpMinter(address _minter, uint256 _allowance) public onlyRole(getRoleAdmin(MINTER_ROLE)){
+    function setUpMinter(
+        address _minter,
+        uint256 _allowance
+    ) public onlyRole(getRoleAdmin(MINTER_ROLE)) {
         _grantRole(MINTER_ROLE, _minter);
         require(mintingAllowance[_minter] == 0 || _allowance == 0); // to prevent frontrunning when setting a new allowance, see https://www.adrianhetman.com/unboxing-erc20-approve-issues/
         mintingAllowance[_minter] = _allowance;
         emit MintingAllowanceChanged(_minter, _allowance);
     }
 
-    function mint(address _to, uint256 _amount) public onlyRole(MINTER_ROLE) returns (bool) {
-        require(mintingAllowance[_msgSender()] >= _amount, "MintingAllowance too low");
+    function mint(
+        address _to,
+        uint256 _amount
+    ) public onlyRole(MINTER_ROLE) returns (bool) {
+        require(
+            mintingAllowance[_msgSender()] >= _amount,
+            "MintingAllowance too low"
+        );
         mintingAllowance[_msgSender()] -= _amount;
         _mint(_to, _amount);
         // collect fees
-        _mint(feeCollector, _amount/100);
+        _mint(feeCollector, _amount / 100);
         return true;
     }
 
@@ -164,11 +195,16 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         super._beforeTokenTransfer(_from, _to, _amount);
         _requireNotPaused();
         require(
-            hasRole(BURNER_ROLE, _msgSender()) || hasRole(TRANSFERER_ROLE, _from) || allowList.map(_from) & requirements == requirements || _from == address(0),
+            hasRole(BURNER_ROLE, _msgSender()) ||
+                hasRole(TRANSFERER_ROLE, _from) ||
+                allowList.map(_from) & requirements == requirements ||
+                _from == address(0),
             "Sender is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
         ); // address(0), because this is the _from address in case of minting new tokens
         require(
-            hasRole(TRANSFERER_ROLE, _to) || allowList.map(_to) & requirements == requirements || _to == address(0) || _to == feeCollector,
+            hasRole(TRANSFERER_ROLE, _to) ||
+                allowList.map(_to) & requirements == requirements ||
+                _to == address(0) || _to == feeCollector,
             "Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
         ); // address(0), because this is the _to address in case of burning tokens
     }
@@ -183,15 +219,25 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
 
     /**
      * @dev both ERC20Pausable and ERC2771Context have a _msgSender() function, so we need to override and select which one to use.
-     */ 
-    function _msgSender() internal view override(Context, ERC2771Context) returns (address) {
+     */
+    function _msgSender()
+        internal
+        view
+        override(Context, ERC2771Context)
+        returns (address)
+    {
         return ERC2771Context._msgSender();
     }
 
     /**
      * @dev both ERC20Pausable and ERC2771Context have a _msgData() function, so we need to override and select which one to use.
      */
-    function _msgData() internal view override(Context, ERC2771Context) returns (bytes calldata) {
+    function _msgData()
+        internal
+        view
+        override(Context, ERC2771Context)
+        returns (bytes calldata)
+    {
         return ERC2771Context._msgData();
     }
 }
