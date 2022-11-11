@@ -7,7 +7,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
     This FeeSettings contract is used to manage fees paid to the tokenize.it platfom
 */
 contract FeeSettings is Ownable {
-    
     /// @notice Denominator to calculate fees paid Token.sol
     uint256 public tokenFeeDenominator;
     /// @notice Denominator to calculate fees paid in all investment contracts
