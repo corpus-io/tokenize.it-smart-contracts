@@ -23,15 +23,19 @@ contract MainnetCurrencies is Test {
 
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant buyer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
-    address public constant minterAdmin = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
+    address public constant minterAdmin =
+        0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
     address public constant minter = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
     address public constant owner = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
-    address public constant receiver = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
-    address public constant paymentTokenProvider = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
+    address public constant receiver =
+        0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
+    address public constant paymentTokenProvider =
+        0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
 
     // use opengsn forwarder https://etherscan.io/address/0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA
-    address public constant trustedForwarder = 0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA;
-    
+    address public constant trustedForwarder =
+        0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA;
+
     uint256 public constant maxAmountOfTokenToBeSold = 20 * 10**18; // 20 token
     uint256 public constant maxAmountPerBuyer = maxAmountOfTokenToBeSold / 2; // 10 token
     uint256 public constant minAmountPerBuyer = maxAmountOfTokenToBeSold / 200; // 0.1 token
@@ -43,12 +47,17 @@ contract MainnetCurrencies is Test {
     IERC20 WBTC = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
     IERC20 EUROC = IERC20(0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c);
 
-
     function setUp() public {
         list = new AllowList();
-        token = new Token(trustedForwarder, admin, list, 0x0, "TESTTOKEN", "TEST");
+        token = new Token(
+            trustedForwarder,
+            admin,
+            list,
+            0x0,
+            "TESTTOKEN",
+            "TEST"
+        );
         factory = new PersonalInviteFactory();
-        
     }
 
     // function testUSDCBalance() public {
@@ -62,7 +71,11 @@ contract MainnetCurrencies is Test {
         @notice sets the balance of who to amount
         taken from here: https://mirror.xyz/brocke.eth/PnX7oAcU4LJCxcoICiaDhq_MUUu9euaM8Y5r465Rd2U
     */
-    function writeERC20Balance(address who, address _token, uint256 amount) internal {
+    function writeERC20Balance(
+        address who,
+        address _token,
+        uint256 amount
+    ) internal {
         stdstore
             .target(_token)
             .sig(IERC20(_token).balanceOf.selector)
@@ -74,13 +87,23 @@ contract MainnetCurrencies is Test {
         // some math
         //uint _decimals = _currency.decimals(); // can't get decimals from IERC20
         //uint _price = 7 * 10**_decimals; // 7 payment tokens per token
-        uint _price = 7 * 10**18;
-        uint _currencyCost = amountOfTokenToBuy * _price / 10**token.decimals();
-        uint _currencyAmount = _currencyCost * 2;
+        uint256 _price = 7 * 10**18;
+        uint256 _currencyCost = (amountOfTokenToBuy * _price) /
+            10**token.decimals();
+        uint256 _currencyAmount = _currencyCost * 2;
 
         // set up fundraise with _currency
         vm.prank(owner);
-        ContinuousFundraising _raise = new ContinuousFundraising(trustedForwarder, payable(receiver), minAmountPerBuyer, maxAmountPerBuyer, _price, maxAmountOfTokenToBeSold, _currency, MintableERC20(address(token)));
+        ContinuousFundraising _raise = new ContinuousFundraising(
+            trustedForwarder,
+            payable(receiver),
+            minAmountPerBuyer,
+            maxAmountPerBuyer,
+            _price,
+            maxAmountOfTokenToBeSold,
+            _currency,
+            MintableERC20(address(token))
+        );
 
         // allow raise contract to mint
         bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
@@ -135,17 +158,27 @@ contract MainnetCurrencies is Test {
         // some math
         //uint _decimals = _currency.decimals(); // can't get decimals from IERC20
         //uint _price = 7 * 10**_decimals; // 7 payment tokens per token
-        uint _price = 7 * 10**18;
-        uint _currencyCost = amountOfTokenToBuy * _price / 10**token.decimals();
-        uint _currencyAmount = _currencyCost * 2;
+        uint256 _price = 7 * 10**18;
+        uint256 _currencyCost = (amountOfTokenToBuy * _price) /
+            10**token.decimals();
+        uint256 _currencyAmount = _currencyCost * 2;
 
         // generate address of invite
         bytes32 salt = bytes32(0);
 
         //bytes memory creationCode = type(PersonalInvite).creationCode;
-        uint expiration = block.timestamp + 1000;
+        uint256 expiration = block.timestamp + 1000;
 
-        address expectedAddress = factory.getAddress(salt, payable(buyer), payable(receiver), amountOfTokenToBuy, _price, expiration, _currency, MintableERC20(address(token)));
+        address expectedAddress = factory.getAddress(
+            salt,
+            payable(buyer),
+            payable(receiver),
+            amountOfTokenToBuy,
+            _price,
+            expiration,
+            _currency,
+            MintableERC20(address(token))
+        );
 
         // grant mint allowance to invite
         vm.prank(admin);
@@ -163,10 +196,23 @@ contract MainnetCurrencies is Test {
         assertEq(token.balanceOf(receiver), 0);
 
         // deploy invite
-        address inviteAddress = factory.deploy(salt, payable(buyer), payable(receiver), amountOfTokenToBuy, _price, expiration, _currency, MintableERC20(address(token)));
+        address inviteAddress = factory.deploy(
+            salt,
+            payable(buyer),
+            payable(receiver),
+            amountOfTokenToBuy,
+            _price,
+            expiration,
+            _currency,
+            MintableERC20(address(token))
+        );
 
         // check situation after deployment
-        assertEq(inviteAddress, expectedAddress, "deployed contract address is not correct");
+        assertEq(
+            inviteAddress,
+            expectedAddress,
+            "deployed contract address is not correct"
+        );
         // check buyer has tokens and receiver has _currency afterwards
         assertEq(token.balanceOf(buyer), amountOfTokenToBuy);
         assertEq(token.balanceOf(receiver), 0);

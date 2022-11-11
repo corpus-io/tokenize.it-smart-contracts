@@ -5,19 +5,16 @@ import "../../lib/forge-std/src/Test.sol";
 import "../../contracts/Token.sol";
 import "../../contracts/ContinuousFundraising.sol";
 
-
-
 /*
     malicious currency to that tries to reenter a function a set number of times
 */
 contract MaliciousPaymentToken is ERC20 {
     ContinuousFundraising public exploitTarget;
-    uint public timesToReenter;
-    uint public amountToReenterWith;
-    uint public reentrancyCount;
+    uint256 public timesToReenter;
+    uint256 public amountToReenterWith;
+    uint256 public reentrancyCount;
     address public originalSender;
-    uint public originalAmount;
-
+    uint256 public originalAmount;
 
     constructor(uint256 _initialSupply) ERC20("MaliciousPaymentToken", "MPT") {
         _mint(msg.sender, _initialSupply);
@@ -26,13 +23,21 @@ contract MaliciousPaymentToken is ERC20 {
     /**
     @notice set which contract to exploit
      */
-    function setExploitTarget(address _exploitTarget, uint _timesToReenter, uint _amountToReenterWith) public {
+    function setExploitTarget(
+        address _exploitTarget,
+        uint256 _timesToReenter,
+        uint256 _amountToReenterWith
+    ) public {
         exploitTarget = ContinuousFundraising(_exploitTarget);
         timesToReenter = _timesToReenter;
         amountToReenterWith = _amountToReenterWith;
     }
 
-    function transferFrom(address sender, address recipient, uint256 amount) public override returns (bool) {
+    function transferFrom(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) public override returns (bool) {
         if (reentrancyCount == 0) {
             // store original values
             originalSender = sender;
@@ -41,12 +46,10 @@ contract MaliciousPaymentToken is ERC20 {
         if (reentrancyCount < timesToReenter) {
             reentrancyCount++;
             exploitTarget.buy(amountToReenterWith);
-        }
-        else {
+        } else {
             reentrancyCount = 0;
             super.transferFrom(originalSender, recipient, originalAmount);
         }
         return true;
     }
-
 }

@@ -7,7 +7,6 @@ import "../contracts/ContinuousFundraising.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
 
-
 contract ContinuousFundraisingTest is Test {
     ContinuousFundraising raise;
     AllowList list;
@@ -16,39 +15,60 @@ contract ContinuousFundraisingTest is Test {
 
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant buyer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
-    address public constant minterAdmin = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
+    address public constant minterAdmin =
+        0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
     address public constant minter = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
     address public constant owner = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
-    address public constant receiver = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
-    address public constant paymentTokenProvider = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
-    address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
-
+    address public constant receiver =
+        0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
+    address public constant paymentTokenProvider =
+        0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
+    address public constant trustedForwarder =
+        0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
 
     uint8 public constant paymentTokenDecimals = 6;
-    uint256 public constant paymentTokenAmount = 1000 * 10**paymentTokenDecimals;
-    
+    uint256 public constant paymentTokenAmount =
+        1000 * 10**paymentTokenDecimals;
+
     uint256 public constant price = 7 * 10**paymentTokenDecimals; // 7 payment tokens per token
-    
+
     uint256 public constant maxAmountOfTokenToBeSold = 20 * 10**18; // 20 token
     uint256 public constant maxAmountPerBuyer = maxAmountOfTokenToBeSold / 2; // 10 token
     uint256 public constant minAmountPerBuyer = maxAmountOfTokenToBeSold / 200; // 0.1 token
 
-
-
     function setUp() public {
         list = new AllowList();
-        token = new Token(trustedForwarder, admin, list, 0x0, "TESTTOKEN", "TEST");
+        token = new Token(
+            trustedForwarder,
+            admin,
+            list,
+            0x0,
+            "TESTTOKEN",
+            "TEST"
+        );
 
         // set up currency
         vm.prank(paymentTokenProvider);
-        paymentToken = new FakePaymentToken(paymentTokenAmount, paymentTokenDecimals); // 1000 tokens with 6 decimals
+        paymentToken = new FakePaymentToken(
+            paymentTokenAmount,
+            paymentTokenDecimals
+        ); // 1000 tokens with 6 decimals
         // transfer currency to buyer
         vm.prank(paymentTokenProvider);
         paymentToken.transfer(buyer, paymentTokenAmount);
         assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
 
         vm.prank(owner);
-        raise = new ContinuousFundraising(trustedForwarder, payable(receiver), minAmountPerBuyer, maxAmountPerBuyer, price, maxAmountOfTokenToBeSold, paymentToken, MintableERC20(address(token)));
+        raise = new ContinuousFundraising(
+            trustedForwarder,
+            payable(receiver),
+            minAmountPerBuyer,
+            maxAmountPerBuyer,
+            price,
+            maxAmountOfTokenToBeSold,
+            paymentToken,
+            MintableERC20(address(token))
+        );
 
         // allow raise contract to mint
         bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
@@ -64,10 +84,19 @@ contract ContinuousFundraisingTest is Test {
     }
 
     function testConstructor() public {
-        ContinuousFundraising _raise = new ContinuousFundraising(trustedForwarder, payable(receiver), minAmountPerBuyer, maxAmountPerBuyer, price, maxAmountOfTokenToBeSold, paymentToken, MintableERC20(address(token)));
+        ContinuousFundraising _raise = new ContinuousFundraising(
+            trustedForwarder,
+            payable(receiver),
+            minAmountPerBuyer,
+            maxAmountPerBuyer,
+            price,
+            maxAmountOfTokenToBeSold,
+            paymentToken,
+            MintableERC20(address(token))
+        );
         assertTrue(_raise.owner() == address(this));
         assertTrue(_raise.currencyReceiver() == receiver);
-        assertTrue(_raise.minAmountPerBuyer() == minAmountPerBuyer);   
+        assertTrue(_raise.minAmountPerBuyer() == minAmountPerBuyer);
         assertTrue(_raise.maxAmountPerBuyer() == maxAmountPerBuyer);
         assertTrue(_raise.tokenPrice() == price);
         assertTrue(_raise.currency() == paymentToken);
@@ -78,13 +107,14 @@ contract ContinuousFundraisingTest is Test {
     set up with FakePaymentToken which has variable decimals to make sure that doesn't break anything
     */
     function testVaryDecimals() public {
-
         uint8 _maxDecimals = 25;
-        FakePaymentToken _paymentToken; 
+        FakePaymentToken _paymentToken;
 
-
-        for (uint8 _paymentTokenDecimals=1; _paymentTokenDecimals<_maxDecimals; _paymentTokenDecimals++) {
-
+        for (
+            uint8 _paymentTokenDecimals = 1;
+            _paymentTokenDecimals < _maxDecimals;
+            _paymentTokenDecimals++
+        ) {
             //uint8 _paymentTokenDecimals = 10;
 
             /*
@@ -97,16 +127,32 @@ contract ContinuousFundraisingTest is Test {
             uint256 _maxMintAmount = 2**256 - 1; // need maximum possible value because we are using a fake token with variable decimals
             uint256 _paymentTokenAmount = 1000 * 10**_paymentTokenDecimals;
 
-
             list = new AllowList();
-            Token _token = new Token(trustedForwarder, admin, list, 0x0, "TESTTOKEN", "TEST");
+            Token _token = new Token(
+                trustedForwarder,
+                admin,
+                list,
+                0x0,
+                "TESTTOKEN",
+                "TEST"
+            );
             vm.prank(paymentTokenProvider);
-            _paymentToken = new FakePaymentToken(_paymentTokenAmount, _paymentTokenDecimals);
+            _paymentToken = new FakePaymentToken(
+                _paymentTokenAmount,
+                _paymentTokenDecimals
+            );
             vm.prank(owner);
 
-            
-            
-            ContinuousFundraising _raise = new ContinuousFundraising(trustedForwarder, payable(receiver), 1, _maxMintAmount/100, _price, _maxMintAmount, _paymentToken, MintableERC20(address(_token)));
+            ContinuousFundraising _raise = new ContinuousFundraising(
+                trustedForwarder,
+                payable(receiver),
+                1,
+                _maxMintAmount / 100,
+                _price,
+                _maxMintAmount,
+                _paymentToken,
+                MintableERC20(address(_token))
+            );
 
             // allow invite contract to mint
             bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
@@ -126,18 +172,23 @@ contract ContinuousFundraisingTest is Test {
             _paymentToken.approve(address(_raise), _paymentTokenAmount);
 
             // run actual test
-        
+
             // buyer has 1k FPT
             assertTrue(_paymentToken.balanceOf(buyer) == _paymentTokenAmount);
             // they should be able to buy 33 CT for 999 FPT
             vm.prank(buyer);
             _raise.buy(33 * 10**18);
             // buyer should have 10 FPT left
-            assertTrue(_paymentToken.balanceOf(buyer) == 10 * 10**_paymentTokenDecimals);
+            assertTrue(
+                _paymentToken.balanceOf(buyer) == 10 * 10**_paymentTokenDecimals
+            );
             // buyer should have the 33 CT they bought
             assertTrue(_token.balanceOf(buyer) == 33 * 10**_token.decimals());
             // receiver should have the 990 FPT that were paid
-            assertTrue(_paymentToken.balanceOf(receiver) == 990 * 10**_paymentTokenDecimals);
+            assertTrue(
+                _paymentToken.balanceOf(receiver) ==
+                    990 * 10**_paymentTokenDecimals
+            );
         }
     }
 
@@ -145,8 +196,7 @@ contract ContinuousFundraisingTest is Test {
     set up with MaliciousPaymentToken which tries to reenter the buy function
     */
     function testReentrancy() public {
-
-        MaliciousPaymentToken _paymentToken; 
+        MaliciousPaymentToken _paymentToken;
         uint8 _paymentTokenDecimals = 18;
 
         /*
@@ -160,14 +210,29 @@ contract ContinuousFundraisingTest is Test {
         uint256 _maxMintAmount = 1000 * 10**18; // 2**256 - 1; // need maximum possible value because we are using a fake token with variable decimals
         uint256 _paymentTokenAmount = 100000 * 10**_paymentTokenDecimals;
 
-
         list = new AllowList();
-        Token _token = new Token(trustedForwarder, admin, list, 0x0, "TESTTOKEN", "TEST");
+        Token _token = new Token(
+            trustedForwarder,
+            admin,
+            list,
+            0x0,
+            "TESTTOKEN",
+            "TEST"
+        );
         vm.prank(paymentTokenProvider);
         _paymentToken = new MaliciousPaymentToken(_paymentTokenAmount);
         vm.prank(owner);
 
-        ContinuousFundraising _raise = new ContinuousFundraising(trustedForwarder, payable(receiver), 1, _maxMintAmount/100, _price, _maxMintAmount, _paymentToken, MintableERC20(address(_token)));
+        ContinuousFundraising _raise = new ContinuousFundraising(
+            trustedForwarder,
+            payable(receiver),
+            1,
+            _maxMintAmount / 100,
+            _price,
+            _maxMintAmount,
+            _paymentToken,
+            MintableERC20(address(_token))
+        );
 
         // allow invite contract to mint
         bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
@@ -183,7 +248,11 @@ contract ContinuousFundraisingTest is Test {
         assertTrue(_paymentToken.balanceOf(buyer) == _paymentTokenAmount);
 
         // set exploitTarget
-        _paymentToken.setExploitTarget(address(_raise), 3, _maxMintAmount/200000);
+        _paymentToken.setExploitTarget(
+            address(_raise),
+            3,
+            _maxMintAmount / 200000
+        );
 
         // give invite contract allowance
         vm.prank(buyer);
@@ -194,7 +263,7 @@ contract ContinuousFundraisingTest is Test {
 
         // run actual test
         assertTrue(_paymentToken.balanceOf(buyer) == _paymentTokenAmount);
-        uint buyAmount = _maxMintAmount/100000;
+        uint256 buyAmount = _maxMintAmount / 100000;
         vm.prank(buyer);
         vm.expectRevert("ReentrancyGuard: reentrant call");
         _raise.buy(buyAmount);
@@ -220,7 +289,7 @@ contract ContinuousFundraisingTest is Test {
 
     function testBuyHappyCase() public {
         uint256 tokenBuyAmount = 5 * 10**token.decimals();
-        uint256 costInPaymentToken = tokenBuyAmount * price / 10**18;
+        uint256 costInPaymentToken = (tokenBuyAmount * price) / 10**18;
 
         assert(costInPaymentToken == 35 * 10**paymentTokenDecimals); // 35 payment tokens, manually calculated
 
@@ -228,7 +297,10 @@ contract ContinuousFundraisingTest is Test {
 
         vm.prank(buyer);
         raise.buy(tokenBuyAmount); // this test fails if 5 * 10**18 is replaced with 5 * 10**token.decimals() for this argument, even though they should be equal
-        assertTrue(paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore - costInPaymentToken);
+        assertTrue(
+            paymentToken.balanceOf(buyer) ==
+                paymentTokenBalanceBefore - costInPaymentToken
+        );
         assertTrue(token.balanceOf(buyer) == tokenBuyAmount);
         assertTrue(paymentToken.balanceOf(receiver) == costInPaymentToken);
         assertTrue(raise.tokensSold() == tokenBuyAmount);
@@ -237,14 +309,16 @@ contract ContinuousFundraisingTest is Test {
 
     function testBuyTooMuch() public {
         uint256 tokenBuyAmount = 5 * 10**token.decimals();
-        uint256 costInPaymentToken = tokenBuyAmount * price / 10**18;
+        uint256 costInPaymentToken = (tokenBuyAmount * price) / 10**18;
 
         assert(costInPaymentToken == 35 * 10**paymentTokenDecimals); // 35 payment tokens, manually calculated
 
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
 
         vm.prank(buyer);
-        vm.expectRevert('Total amount of bought tokens needs to be lower than or equal to maxAmount');
+        vm.expectRevert(
+            "Total amount of bought tokens needs to be lower than or equal to maxAmount"
+        );
         raise.buy(maxAmountPerBuyer + 10**18); //+ 10**token.decimals());
         assertTrue(paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore);
         assertTrue(token.balanceOf(buyer) == 0);
@@ -255,9 +329,9 @@ contract ContinuousFundraisingTest is Test {
 
     function testMultiplePeopleBuyTooMuch() public {
         address person1 = vm.addr(1);
-        address person2 = vm.addr(2); 
+        address person2 = vm.addr(2);
 
-        uint availableBalance = paymentToken.balanceOf(buyer);  
+        uint256 availableBalance = paymentToken.balanceOf(buyer);
 
         vm.prank(buyer);
         paymentToken.transfer(person1, availableBalance / 2);
@@ -275,9 +349,8 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(person1);
         raise.buy(maxAmountOfTokenToBeSold / 2);
         vm.prank(person2);
-        vm.expectRevert('Not enough tokens to sell left');
+        vm.expectRevert("Not enough tokens to sell left");
         raise.buy(10**18);
-        
     }
 
     function testExceedMintingAllowance() public {
@@ -285,20 +358,20 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(minterAdmin);
         token.setUpMinter(address(raise), 0);
         vm.prank(minterAdmin);
-        token.setUpMinter(address(raise), maxAmountPerBuyer/2);
-        
+        token.setUpMinter(address(raise), maxAmountPerBuyer / 2);
+
         vm.prank(buyer);
-        vm.expectRevert('MintingAllowance too low');
+        vm.expectRevert("MintingAllowance too low");
         raise.buy(maxAmountPerBuyer); //+ 10**token.decimals());
         assertTrue(token.balanceOf(buyer) == 0);
         assertTrue(paymentToken.balanceOf(receiver) == 0);
         assertTrue(raise.tokensSold() == 0);
         assertTrue(raise.tokensBought(buyer) == 0);
     }
-    
+
     function testBuyTooLittle() public {
         uint256 tokenBuyAmount = 5 * 10**token.decimals();
-        uint256 costInPaymentToken = tokenBuyAmount * price / 10**18;
+        uint256 costInPaymentToken = (tokenBuyAmount * price) / 10**18;
 
         assert(costInPaymentToken == 35 * 10**paymentTokenDecimals); // 35 payment tokens, manually calculated
 
@@ -316,7 +389,8 @@ contract ContinuousFundraisingTest is Test {
 
     function testBuySmallAmountAfterInitialInvestment() public {
         uint256 tokenBuyAmount = minAmountPerBuyer;
-        uint256 costInPaymentTokenForMinAmount = tokenBuyAmount * price / 10**18;
+        uint256 costInPaymentTokenForMinAmount = (tokenBuyAmount * price) /
+            10**18;
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
 
         vm.prank(buyer);
@@ -326,23 +400,33 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(buyer);
         raise.buy(minAmountPerBuyer / 2);
 
-        assertTrue(paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore - costInPaymentTokenForMinAmount * 3 / 2);
-        assertTrue(token.balanceOf(buyer) == minAmountPerBuyer * 3 / 2);
-        assertTrue(paymentToken.balanceOf(receiver) == costInPaymentTokenForMinAmount * 3 / 2);
-        assertTrue(raise.tokensSold() == minAmountPerBuyer * 3 / 2);
+        assertTrue(
+            paymentToken.balanceOf(buyer) ==
+                paymentTokenBalanceBefore -
+                    (costInPaymentTokenForMinAmount * 3) /
+                    2
+        );
+        assertTrue(token.balanceOf(buyer) == (minAmountPerBuyer * 3) / 2);
+        assertTrue(
+            paymentToken.balanceOf(receiver) ==
+                (costInPaymentTokenForMinAmount * 3) / 2
+        );
+        assertTrue(raise.tokensSold() == (minAmountPerBuyer * 3) / 2);
         assertTrue(raise.tokensBought(buyer) == raise.tokensSold());
     }
 
     function testAmountWithRest() public {
         uint256 tokenBuyAmount = 5 * 10**token.decimals();
-        uint256 costInPaymentToken = tokenBuyAmount * price / 10**18;
+        uint256 costInPaymentToken = (tokenBuyAmount * price) / 10**18;
 
         assert(costInPaymentToken == 35 * 10**paymentTokenDecimals); // 35 payment tokens, manually calculated
 
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
 
         vm.prank(buyer);
-        vm.expectRevert('Amount * tokenprice needs to be a multiple of 10**token.decimals()');
+        vm.expectRevert(
+            "Amount * tokenprice needs to be a multiple of 10**token.decimals()"
+        );
         raise.buy(maxAmountPerBuyer + 1);
         assertTrue(paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore);
         assertTrue(token.balanceOf(buyer) == 0);
@@ -361,7 +445,7 @@ contract ContinuousFundraisingTest is Test {
 
     /*
         try to buy less than allowed
-    */      
+    */
     function testFailUnderflow() public {
         vm.prank(buyer);
         raise.buy(minAmountPerBuyer - 1);
@@ -475,7 +559,9 @@ contract ContinuousFundraisingTest is Test {
         try to update maxAmountOfTokenToBeSold while paused
     */
     function testUpdateMaxAmountOfTokenToBeSoldPaused() public {
-        assertTrue(raise.maxAmountOfTokenToBeSold() == maxAmountOfTokenToBeSold);
+        assertTrue(
+            raise.maxAmountOfTokenToBeSold() == maxAmountOfTokenToBeSold
+        );
         vm.prank(owner);
         raise.pause();
         vm.prank(owner);
@@ -537,8 +623,8 @@ contract ContinuousFundraisingTest is Test {
         assertTrue(raise.lastPause() == time);
         vm.warp(time + 2 hours);
         vm.prank(owner);
-        raise.setMaxAmountOfTokenToBeSold(700); 
-        assertTrue(raise.lastPause() == time + 2 hours);       
+        raise.setMaxAmountOfTokenToBeSold(700);
+        assertTrue(raise.lastPause() == time + 2 hours);
         vm.warp(time + raise.delay() + 1 seconds);
         vm.prank(owner);
         raise.unpause(); // must fail because of the parameter update
@@ -556,8 +642,8 @@ contract ContinuousFundraisingTest is Test {
         assertTrue(raise.lastPause() == time);
         vm.warp(time + 2 hours);
         vm.prank(owner);
-        raise.setMaxAmountOfTokenToBeSold(700); 
-        assertTrue(raise.lastPause() == time + 2 hours);       
+        raise.setMaxAmountOfTokenToBeSold(700);
+        assertTrue(raise.lastPause() == time + 2 hours);
         vm.warp(time + raise.delay() + 2 hours + 1 seconds);
         vm.prank(owner);
         raise.unpause();
@@ -565,7 +651,7 @@ contract ContinuousFundraisingTest is Test {
 
     /*
         try to unpause too soon after setCurrencyReceiver
-    */  
+    */
     function testFailUnpauseTooSoonAfterSetCurrencyReceiver() public {
         uint256 time = block.timestamp;
         vm.warp(time);
@@ -575,8 +661,8 @@ contract ContinuousFundraisingTest is Test {
         assertTrue(raise.lastPause() == time);
         vm.warp(time + 2 hours);
         vm.prank(owner);
-        raise.setCurrencyReceiver(payable(address(buyer))); 
-        assertTrue(raise.lastPause() == time + 2 hours);       
+        raise.setCurrencyReceiver(payable(address(buyer)));
+        assertTrue(raise.lastPause() == time + 2 hours);
         vm.warp(time + raise.delay() + 1 hours);
         vm.prank(owner);
         raise.unpause(); // must fail because of the parameter update
@@ -594,8 +680,8 @@ contract ContinuousFundraisingTest is Test {
         assertTrue(raise.lastPause() == time);
         vm.warp(time + 2 hours);
         vm.prank(owner);
-        raise.setCurrencyReceiver(paymentTokenProvider); 
-        assertTrue(raise.lastPause() == time + 2 hours);       
+        raise.setCurrencyReceiver(paymentTokenProvider);
+        assertTrue(raise.lastPause() == time + 2 hours);
         vm.warp(time + raise.delay() + 2 hours + 1 seconds);
         vm.prank(owner);
         raise.unpause();
@@ -613,8 +699,8 @@ contract ContinuousFundraisingTest is Test {
         assertTrue(raise.lastPause() == time);
         vm.warp(time + 2 hours);
         vm.prank(owner);
-        raise.setMinAmountPerBuyer(700); 
-        assertTrue(raise.lastPause() == time + 2 hours);       
+        raise.setMinAmountPerBuyer(700);
+        assertTrue(raise.lastPause() == time + 2 hours);
         vm.warp(time + raise.delay() + 1 hours);
         vm.prank(owner);
         raise.unpause(); // must fail because of the parameter update
@@ -632,8 +718,8 @@ contract ContinuousFundraisingTest is Test {
         assertTrue(raise.lastPause() == time);
         vm.warp(time + 2 hours);
         vm.prank(owner);
-        raise.setMinAmountPerBuyer(700); 
-        assertTrue(raise.lastPause() == time + 2 hours);       
+        raise.setMinAmountPerBuyer(700);
+        assertTrue(raise.lastPause() == time + 2 hours);
         vm.warp(time + raise.delay() + 2 hours + 1 seconds);
         vm.prank(owner);
         raise.unpause();
@@ -652,7 +738,7 @@ contract ContinuousFundraisingTest is Test {
         vm.warp(time + 2 hours);
         vm.prank(owner);
         raise.setMaxAmountPerBuyer(700);
-        assertTrue(raise.lastPause() == time + 2 hours);        
+        assertTrue(raise.lastPause() == time + 2 hours);
         vm.warp(time + raise.delay() + 1 hours);
         vm.prank(owner);
         raise.unpause(); // must fail because of the parameter update
@@ -671,7 +757,7 @@ contract ContinuousFundraisingTest is Test {
         vm.warp(time + 2 hours);
         vm.prank(owner);
         raise.setMaxAmountPerBuyer(2 * minAmountPerBuyer);
-        assertTrue(raise.lastPause() == time + 2 hours);        
+        assertTrue(raise.lastPause() == time + 2 hours);
         vm.warp(time + raise.delay() + 2 hours + 1 seconds);
         vm.prank(owner);
         raise.unpause();
@@ -689,8 +775,8 @@ contract ContinuousFundraisingTest is Test {
         assertTrue(raise.lastPause() == time);
         vm.warp(time + 2 hours);
         vm.prank(owner);
-        raise.setCurrencyAndTokenPrice(paymentToken, 700);  
-        assertTrue(raise.lastPause() == time + 2 hours);       
+        raise.setCurrencyAndTokenPrice(paymentToken, 700);
+        assertTrue(raise.lastPause() == time + 2 hours);
         vm.warp(time + raise.delay() + 1 hours);
         vm.prank(owner);
         raise.unpause(); // must fail because of the parameter update
@@ -708,11 +794,10 @@ contract ContinuousFundraisingTest is Test {
         assertTrue(raise.lastPause() == time);
         vm.warp(time + 2 hours);
         vm.prank(owner);
-        raise.setCurrencyAndTokenPrice(paymentToken, 700); 
-        assertTrue(raise.lastPause() == time + 2 hours);       
+        raise.setCurrencyAndTokenPrice(paymentToken, 700);
+        assertTrue(raise.lastPause() == time + 2 hours);
         vm.warp(time + raise.delay() + 2 hours + 1 seconds);
         vm.prank(owner);
         raise.unpause();
     }
-
 }

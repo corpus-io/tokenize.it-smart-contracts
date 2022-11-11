@@ -31,7 +31,7 @@ contract AllowList is Ownable {
      */
     mapping(address => uint256) public map;
 
-    event Set(address indexed key, uint value);
+    event Set(address indexed key, uint256 value);
 
     /**
     @notice sets (or updates) the attributes for an address
