@@ -18,3 +18,4 @@ jobs:
         with:
           # This part is also where you can pass other options, for example:
           prettier_options: --write **/*.{sol,md,js}
+          prettier_plugins: prettier-plugin-solidity
