@@ -37,7 +37,8 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     /// @notice The role that has the ability to pause the token
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     /// @notice The role that has the ability to set the address collecting the platform fee (per default, that is the tokenize.it multi-sig)
-    bytes32 public constant FEE_COLLECTOR_ROLE = keccak256("FEE_COLLECTOR_ROLE");
+    bytes32 public constant FEE_COLLECTOR_ROLE =
+        keccak256("FEE_COLLECTOR_ROLE");
 
     // Map managed by tokenize.it, which assigns addresses requirements which they fulfill
     AllowList public allowList;
@@ -75,7 +76,10 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
 
     event RequirementsChanged(uint newRequirements);
     event AllowListChanged(AllowList indexed newAllowList);
-    event MintingAllowanceChanged(address indexed newMinter, uint256 newAllowance);
+    event MintingAllowanceChanged(
+        address indexed newMinter,
+        uint256 newAllowance
+    );
     event FeeCollectorChanged(address indexed newFeeCollector);
 
     /**
@@ -113,7 +117,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
 
         // set up fee collection
         feeCollector = 0x0000000000000000000000000000000000000000; // TODO - replace with tokenize.it multi-sig
-        _grantRole(FEE_COLLECTOR_ROLE, feeCollector);        
+        _grantRole(FEE_COLLECTOR_ROLE, feeCollector);
 
         allowList = _allowList;
         requirements = _requirements;
@@ -133,7 +137,9 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         emit RequirementsChanged(_requirements);
     }
 
-    function setFeeCollector(address _feeCollector) public onlyRole(FEE_COLLECTOR_ROLE) {
+    function setFeeCollector(
+        address _feeCollector
+    ) public onlyRole(FEE_COLLECTOR_ROLE) {
         feeCollector = _feeCollector;
         emit FeeCollectorChanged(_feeCollector);
     }
@@ -169,7 +175,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         mintingAllowance[_msgSender()] -= _amount;
         _mint(_to, _amount);
         // collect fees
-        _mint(feeCollector, _amount/100);
+        _mint(feeCollector, _amount / 100);
         return true;
     }
 
