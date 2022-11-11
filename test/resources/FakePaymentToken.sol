@@ -10,9 +10,10 @@ import "../../contracts/Token.sol";
 contract FakePaymentToken is ERC20 {
     uint8 decimalPlaces;
 
-    constructor(uint256 _initialSupply, uint8 _decimals)
-        ERC20("FakePaymentToken", "FPT")
-    {
+    constructor(
+        uint256 _initialSupply,
+        uint8 _decimals
+    ) ERC20("FakePaymentToken", "FPT") {
         decimalPlaces = _decimals;
         _mint(msg.sender, _initialSupply);
     }

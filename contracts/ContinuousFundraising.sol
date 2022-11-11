@@ -106,12 +106,9 @@ contract ContinuousFundraising is
      @notice buy tokens
      @param _amount amount of tokens to buy, in bits (smallest subunit of token)
      */
-    function buy(uint256 _amount)
-        public
-        whenNotPaused
-        nonReentrant
-        returns (bool)
-    {
+    function buy(
+        uint256 _amount
+    ) public whenNotPaused nonReentrant returns (bool) {
         require(
             tokensSold + _amount <= maxAmountOfTokenToBeSold,
             "Not enough tokens to sell left"
@@ -131,7 +128,7 @@ contract ContinuousFundraising is
                 = a * p * [currency_bits] / (10**token.decimals)
          */
         require(
-            (_amount * tokenPrice) % (10**token.decimals()) == 0,
+            (_amount * tokenPrice) % (10 ** token.decimals()) == 0,
             "Amount * tokenprice needs to be a multiple of 10**token.decimals()"
         );
         require(
@@ -143,7 +140,7 @@ contract ContinuousFundraising is
         currency.safeTransferFrom(
             _msgSender(),
             currencyReceiver,
-            (_amount * tokenPrice) / (10**token.decimals())
+            (_amount * tokenPrice) / (10 ** token.decimals())
         );
         require(token.mint(_msgSender(), _amount), "Minting new tokens failed");
         return true;
@@ -153,11 +150,9 @@ contract ContinuousFundraising is
      @notice change the currencyReceiver
      @param _currencyReceiver new currencyReceiver
      */
-    function setCurrencyReceiver(address _currencyReceiver)
-        public
-        onlyOwner
-        whenPaused
-    {
+    function setCurrencyReceiver(
+        address _currencyReceiver
+    ) public onlyOwner whenPaused {
         require(
             _currencyReceiver != address(0),
             "receiver can not be zero address"
@@ -171,11 +166,9 @@ contract ContinuousFundraising is
      @notice change the minAmountPerBuyer
      @param _minAmountPerBuyer new minAmountPerBuyer
      */
-    function setMinAmountPerBuyer(uint256 _minAmountPerBuyer)
-        public
-        onlyOwner
-        whenPaused
-    {
+    function setMinAmountPerBuyer(
+        uint256 _minAmountPerBuyer
+    ) public onlyOwner whenPaused {
         require(
             _minAmountPerBuyer <= maxAmountPerBuyer,
             "_minAmount needs to be smaller or equal to maxAmount"
@@ -189,11 +182,9 @@ contract ContinuousFundraising is
      @notice change the maxAmountPerBuyer
      @param _maxAmountPerBuyer new maxAmountPerBuyer
      */
-    function setMaxAmountPerBuyer(uint256 _maxAmountPerBuyer)
-        public
-        onlyOwner
-        whenPaused
-    {
+    function setMaxAmountPerBuyer(
+        uint256 _maxAmountPerBuyer
+    ) public onlyOwner whenPaused {
         require(
             minAmountPerBuyer <= _maxAmountPerBuyer,
             "_maxAmount needs to be larger or equal to minAmount"
@@ -208,11 +199,10 @@ contract ContinuousFundraising is
      @param _currency new currency     
      @param _tokenPrice new tokenPrice
      */
-    function setCurrencyAndTokenPrice(IERC20 _currency, uint256 _tokenPrice)
-        public
-        onlyOwner
-        whenPaused
-    {
+    function setCurrencyAndTokenPrice(
+        IERC20 _currency,
+        uint256 _tokenPrice
+    ) public onlyOwner whenPaused {
         require(_tokenPrice != 0, "_tokenPrice needs to be a non-zero amount");
         tokenPrice = _tokenPrice;
         emit TokenPriceChanged(_tokenPrice);
@@ -225,11 +215,9 @@ contract ContinuousFundraising is
      @notice change the maxAmountOfTokenToBeSold
      @param _maxAmountOfTokenToBeSold new maxAmountOfTokenToBeSold
      */
-    function setMaxAmountOfTokenToBeSold(uint256 _maxAmountOfTokenToBeSold)
-        public
-        onlyOwner
-        whenPaused
-    {
+    function setMaxAmountOfTokenToBeSold(
+        uint256 _maxAmountOfTokenToBeSold
+    ) public onlyOwner whenPaused {
         require(
             _maxAmountOfTokenToBeSold != 0,
             "_maxAmountOfTokenToBeSold needs to be larger than zero"

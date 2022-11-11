@@ -109,18 +109,16 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         requirements = _requirements;
     }
 
-    function setAllowList(AllowList _allowList)
-        public
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
+    function setAllowList(
+        AllowList _allowList
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
         allowList = _allowList;
         emit AllowListChanged(_allowList);
     }
 
-    function setRequirements(uint256 _requirements)
-        public
-        onlyRole(REQUIREMENT_ROLE)
-    {
+    function setRequirements(
+        uint256 _requirements
+    ) public onlyRole(REQUIREMENT_ROLE) {
         requirements = _requirements;
         emit RequirementsChanged(_requirements);
     }
@@ -135,21 +133,20 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         @param _minter address of the minter contract
         @param _allowance maximum amount of tokens that can be minted by this minter IN THIS ROUND
     */
-    function setUpMinter(address _minter, uint256 _allowance)
-        public
-        onlyRole(getRoleAdmin(MINTER_ROLE))
-    {
+    function setUpMinter(
+        address _minter,
+        uint256 _allowance
+    ) public onlyRole(getRoleAdmin(MINTER_ROLE)) {
         _grantRole(MINTER_ROLE, _minter);
         require(mintingAllowance[_minter] == 0 || _allowance == 0); // to prevent frontrunning when setting a new allowance, see https://www.adrianhetman.com/unboxing-erc20-approve-issues/
         mintingAllowance[_minter] = _allowance;
         emit MintingAllowanceChanged(_minter, _allowance);
     }
 
-    function mint(address _to, uint256 _amount)
-        public
-        onlyRole(MINTER_ROLE)
-        returns (bool)
-    {
+    function mint(
+        address _to,
+        uint256 _amount
+    ) public onlyRole(MINTER_ROLE) returns (bool) {
         require(
             mintingAllowance[_msgSender()] >= _amount,
             "MintingAllowance too low"

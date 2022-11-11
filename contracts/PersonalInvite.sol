@@ -60,13 +60,13 @@ contract PersonalInvite {
                 = a * p * [currency_bits] / (10**token.decimals)
          */
         require(
-            (_amount * _tokenPrice) % (10**_token.decimals()) == 0,
+            (_amount * _tokenPrice) % (10 ** _token.decimals()) == 0,
             "Amount * tokenprice needs to be a multiple of 10**token.decimals()"
         );
         _currency.safeTransferFrom(
             _buyer,
             _receiver,
-            (_amount * _tokenPrice) / (10**_token.decimals())
+            (_amount * _tokenPrice) / (10 ** _token.decimals())
         );
         require(_token.mint(_buyer, _amount), "Minting new tokens failed");
 
