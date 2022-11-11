@@ -30,7 +30,7 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
  * @type import('hardhat/config').HardhatUserConfig
  */
  const config: HardhatUserConfig =  {
-  solidity: "0.8.4",
+  solidity: "0.8.9",
   networks: {
     localhost: {
       url: 'http://localhost:8545'
