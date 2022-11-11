@@ -58,7 +58,7 @@ contract ContinuousFundraisingTest is Test {
 
     function setUp() public {
         list = new AllowList();
-        token = new Token(admin, list, 0x0, "TESTTOKEN", "TEST");
+        token = new Token(trustedForwarder, admin, list, 0x0, "TESTTOKEN", "TEST");
         ERC2771helper = new ERC2771Helper();
 
         buyer = vm.addr(buyerPrivateKey);
