@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./MintableERC20.sol";
 
-
 /**
 @notice This contract represents the offer to buy an amount of tokens at a preset price. It is created for a specific buyer and can only be claimed once and only by that buyer.
     All parameters of the invitation (buyer, amount, tokenPrice, currency, token) are immutable (see description of CREATE2).
@@ -26,13 +25,25 @@ import "./MintableERC20.sol";
 
  */
 contract PersonalInvite {
-
     using SafeERC20 for IERC20;
 
-    event Deal(address indexed buyer, uint amount, uint tokenPrice, IERC20 currency, MintableERC20 indexed token);
+    event Deal(
+        address indexed buyer,
+        uint256 amount,
+        uint256 tokenPrice,
+        IERC20 currency,
+        MintableERC20 indexed token
+    );
 
-    constructor(address  _buyer, address  _receiver, uint _amount, uint _tokenPrice, uint _expiration, IERC20 _currency, MintableERC20 _token) {
-        
+    constructor(
+        address _buyer,
+        address _receiver,
+        uint256 _amount,
+        uint256 _tokenPrice,
+        uint256 _expiration,
+        IERC20 _currency,
+        MintableERC20 _token
+    ) {
         require(_buyer != address(0), "_buyer can not be zero address");
         require(_receiver != address(0), "_receiver can not be zero address");
         require(_tokenPrice != 0, "_tokenPrice can not be zero");
@@ -48,8 +59,15 @@ contract PersonalInvite {
                 = a * p * [currency_bits]/[token] * [token_bits]  with 1 [token] = (10**token.decimals) [token_bits]
                 = a * p * [currency_bits] / (10**token.decimals)
          */
-        require((_amount * _tokenPrice) % (10**_token.decimals()) == 0, "Amount * tokenprice needs to be a multiple of 10**token.decimals()");
-        _currency.safeTransferFrom(_buyer, _receiver, (_amount * _tokenPrice) / (10**_token.decimals()) );
+        require(
+            (_amount * _tokenPrice) % (10 ** _token.decimals()) == 0,
+            "Amount * tokenprice needs to be a multiple of 10**token.decimals()"
+        );
+        _currency.safeTransferFrom(
+            _buyer,
+            _receiver,
+            (_amount * _tokenPrice) / (10 ** _token.decimals())
+        );
         require(_token.mint(_buyer, _amount), "Minting new tokens failed");
 
         emit Deal(_buyer, _amount, _tokenPrice, _currency, _token);

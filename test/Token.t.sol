@@ -4,11 +4,11 @@ pragma solidity ^0.8.13;
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/Token.sol";
 
-
 contract tokenTest is Test {
     Token token;
     AllowList allowList;
-    address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
+    address public constant trustedForwarder =
+        0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant requirer =
         0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
@@ -27,7 +27,14 @@ contract tokenTest is Test {
     function setUp() public {
         vm.prank(admin);
         allowList = new AllowList();
-        token = new Token(trustedForwarder, admin, allowList, 0x0, "testToken", "TEST");
+        token = new Token(
+            trustedForwarder,
+            admin,
+            allowList,
+            0x0,
+            "testToken",
+            "TEST"
+        );
         console.log(msg.sender);
 
         // set up roles
@@ -50,7 +57,6 @@ contract tokenTest is Test {
         token.revokeRole(token.TRANSFERERADMIN_ROLE(), admin);
 
         vm.stopPrank();
-
     }
 
     function testSetUp() public {
@@ -202,7 +208,7 @@ contract tokenTest is Test {
         AllowList newAllowList = new AllowList(); // deploy new AllowList
         assertTrue(token.allowList() != newAllowList);
         vm.prank(admin);
-        token.setAllowList(newAllowList); 
+        token.setAllowList(newAllowList);
         assertTrue(token.allowList() == newAllowList);
     }
 
@@ -270,7 +276,9 @@ contract tokenTest is Test {
             token.mint(pauser, mintAmount);
             minted += mintAmount;
             assertTrue(token.balanceOf(pauser) == minted);
-            assertTrue(token.mintingAllowance(minter) == totalMintAmount - minted);
+            assertTrue(
+                token.mintingAllowance(minter) == totalMintAmount - minted
+            );
         }
 
         // mint the rest
@@ -284,7 +292,7 @@ contract tokenTest is Test {
 
     function testFailZeroAllowanceMint(uint256 x) public {
         vm.assume(x > 0);
-         
+
         vm.prank(admin);
         token.setUpMinter(minter, 0); // set allowance to 0
         assertTrue(token.mintingAllowance(minter) == 0); // check allowance is 0
@@ -342,7 +350,7 @@ contract tokenTest is Test {
         vm.prank(minter);
         token.mint(pauser, 0);
         assertTrue(token.balanceOf(pauser) == 0);
- 
+
         vm.prank(burner);
         token.burn(pauser, 0);
         assertTrue(token.balanceOf(pauser) == 0);
@@ -548,7 +556,6 @@ contract tokenTest is Test {
         token.transfer(burner, 20);
         assertTrue(token.balanceOf(burner) == 20);
         assertTrue(token.balanceOf(pauser) == 30);
-
     }
 
     function testFailTransferPause() public {
@@ -716,13 +723,17 @@ contract tokenTest is Test {
         allowList.set(person1, 3); // 0x0011 -> does not include required 0x1011
 
         vm.prank(person1);
-        vm.expectRevert('Sender is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList');
+        vm.expectRevert(
+            "Sender is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
+        );
         token.transfer(person2, 20);
         assertTrue(token.balanceOf(person2) == 20);
         assertTrue(token.balanceOf(person1) == 30);
 
         vm.prank(person2);
-        vm.expectRevert("Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList");
+        vm.expectRevert(
+            "Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
+        );
         token.transfer(person1, 10);
         assertTrue(token.balanceOf(person2) == 20);
         assertTrue(token.balanceOf(person1) == 30);
@@ -816,13 +827,26 @@ contract tokenTest is Test {
     }
 
     function testDeployerDoesNotGetRole() public {
-        Token localToken = new Token(trustedForwarder, admin, allowList, 0x0, "testToken", "TEST");
+        Token localToken = new Token(
+            trustedForwarder,
+            admin,
+            allowList,
+            0x0,
+            "testToken",
+            "TEST"
+        );
         address deployer = msg.sender;
-        assertFalse(localToken.hasRole(localToken.REQUIREMENT_ROLE(), deployer));
-        assertFalse(localToken.hasRole(localToken.MINTERADMIN_ROLE(), deployer));
+        assertFalse(
+            localToken.hasRole(localToken.REQUIREMENT_ROLE(), deployer)
+        );
+        assertFalse(
+            localToken.hasRole(localToken.MINTERADMIN_ROLE(), deployer)
+        );
         assertFalse(localToken.hasRole(localToken.MINTER_ROLE(), deployer));
         assertFalse(localToken.hasRole(localToken.BURNER_ROLE(), deployer));
-        assertFalse(localToken.hasRole(localToken.TRANSFERERADMIN_ROLE(), deployer));
+        assertFalse(
+            localToken.hasRole(localToken.TRANSFERERADMIN_ROLE(), deployer)
+        );
         assertFalse(localToken.hasRole(localToken.TRANSFERER_ROLE(), deployer));
         assertFalse(localToken.hasRole(localToken.PAUSER_ROLE(), deployer));
     }
