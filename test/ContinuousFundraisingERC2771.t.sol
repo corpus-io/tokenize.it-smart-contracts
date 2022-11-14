@@ -13,6 +13,8 @@ contract ContinuousFundraisingTest is Test {
 
     ContinuousFundraising raise;
     AllowList list;
+    FeeSettings feeSettings;
+
     Token token;
     FakePaymentToken paymentToken;
     //Forwarder trustedForwarder;
@@ -62,8 +64,10 @@ contract ContinuousFundraisingTest is Test {
 
     function setUp() public {
         list = new AllowList();
+        feeSettings = new FeeSettings(100, 100, admin);
         token = new Token(
             trustedForwarder,
+            feeSettings,
             admin,
             list,
             0x0,

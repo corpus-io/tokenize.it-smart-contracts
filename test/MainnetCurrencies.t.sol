@@ -18,6 +18,8 @@ contract MainnetCurrencies is Test {
     using stdStorage for StdStorage; // for stdStorage.set()
 
     AllowList list;
+    FeeSettings feeSettings;
+
     Token token;
     PersonalInviteFactory factory;
 
@@ -49,6 +51,8 @@ contract MainnetCurrencies is Test {
 
     function setUp() public {
         list = new AllowList();
+        feeSettings = new FeeSettings(100, 100, admin);
+
         token = new Token(
             trustedForwarder,
             admin,

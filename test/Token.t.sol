@@ -7,6 +7,7 @@ import "../contracts/Token.sol";
 contract tokenTest is Test {
     Token token;
     AllowList allowList;
+    FeeSettings feeSettings;
     address public constant trustedForwarder =
         0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
@@ -27,8 +28,10 @@ contract tokenTest is Test {
     function setUp() public {
         vm.prank(admin);
         allowList = new AllowList();
+        feeSettings = new FeeSettings(100, 100, admin);
         token = new Token(
             trustedForwarder,
+            feeSettings,
             admin,
             allowList,
             0x0,
@@ -829,6 +832,7 @@ contract tokenTest is Test {
     function testDeployerDoesNotGetRole() public {
         Token localToken = new Token(
             trustedForwarder,
+            feeSettings,
             admin,
             allowList,
             0x0,

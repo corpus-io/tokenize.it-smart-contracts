@@ -10,6 +10,8 @@ import "./resources/MaliciousPaymentToken.sol";
 contract ContinuousFundraisingTest is Test {
     ContinuousFundraising raise;
     AllowList list;
+    FeeSettings feeSettings;
+
     Token token;
     FakePaymentToken paymentToken;
 
@@ -25,6 +27,7 @@ contract ContinuousFundraisingTest is Test {
         0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
     address public constant trustedForwarder =
         0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
+        
 
     uint8 public constant paymentTokenDecimals = 6;
     uint256 public constant paymentTokenAmount =
@@ -38,8 +41,11 @@ contract ContinuousFundraisingTest is Test {
 
     function setUp() public {
         list = new AllowList();
+        feeSettings = new FeeSettings(100, 100, admin);
+
         token = new Token(
             trustedForwarder,
+            feeSettings,
             admin,
             list,
             0x0,
@@ -130,6 +136,7 @@ contract ContinuousFundraisingTest is Test {
             list = new AllowList();
             Token _token = new Token(
                 trustedForwarder,
+                feeSettings,
                 admin,
                 list,
                 0x0,
@@ -214,6 +221,7 @@ contract ContinuousFundraisingTest is Test {
         list = new AllowList();
         Token _token = new Token(
             trustedForwarder,
+            feeSettings,
             admin,
             list,
             0x0,

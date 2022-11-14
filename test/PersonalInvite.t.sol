@@ -10,6 +10,7 @@ contract PersonalInviteTest is Test {
     PersonalInviteFactory factory;
 
     AllowList list;
+    FeeSettings feeSettings;
     Token token;
     Token currency; // todo: add different ERC20 token as currency!
 
@@ -34,7 +35,9 @@ contract PersonalInviteTest is Test {
     function setUp() public {
         factory = new PersonalInviteFactory();
         list = new AllowList();
-        token = new Token(trustedForwarder, admin, list, 0x0, "token", "TOK");
+        feeSettings = new FeeSettings(100, 100, admin);
+
+        token = new Token(trustedForwarder, feeSettings, admin, list, 0x0, "token", "TOK");
         currency = new Token(
             trustedForwarder,
             admin,
