@@ -8,6 +8,7 @@ struct Change {
     uint investmentFeeDenominator;
     uint time;
 }
+
 /*
     This FeeSettings contract is used to manage fees paid to the tokenize.it platfom
 */
@@ -26,17 +27,35 @@ contract FeeSettings is Ownable {
     event FeeCollectorChanged(address indexed newFeeCollector);
     event ChangeProposed(Change proposal);
 
-    constructor(uint256 _tokenFeeDenominator, uint256 _investmentFeeDenominator, address _feeCollector) {
-        require(_tokenFeeDenominator >= 20 || _tokenFeeDenominator == 0, "Fee must be below 5% or 0");
+    constructor(
+        uint256 _tokenFeeDenominator,
+        uint256 _investmentFeeDenominator,
+        address _feeCollector
+    ) {
+        require(
+            _tokenFeeDenominator >= 20 || _tokenFeeDenominator == 0,
+            "Fee must be below 5% or 0"
+        );
         tokenFeeDenominator = _tokenFeeDenominator;
-        require(_investmentFeeDenominator >= 20 || _investmentFeeDenominator == 0, "Fee must be below 5% or 0");
+        require(
+            _investmentFeeDenominator >= 20 || _investmentFeeDenominator == 0,
+            "Fee must be below 5% or 0"
+        );
         investmentFeeDenominator = _investmentFeeDenominator;
         feeCollector = _feeCollector;
     }
 
     function planFeeChange(Change memory _change) public onlyOwner {
-        require(_change.tokenFeeDenominator >= 20|| _change.tokenFeeDenominator == 0, "Fee must be below 5% or 0");
-        require(_change.investmentFeeDenominator >= 20 || _change.investmentFeeDenominator == 0, "Fee must be below 5% or 0");
+        require(
+            _change.tokenFeeDenominator >= 20 ||
+                _change.tokenFeeDenominator == 0,
+            "Fee must be below 5% or 0"
+        );
+        require(
+            _change.investmentFeeDenominator >= 20 ||
+                _change.investmentFeeDenominator == 0,
+            "Fee must be below 5% or 0"
+        );
         require(_change.time > block.timestamp + 7884000); // can only be executed in 3 months
         change = _change;
         emit ChangeProposed(_change);

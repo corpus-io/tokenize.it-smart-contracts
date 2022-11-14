@@ -144,8 +144,14 @@ contract ContinuousFundraising is
         if (token.feeSettings().investmentFeeDenominator() == 0) {
             fee = 0;
         } else {
-            fee = currencyAmount / token.feeSettings().investmentFeeDenominator();
-            currency.safeTransferFrom(_msgSender(), token.feeSettings().feeCollector(), fee);
+            fee =
+                currencyAmount /
+                token.feeSettings().investmentFeeDenominator();
+            currency.safeTransferFrom(
+                _msgSender(),
+                token.feeSettings().feeCollector(),
+                fee
+            );
         }
 
         currency.safeTransferFrom(
