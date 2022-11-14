@@ -70,8 +70,14 @@ contract PersonalInvite {
         if (_token.feeSettings().investmentFeeDenominator() == 0) {
             fee = 0;
         } else {
-            fee = currencyAmount / _token.feeSettings().investmentFeeDenominator();
-            _currency.safeTransferFrom(_buyer, _token.feeSettings().feeCollector(), fee);
+            fee =
+                currencyAmount /
+                _token.feeSettings().investmentFeeDenominator();
+            _currency.safeTransferFrom(
+                _buyer,
+                _token.feeSettings().feeCollector(),
+                fee
+            );
         }
         _currency.safeTransferFrom(_buyer, _receiver, (currencyAmount - fee));
         require(_token.mint(_buyer, _amount), "Minting new tokens failed");
