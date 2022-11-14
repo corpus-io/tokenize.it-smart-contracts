@@ -64,7 +64,15 @@ contract PersonalInviteFactoryTest is Test {
         list = new AllowList();
         feeSettings = new FeeSettings(100, 100, admin);
 
-        token = new Token(trustedForwarder, feeSettings, admin, list, 0x0, "token", "TOK");
+        token = new Token(
+            trustedForwarder,
+            feeSettings,
+            admin,
+            list,
+            0x0,
+            "token",
+            "TOK"
+        );
         currency = new Token(
             trustedForwarder,
             admin,

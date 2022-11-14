@@ -27,7 +27,6 @@ contract ContinuousFundraisingTest is Test {
         0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
     address public constant trustedForwarder =
         0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
-        
 
     uint8 public constant paymentTokenDecimals = 6;
     uint256 public constant paymentTokenAmount =
