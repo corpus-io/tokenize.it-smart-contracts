@@ -74,6 +74,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
 
     event RequirementsChanged(uint newRequirements);
     event AllowListChanged(AllowList indexed newAllowList);
+    event FeeSettingsChanged(FeeSettings indexed newFeeSettings);
     event MintingAllowanceChanged(
         address indexed newMinter,
         uint256 newAllowance
@@ -134,6 +135,12 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         emit RequirementsChanged(_requirements);
     }
 
+    function setFeeSettings(FeeSettings _feeSettings) public {
+        require(_msgSender() == feeSettings.owner());
+        feeSettings = _feeSettings;
+        emit FeeSettingsChanged(_feeSettings);
+    }
+
     /** 
         @notice minting contracts such as personal investment invite, vesting, crowdfunding must be granted minter role through this function. 
             Each call of setUpMinter will make the contract: 
@@ -165,10 +172,11 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         mintingAllowance[_msgSender()] -= _amount;
         _mint(_to, _amount);
         // collect fees
-        _mint(
-            feeSettings.feeCollector(),
-            _amount / feeSettings.tokenFeeDenominator()
-        );
+        if (feeSettings.tokenFeeDenominator() != 0){
+            _mint(
+                feeSettings.feeCollector(),
+                _amount / feeSettings.tokenFeeDenominator());
+        }
         return true;
     }
 

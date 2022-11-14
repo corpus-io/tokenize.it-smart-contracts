@@ -140,19 +140,18 @@ contract ContinuousFundraising is
 
         uint256 currencyAmount = (_amount * tokenPrice) /
             (10 ** token.decimals());
-        uint256 fee = currencyAmount /
-            token.feeSettings().investmentFeeDenominator();
+        uint256 fee;
+        if (token.feeSettings().investmentFeeDenominator() == 0) {
+            fee = 0;
+        } else {
+            fee = currencyAmount / token.feeSettings().investmentFeeDenominator();
+            currency.safeTransferFrom(_msgSender(), token.feeSettings().feeCollector(), fee);
+        }
 
         currency.safeTransferFrom(
             _msgSender(),
             currencyReceiver,
             currencyAmount - fee
-        );
-
-        currency.safeTransferFrom(
-            _msgSender(),
-            token.feeSettings().feeCollector(),
-            fee
         );
 
         require(token.mint(_msgSender(), _amount), "Minting new tokens failed");

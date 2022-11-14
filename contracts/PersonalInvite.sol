@@ -59,22 +59,22 @@ contract PersonalInvite {
                 = a * p * [currency_bits]/[token] * [token_bits]  with 1 [token] = (10**token.decimals) [token_bits]
                 = a * p * [currency_bits] / (10**token.decimals)
          */
-        uint256 currencyAmount = (_amount * _tokenPrice) /
-            (10 ** _token.decimals());
-        uint256 fee = currencyAmount /
-            _token.feeSettings().investmentFeeDenominator();
         require(
             (_amount * _tokenPrice) % (10 ** _token.decimals()) == 0,
             "Amount * tokenprice needs to be a multiple of 10**token.decimals()"
         );
-        _currency.safeTransferFrom(_buyer, _receiver, (currencyAmount - fee));
-        _currency.safeTransferFrom(
-            _buyer,
-            _token.feeSettings().feeCollector(),
-            fee
-        );
-        require(_token.mint(_buyer, _amount), "Minting new tokens failed");
+        uint256 currencyAmount = (_amount * _tokenPrice) /
+            (10 ** _token.decimals());
 
+        uint256 fee;
+        if (_token.feeSettings().investmentFeeDenominator() == 0) {
+            fee = 0;
+        } else {
+            fee = currencyAmount / _token.feeSettings().investmentFeeDenominator();
+            _currency.safeTransferFrom(_buyer, _token.feeSettings().feeCollector(), fee);
+        }
+        _currency.safeTransferFrom(_buyer, _receiver, (currencyAmount - fee));
+        require(_token.mint(_buyer, _amount), "Minting new tokens failed");
         emit Deal(_buyer, _amount, _tokenPrice, _currency, _token);
     }
 }
