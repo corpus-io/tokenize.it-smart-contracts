@@ -44,33 +44,15 @@ contract FeeSettings is Ownable {
 
     function executeFeeChange() public onlyOwner {
         require(block.timestamp >= change.time);
-        setTokenFeeDenominator(change.tokenFeeDenominator);
-        setInvestmentFeeDenominator(change.investmentFeeDenominator);
+        tokenFeeDenominator = change.tokenFeeDenominator;
+        investmentFeeDenominator = change.investmentFeeDenominator;
+        emit SetTokenFeeDenominator(change.tokenFeeDenominator);
+        emit SetInvestmentFeeDenominator(change.investmentFeeDenominator);
         delete change;
     }
 
     function setFeeCollector(address _feeCollector) public onlyOwner {
         feeCollector = _feeCollector;
         emit FeeCollectorChanged(_feeCollector);
-    }
-
-    /**
-    @notice sets (or updates) the tokenFeeDenominator
-    */
-    function setTokenFeeDenominator(
-        uint256 _tokenFeeDenominator
-    ) internal {
-        tokenFeeDenominator = _tokenFeeDenominator;
-        emit SetTokenFeeDenominator(tokenFeeDenominator);
-    }
-
-    /**
-    @notice sets (or updates) the tokenFeeDenominator
-    */
-    function setInvestmentFeeDenominator(
-        uint256 _investmentFeeDenominator
-    ) internal {
-        investmentFeeDenominator = _investmentFeeDenominator;
-        emit SetInvestmentFeeDenominator(_investmentFeeDenominator);
     }
 }
