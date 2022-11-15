@@ -62,9 +62,16 @@ contract ContinuousFundraisingTest is Test {
     uint256 tokenBuyAmount;
     uint256 costInPaymentToken;
 
+    uint256 tokenFeeDenominator = 100;
+    uint256 paymentTokenFeeDenominator = 50;
+
     function setUp() public {
         list = new AllowList();
-        feeSettings = new FeeSettings(100, 100, admin);
+        feeSettings = new FeeSettings(
+            tokenFeeDenominator,
+            paymentTokenFeeDenominator,
+            admin
+        );
         token = new Token(
             trustedForwarder,
             address(feeSettings),
@@ -245,8 +252,25 @@ contract ContinuousFundraisingTest is Test {
         // raise.buy(tokenBuyAmount);
         console.log("Gas used: ", gasBefore - gasleft());
 
+        // investor receives as many tokens as they paid for
         assertTrue(token.balanceOf(buyer) == tokenBuyAmount);
-        assertEq(paymentToken.balanceOf(receiver), costInPaymentToken);
+        // but fee collector receives additional tokens
+        assertTrue(
+            token.balanceOf(feeSettings.feeCollector()) ==
+                tokenBuyAmount / tokenFeeDenominator
+        );
+
+        // receiver receives payment tokens after fee has been deducted
+        assertEq(
+            paymentToken.balanceOf(receiver),
+            costInPaymentToken - costInPaymentToken / paymentTokenFeeDenominator
+        );
+        // fee collector receives fee in payment tokens
+        assertEq(
+            paymentToken.balanceOf(feeSettings.feeCollector()),
+            costInPaymentToken / paymentTokenFeeDenominator
+        );
+
         assertEq(paymentToken.balanceOf(address(raise)), 0);
         assertEq(token.balanceOf(address(raise)), 0);
         assertEq(token.balanceOf(receiver), 0);
