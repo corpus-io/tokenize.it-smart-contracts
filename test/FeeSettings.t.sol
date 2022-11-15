@@ -6,7 +6,6 @@ import "../contracts/Token.sol";
 import "../contracts/FeeSettings.sol";
 
 contract FeeSettingsTest is Test {
-    
     FeeSettings feeSettings;
     Token token;
     Token currency; // todo: add different ERC20 token as currency!
@@ -33,14 +32,18 @@ contract FeeSettingsTest is Test {
     //     feeSettings = new FeeSettings(100, 100, admin);
     // }
 
-    function testEnforceTokenFeeDenominatorRangeinConstructor(uint8 fee) public {
+    function testEnforceTokenFeeDenominatorRangeinConstructor(
+        uint8 fee
+    ) public {
         vm.assume(!feeInValidRange(fee));
         FeeSettings _feeSettings;
         vm.expectRevert("Fee must be below 5% or 0");
         _feeSettings = new FeeSettings(fee, 100, admin);
     }
 
-    function testEnforceInvestmentFeeDenominatorRangeinConstructor(uint8 fee) public {
+    function testEnforceInvestmentFeeDenominatorRangeinConstructor(
+        uint8 fee
+    ) public {
         vm.assume(!feeInValidRange(fee));
         FeeSettings _feeSettings;
         vm.expectRevert("Fee must be below 5% or 0");
@@ -60,7 +63,9 @@ contract FeeSettingsTest is Test {
         _feeSettings.planFeeChange(feeChange);
     }
 
-    function testEnforceInvestmentFeeDenominatorRangeinFeeChanger(uint8 fee) public {
+    function testEnforceInvestmentFeeDenominatorRangeinFeeChanger(
+        uint8 fee
+    ) public {
         vm.assume(!feeInValidRange(fee));
         FeeSettings _feeSettings = new FeeSettings(100, 100, admin);
 
@@ -91,7 +96,11 @@ contract FeeSettingsTest is Test {
         // _feeSettings.executeFeeChange();
     }
 
-    function testExecuteFeeChangeTooEarly(uint delayAnnounced, uint8 tokenFee, uint8 investmentFee) public {
+    function testExecuteFeeChangeTooEarly(
+        uint delayAnnounced,
+        uint8 tokenFee,
+        uint8 investmentFee
+    ) public {
         vm.assume(delayAnnounced > 7884000 && delayAnnounced < 1000000000000);
         vm.assume(feeInValidRange(tokenFee));
         vm.assume(feeInValidRange(investmentFee));
@@ -112,7 +121,11 @@ contract FeeSettingsTest is Test {
         _feeSettings.executeFeeChange();
     }
 
-    function testExecuteFeeChangeProperly(uint delayAnnounced, uint8 tokenFee, uint8 investmentFee) public {
+    function testExecuteFeeChangeProperly(
+        uint delayAnnounced,
+        uint8 tokenFee,
+        uint8 investmentFee
+    ) public {
         vm.assume(delayAnnounced > 7884000 && delayAnnounced < 100000000000);
         vm.assume(feeInValidRange(tokenFee));
         vm.assume(feeInValidRange(investmentFee));
@@ -128,7 +141,7 @@ contract FeeSettingsTest is Test {
         _feeSettings.planFeeChange(feeChange);
 
         vm.prank(admin);
-        vm.warp(block.timestamp + delayAnnounced +1);
+        vm.warp(block.timestamp + delayAnnounced + 1);
         _feeSettings.executeFeeChange();
 
         assertEq(_feeSettings.tokenFeeDenominator(), tokenFee);
@@ -136,15 +149,19 @@ contract FeeSettingsTest is Test {
         //assertEq(_feeSettings.change, 0);
     }
 
-
-    function testSetFeeInConstructor(uint8 tokenFee, uint8 investmentFee)
-        public
-    {
+    function testSetFeeInConstructor(
+        uint8 tokenFee,
+        uint8 investmentFee
+    ) public {
         vm.assume(feeInValidRange(tokenFee));
         vm.assume(feeInValidRange(investmentFee));
         FeeSettings _feeSettings;
         _feeSettings = new FeeSettings(tokenFee, investmentFee, admin);
-        assertEq(_feeSettings.tokenFeeDenominator(), tokenFee, "Token fee mismatch");
+        assertEq(
+            _feeSettings.tokenFeeDenominator(),
+            tokenFee,
+            "Token fee mismatch"
+        );
         assertEq(
             _feeSettings.investmentFeeDenominator(),
             investmentFee,
@@ -180,9 +197,6 @@ contract FeeSettingsTest is Test {
     function feeInValidRange(uint8 fee) internal pure returns (bool) {
         return fee == 0 || fee >= 20;
     }
-
-
-
 
     // function testAcceptDeal(uint256 rawSalt) public {
     //     console.log(
