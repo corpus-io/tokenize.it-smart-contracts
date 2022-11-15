@@ -25,7 +25,7 @@ contract PersonalInviteFactory {
         IERC20 _currency,
         IERC20 _token
     ) external returns (address) {
-       address actualAddress = Create2.deploy(
+        address actualAddress = Create2.deploy(
             0,
             _salt,
             getBytecode(

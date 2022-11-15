@@ -208,14 +208,14 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         super._beforeTokenTransfer(_from, _to, _amount);
         _requireNotPaused();
         require(
-                allowList.map(_from) & requirements == requirements ||
+            allowList.map(_from) & requirements == requirements ||
                 _from == address(0) ||
                 hasRole(BURNER_ROLE, _msgSender()) ||
                 hasRole(TRANSFERER_ROLE, _from),
             "Sender is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
         ); // address(0), because this is the _from address in case of minting new tokens
         require(
-                allowList.map(_to) & requirements == requirements ||
+            allowList.map(_to) & requirements == requirements ||
                 _to == address(0) ||
                 _to == feeSettings.feeCollector() ||
                 hasRole(TRANSFERER_ROLE, _to),
