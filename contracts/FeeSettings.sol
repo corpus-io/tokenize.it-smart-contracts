@@ -17,7 +17,7 @@ contract FeeSettings is Ownable {
     uint256 public tokenFeeDenominator;
     /// @notice Denominator to calculate fees paid in all investment contracts
     uint256 public investmentFeeDenominator;
-    /// @notice address used to pay platform fees to. Also used as the address having the FEE_COLLECTOR_ROLE, given the ability to change this address.
+    /// @notice address used to pay platform fees to. 
     address public feeCollector;
 
     Change public change;
