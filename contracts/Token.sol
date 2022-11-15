@@ -136,7 +136,10 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     }
 
     function setFeeSettings(FeeSettings _feeSettings) public {
-        require(_msgSender() == feeSettings.owner(), "Only fee settings owner can change fee settings");
+        require(
+            _msgSender() == feeSettings.owner(),
+            "Only fee settings owner can change fee settings"
+        );
         feeSettings = _feeSettings;
         emit FeeSettingsChanged(_feeSettings);
     }

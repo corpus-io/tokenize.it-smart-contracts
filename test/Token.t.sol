@@ -910,6 +910,10 @@ contract tokenTest is Test {
         vm.prank(feeSettings.owner());
         token.setFeeSettings(newFeeSettings);
         assertTrue(address(token.feeSettings()) == address(newFeeSettings));
-        assertEq(token.feeSettings().feeCollector(), newCollector, "Wrong feeCollector");
+        assertEq(
+            token.feeSettings().feeCollector(),
+            newCollector,
+            "Wrong feeCollector"
+        );
     }
 }
