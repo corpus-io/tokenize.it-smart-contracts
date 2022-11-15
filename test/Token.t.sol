@@ -230,7 +230,10 @@ contract tokenTest is Test {
         assertTrue(token.mintingAllowance(minter) == 1);
     }
 
-    function testMint(uint256 x) public {
+    function testMintOnce(uint256 x) public {
+        vm.assume(
+            x <= UINT256_MAX - x / token.feeSettings().tokenFeeDenominator()
+        ); // avoid overflow
         bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
 
         vm.prank(admin);
@@ -263,6 +266,9 @@ contract tokenTest is Test {
     @notice test if the minter can mint exactly the amount of tokens that is allowed, but in multiple steps
     */
     function testMintAgain(uint256 totalMintAmount, uint256 steps) public {
+        vm.assume(
+            totalMintAmount <= UINT256_MAX - totalMintAmount / token.feeSettings().tokenFeeDenominator()
+        ); // avoid overflow
         //vm.assume(steps < 200);
 
         steps = steps % 100; // don't be ridiculous
@@ -305,7 +311,9 @@ contract tokenTest is Test {
     }
 
     function testBurnSimple(uint256 x) public {
-        vm.assume(x % token.feeSettings().tokenFeeDenominator() == 0);
+        vm.assume(
+            x <= UINT256_MAX - x / token.feeSettings().tokenFeeDenominator()
+        ); // avoid overflow
         bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
         bytes32 role = token.BURNER_ROLE();
 
@@ -316,11 +324,35 @@ contract tokenTest is Test {
         assertTrue(token.mintingAllowance(minter) == x);
 
         console.log("minting %s tokens", x);
-        console.log("fee collector: %s", token.feeSettings().feeCollector());
+        console.log(
+            "fee demoninator: %s",
+            token.feeSettings().tokenFeeDenominator()
+        );
+        console.log("amount: %s", x);
+
+        console.log(
+            "remainder: %s",
+            x % token.feeSettings().tokenFeeDenominator()
+        );
+        console.log(
+            "amount without remainder: %s",
+            x - (x % token.feeSettings().tokenFeeDenominator())
+        );
+
+        console.log(
+            "total tokens to mint (amount + fee): %s",
+            x + x / token.feeSettings().tokenFeeDenominator()
+        );
+
+        uint fee = x / token.feeSettings().tokenFeeDenominator();
+        console.log("fee: %s", fee);
         vm.prank(minter);
         token.mint(pauser, x);
         console.log("failed minting");
-        assertTrue(token.balanceOf(pauser) == x, "pauser balance is wrong before burn");
+        assertTrue(
+            token.balanceOf(pauser) == x,
+            "pauser balance is wrong before burn"
+        );
         vm.prank(admin);
         token.grantRole(role, burner);
         vm.prank(burner);
@@ -332,6 +364,9 @@ contract tokenTest is Test {
     Burn with requirements
      */
     function testBurnWithRequirements(uint256 x) public {
+        vm.assume(
+            x <= UINT256_MAX - x / token.feeSettings().tokenFeeDenominator()
+        ); // avoid overflow
         vm.prank(minterAdmin);
         token.setUpMinter(minter, x);
         assertTrue(token.mintingAllowance(minter) == x);

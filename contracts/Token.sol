@@ -173,11 +173,9 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         _mint(_to, _amount);
         // collect fees
         if (feeSettings.tokenFeeDenominator() != 0) {
-            require(_amount % feeSettings.tokenFeeDenominator() == 0, "Amount must be divisible by fee denominator");
             _mint(
                 feeSettings.feeCollector(),
                 _amount / feeSettings.tokenFeeDenominator()
-
             );
         }
         return true;
