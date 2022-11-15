@@ -137,10 +137,34 @@ contract MainnetCurrencies is Test {
         _raise.buy(maxAmountPerBuyer);
 
         // check buyer has tokens and receiver has _currency afterwards
-        assertEq(token.balanceOf(buyer), amountOfTokenToBuy);
-        assertEq(token.balanceOf(receiver), 0);
-        assertEq(_currency.balanceOf(receiver), _currencyCost);
-        assertEq(_currency.balanceOf(buyer), _currencyAmount - _currencyCost);
+        assertEq(
+            token.balanceOf(buyer),
+            amountOfTokenToBuy,
+            "buyer has tokens"
+        );
+        assertEq(token.balanceOf(receiver), 0, "receiver has no tokens");
+        assertEq(
+            _currency.balanceOf(receiver),
+            _currencyCost -
+                _currencyCost /
+                token.feeSettings().investmentFeeDenominator(),
+            "receiver should have received currency"
+        );
+        assertEq(
+            _currency.balanceOf(token.feeSettings().feeCollector()),
+            _currencyCost / token.feeSettings().investmentFeeDenominator(),
+            "fee receiver should have received currency"
+        );
+        assertEq(
+            token.balanceOf(token.feeSettings().feeCollector()),
+            amountOfTokenToBuy / token.feeSettings().investmentFeeDenominator(),
+            "fee receiver should have received tokens"
+        );
+        assertEq(
+            _currency.balanceOf(buyer),
+            _currencyAmount - _currencyCost,
+            "buyer should have paid currency"
+        );
     }
 
     function testContinuousFundraisingWithMainnetUSDC() public {
@@ -219,10 +243,34 @@ contract MainnetCurrencies is Test {
             "deployed contract address is not correct"
         );
         // check buyer has tokens and receiver has _currency afterwards
-        assertEq(token.balanceOf(buyer), amountOfTokenToBuy);
-        assertEq(token.balanceOf(receiver), 0);
-        assertEq(_currency.balanceOf(receiver), _currencyCost);
-        assertEq(_currency.balanceOf(buyer), _currencyAmount - _currencyCost);
+        assertEq(
+            token.balanceOf(buyer),
+            amountOfTokenToBuy,
+            "buyer has tokens"
+        );
+        assertEq(token.balanceOf(receiver), 0, "receiver has no tokens");
+        assertEq(
+            _currency.balanceOf(receiver),
+            _currencyCost -
+                _currencyCost /
+                token.feeSettings().investmentFeeDenominator(),
+            "receiver should have received currency"
+        );
+        assertEq(
+            _currency.balanceOf(token.feeSettings().feeCollector()),
+            _currencyCost / token.feeSettings().investmentFeeDenominator(),
+            "fee receiver should have received currency"
+        );
+        assertEq(
+            token.balanceOf(token.feeSettings().feeCollector()),
+            amountOfTokenToBuy / token.feeSettings().investmentFeeDenominator(),
+            "fee receiver should have received tokens"
+        );
+        assertEq(
+            _currency.balanceOf(buyer),
+            _currencyAmount - _currencyCost,
+            "buyer should have paid currency"
+        );
 
         // log buyers token balance
         console.log("buyer's token balance: ", token.balanceOf(buyer));
