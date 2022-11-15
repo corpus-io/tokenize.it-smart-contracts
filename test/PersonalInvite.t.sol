@@ -58,8 +58,10 @@ contract PersonalInviteTest is Test {
     }
 
     function testAcceptDeal(uint256 rawSalt) public {
-
-        console.log("feeCollector currency balance: %s", currency.balanceOf(token.feeSettings().feeCollector()));
+        console.log(
+            "feeCollector currency balance: %s",
+            currency.balanceOf(token.feeSettings().feeCollector())
+        );
 
         //uint rawSalt = 0;
         bytes32 salt = bytes32(rawSalt);
@@ -97,14 +99,20 @@ contract PersonalInviteTest is Test {
 
         // make sure balances are as expected before deployment
 
-        console.log("feeCollector currency balance: %s", currency.balanceOf(token.feeSettings().feeCollector()));
+        console.log(
+            "feeCollector currency balance: %s",
+            currency.balanceOf(token.feeSettings().feeCollector())
+        );
 
         uint currencyAmount = (amount * price) / 10 ** tokenDecimals;
         assertEq(currency.balanceOf(buyer), currencyAmount);
         assertEq(currency.balanceOf(receiver), 0);
         assertEq(token.balanceOf(buyer), 0);
 
-        console.log("feeCollector currency balance before deployment: %s", currency.balanceOf(token.feeSettings().feeCollector()));
+        console.log(
+            "feeCollector currency balance before deployment: %s",
+            currency.balanceOf(token.feeSettings().feeCollector())
+        );
         // make sure balances are as expected after deployment
         uint256 feeCollectorCurrencyBalanceBefore = currency.balanceOf(
             token.feeSettings().feeCollector()
@@ -121,7 +129,10 @@ contract PersonalInviteTest is Test {
             token
         );
 
-        console.log("feeCollector currency balance after deployment: %s", currency.balanceOf(token.feeSettings().feeCollector()));
+        console.log(
+            "feeCollector currency balance after deployment: %s",
+            currency.balanceOf(token.feeSettings().feeCollector())
+        );
 
         assertEq(
             inviteAddress,
@@ -146,8 +157,10 @@ contract PersonalInviteTest is Test {
                 token.feeSettings().investmentFeeDenominator()
         );
 
-        console.log("feeCollector currency balance: %s", currency.balanceOf(token.feeSettings().feeCollector()));
-
+        console.log(
+            "feeCollector currency balance: %s",
+            currency.balanceOf(token.feeSettings().feeCollector())
+        );
 
         assertEq(
             currency.balanceOf(token.feeSettings().feeCollector()),
@@ -155,7 +168,7 @@ contract PersonalInviteTest is Test {
                 currencyAmount /
                 token.feeSettings().investmentFeeDenominator(),
             "feeCollector currency balance is not correct"
-        ); 
+        );
 
         assertEq(token.balanceOf(buyer), amount);
 

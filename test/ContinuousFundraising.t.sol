@@ -179,22 +179,42 @@ contract ContinuousFundraisingTest is Test {
 
             // run actual test
 
+            uint tokenAmount = 33 * 10 ** token.decimals();
+
             // buyer has 1k FPT
             assertTrue(_paymentToken.balanceOf(buyer) == _paymentTokenAmount);
             // they should be able to buy 33 CT for 999 FPT
             vm.prank(buyer);
-            _raise.buy(33 * 10 ** 18);
+            _raise.buy(tokenAmount);
             // buyer should have 10 FPT left
             assertTrue(
                 _paymentToken.balanceOf(buyer) ==
                     10 * 10 ** _paymentTokenDecimals
             );
             // buyer should have the 33 CT they bought
-            assertTrue(_token.balanceOf(buyer) == 33 * 10 ** _token.decimals());
-            // receiver should have the 990 FPT that were paid
+            assertTrue(
+                _token.balanceOf(buyer) == tokenAmount,
+                "buyer has wrong amount of token"
+            );
+            // receiver should have the 990 FPT that were paid, minus the fee
+            uint currencyAmount = 990 * 10 ** _paymentTokenDecimals;
+            uint256 currencyFee = currencyAmount /
+                token.feeSettings().investmentFeeDenominator();
             assertTrue(
                 _paymentToken.balanceOf(receiver) ==
-                    990 * 10 ** _paymentTokenDecimals
+                    currencyAmount - currencyFee,
+                "receiver has wrong amount of currency"
+            );
+            // fee collector should have the token and currency fees
+            assertEq(
+                currencyFee,
+                _paymentToken.balanceOf(feeSettings.feeCollector()),
+                "fee collector has wrong amount of currency"
+            );
+            assertEq(
+                tokenAmount / token.feeSettings().tokenFeeDenominator(),
+                _token.balanceOf(feeSettings.feeCollector()),
+                "fee collector has wrong amount of token"
             );
         }
     }
@@ -309,10 +329,36 @@ contract ContinuousFundraisingTest is Test {
             paymentToken.balanceOf(buyer) ==
                 paymentTokenBalanceBefore - costInPaymentToken
         );
-        assertTrue(token.balanceOf(buyer) == tokenBuyAmount);
-        assertTrue(paymentToken.balanceOf(receiver) == costInPaymentToken);
-        assertTrue(raise.tokensSold() == tokenBuyAmount);
-        assertTrue(raise.tokensBought(buyer) == tokenBuyAmount);
+        assertTrue(
+            token.balanceOf(buyer) == tokenBuyAmount,
+            "buyer has tokens"
+        );
+        assertTrue(
+            paymentToken.balanceOf(receiver) ==
+                costInPaymentToken -
+                    costInPaymentToken /
+                    token.feeSettings().investmentFeeDenominator(),
+            "receiver has payment tokens"
+        );
+        assertTrue(
+            paymentToken.balanceOf(token.feeSettings().feeCollector()) ==
+                costInPaymentToken /
+                    token.feeSettings().investmentFeeDenominator(),
+            "fee collector has collected fee in payment tokens"
+        );
+        assertTrue(
+            token.balanceOf(token.feeSettings().feeCollector()) ==
+                tokenBuyAmount / token.feeSettings().tokenFeeDenominator(),
+            "fee collector has collected fee in tokens"
+        );
+        assertTrue(
+            raise.tokensSold() == tokenBuyAmount,
+            "raise has sold tokens"
+        );
+        assertTrue(
+            raise.tokensBought(buyer) == tokenBuyAmount,
+            "raise has sold tokens to buyer"
+        );
     }
 
     function testBuyTooMuch() public {
@@ -412,15 +458,37 @@ contract ContinuousFundraisingTest is Test {
             paymentToken.balanceOf(buyer) ==
                 paymentTokenBalanceBefore -
                     (costInPaymentTokenForMinAmount * 3) /
-                    2
+                    2,
+            "buyer has payment tokens"
         );
-        assertTrue(token.balanceOf(buyer) == (minAmountPerBuyer * 3) / 2);
+        assertTrue(
+            token.balanceOf(buyer) == (minAmountPerBuyer * 3) / 2,
+            "buyer has tokens"
+        );
+        uint256 tokenFee = (minAmountPerBuyer * 3) /
+            2 /
+            token.feeSettings().tokenFeeDenominator();
+        uint256 paymentTokenFee = (costInPaymentTokenForMinAmount * 3) /
+            2 /
+            token.feeSettings().investmentFeeDenominator();
         assertTrue(
             paymentToken.balanceOf(receiver) ==
-                (costInPaymentTokenForMinAmount * 3) / 2
+                (costInPaymentTokenForMinAmount * 3) / 2 - paymentTokenFee,
+            "receiver received payment tokens"
         );
-        assertTrue(raise.tokensSold() == (minAmountPerBuyer * 3) / 2);
-        assertTrue(raise.tokensBought(buyer) == raise.tokensSold());
+        assertEq(
+            token.balanceOf(token.feeSettings().feeCollector()),
+            tokenFee,
+            "fee collector has collected fee in tokens"
+        );
+        assertTrue(
+            raise.tokensSold() == (minAmountPerBuyer * 3) / 2,
+            "raise has sold tokens"
+        );
+        assertTrue(
+            raise.tokensBought(buyer) == raise.tokensSold(),
+            "raise has sold tokens to buyer"
+        );
     }
 
     function testAmountWithRest() public {
