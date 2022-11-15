@@ -304,7 +304,8 @@ contract tokenTest is Test {
         token.mint(pauser, x); // try to mint -> must fail!
     }
 
-    function testBurn(uint256 x) public {
+    function testBurnSimple(uint256 x) public {
+        vm.assume(x % token.feeSettings().tokenFeeDenominator() == 0);
         bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
         bytes32 role = token.BURNER_ROLE();
 
@@ -314,14 +315,17 @@ contract tokenTest is Test {
         token.setUpMinter(minter, x);
         assertTrue(token.mintingAllowance(minter) == x);
 
+        console.log("minting %s tokens", x);
+        console.log("fee collector: %s", token.feeSettings().feeCollector());
         vm.prank(minter);
         token.mint(pauser, x);
-        assertTrue(token.balanceOf(pauser) == x);
+        console.log("failed minting");
+        assertTrue(token.balanceOf(pauser) == x, "pauser balance is wrong before burn");
         vm.prank(admin);
         token.grantRole(role, burner);
         vm.prank(burner);
         token.burn(pauser, x);
-        assertTrue(token.balanceOf(pauser) == 0);
+        assertTrue(token.balanceOf(pauser) == 0, "pauser balance is wrong");
     }
 
     /*
@@ -476,14 +480,14 @@ contract tokenTest is Test {
         token.grantRole(role, requirer);
         vm.prank(requirer);
         token.setRequirements(3);
-        assertTrue(token.requirements() == 3);
+        assertTrue(token.requirements() == 3, "requirements not set");
 
         vm.prank(admin);
         allowList.set(pauser, 7);
         vm.prank(minter);
         token.mint(pauser, 50);
 
-        assertTrue(token.balanceOf(pauser) == 50);
+        assertTrue(token.balanceOf(pauser) == 50, "balance not minted");
     }
 
     function testFailBeforeTokenTransferRequirementsNotfulfilled() public {
