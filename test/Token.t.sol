@@ -896,4 +896,20 @@ contract tokenTest is Test {
         assertFalse(localToken.hasRole(localToken.TRANSFERER_ROLE(), deployer));
         assertFalse(localToken.hasRole(localToken.PAUSER_ROLE(), deployer));
     }
+
+    function testSetFeeSettingsWrongCaller(address wrongUpdater) public {
+        FeeSettings newFeeSettings = new FeeSettings(0, 0, pauser);
+        vm.prank(wrongUpdater);
+        vm.expectRevert("Only fee settings owner can change fee settings");
+        token.setFeeSettings(newFeeSettings);
+    }
+
+    function testSetFeeSettings(address newCollector) public {
+        vm.assume(newCollector != address(0));
+        FeeSettings newFeeSettings = new FeeSettings(0, 0, newCollector);
+        vm.prank(feeSettings.owner());
+        token.setFeeSettings(newFeeSettings);
+        assertTrue(address(token.feeSettings()) == address(newFeeSettings));
+        assertEq(token.feeSettings().feeCollector(), newCollector, "Wrong feeCollector");
+    }
 }
