@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "./MintableERC20.sol";
+import "./Token.sol";
 
 /**
 @notice This contract represents the offer to buy an amount of tokens at a preset price. It is created for a specific buyer and can only be claimed once and only by that buyer.
@@ -32,7 +32,7 @@ contract PersonalInvite {
         uint256 amount,
         uint256 tokenPrice,
         IERC20 currency,
-        MintableERC20 indexed token
+        Token indexed token
     );
 
     constructor(
@@ -42,7 +42,7 @@ contract PersonalInvite {
         uint256 _tokenPrice,
         uint256 _expiration,
         IERC20 _currency,
-        MintableERC20 _token
+        Token _token
     ) {
         require(_buyer != address(0), "_buyer can not be zero address");
         require(_receiver != address(0), "_receiver can not be zero address");
@@ -63,13 +63,24 @@ contract PersonalInvite {
             (_amount * _tokenPrice) % (10 ** _token.decimals()) == 0,
             "Amount * tokenprice needs to be a multiple of 10**token.decimals()"
         );
-        _currency.safeTransferFrom(
-            _buyer,
-            _receiver,
-            (_amount * _tokenPrice) / (10 ** _token.decimals())
-        );
-        require(_token.mint(_buyer, _amount), "Minting new tokens failed");
+        uint256 currencyAmount = (_amount * _tokenPrice) /
+            (10 ** _token.decimals());
 
+        uint256 fee;
+        if (_token.feeSettings().investmentFeeDenominator() == 0) {
+            fee = 0;
+        } else {
+            fee =
+                currencyAmount /
+                _token.feeSettings().investmentFeeDenominator();
+            _currency.safeTransferFrom(
+                _buyer,
+                _token.feeSettings().feeCollector(),
+                fee
+            );
+        }
+        _currency.safeTransferFrom(_buyer, _receiver, (currencyAmount - fee));
+        require(_token.mint(_buyer, _amount), "Minting new tokens failed");
         emit Deal(_buyer, _amount, _tokenPrice, _currency, _token);
     }
 }

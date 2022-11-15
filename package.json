@@ -38,7 +38,8 @@
   },
   "dependencies": {
     "@opengsn/contracts": "2.2.5",
-    "openzeppelin-contracts": "^4.0.0"
+    "openzeppelin-contracts": "^4.0.0",
+    "prettier-plugin-solidity": "^1.0.0-rc.1"
   },
   "scripts": {
     "build": "yarn hardhat compile && yarn tsc --declaration",

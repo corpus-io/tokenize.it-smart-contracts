@@ -23,7 +23,7 @@ contract PersonalInviteFactory {
         uint256 _tokenPrice,
         uint256 _expiration,
         IERC20 _currency,
-        MintableERC20 _token
+        IERC20 _token
     ) external returns (address) {
         // for syntax, see: https://solidity-by-example.org/app/create2/
         //address actualAddress = address(new PersonalInvite{salt: _salt}(buyer, _receiver, _amount, _tokenPrice, _expiration, _currency, _token));
@@ -56,7 +56,7 @@ contract PersonalInviteFactory {
         uint256 _tokenPrice,
         uint256 _expiration,
         IERC20 _currency,
-        MintableERC20 _token
+        IERC20 _token
     ) public view returns (address) {
         bytes memory bytecode = getBytecode(
             buyer,
@@ -79,7 +79,7 @@ contract PersonalInviteFactory {
         uint256 _tokenPrice,
         uint256 _expiration,
         IERC20 _currency,
-        MintableERC20 _token
+        IERC20 _token
     ) private pure returns (bytes memory) {
         return
             abi.encodePacked(

@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
-import "./MintableERC20.sol";
+import "./Token.sol";
 
 /*
 This contract represents the offer to buy an amount of tokens at a preset price. It can be used by anyone and there is no limit to the number of times it can be used.
@@ -47,7 +47,7 @@ contract ContinuousFundraising is
     /// @notice currency used to pay for the token mint. Must be ERC20, so ether can only be used as wrapped ether (WETH)
     IERC20 public currency;
     /// @notice token to be minted
-    MintableERC20 public token;
+    Token public token;
 
     // delay is calculated from pause or parameter change to unpause.
     uint256 public constant delay = 1 days;
@@ -75,7 +75,7 @@ contract ContinuousFundraising is
         uint256 _tokenPrice,
         uint256 _maxAmountOfTokenToBeSold,
         IERC20 _currency,
-        MintableERC20 _token
+        Token _token
     ) ERC2771Context(_trustedForwarder) {
         currencyReceiver = _currencyReceiver;
         minAmountPerBuyer = _minAmountPerBuyer;
@@ -137,11 +137,29 @@ contract ContinuousFundraising is
         );
         tokensSold += _amount;
         tokensBought[_msgSender()] += _amount;
+
+        uint256 currencyAmount = (_amount * tokenPrice) /
+            (10 ** token.decimals());
+        uint256 fee;
+        if (token.feeSettings().investmentFeeDenominator() == 0) {
+            fee = 0;
+        } else {
+            fee =
+                currencyAmount /
+                token.feeSettings().investmentFeeDenominator();
+            currency.safeTransferFrom(
+                _msgSender(),
+                token.feeSettings().feeCollector(),
+                fee
+            );
+        }
+
         currency.safeTransferFrom(
             _msgSender(),
             currencyReceiver,
-            (_amount * tokenPrice) / (10 ** token.decimals())
+            currencyAmount - fee
         );
+
         require(token.mint(_msgSender(), _amount), "Minting new tokens failed");
         return true;
     }

@@ -13,6 +13,8 @@ contract ContinuousFundraisingTest is Test {
 
     ContinuousFundraising raise;
     AllowList list;
+    FeeSettings feeSettings;
+
     Token token;
     FakePaymentToken paymentToken;
     //Forwarder trustedForwarder;
@@ -60,10 +62,19 @@ contract ContinuousFundraisingTest is Test {
     uint256 tokenBuyAmount;
     uint256 costInPaymentToken;
 
+    uint256 tokenFeeDenominator = 100;
+    uint256 paymentTokenFeeDenominator = 50;
+
     function setUp() public {
         list = new AllowList();
+        feeSettings = new FeeSettings(
+            tokenFeeDenominator,
+            paymentTokenFeeDenominator,
+            admin
+        );
         token = new Token(
             trustedForwarder,
+            address(feeSettings),
             admin,
             list,
             0x0,
@@ -106,7 +117,6 @@ contract ContinuousFundraisingTest is Test {
     //     assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
 
     //     vm.prank(owner);
-    //     raise = new ContinuousFundraising(address(trustedForwarder), payable(receiver), minAmountPerBuyer, maxAmountPerBuyer, price, maxAmountOfTokenToBeSold, paymentToken, MintableERC20(address(token)));
 
     //     // allow raise contract to mint
     //     bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
@@ -131,7 +141,7 @@ contract ContinuousFundraisingTest is Test {
             price,
             maxAmountOfTokenToBeSold,
             paymentToken,
-            MintableERC20(address(token))
+            token
         );
 
         // allow raise contract to mint
@@ -242,8 +252,25 @@ contract ContinuousFundraisingTest is Test {
         // raise.buy(tokenBuyAmount);
         console.log("Gas used: ", gasBefore - gasleft());
 
+        // investor receives as many tokens as they paid for
         assertTrue(token.balanceOf(buyer) == tokenBuyAmount);
-        assertEq(paymentToken.balanceOf(receiver), costInPaymentToken);
+        // but fee collector receives additional tokens
+        assertTrue(
+            token.balanceOf(feeSettings.feeCollector()) ==
+                tokenBuyAmount / tokenFeeDenominator
+        );
+
+        // receiver receives payment tokens after fee has been deducted
+        assertEq(
+            paymentToken.balanceOf(receiver),
+            costInPaymentToken - costInPaymentToken / paymentTokenFeeDenominator
+        );
+        // fee collector receives fee in payment tokens
+        assertEq(
+            paymentToken.balanceOf(feeSettings.feeCollector()),
+            costInPaymentToken / paymentTokenFeeDenominator
+        );
+
         assertEq(paymentToken.balanceOf(address(raise)), 0);
         assertEq(token.balanceOf(address(raise)), 0);
         assertEq(token.balanceOf(receiver), 0);

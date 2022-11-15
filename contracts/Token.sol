@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 import "./AllowList.sol";
+import "./FeeSettings.sol";
 
 /**
 @title tokenize.it Token
@@ -39,6 +40,9 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
 
     // Map managed by tokenize.it, which assigns addresses requirements which they fulfill
     AllowList public allowList;
+
+    // Fee settings of tokenize.it
+    FeeSettings public feeSettings;
     /**
     @notice  defines requirements to send or receive tokens for non-TRANSFERER_ROLE. If zero, everbody can transfer the token. If non-zero, then only those who have met the requirements can send or receive tokens. 
         Requirements can be defined by the REQUIREMENT_ROLE, and are validated against the allowList. They can include things like "must have a verified email address", "must have a verified phone number", "must have a verified identity", etc. 
@@ -68,9 +72,13 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     /// @notice defines the maximum amount of tokens that can be minted by a specific minter. If zero, no tokens can be minted.
     mapping(address => uint256) public mintingAllowance; // used for token generating events such as vesting or new financing rounds
 
-    event RequirementsChanged(uint256 newRequirements);
-    event AllowListChanged(AllowList indexed allowList);
-    event MintingAllowanceChanged(address indexed minter, uint256 newAllowance);
+    event RequirementsChanged(uint newRequirements);
+    event AllowListChanged(AllowList indexed newAllowList);
+    event FeeSettingsChanged(FeeSettings indexed newFeeSettings);
+    event MintingAllowanceChanged(
+        address indexed newMinter,
+        uint256 newAllowance
+    );
 
     /**
     @notice Constructor for the token 
@@ -83,6 +91,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     */
     constructor(
         address _trustedForwarder,
+        address _feeSettings,
         address _admin,
         AllowList _allowList,
         uint256 _requirements,
@@ -105,6 +114,9 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         _grantRole(TRANSFERERADMIN_ROLE, _admin);
         _grantRole(PAUSER_ROLE, _admin);
 
+        // set up fee collection
+        feeSettings = FeeSettings(_feeSettings);
+
         allowList = _allowList;
         requirements = _requirements;
     }
@@ -123,6 +135,15 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         emit RequirementsChanged(_requirements);
     }
 
+    function setFeeSettings(FeeSettings _feeSettings) public {
+        require(
+            _msgSender() == feeSettings.owner(),
+            "Only fee settings owner can change fee settings"
+        );
+        feeSettings = _feeSettings;
+        emit FeeSettingsChanged(_feeSettings);
+    }
+
     /** 
         @notice minting contracts such as personal investment invite, vesting, crowdfunding must be granted minter role through this function. 
             Each call of setUpMinter will make the contract: 
@@ -138,7 +159,10 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         uint256 _allowance
     ) public onlyRole(getRoleAdmin(MINTER_ROLE)) {
         _grantRole(MINTER_ROLE, _minter);
-        require(mintingAllowance[_minter] == 0 || _allowance == 0); // to prevent frontrunning when setting a new allowance, see https://www.adrianhetman.com/unboxing-erc20-approve-issues/
+        require(
+            mintingAllowance[_minter] == 0 || _allowance == 0,
+            "Set up minter can only be called if the remaining allowance is 0 or to set the allowance to 0."
+        ); // to prevent frontrunning when setting a new allowance, see https://www.adrianhetman.com/unboxing-erc20-approve-issues/
         mintingAllowance[_minter] = _allowance;
         emit MintingAllowanceChanged(_minter, _allowance);
     }
@@ -153,6 +177,13 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         );
         mintingAllowance[_msgSender()] -= _amount;
         _mint(_to, _amount);
+        // collect fees
+        if (feeSettings.tokenFeeDenominator() != 0) {
+            _mint(
+                feeSettings.feeCollector(),
+                _amount / feeSettings.tokenFeeDenominator()
+            );
+        }
         return true;
     }
 
@@ -181,7 +212,8 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         require(
             hasRole(TRANSFERER_ROLE, _to) ||
                 allowList.map(_to) & requirements == requirements ||
-                _to == address(0),
+                _to == address(0) ||
+                _to == feeSettings.feeCollector(),
             "Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
         ); // address(0), because this is the _to address in case of burning tokens
     }
