@@ -267,7 +267,10 @@ contract tokenTest is Test {
     */
     function testMintAgain(uint256 totalMintAmount, uint256 steps) public {
         vm.assume(
-            totalMintAmount <= UINT256_MAX - totalMintAmount / token.feeSettings().tokenFeeDenominator()
+            totalMintAmount <=
+                UINT256_MAX -
+                    totalMintAmount /
+                    token.feeSettings().tokenFeeDenominator()
         ); // avoid overflow
         //vm.assume(steps < 200);
 

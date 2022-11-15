@@ -156,7 +156,10 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         uint256 _allowance
     ) public onlyRole(getRoleAdmin(MINTER_ROLE)) {
         _grantRole(MINTER_ROLE, _minter);
-        require(mintingAllowance[_minter] == 0 || _allowance == 0, "Set up minter can only be called if the remaining allowance is 0 or to set the allowance to 0."); // to prevent frontrunning when setting a new allowance, see https://www.adrianhetman.com/unboxing-erc20-approve-issues/
+        require(
+            mintingAllowance[_minter] == 0 || _allowance == 0,
+            "Set up minter can only be called if the remaining allowance is 0 or to set the allowance to 0."
+        ); // to prevent frontrunning when setting a new allowance, see https://www.adrianhetman.com/unboxing-erc20-approve-issues/
         mintingAllowance[_minter] = _allowance;
         emit MintingAllowanceChanged(_minter, _allowance);
     }
