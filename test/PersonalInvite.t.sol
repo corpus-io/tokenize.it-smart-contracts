@@ -39,7 +39,7 @@ contract PersonalInviteTest is Test {
 
         token = new Token(
             trustedForwarder,
-            feeSettings,
+            address(feeSettings),
             admin,
             list,
             0x0,
@@ -48,6 +48,7 @@ contract PersonalInviteTest is Test {
         );
         currency = new Token(
             trustedForwarder,
+            address(feeSettings),
             admin,
             list,
             0x0,
@@ -84,17 +85,14 @@ contract PersonalInviteTest is Test {
         uint256 tokenDecimals = token.decimals();
 
         vm.prank(admin);
-        currency.mint(buyer, (amount * price) / 10 ** tokenDecimals);
+        currency.mint(buyer, (amount * price) / 10**tokenDecimals);
         vm.prank(buyer);
-        currency.approve(
-            expectedAddress,
-            (amount * price) / 10 ** tokenDecimals
-        );
+        currency.approve(expectedAddress, (amount * price) / 10**tokenDecimals);
 
         // make sure balances are as expected before deployment
         assertEq(
             currency.balanceOf(buyer),
-            (amount * price) / 10 ** tokenDecimals
+            (amount * price) / 10**tokenDecimals
         );
         assertEq(currency.balanceOf(receiver), 0);
         assertEq(token.balanceOf(buyer), 0);
@@ -128,7 +126,7 @@ contract PersonalInviteTest is Test {
         assertEq(currency.balanceOf(buyer), 0);
         assertEq(
             currency.balanceOf(receiver),
-            (amount * price) / 10 ** tokenDecimals
+            (amount * price) / 10**tokenDecimals
         );
         assertEq(token.balanceOf(buyer), amount);
     }

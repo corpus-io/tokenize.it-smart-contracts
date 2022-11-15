@@ -30,11 +30,11 @@ contract ContinuousFundraisingTest is Test {
 
     uint8 public constant paymentTokenDecimals = 6;
     uint256 public constant paymentTokenAmount =
-        1000 * 10 ** paymentTokenDecimals;
+        1000 * 10**paymentTokenDecimals;
 
-    uint256 public constant price = 7 * 10 ** paymentTokenDecimals; // 7 payment tokens per token
+    uint256 public constant price = 7 * 10**paymentTokenDecimals; // 7 payment tokens per token
 
-    uint256 public constant maxAmountOfTokenToBeSold = 20 * 10 ** 18; // 20 token
+    uint256 public constant maxAmountOfTokenToBeSold = 20 * 10**18; // 20 token
     uint256 public constant maxAmountPerBuyer = maxAmountOfTokenToBeSold / 2; // 10 token
     uint256 public constant minAmountPerBuyer = maxAmountOfTokenToBeSold / 200; // 0.1 token
 
@@ -44,7 +44,7 @@ contract ContinuousFundraisingTest is Test {
 
         token = new Token(
             trustedForwarder,
-            feeSettings,
+            address(feeSettings),
             admin,
             list,
             0x0,
@@ -128,14 +128,14 @@ contract ContinuousFundraisingTest is Test {
             price definition: 30FPT buy 1CT, but must be expressed in FPTbits/CT
             price = 30 * 10**_paymentTokenDecimals
             */
-            uint256 _price = 30 * 10 ** _paymentTokenDecimals;
-            uint256 _maxMintAmount = 2 ** 256 - 1; // need maximum possible value because we are using a fake token with variable decimals
-            uint256 _paymentTokenAmount = 1000 * 10 ** _paymentTokenDecimals;
+            uint256 _price = 30 * 10**_paymentTokenDecimals;
+            uint256 _maxMintAmount = 2**256 - 1; // need maximum possible value because we are using a fake token with variable decimals
+            uint256 _paymentTokenAmount = 1000 * 10**_paymentTokenDecimals;
 
             list = new AllowList();
             Token _token = new Token(
                 trustedForwarder,
-                feeSettings,
+                address(feeSettings),
                 admin,
                 list,
                 0x0,
@@ -183,18 +183,17 @@ contract ContinuousFundraisingTest is Test {
             assertTrue(_paymentToken.balanceOf(buyer) == _paymentTokenAmount);
             // they should be able to buy 33 CT for 999 FPT
             vm.prank(buyer);
-            _raise.buy(33 * 10 ** 18);
+            _raise.buy(33 * 10**18);
             // buyer should have 10 FPT left
             assertTrue(
-                _paymentToken.balanceOf(buyer) ==
-                    10 * 10 ** _paymentTokenDecimals
+                _paymentToken.balanceOf(buyer) == 10 * 10**_paymentTokenDecimals
             );
             // buyer should have the 33 CT they bought
-            assertTrue(_token.balanceOf(buyer) == 33 * 10 ** _token.decimals());
+            assertTrue(_token.balanceOf(buyer) == 33 * 10**_token.decimals());
             // receiver should have the 990 FPT that were paid
             assertTrue(
                 _paymentToken.balanceOf(receiver) ==
-                    990 * 10 ** _paymentTokenDecimals
+                    990 * 10**_paymentTokenDecimals
             );
         }
     }
@@ -213,14 +212,14 @@ contract ContinuousFundraisingTest is Test {
         price = 30 * 10**_paymentTokenDecimals
         */
 
-        uint256 _price = 7 * 10 ** _paymentTokenDecimals;
-        uint256 _maxMintAmount = 1000 * 10 ** 18; // 2**256 - 1; // need maximum possible value because we are using a fake token with variable decimals
-        uint256 _paymentTokenAmount = 100000 * 10 ** _paymentTokenDecimals;
+        uint256 _price = 7 * 10**_paymentTokenDecimals;
+        uint256 _maxMintAmount = 1000 * 10**18; // 2**256 - 1; // need maximum possible value because we are using a fake token with variable decimals
+        uint256 _paymentTokenAmount = 100000 * 10**_paymentTokenDecimals;
 
         list = new AllowList();
         Token _token = new Token(
             trustedForwarder,
-            feeSettings,
+            address(feeSettings),
             admin,
             list,
             0x0,
@@ -296,10 +295,10 @@ contract ContinuousFundraisingTest is Test {
     }
 
     function testBuyHappyCase() public {
-        uint256 tokenBuyAmount = 5 * 10 ** token.decimals();
-        uint256 costInPaymentToken = (tokenBuyAmount * price) / 10 ** 18;
+        uint256 tokenBuyAmount = 5 * 10**token.decimals();
+        uint256 costInPaymentToken = (tokenBuyAmount * price) / 10**18;
 
-        assert(costInPaymentToken == 35 * 10 ** paymentTokenDecimals); // 35 payment tokens, manually calculated
+        assert(costInPaymentToken == 35 * 10**paymentTokenDecimals); // 35 payment tokens, manually calculated
 
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
 
@@ -316,10 +315,10 @@ contract ContinuousFundraisingTest is Test {
     }
 
     function testBuyTooMuch() public {
-        uint256 tokenBuyAmount = 5 * 10 ** token.decimals();
-        uint256 costInPaymentToken = (tokenBuyAmount * price) / 10 ** 18;
+        uint256 tokenBuyAmount = 5 * 10**token.decimals();
+        uint256 costInPaymentToken = (tokenBuyAmount * price) / 10**18;
 
-        assert(costInPaymentToken == 35 * 10 ** paymentTokenDecimals); // 35 payment tokens, manually calculated
+        assert(costInPaymentToken == 35 * 10**paymentTokenDecimals); // 35 payment tokens, manually calculated
 
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
 
@@ -327,7 +326,7 @@ contract ContinuousFundraisingTest is Test {
         vm.expectRevert(
             "Total amount of bought tokens needs to be lower than or equal to maxAmount"
         );
-        raise.buy(maxAmountPerBuyer + 10 ** 18); //+ 10**token.decimals());
+        raise.buy(maxAmountPerBuyer + 10**18); //+ 10**token.decimals());
         assertTrue(paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore);
         assertTrue(token.balanceOf(buyer) == 0);
         assertTrue(paymentToken.balanceOf(receiver) == 0);
@@ -344,7 +343,7 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(buyer);
         paymentToken.transfer(person1, availableBalance / 2);
         vm.prank(buyer);
-        paymentToken.transfer(person2, 10 ** 6);
+        paymentToken.transfer(person2, 10**6);
 
         vm.prank(person1);
         paymentToken.approve(address(raise), paymentTokenAmount);
@@ -358,7 +357,7 @@ contract ContinuousFundraisingTest is Test {
         raise.buy(maxAmountOfTokenToBeSold / 2);
         vm.prank(person2);
         vm.expectRevert("Not enough tokens to sell left");
-        raise.buy(10 ** 18);
+        raise.buy(10**18);
     }
 
     function testExceedMintingAllowance() public {
@@ -378,10 +377,10 @@ contract ContinuousFundraisingTest is Test {
     }
 
     function testBuyTooLittle() public {
-        uint256 tokenBuyAmount = 5 * 10 ** token.decimals();
-        uint256 costInPaymentToken = (tokenBuyAmount * price) / 10 ** 18;
+        uint256 tokenBuyAmount = 5 * 10**token.decimals();
+        uint256 costInPaymentToken = (tokenBuyAmount * price) / 10**18;
 
-        assert(costInPaymentToken == 35 * 10 ** paymentTokenDecimals); // 35 payment tokens, manually calculated
+        assert(costInPaymentToken == 35 * 10**paymentTokenDecimals); // 35 payment tokens, manually calculated
 
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
 
@@ -398,7 +397,7 @@ contract ContinuousFundraisingTest is Test {
     function testBuySmallAmountAfterInitialInvestment() public {
         uint256 tokenBuyAmount = minAmountPerBuyer;
         uint256 costInPaymentTokenForMinAmount = (tokenBuyAmount * price) /
-            10 ** 18;
+            10**18;
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
 
         vm.prank(buyer);
@@ -424,10 +423,10 @@ contract ContinuousFundraisingTest is Test {
     }
 
     function testAmountWithRest() public {
-        uint256 tokenBuyAmount = 5 * 10 ** token.decimals();
-        uint256 costInPaymentToken = (tokenBuyAmount * price) / 10 ** 18;
+        uint256 tokenBuyAmount = 5 * 10**token.decimals();
+        uint256 costInPaymentToken = (tokenBuyAmount * price) / 10**18;
 
-        assert(costInPaymentToken == 35 * 10 ** paymentTokenDecimals); // 35 payment tokens, manually calculated
+        assert(costInPaymentToken == 35 * 10**paymentTokenDecimals); // 35 payment tokens, manually calculated
 
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
 
@@ -560,7 +559,7 @@ contract ContinuousFundraisingTest is Test {
     */
     function testFailUpdateMaxAmountOfTokenToBeSoldNotPaused() public {
         vm.prank(owner);
-        raise.setMaxAmountOfTokenToBeSold(123 * 10 ** 18);
+        raise.setMaxAmountOfTokenToBeSold(123 * 10**18);
     }
 
     /*

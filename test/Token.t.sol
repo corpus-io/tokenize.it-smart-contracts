@@ -31,7 +31,7 @@ contract tokenTest is Test {
         feeSettings = new FeeSettings(100, 100, admin);
         token = new Token(
             trustedForwarder,
-            feeSettings,
+            address(feeSettings),
             admin,
             allowList,
             0x0,
@@ -832,7 +832,7 @@ contract tokenTest is Test {
     function testDeployerDoesNotGetRole() public {
         Token localToken = new Token(
             trustedForwarder,
-            feeSettings,
+            address(feeSettings),
             admin,
             allowList,
             0x0,
