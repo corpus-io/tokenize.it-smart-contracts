@@ -904,6 +904,13 @@ contract tokenTest is Test {
         token.setFeeSettings(newFeeSettings);
     }
 
+    function testSetFeeSettingsFeeCollector() public {
+        FeeSettings newFeeSettings = new FeeSettings(0, 0, pauser);
+        vm.prank(feeSettings.feeCollector());
+        vm.expectRevert("Only fee settings owner can change fee settings");
+        token.setFeeSettings(newFeeSettings);
+    }
+
     function testSetFeeSettings(address newCollector) public {
         vm.assume(newCollector != address(0));
         FeeSettings newFeeSettings = new FeeSettings(0, 0, newCollector);
