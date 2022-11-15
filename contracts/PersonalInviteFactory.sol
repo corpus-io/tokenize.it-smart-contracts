@@ -25,9 +25,7 @@ contract PersonalInviteFactory {
         IERC20 _currency,
         IERC20 _token
     ) external returns (address) {
-        // for syntax, see: https://solidity-by-example.org/app/create2/
-        //address actualAddress = address(new PersonalInvite{salt: _salt}(buyer, _receiver, _amount, _tokenPrice, _expiration, _currency, _token));
-        address actualAddress = Create2.deploy(
+       address actualAddress = Create2.deploy(
             0,
             _salt,
             getBytecode(
@@ -67,8 +65,6 @@ contract PersonalInviteFactory {
             _currency,
             _token
         );
-        //bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), address(this), _salt, keccak256(bytecode)));
-        //return address(uint160(uint256(hash)));
         return Create2.computeAddress(_salt, keccak256(bytecode));
     }
 

@@ -58,8 +58,8 @@ contract FeeSettings is Ownable {
             "Fee must be below 5% or 0"
         );
         require(
-            _change.time > block.timestamp + 7884000,
-            "Fee change must be at least 3 months in the future"
+            _change.time > block.timestamp + 12 weeks,
+            "Fee change must be at least 12 weeks in the future"
         ); // can only be executed in 3 months
         change = _change;
         emit ChangeProposed(_change);

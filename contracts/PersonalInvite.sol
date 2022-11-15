@@ -50,10 +50,10 @@ contract PersonalInvite {
         require(block.timestamp <= _expiration, "Deal expired");
 
         /**
-        @dev To avoid rounding errors, tokenprice needs to be multiple of 10**token.decimals(). This is checked for here. 
+        @dev To avoid rounding errors, (amount * tokenPrice) needs to be multiple of 10**token.decimals(). This is checked for here. 
             With:
                 _tokenAmount = a * [token_bits]
-                tokenPrice = p * [currency_bits]/[token]
+                _tokenPrice = p * [currency_bits]/[token]
             The currency amount is calculated as: 
                 currencyAmount = _tokenAmount * tokenPrice 
                 = a * p * [currency_bits]/[token] * [token_bits]  with 1 [token] = (10**token.decimals) [token_bits]
