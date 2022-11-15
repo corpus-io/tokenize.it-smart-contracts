@@ -42,6 +42,7 @@ contract FeeSettings is Ownable {
             "Fee must be below 5% or 0"
         );
         investmentFeeDenominator = _investmentFeeDenominator;
+        require(_feeCollector != address(0), "Fee collector cannot be 0x0");
         feeCollector = _feeCollector;
     }
 
@@ -56,13 +57,13 @@ contract FeeSettings is Ownable {
                 _change.investmentFeeDenominator == 0,
             "Fee must be below 5% or 0"
         );
-        require(_change.time > block.timestamp + 7884000); // can only be executed in 3 months
+        require(_change.time > block.timestamp + 7884000, "Fee change must be at least 3 months in the future"); // can only be executed in 3 months
         change = _change;
         emit ChangeProposed(_change);
     }
 
     function executeFeeChange() public onlyOwner {
-        require(block.timestamp >= change.time);
+        require(block.timestamp >= change.time, "Fee change must be executed after the change time");
         tokenFeeDenominator = change.tokenFeeDenominator;
         investmentFeeDenominator = change.investmentFeeDenominator;
         emit SetTokenFeeDenominator(change.tokenFeeDenominator);
@@ -71,6 +72,7 @@ contract FeeSettings is Ownable {
     }
 
     function setFeeCollector(address _feeCollector) public onlyOwner {
+        require(_feeCollector != address(0), "Fee collector cannot be 0x0");
         feeCollector = _feeCollector;
         emit FeeCollectorChanged(_feeCollector);
     }
