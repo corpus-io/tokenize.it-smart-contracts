@@ -38,7 +38,7 @@ contract MainnetCurrencies is Test {
     address public constant trustedForwarder =
         0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA;
 
-    uint256 public constant maxAmountOfTokenToBeSold = 20 * 10**18; // 20 token
+    uint256 public constant maxAmountOfTokenToBeSold = 20 * 10 ** 18; // 20 token
     uint256 public constant maxAmountPerBuyer = maxAmountOfTokenToBeSold / 2; // 10 token
     uint256 public constant minAmountPerBuyer = maxAmountOfTokenToBeSold / 200; // 0.1 token
     uint256 public constant amountOfTokenToBuy = maxAmountPerBuyer;
@@ -92,9 +92,9 @@ contract MainnetCurrencies is Test {
         // some math
         //uint _decimals = _currency.decimals(); // can't get decimals from IERC20
         //uint _price = 7 * 10**_decimals; // 7 payment tokens per token
-        uint256 _price = 7 * 10**18;
+        uint256 _price = 7 * 10 ** 18;
         uint256 _currencyCost = (amountOfTokenToBuy * _price) /
-            10**token.decimals();
+            10 ** token.decimals();
         uint256 _currencyAmount = _currencyCost * 2;
 
         // set up fundraise with _currency
@@ -163,9 +163,9 @@ contract MainnetCurrencies is Test {
         // some math
         //uint _decimals = _currency.decimals(); // can't get decimals from IERC20
         //uint _price = 7 * 10**_decimals; // 7 payment tokens per token
-        uint256 _price = 7 * 10**18;
+        uint256 _price = 7 * 10 ** 18;
         uint256 _currencyCost = (amountOfTokenToBuy * _price) /
-            10**token.decimals();
+            10 ** token.decimals();
         uint256 _currencyAmount = _currencyCost * 2;
 
         // generate address of invite
