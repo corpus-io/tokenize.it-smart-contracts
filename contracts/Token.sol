@@ -69,7 +69,12 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     */
     uint256 public requirements;
 
-    /// @notice defines the maximum amount of tokens that can be minted by a specific minter. If zero, no tokens can be minted.
+    /**
+    @notice defines the maximum amount of tokens that can be minted by a specific minter. If zero, no tokens can be minted.
+        Tokens paid as fees, as specified in the `feeSettings` contract, do not require an allowance.
+        Example: Fee is set to 1% and mintingAllowance is 100. When executing the `mint` function with 100 as `amount`,
+        100 tokens will be minted to the `to` address, and 1 token to the feeCollector.
+    */
     mapping(address => uint256) public mintingAllowance; // used for token generating events such as vesting or new financing rounds
 
     event RequirementsChanged(uint newRequirements);
@@ -149,10 +154,10 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
             Each call of setUpMinter will make the contract: 
                 1. forget how many tokens might have been minted by this minter before. 
                 2. set the allowance for this minter to the new value, discarding any remaining allowance that might have been left from before.
-            This feels very natural on the first call, but might be surprising on subsequent calls, so be careful.
+            This feels very natural on the first call, but might be surprising on subsequent calls, so be careful. Before setting it to a non-zero value, it must be zero.
         @dev The "forget last allowance and count of minted tokens" behavior is accepted in order to reduce the complexity of the contract as well as it's gas usage.
         @param _minter address of the minter contract
-        @param _allowance maximum amount of tokens that can be minted by this minter IN THIS ROUND
+        @param _allowance maximum amount of tokens that can be minted by this minter (exclusive the tokens minted as a fee)
     */
     function setUpMinter(
         address _minter,
@@ -203,17 +208,17 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         super._beforeTokenTransfer(_from, _to, _amount);
         _requireNotPaused();
         require(
-            hasRole(BURNER_ROLE, _msgSender()) ||
-                hasRole(TRANSFERER_ROLE, _from) ||
-                allowList.map(_from) & requirements == requirements ||
-                _from == address(0),
+            allowList.map(_from) & requirements == requirements ||
+                _from == address(0) ||
+                hasRole(BURNER_ROLE, _msgSender()) ||
+                hasRole(TRANSFERER_ROLE, _from),
             "Sender is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
         ); // address(0), because this is the _from address in case of minting new tokens
         require(
-            hasRole(TRANSFERER_ROLE, _to) ||
-                allowList.map(_to) & requirements == requirements ||
+            allowList.map(_to) & requirements == requirements ||
                 _to == address(0) ||
-                _to == feeSettings.feeCollector(),
+                _to == feeSettings.feeCollector() ||
+                hasRole(TRANSFERER_ROLE, _to),
             "Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
         ); // address(0), because this is the _to address in case of burning tokens
     }
