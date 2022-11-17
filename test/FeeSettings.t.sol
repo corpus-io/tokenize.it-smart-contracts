@@ -89,7 +89,7 @@ contract FeeSettingsTest is Test {
             time: block.timestamp + delay
         });
         vm.prank(admin);
-        vm.expectRevert("Fee change must be at least 3 months in the future");
+        vm.expectRevert("Fee change must be at least 12 weeks in the future");
         _feeSettings.planFeeChange(feeChange);
 
         // vm.prank(admin);
