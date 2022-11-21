@@ -29,7 +29,8 @@ The following resources are available regarding the contracts:
 - [Price format explainer](docs/price.md)
 - In-depth explanation: please read the [contracts](contracts/)
 - [Specification](docs/specification.md)
-- Remaining questions: please get in touch: [hi@tokenize.it](mailto:hi@tokenize.it)
+- [Fee Collection](./docs/fees.md)
+- Remaining questions: please get in touch at [hi@tokenize.it](mailto:hi@tokenize.it)
 
 ## Token.sol
 
