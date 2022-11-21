@@ -197,5 +197,4 @@ contract FeeSettingsTest is Test {
     function feeInValidRange(uint8 fee) internal pure returns (bool) {
         return fee == 0 || fee >= 20;
     }
-
 }
