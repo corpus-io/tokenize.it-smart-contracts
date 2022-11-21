@@ -155,22 +155,35 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
             _msgSender() == feeSettings.owner(),
             "Only fee settings owner can suggest fee settings update"
         );
-        require(_feeSettings != 0, "Fee settings cannot be zero address");
+        require(
+            address(_feeSettings) != address(0),
+            "Fee settings cannot be zero address"
+        );
         suggestedFeeSettings = _feeSettings;
         emit NewFeeSettingsSuggested(_feeSettings);
     }
 
-    function acceptFeeSettingsUpdate(FeeSettings _feeSettings) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        // checking that the suggested fee settings are the same as the one passed in
-        // -> prevents front running of the fee settings update with another fee settings suggestion
+    /**
+     * @notice This function can only be used by the admin to approve switching to the new feeSettings contract.
+     *     The new feeSettings contract will be applied immediately.
+     * @dev Enforcing the suggested and accepted new contract to be the same is not necessary, prevents frontrunning.
+     *      Requiring not 0 prevent bricking the token.
+     * @param _feeSettings the new feeSettings contract
+     */
+    function acceptNewFeeSettings(
+        FeeSettings _feeSettings
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(
+            address(suggestedFeeSettings) != address(0),
+            "Fee settings cannot be zero address"
+        );
         require(
             _feeSettings == suggestedFeeSettings,
             "Only suggested fee settings can be accepted"
         );
-        feeSettings = _feeSettings;
+        feeSettings = suggestedFeeSettings;
+        suggestedFeeSettings = FeeSettings(address(0));
         emit FeeSettingsChanged(_feeSettings);
-    }
-
     }
 
     /** 
