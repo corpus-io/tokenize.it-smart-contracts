@@ -34,8 +34,8 @@ The following resources are available regarding the contracts:
 
 ## Token.sol
 
-Based on the OpenZeppelin ERC20 contract using the AccessControl extension.
-Beyond being an ERC20 token, it has fine graind access control to:
+The [token contract](./contracts/Token.sol) is based on the OpenZeppelin ERC20 contract using the AccessControl extension. Also implements meta transactions following [EIP-2771](https://eips.ethereum.org/EIPS/eip-2771) and [EIP-2612](https://eips.ethereum.org/EIPS/eip-2612).
+Beyond being an ERC20 token, it has fine grained access control to:
 
 - define minting rights
 - setting requirements which a user has to meet in order to transact
@@ -45,39 +45,29 @@ Beyond being an ERC20 token, it has fine graind access control to:
 
 ### Minting
 
-According to the Accesscontrol module, ther is an admin for each role, which controls who holds this role. Minting is very central to the usage of this contract. The Minteradmin can give an address minter rights. For example the admin (or CEO) of the company, to create new shares.
+According to the AccessControl module, there is an admin for each role, which controls who holds this role. Minting is very central to the usage of this contract. The Minteradmin can give an address minter rights. For example the admin (or CEO) of the company, to create new shares.
 Each investment or vesting contract also needs minting rights in order to function.
-In addition to the right to mint, there is also a minting allowance, which needs to be issued by the Minteradmin. this is tored in the map `mintingAllowance`
+In addition to the right to mint, there is also a minting allowance, which needs to be issued by the Minteradmin. This is stored in the map `mintingAllowance`
 
 ### Requirements
 
-We expect that the companies issuing a token through tokenize.it need a control about who can transact with the token for compliance reasons.
+We expect that the companies issuing a token through tokenize.it need control about who can transact with the token for compliance reasons.
 There are two ways to control who can transact with the token:
 
-1. The `TransfererRoleAdmin` can give the `Transferer` -role to individual addresses
+1. The `TransfererRoleAdmin` can give the `Transferer`-role to individual addresses
 2. We as tokenize.it will maintain a list of addresses with fine-grained properties. The `Requirement`-role can then choose which requirements are necessary to transfer the tokens. In case they set requirements to 0, everyone can freely use the token.
 
 ## Investments
 
-Their are 2 types of investments:
+Currently, WETH, WBTC, USDC, EUROC are supported as investment currencies.
 
-### 1. Personal invite (PerosnalInvite.sol)
+There are 2 types of investments:
 
-This is a personal investment invite allowing a particular investor (represented by his/her ethereum address) to buy newly issued tokens at a fixed price.
-During the deployment all important parameters are set:
+### 1. Personal invite (PersonalInvite.sol)
 
-- `buyer`- the address of one who is invited to invest
-- `receiver`- the account (company address) receiving the investment
-- `minAmount` - minimal amount of tokens to be bought denominated in its smallest subunit (e.g. WEI for Ether)
-- `maxAmount` - max amount of tokens to be bought denominated in its smallest subunit (e.g. WEI for Ether)
-- `tokenPrice` - price per token denoted in the currency defined in the next field, and denominated in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate). Please refer to the [price explanation](docs/price.md) for more details.
-- `currency` - ERC20 token used for the payment (e.g. USDC, WETH)
-- `token` - Token of the company based on Token.sol
+This is a personal investment invite allowing a particular investor (represented by his/her ethereum address) to buy newly issued tokens at a fixed price. The contract is deployed using CREATE2, and the investment is executed during deployment. [Read this](./docs/using_the_contracts.md#personal-invites) for more information.
 
-This contract can be paused and unpaused by the owner (the address of the deployer).
-This contract need to be given minting right with an allowance of `maxAmount` in the `token` contract.
-
-### 2. ContinousFundraising (ContinousFundraising.sol)
+### 2. ContinuousFundraising (ContinuousFundraising.sol)
 
 This contract allows everyone who has the `Transferer`-role on the `token` contract or who is certified by the allow-list to meet the requirements set in the `token` contract to buy newly issued tokens at a fixed price. Until a certain threshold of maximal tokens to be issued is met.
 The arguments in the constructor are similar to PersonalInvite.sol, with the addition of `maxAmountOfTokenToBeSold` , which is the maximal amount of token to be sold in this fundraising round.
