@@ -18,7 +18,7 @@ contract AllowListTest is Test {
     }
 
     function testFailNotOwner(address x) public {
-        vm.assume( x != owner );
+        vm.assume(x != owner);
         vm.prank(address(x));
         list.set(address(0), 1);
     }
