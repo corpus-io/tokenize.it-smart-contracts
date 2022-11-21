@@ -126,7 +126,7 @@ contract FeeSettingsTest is Test {
         uint8 tokenFee,
         uint8 investmentFee
     ) public {
-        vm.assume(delayAnnounced > 7884000 && delayAnnounced < 100000000000);
+        vm.assume(delayAnnounced > 12 weeks && delayAnnounced < 100000000000);
         vm.assume(feeInValidRange(tokenFee));
         vm.assume(feeInValidRange(investmentFee));
         vm.prank(admin);

@@ -900,31 +900,89 @@ contract tokenTest is Test {
         assertFalse(localToken.hasRole(localToken.PAUSER_ROLE(), deployer));
     }
 
-    function testSetFeeSettingsWrongCaller(address wrongUpdater) public {
+    function testSuggestNewFeeSettingsWrongCaller(address wrongUpdater) public {
         vm.assume(wrongUpdater != feeSettings.owner());
         FeeSettings newFeeSettings = new FeeSettings(0, 0, pauser);
         vm.prank(wrongUpdater);
-        vm.expectRevert("Only fee settings owner can change fee settings");
-        token.setFeeSettings(newFeeSettings);
+        vm.expectRevert(
+            "Only fee settings owner can suggest fee settings update"
+        );
+        token.suggestNewFeeSettings(newFeeSettings);
     }
 
-    function testSetFeeSettingsFeeCollector() public {
+    function testSuggestNewFeeSettingsFeeCollector() public {
         FeeSettings newFeeSettings = new FeeSettings(0, 0, pauser);
         vm.prank(feeSettings.feeCollector());
-        vm.expectRevert("Only fee settings owner can change fee settings");
-        token.setFeeSettings(newFeeSettings);
+        vm.expectRevert(
+            "Only fee settings owner can suggest fee settings update"
+        );
+        token.suggestNewFeeSettings(newFeeSettings);
     }
 
-    function testSetFeeSettings(address newCollector) public {
+    function testSuggestNewFeeSettings(address newCollector) public {
         vm.assume(newCollector != address(0));
         FeeSettings newFeeSettings = new FeeSettings(0, 0, newCollector);
+        FeeSettings oldFeeSettings = token.feeSettings();
+        uint oldInvestmentFeeDenominator = oldFeeSettings
+            .investmentFeeDenominator();
+        uint oldTokenFeeDenominator = oldFeeSettings.tokenFeeDenominator();
         vm.prank(feeSettings.owner());
-        token.setFeeSettings(newFeeSettings);
-        assertTrue(address(token.feeSettings()) == address(newFeeSettings));
+        token.suggestNewFeeSettings(newFeeSettings);
+
+        // make sure old fees are still in effect
+        assertTrue(
+            address(token.feeSettings()) == address(oldFeeSettings),
+            "fee settings have changed!"
+        );
+        assertTrue(
+            token.suggestedFeeSettings() == newFeeSettings,
+            "suggested fee settings not set!"
+        );
+        assertTrue(
+            token.feeSettings().investmentFeeDenominator() ==
+                oldInvestmentFeeDenominator,
+            "investment fee denominator changed!"
+        );
+        assertTrue(
+            token.feeSettings().tokenFeeDenominator() == oldTokenFeeDenominator,
+            "token fee denominator changed!"
+        );
+    }
+
+    function testAcceptNewFeeSettings(address newCollector) public {
+        vm.assume(newCollector != address(0));
+        FeeSettings newFeeSettings = new FeeSettings(0, 0, newCollector);
+        FeeSettings oldFeeSettings = token.feeSettings();
+        uint oldInvestmentFeeDenominator = oldFeeSettings
+            .investmentFeeDenominator();
+        uint oldTokenFeeDenominator = oldFeeSettings.tokenFeeDenominator();
+        vm.prank(feeSettings.owner());
+        token.suggestNewFeeSettings(newFeeSettings);
+
+        // accept
+        vm.prank(admin);
+        token.acceptNewFeeSettings(newFeeSettings);
+        assertTrue(
+            token.feeSettings() == newFeeSettings,
+            "fee settings not changed!"
+        );
         assertEq(
             token.feeSettings().feeCollector(),
             newCollector,
             "Wrong feeCollector"
+        );
+        assertTrue(
+            address(token.suggestedFeeSettings()) == address(0),
+            "suggested fee settings not reset!"
+        );
+        assertTrue(
+            token.feeSettings().investmentFeeDenominator() !=
+                oldInvestmentFeeDenominator,
+            "investment fee denominator changed!"
+        );
+        assertTrue(
+            token.feeSettings().tokenFeeDenominator() != oldTokenFeeDenominator,
+            "token fee denominator changed!"
         );
     }
 }
