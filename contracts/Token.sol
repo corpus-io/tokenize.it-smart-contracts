@@ -43,6 +43,9 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
 
     // Fee settings of tokenize.it
     FeeSettings public feeSettings;
+
+    // Suggested new fee settings, which will be applied after admin approval
+    FeeSettings public suggestedFeeSettings;
     /**
     @notice  defines requirements to send or receive tokens for non-TRANSFERER_ROLE. If zero, everbody can transfer the token. If non-zero, then only those who have met the requirements can send or receive tokens. 
         Requirements can be defined by the REQUIREMENT_ROLE, and are validated against the allowList. They can include things like "must have a verified email address", "must have a verified phone number", "must have a verified identity", etc. 
@@ -79,6 +82,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
 
     event RequirementsChanged(uint newRequirements);
     event AllowListChanged(AllowList indexed newAllowList);
+    event NewFeeSettingsSuggested(FeeSettings indexed _feeSettings);
     event FeeSettingsChanged(FeeSettings indexed newFeeSettings);
     event MintingAllowanceChanged(
         address indexed newMinter,
@@ -140,13 +144,33 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         emit RequirementsChanged(_requirements);
     }
 
-    function setFeeSettings(FeeSettings _feeSettings) public {
+    /**
+     * @notice This function can only be used by the feeSettings owner to suggest switching to a new feeSettings contract.
+     *      The new feeSettings contract will be applied immediately after admin approval.
+     * @dev This is a possibility to change fees without honoring the delay enforced in the feeSettings contract. Therefore, approval of the admin is required.
+     * @param _feeSettings the new feeSettings contract
+     */
+    function suggestNewFeeSettings(FeeSettings _feeSettings) public {
         require(
             _msgSender() == feeSettings.owner(),
-            "Only fee settings owner can change fee settings"
+            "Only fee settings owner can suggest fee settings update"
+        );
+        require(_feeSettings != 0, "Fee settings cannot be zero address");
+        suggestedFeeSettings = _feeSettings;
+        emit NewFeeSettingsSuggested(_feeSettings);
+    }
+
+    function acceptFeeSettingsUpdate(FeeSettings _feeSettings) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        // checking that the suggested fee settings are the same as the one passed in
+        // -> prevents front running of the fee settings update with another fee settings suggestion
+        require(
+            _feeSettings == suggestedFeeSettings,
+            "Only suggested fee settings can be accepted"
         );
         feeSettings = _feeSettings;
         emit FeeSettingsChanged(_feeSettings);
+    }
+
     }
 
     /** 
