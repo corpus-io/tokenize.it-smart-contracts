@@ -4,7 +4,7 @@ The price definition used in PersonalInvite.sol and ContinuousFundraising.sol is
 
 ## Definitions
 
-- bit: smallest subunit of token A is called A**bit**, in accordance with [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate)
+- bit: smallest subunit of token A is called A**bit**, in accordance with [openzeppelin](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate)
 
 - tokenPrice: "amount of subunits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2\*10^6 )"
 - token: will be abbreviated T for full tokens and Tbit for bits of the token

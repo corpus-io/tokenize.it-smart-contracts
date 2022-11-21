@@ -43,6 +43,9 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
 
     // Fee settings of tokenize.it
     FeeSettings public feeSettings;
+
+    // Suggested new fee settings, which will be applied after admin approval
+    FeeSettings public suggestedFeeSettings;
     /**
     @notice  defines requirements to send or receive tokens for non-TRANSFERER_ROLE. If zero, everbody can transfer the token. If non-zero, then only those who have met the requirements can send or receive tokens. 
         Requirements can be defined by the REQUIREMENT_ROLE, and are validated against the allowList. They can include things like "must have a verified email address", "must have a verified phone number", "must have a verified identity", etc. 
@@ -79,6 +82,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
 
     event RequirementsChanged(uint newRequirements);
     event AllowListChanged(AllowList indexed newAllowList);
+    event NewFeeSettingsSuggested(FeeSettings indexed _feeSettings);
     event FeeSettingsChanged(FeeSettings indexed newFeeSettings);
     event MintingAllowanceChanged(
         address indexed newMinter,
@@ -88,11 +92,12 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     /**
     @notice Constructor for the token 
     @param _trustedForwarder trusted forwarder for the ERC2771Context constructor - used for meta-transactions
+    @param _feeSettings fee settings contract that determines the fee for minting tokens
+    @param _admin address of the admin. Admin will initially have all roles and can grant roles to other addresses.
     @param _name name of the specific token, e.g. "MyGmbH Token"
     @param _symbol symbol of the token, e.g. "MGT"
     @param _allowList address of the allowList contract
     @param _requirements requirements an address has to meet for sending or receiving tokens
-    @param _admin address of the admin. Admin will initially have all roles and can grant roles to other addresses.
     */
     constructor(
         address _trustedForwarder,
@@ -140,12 +145,45 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         emit RequirementsChanged(_requirements);
     }
 
-    function setFeeSettings(FeeSettings _feeSettings) public {
+    /**
+     * @notice This function can only be used by the feeSettings owner to suggest switching to a new feeSettings contract.
+     *      The new feeSettings contract will be applied immediately after admin approval.
+     * @dev This is a possibility to change fees without honoring the delay enforced in the feeSettings contract. Therefore, approval of the admin is required.
+     * @param _feeSettings the new feeSettings contract
+     */
+    function suggestNewFeeSettings(FeeSettings _feeSettings) public {
         require(
             _msgSender() == feeSettings.owner(),
-            "Only fee settings owner can change fee settings"
+            "Only fee settings owner can suggest fee settings update"
         );
-        feeSettings = _feeSettings;
+        require(
+            address(_feeSettings) != address(0),
+            "Fee settings cannot be zero address"
+        );
+        suggestedFeeSettings = _feeSettings;
+        emit NewFeeSettingsSuggested(_feeSettings);
+    }
+
+    /**
+     * @notice This function can only be used by the admin to approve switching to the new feeSettings contract.
+     *     The new feeSettings contract will be applied immediately.
+     * @dev Enforcing the suggested and accepted new contract to be the same is not necessary, prevents frontrunning.
+     *      Requiring not 0 prevent bricking the token.
+     * @param _feeSettings the new feeSettings contract
+     */
+    function acceptNewFeeSettings(
+        FeeSettings _feeSettings
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(
+            address(suggestedFeeSettings) != address(0),
+            "Fee settings cannot be zero address"
+        );
+        require(
+            _feeSettings == suggestedFeeSettings,
+            "Only suggested fee settings can be accepted"
+        );
+        feeSettings = suggestedFeeSettings;
+        suggestedFeeSettings = FeeSettings(address(0));
         emit FeeSettingsChanged(_feeSettings);
     }
 

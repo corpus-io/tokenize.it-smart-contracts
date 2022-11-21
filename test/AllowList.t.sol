@@ -6,24 +6,26 @@ import "../contracts/AllowList.sol";
 
 contract AllowListTest is Test {
     AllowList list;
+    address owner;
 
     function setUp() public {
         list = new AllowList();
+        owner = address(this);
     }
 
     function testOwner() public {
-        assertTrue(list.owner() == address(this));
+        assertTrue(list.owner() == owner);
     }
 
     function testFailNotOwner(address x) public {
+        vm.assume(x != owner);
         vm.prank(address(x));
-        require(x != address(0xb4c79daB8f259C7Aee6E5b2Aa729821864227e84));
         list.set(address(0), 1);
     }
 
     function testFailNotOwnerRemove(address x) public {
+        vm.assume(x != owner);
         vm.prank(address(x));
-        require(x != address(0xb4c79daB8f259C7Aee6E5b2Aa729821864227e84));
         list.remove(address(0));
     }
 
