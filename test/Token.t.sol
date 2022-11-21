@@ -22,7 +22,8 @@ contract tokenTest is Test {
     address public constant transferer =
         0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
     address public constant pauser = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
-    address public constant feeSettingsOwner = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
+    address public constant feeSettingsOwner =
+        0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
 
     event RequirementsChanged(uint256 newRequirements);
 
