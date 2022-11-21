@@ -46,14 +46,18 @@ These values can be changed by tokenize.it. Fee changes are subject to a delay o
 Both fees are calculated as follows:
 
 ```solidity
-tokenFee    = tokenAmount     / tokenFeeDenominator
-currencyFee = currencyAmount  / investmentFeeDenominator
+if (feeDenominator == 0) {
+   fee = 0;
+}
+else {
+   fee    = amount     / feeDenominator
+}
 ```
 
 Taking into account the [limits](#fee-limits), the following is enforced for both denominators:
 
 ```solidity
-0 <= denominator <= 20
+0 == denominator || denominator >= 20
 ```
 
 ### Token contracts
