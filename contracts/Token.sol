@@ -88,11 +88,12 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     /**
     @notice Constructor for the token 
     @param _trustedForwarder trusted forwarder for the ERC2771Context constructor - used for meta-transactions
+    @param _feeSettings fee settings contract that determines the fee for minting tokens
+    @param _admin address of the admin. Admin will initially have all roles and can grant roles to other addresses.
     @param _name name of the specific token, e.g. "MyGmbH Token"
     @param _symbol symbol of the token, e.g. "MGT"
     @param _allowList address of the allowList contract
     @param _requirements requirements an address has to meet for sending or receiving tokens
-    @param _admin address of the admin. Admin will initially have all roles and can grant roles to other addresses.
     */
     constructor(
         address _trustedForwarder,
