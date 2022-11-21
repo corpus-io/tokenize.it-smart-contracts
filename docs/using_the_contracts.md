@@ -9,7 +9,7 @@ Tokenize.it has already deployed:
 
 These will be used for the next steps.
 
-## Setting up the contract
+## Setting up the token contract
 
 1. Deploy Token Contract “Token”:
 
@@ -25,15 +25,16 @@ These will be used for the next steps.
    - `_name` : Name of the Token (e.g. PiedPiperToken)
    - `_symbol` : Ticker of the Token (e.g. PPT)
 
-2. Create initial cap table by minting tokens for various addresses. For this, the admin needs to give an account (can be himself) minting rights by calling `setUpMinter(address *minter, uint _allowance)` :
+2. Create initial cap table by minting tokens for various addresses. For this, the admin needs to give an account (can be himself) minting rights by calling `setUpMinter(address minter, uint _allowance)` :
 
-   - `minter` : account with minting rights\*
-   - `_allowance`: amount of tokens he can mint, denominated in its smallest subunit (e.g. WEI for Ether)
+   - `minter` : account with minting rights
+   - `_allowance`: amount of tokens he can mint, denominated in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate)
 
    To create the initial cap table, `_amount` should be the total amount of shares in existence.
-   The minter, can then create new shares for each shareholder, by calling `mint(address *to, uint256 amount)` , where\*
-   `_to` is the shareholder
-   `_amount` is the amount of shares, denominated in its smallest subunit (e.g. WEI for Ether)
+   The minter can then create new shares for each shareholder, by calling `mint(address _to, uint256 _amount)`, where:
+
+   - `_to` is the shareholder
+   - `_amount` is the amount of shares, denominated in denominated in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate)
 
 ## Enabling addresses to receive tokens
 
