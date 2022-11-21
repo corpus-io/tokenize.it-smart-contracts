@@ -9,7 +9,7 @@
    constructor(address _admin, AllowList _allowList, uint256 _requirements, string memory*name, string memory symbol)
    ```
 
-   - `admin` : address of the adminstrator. Be careful, he has all the power. He can do everything, and he can give permissions (aka roles as defined in the OpenZeppelin AccessControl modul). In the beginning, it is the ethereum address of the account connected through MetaMask\*
+   - `admin` : address of the administrator. Be careful, he has all the power. He can do everything, and he can give permissions (aka roles as defined in the OpenZeppelin AccessControl module). In the beginning, it is the ethereum address of the account connected through MetaMask\*
    - `_allowList` : Allow list from tokenize.it. Not deployed yet.
    - `_requirements`: requirements addresses need to fulfill in order to send and receive tokens
    - `_name` : Name of the Token (e.g. PiedPiperToken)
@@ -44,7 +44,7 @@ See [price](price.md) for more background on this.
 
 ## Personal Invites
 
-In order to create a personal investment invite this [contract](../contracts/PersonalInvite.sol) needs to be deployed.
+In order to create a personal investment invite this [contract](../contracts/PersonalInvite.sol) needs to be used.
 
 Constructor:
 
@@ -83,7 +83,7 @@ This [contract](../contracts/PersonalInviteFactory.sol) can be used to:
 
 Deploy the [contract](../contracts/ContinuousFundraising.sol)
 
-Constructor: `constructor(address payable _currencyReceiver, uint _minAmountPerBuyer, uint _maxAmountPerBuyer, uint _tokenPrice, uint _maxAmountOfTokenToBeSold, IERC20 _currency, EIERC20 _token)`
+Constructor: `constructor(address payable _currencyReceiver, uint _minAmountPerBuyer, uint _maxAmountPerBuyer, uint _tokenPrice, uint _maxAmountOfTokenToBeSold, IERC20 _currency, IERC20 _token)`
 
 The parameter are similar to the PersonalInvite constructor, except for:
 
@@ -108,7 +108,7 @@ Limitations apply for `_amount`, see [above](###-Limitations-for-acceptable-amou
 
 The investor needs to give a a sufficient allowance in the currency contract to the continuousFundraising contract for the deal to be successful
 
-The account who has created the continuous round can pause the contract by calling `pause()`, which stopps further buys. When paused, all parameters of the fundraising can be changed through setter functions in the contract. Pausing the contract as well as each setting update starts a cooldown period (defaulting to 24h hours). Only after this cooldown period has passed can the fundraising be unpaused by calling `unpause()`. This is to ensure an investor can know the conditions that currently apply before investing.
+The account who has created the continuous round can pause the contract by calling `pause()`, which stops further buys. When paused, all parameters of the fundraising can be changed through setter functions in the contract. Pausing the contract as well as each setting update starts a cool down period (defaulting to 24h hours). Only after this cool down period has passed can the fundraising be unpaused by calling `unpause()`. This is to ensure an investor can know the conditions that currently apply before investing.
 
 # Employee participation with or without vesting
 
