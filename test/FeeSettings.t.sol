@@ -79,7 +79,7 @@ contract FeeSettingsTest is Test {
     }
 
     function testEnforceFeeChangeDelay(uint delay) public {
-        vm.assume(delay <= 7884000);
+        vm.assume(delay <= 12 weeks);
         vm.prank(admin);
         FeeSettings _feeSettings = new FeeSettings(50, 50, admin);
 
@@ -101,7 +101,7 @@ contract FeeSettingsTest is Test {
         uint8 tokenFee,
         uint8 investmentFee
     ) public {
-        vm.assume(delayAnnounced > 7884000 && delayAnnounced < 1000000000000);
+        vm.assume(delayAnnounced > 12 weeks && delayAnnounced < 1000000000000);
         vm.assume(feeInValidRange(tokenFee));
         vm.assume(feeInValidRange(investmentFee));
         vm.prank(admin);
