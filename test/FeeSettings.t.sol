@@ -37,7 +37,7 @@ contract FeeSettingsTest is Test {
     ) public {
         vm.assume(!feeInValidRange(fee));
         FeeSettings _feeSettings;
-        Fees memory fees = Fees(fee,100,100,0);
+        Fees memory fees = Fees(fee, 100, 100, 0);
         vm.expectRevert("Fee must be below 5% or 0");
         _feeSettings = new FeeSettings(fees, admin);
     }
@@ -47,14 +47,14 @@ contract FeeSettingsTest is Test {
     ) public {
         vm.assume(!feeInValidRange(fee));
         FeeSettings _feeSettings;
-        Fees memory fees = Fees(fee,100,100,0);
+        Fees memory fees = Fees(fee, 100, 100, 0);
         vm.expectRevert("Fee must be below 5% or 0");
         _feeSettings = new FeeSettings(fees, admin);
     }
 
     function testEnforceTokenFeeDenominatorRangeinFeeChanger(uint8 fee) public {
         vm.assume(!feeInValidRange(fee));
-        Fees memory fees = Fees(100,100,100,0);
+        Fees memory fees = Fees(100, 100, 100, 0);
         FeeSettings _feeSettings = new FeeSettings(fees, admin);
 
         Fees memory feeChange = Fees({
@@ -71,7 +71,7 @@ contract FeeSettingsTest is Test {
         uint8 fee
     ) public {
         vm.assume(!feeInValidRange(fee));
-        Fees memory fees = Fees(100,100,100,0);
+        Fees memory fees = Fees(100, 100, 100, 0);
         FeeSettings _feeSettings = new FeeSettings(fees, admin);
 
         Fees memory feeChange = Fees({
@@ -86,7 +86,7 @@ contract FeeSettingsTest is Test {
 
     function testEnforceFeeChangeDelay(uint delay) public {
         vm.assume(delay <= 12 weeks);
-        Fees memory fees = Fees(50,50,50,0);
+        Fees memory fees = Fees(50, 50, 50, 0);
         vm.prank(admin);
         FeeSettings _feeSettings = new FeeSettings(fees, admin);
 
@@ -112,7 +112,7 @@ contract FeeSettingsTest is Test {
         vm.assume(delayAnnounced > 12 weeks && delayAnnounced < 1000000000000);
         vm.assume(feeInValidRange(tokenFee));
         vm.assume(feeInValidRange(investmentFee));
-        Fees memory fees = Fees(50,50,50,0);
+        Fees memory fees = Fees(50, 50, 50, 0);
         vm.prank(admin);
         FeeSettings _feeSettings = new FeeSettings(fees, admin);
 
@@ -139,7 +139,7 @@ contract FeeSettingsTest is Test {
         vm.assume(delayAnnounced > 12 weeks && delayAnnounced < 100000000000);
         vm.assume(feeInValidRange(tokenFee));
         vm.assume(feeInValidRange(investmentFee));
-        Fees memory fees = Fees(50,50,50,0);
+        Fees memory fees = Fees(50, 50, 50, 0);
         vm.prank(admin);
         FeeSettings _feeSettings = new FeeSettings(fees, admin);
 
@@ -157,7 +157,10 @@ contract FeeSettingsTest is Test {
         _feeSettings.executeFeeChange();
 
         assertEq(_feeSettings.tokenFeeDenominator(), tokenFee);
-        assertEq(_feeSettings.continuousFundraisungFeeDenominator(), investmentFee);
+        assertEq(
+            _feeSettings.continuousFundraisungFeeDenominator(),
+            investmentFee
+        );
         //assertEq(_feeSettings.change, 0);
     }
 
@@ -168,7 +171,7 @@ contract FeeSettingsTest is Test {
         vm.assume(feeInValidRange(tokenFee));
         vm.assume(feeInValidRange(investmentFee));
         FeeSettings _feeSettings;
-        Fees memory fees = Fees(tokenFee,investmentFee,investmentFee,0);
+        Fees memory fees = Fees(tokenFee, investmentFee, investmentFee, 0);
         _feeSettings = new FeeSettings(fees, admin);
         assertEq(
             _feeSettings.tokenFeeDenominator(),
@@ -185,13 +188,13 @@ contract FeeSettingsTest is Test {
     function testFeeCollector0FailsInConstructor() public {
         vm.expectRevert("Fee collector cannot be 0x0");
         FeeSettings _feeSettings;
-        Fees memory fees = Fees(100,100,100,0);
+        Fees memory fees = Fees(100, 100, 100, 0);
         _feeSettings = new FeeSettings(fees, address(0));
     }
 
     function testFeeCollector0FailsInSetter() public {
         FeeSettings _feeSettings;
-        Fees memory fees = Fees(100,100,100,0);
+        Fees memory fees = Fees(100, 100, 100, 0);
         vm.prank(admin);
         _feeSettings = new FeeSettings(fees, admin);
         vm.expectRevert("Fee collector cannot be 0x0");
@@ -202,7 +205,7 @@ contract FeeSettingsTest is Test {
     function testUpdateFeeCollector(address newCollector) public {
         vm.assume(newCollector != address(0));
         FeeSettings _feeSettings;
-        Fees memory fees = Fees(100,100,100,0);
+        Fees memory fees = Fees(100, 100, 100, 0);
         vm.prank(admin);
         _feeSettings = new FeeSettings(fees, admin);
         vm.prank(admin);

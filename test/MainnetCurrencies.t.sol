@@ -51,7 +51,7 @@ contract MainnetCurrencies is Test {
 
     function setUp() public {
         list = new AllowList();
-        Fees memory fees = Fees(100,100,100,0);
+        Fees memory fees = Fees(100, 100, 100, 0);
         feeSettings = new FeeSettings(fees, admin);
 
         token = new Token(
@@ -153,12 +153,14 @@ contract MainnetCurrencies is Test {
         );
         assertEq(
             _currency.balanceOf(token.feeSettings().feeCollector()),
-            _currencyCost / token.feeSettings().continuousFundraisungFeeDenominator(),
+            _currencyCost /
+                token.feeSettings().continuousFundraisungFeeDenominator(),
             "fee receiver should have received currency"
         );
         assertEq(
             token.balanceOf(token.feeSettings().feeCollector()),
-            amountOfTokenToBuy / token.feeSettings().continuousFundraisungFeeDenominator(),
+            amountOfTokenToBuy /
+                token.feeSettings().continuousFundraisungFeeDenominator(),
             "fee receiver should have received tokens"
         );
         assertEq(
@@ -259,12 +261,14 @@ contract MainnetCurrencies is Test {
         );
         assertEq(
             _currency.balanceOf(token.feeSettings().feeCollector()),
-            _currencyCost / token.feeSettings().continuousFundraisungFeeDenominator(),
+            _currencyCost /
+                token.feeSettings().continuousFundraisungFeeDenominator(),
             "fee receiver should have received currency"
         );
         assertEq(
             token.balanceOf(token.feeSettings().feeCollector()),
-            amountOfTokenToBuy / token.feeSettings().continuousFundraisungFeeDenominator(),
+            amountOfTokenToBuy /
+                token.feeSettings().continuousFundraisungFeeDenominator(),
             "fee receiver should have received tokens"
         );
         assertEq(
