@@ -73,7 +73,7 @@ contract FeeSettings is Ownable {
         emit FeeCollectorChanged(_feeCollector);
     }
 
-    function checkFeeLimits(Fees memory _fees) internal returns(bool){
+    function checkFeeLimits(Fees memory _fees) internal pure {
         require(
             _fees.tokenFeeDenominator >= 20 || _fees.tokenFeeDenominator == 0,
             "Fee must be below 5% or 0"
@@ -86,6 +86,5 @@ contract FeeSettings is Ownable {
             _fees.personalInviteFeeDenominator >= 20 || _fees.personalInviteFeeDenominator == 0,
             "Fee must be below 5% or 0"
         );
-        return true;
     }
 }

@@ -62,7 +62,7 @@ contract PersonalInviteFactoryTest is Test {
     function setUp() public {
         factory = new PersonalInviteFactory();
         list = new AllowList();
-        feeSettings = new FeeSettings(100, 100, admin);
+        feeSettings = new FeeSettings(100, 100, 100, admin);
 
         token = new Token(
             trustedForwarder,

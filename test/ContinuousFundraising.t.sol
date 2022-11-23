@@ -40,7 +40,7 @@ contract ContinuousFundraisingTest is Test {
 
     function setUp() public {
         list = new AllowList();
-        feeSettings = new FeeSettings(100, 100, admin);
+        feeSettings = new FeeSettings(100, 100, 100, admin);
 
         token = new Token(
             trustedForwarder,
@@ -199,7 +199,7 @@ contract ContinuousFundraisingTest is Test {
             // receiver should have the 990 FPT that were paid, minus the fee
             uint currencyAmount = 990 * 10 ** _paymentTokenDecimals;
             uint256 currencyFee = currencyAmount /
-                token.feeSettings().investmentFeeDenominator();
+                token.feeSettings().continuousFundraisungFeeDenominator();
             assertTrue(
                 _paymentToken.balanceOf(receiver) ==
                     currencyAmount - currencyFee,
