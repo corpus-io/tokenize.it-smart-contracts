@@ -91,6 +91,7 @@ contract FeeSettingsTest is Test {
         FeeSettings _feeSettings = new FeeSettings(fees, admin);
 
         Fees memory feeChange = Fees({
+            tokenFeeDenominator: 100,
             continuousFundraisungFeeDenominator: 100,
             personalInviteFeeDenominator: 100,
             time: block.timestamp + delay
@@ -156,7 +157,7 @@ contract FeeSettingsTest is Test {
         _feeSettings.executeFeeChange();
 
         assertEq(_feeSettings.tokenFeeDenominator(), tokenFee);
-        assertEq(_feeSettings.investmentFeeDenominator(), investmentFee);
+        assertEq(_feeSettings.continuousFundraisungFeeDenominator(), investmentFee);
         //assertEq(_feeSettings.change, 0);
     }
 
