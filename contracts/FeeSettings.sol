@@ -3,10 +3,11 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-struct Change {
-    uint tokenFeeDenominator;
-    uint investmentFeeDenominator;
-    uint time;
+struct Fees {
+    uint256 tokenFeeDenominator;
+    uint256 continuousFundraisungFeeDenominator;
+    uint256 personalInviteFeeDenominator;
+    uint256 time;
 }
 
 /*
@@ -16,70 +17,75 @@ contract FeeSettings is Ownable {
     /// @notice Denominator to calculate fees paid Token.sol
     uint256 public tokenFeeDenominator;
     /// @notice Denominator to calculate fees paid in all investment contracts
-    uint256 public investmentFeeDenominator;
+    uint256 public continuousFundraisungFeeDenominator;
+    /// @notice Denominator to calculate fees paid in all investment contracts
+    uint256 public personalInviteFeeDenominator;
     /// @notice address used to pay platform fees to.
     address public feeCollector;
 
-    Change public change;
+    Fees public proposedFees;
 
     event SetTokenFeeDenominator(uint256 value);
-    event SetInvestmentFeeDenominator(uint256 value);
+    event SetContinuousFundraisungFeeDenominator(uint256 value);
+    event SetPersonalInviteFeeDenominator(uint256 value);
     event FeeCollectorChanged(address indexed newFeeCollector);
-    event ChangeProposed(Change proposal);
+    event ChangeProposed(Fees proposal);
 
     constructor(
-        uint256 _tokenFeeDenominator,
-        uint256 _investmentFeeDenominator,
+        Fees memory _fees,
         address _feeCollector
     ) {
-        require(
-            _tokenFeeDenominator >= 20 || _tokenFeeDenominator == 0,
-            "Fee must be below 5% or 0"
-        );
-        tokenFeeDenominator = _tokenFeeDenominator;
-        require(
-            _investmentFeeDenominator >= 20 || _investmentFeeDenominator == 0,
-            "Fee must be below 5% or 0"
-        );
-        investmentFeeDenominator = _investmentFeeDenominator;
+        checkFeeLimits(_fees);
+        tokenFeeDenominator = _fees.tokenFeeDenominator;
+        continuousFundraisungFeeDenominator = _fees.continuousFundraisungFeeDenominator;
+        personalInviteFeeDenominator = _fees.personalInviteFeeDenominator;
         require(_feeCollector != address(0), "Fee collector cannot be 0x0");
         feeCollector = _feeCollector;
     }
 
-    function planFeeChange(Change memory _change) public onlyOwner {
+    function planFeeChange(Fees memory _fees) public onlyOwner {
+        checkFeeLimits(_fees);
         require(
-            _change.tokenFeeDenominator >= 20 ||
-                _change.tokenFeeDenominator == 0,
-            "Fee must be below 5% or 0"
-        );
-        require(
-            _change.investmentFeeDenominator >= 20 ||
-                _change.investmentFeeDenominator == 0,
-            "Fee must be below 5% or 0"
-        );
-        require(
-            _change.time > block.timestamp + 12 weeks,
+            _fees.time > block.timestamp + 12 weeks,
             "Fee change must be at least 12 weeks in the future"
         ); // can only be executed in 3 months
-        change = _change;
-        emit ChangeProposed(_change);
+        proposedFees = _fees;
+        emit ChangeProposed(_fees);
     }
 
     function executeFeeChange() public onlyOwner {
         require(
-            block.timestamp >= change.time,
+            block.timestamp >= proposedFees.time,
             "Fee change must be executed after the change time"
         );
-        tokenFeeDenominator = change.tokenFeeDenominator;
-        investmentFeeDenominator = change.investmentFeeDenominator;
-        emit SetTokenFeeDenominator(change.tokenFeeDenominator);
-        emit SetInvestmentFeeDenominator(change.investmentFeeDenominator);
-        delete change;
+        tokenFeeDenominator = proposedFees.tokenFeeDenominator;
+        continuousFundraisungFeeDenominator = proposedFees.continuousFundraisungFeeDenominator;
+        personalInviteFeeDenominator = proposedFees.personalInviteFeeDenominator;
+        emit SetTokenFeeDenominator(proposedFees.tokenFeeDenominator);
+        emit SetContinuousFundraisungFeeDenominator(proposedFees.continuousFundraisungFeeDenominator);
+        emit SetPersonalInviteFeeDenominator(proposedFees.personalInviteFeeDenominator);
+        delete proposedFees;
     }
 
     function setFeeCollector(address _feeCollector) public onlyOwner {
         require(_feeCollector != address(0), "Fee collector cannot be 0x0");
         feeCollector = _feeCollector;
         emit FeeCollectorChanged(_feeCollector);
+    }
+
+    function checkFeeLimits(Fees memory _fees) internal returns(bool){
+        require(
+            _fees.tokenFeeDenominator >= 20 || _fees.tokenFeeDenominator == 0,
+            "Fee must be below 5% or 0"
+        );
+        require(
+            _fees.continuousFundraisungFeeDenominator >= 20 || _fees.continuousFundraisungFeeDenominator == 0,
+            "Fee must be below 5% or 0"
+        );
+        require(
+            _fees.personalInviteFeeDenominator >= 20 || _fees.personalInviteFeeDenominator == 0,
+            "Fee must be below 5% or 0"
+        );
+        return true;
     }
 }
