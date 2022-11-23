@@ -26,6 +26,14 @@ library Price {
         );
         return (_tokenAmount * _price) / (10 ** _token.decimals());
     }
+
+    function getPrice(
+        ERC20 _token,
+        uint256 _tokenAmount,
+        uint256 _currencyAmount
+    ) public view returns (uint256) {
+        return (_currencyAmount * (10 ** _token.decimals())) / _tokenAmount;
+    }
 }
 
 // contract PriceTest is Test {

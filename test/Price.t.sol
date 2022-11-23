@@ -45,4 +45,53 @@ contract PriceTest is Test {
             "Currency amount should match, but actualCurrencyAmount is not equal to expectedCurrencyAmount"
         );
     }
+
+    function testGetPriceFuzz(
+        uint8 paymentTokenDecimals,
+        uint256 currencyAmount
+    ) public {
+        vm.assume(paymentTokenDecimals < 30);
+        vm.assume(currencyAmount < UINT256_MAX / 10 ** 18);
+        ERC20 token = new FakePaymentToken(35600000000000, 18);
+
+        uint256 tokenAmount = 3 * 10 ** token.decimals();
+        uint256 expectedPrice = (currencyAmount * 10 ** token.decimals()) /
+            tokenAmount;
+
+        uint256 actualPrice = Price.getPrice(
+            token,
+            tokenAmount,
+            currencyAmount
+        );
+        assertEq(
+            actualPrice,
+            expectedPrice,
+            "Price should match, but actualPrice is not equal to expectedPrice"
+        );
+    }
+
+    /**
+     * @notice This example is taken from the [documentation](../docs/Price.md)
+     */
+    function testGetPriceManualExample() public {
+        ERC20 token = new FakePaymentToken(1, 18);
+
+        uint256 paymentTokenDecimals = 6;
+
+        uint256 tokenAmount = 3 * 10 ** token.decimals();
+        uint256 currencyAmount = 600 * 10 ** paymentTokenDecimals;
+        //uint256 expectedPrice = (currencyAmount * 10 ** 18) / tokenAmount;
+        uint256 expectedPrice = 2 * 10 ** 8;
+
+        uint256 actualPrice = Price.getPrice(
+            token,
+            tokenAmount,
+            currencyAmount
+        );
+        assertEq(
+            actualPrice,
+            expectedPrice,
+            "Price should match, but actualPrice is not equal to expectedPrice"
+        );
+    }
 }
