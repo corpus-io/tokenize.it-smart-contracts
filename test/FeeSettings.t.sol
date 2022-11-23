@@ -76,7 +76,7 @@ contract FeeSettingsTest is Test {
 
         Fees memory feeChange = Fees({
             tokenFeeDenominator: 100,
-            continuousFundraisungFeeDenominator: 100,
+            continuousFundraisungFeeDenominator: fee,
             personalInviteFeeDenominator: 100,
             time: block.timestamp + 7884001
         });
