@@ -67,11 +67,9 @@ contract ContinuousFundraisingTest is Test {
 
     function setUp() public {
         list = new AllowList();
-        feeSettings = new FeeSettings(
-            tokenFeeDenominator,
-            paymentTokenFeeDenominator,
-            admin
-        );
+        Fees fees = Fees(tokenFeeDenominator,paymentTokenFeeDenominator,paymentTokenFeeDenominator,0);
+        feeSettings = new FeeSettings(fees, admin);
+ 
         token = new Token(
             trustedForwarder,
             address(feeSettings),

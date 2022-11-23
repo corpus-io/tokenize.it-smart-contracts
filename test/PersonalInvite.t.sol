@@ -35,7 +35,9 @@ contract PersonalInviteTest is Test {
     function setUp() public {
         factory = new PersonalInviteFactory();
         list = new AllowList();
-        feeSettings = new FeeSettings(100, 100, 100, admin);
+        
+        Fees fees = Fees(100,100,100,100);
+        feeSettings = new FeeSettings(fees, admin);
 
         token = new Token(
             trustedForwarder,

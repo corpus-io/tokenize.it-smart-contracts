@@ -40,7 +40,8 @@ contract ContinuousFundraisingTest is Test {
 
     function setUp() public {
         list = new AllowList();
-        feeSettings = new FeeSettings(100, 100, 100, admin);
+        Fees fees = Fees(100,100,100,100);
+        feeSettings = new FeeSettings(fees, admin);
 
         token = new Token(
             trustedForwarder,
