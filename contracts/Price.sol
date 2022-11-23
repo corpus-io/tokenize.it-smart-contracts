@@ -35,21 +35,3 @@ library Price {
         return (_currencyAmount * (10 ** _token.decimals())) / _tokenAmount;
     }
 }
-
-// contract PriceTest is Test {
-//     Token token;
-
-//     function setUp() public {
-
-//     }
-
-//     function testGetCurrencyAmount() public {
-//         IERC20Metadata token = IERC20Metadata(address(0));
-//         uint256 tokenAmount = 100;
-//         uint256 price = 100;
-//         uint256 expected = 10000;
-//         uint256 actual = Price.getCurrencyAmount(token, tokenAmount, price);
-//         assertEq(actual, expected);
-//     }
-
-// }
