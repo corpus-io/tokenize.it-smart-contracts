@@ -40,7 +40,7 @@ contract ContinuousFundraisingTest is Test {
 
     function setUp() public {
         list = new AllowList();
-        Fees memory fees = Fees(100,100,100,100);
+        Fees memory fees = Fees(100, 100, 100, 100);
         feeSettings = new FeeSettings(fees, admin);
 
         token = new Token(

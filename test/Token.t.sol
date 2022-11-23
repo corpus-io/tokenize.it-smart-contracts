@@ -31,7 +31,7 @@ contract tokenTest is Test {
         vm.prank(admin);
         allowList = new AllowList();
         vm.prank(feeSettingsOwner);
-        Fees memory fees = Fees(100,100,100,0);
+        Fees memory fees = Fees(100, 100, 100, 0);
         feeSettings = new FeeSettings(fees, admin);
         token = new Token(
             trustedForwarder,
@@ -903,7 +903,7 @@ contract tokenTest is Test {
 
     function testSuggestNewFeeSettingsWrongCaller(address wrongUpdater) public {
         vm.assume(wrongUpdater != feeSettings.owner());
-        Fees memory fees = Fees(0,0,0,0);
+        Fees memory fees = Fees(0, 0, 0, 0);
         FeeSettings newFeeSettings = new FeeSettings(fees, pauser);
         vm.prank(wrongUpdater);
         vm.expectRevert(
@@ -913,7 +913,7 @@ contract tokenTest is Test {
     }
 
     function testSuggestNewFeeSettingsFeeCollector() public {
-        Fees memory fees = Fees(0,0,0,0);
+        Fees memory fees = Fees(0, 0, 0, 0);
         FeeSettings newFeeSettings = new FeeSettings(fees, pauser);
         vm.prank(feeSettings.feeCollector());
         vm.expectRevert(
@@ -924,7 +924,7 @@ contract tokenTest is Test {
 
     function testSuggestNewFeeSettings(address newCollector) public {
         vm.assume(newCollector != address(0));
-        Fees memory fees = Fees(0,0,0,0);
+        Fees memory fees = Fees(0, 0, 0, 0);
         FeeSettings newFeeSettings = new FeeSettings(fees, newCollector);
         FeeSettings oldFeeSettings = token.feeSettings();
         uint oldInvestmentFeeDenominator = oldFeeSettings
@@ -955,7 +955,7 @@ contract tokenTest is Test {
 
     function testAcceptNewFeeSettings(address newCollector) public {
         vm.assume(newCollector != address(0));
-        Fees memory fees = Fees(0,0,0,0);
+        Fees memory fees = Fees(0, 0, 0, 0);
         FeeSettings newFeeSettings = new FeeSettings(fees, newCollector);
         FeeSettings oldFeeSettings = token.feeSettings();
         uint oldInvestmentFeeDenominator = oldFeeSettings

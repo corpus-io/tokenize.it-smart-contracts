@@ -62,7 +62,7 @@ contract PersonalInviteFactoryTest is Test {
     function setUp() public {
         factory = new PersonalInviteFactory();
         list = new AllowList();
-        Fees memory fees = Fees(100,100,100,0);
+        Fees memory fees = Fees(100, 100, 100, 0);
         feeSettings = new FeeSettings(fees, admin);
 
         token = new Token(

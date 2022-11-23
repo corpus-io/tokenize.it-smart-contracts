@@ -31,13 +31,11 @@ contract FeeSettings is Ownable {
     event FeeCollectorChanged(address indexed newFeeCollector);
     event ChangeProposed(Fees proposal);
 
-    constructor(
-        Fees memory _fees,
-        address _feeCollector
-    ) {
+    constructor(Fees memory _fees, address _feeCollector) {
         checkFeeLimits(_fees);
         tokenFeeDenominator = _fees.tokenFeeDenominator;
-        continuousFundraisungFeeDenominator = _fees.continuousFundraisungFeeDenominator;
+        continuousFundraisungFeeDenominator = _fees
+            .continuousFundraisungFeeDenominator;
         personalInviteFeeDenominator = _fees.personalInviteFeeDenominator;
         require(_feeCollector != address(0), "Fee collector cannot be 0x0");
         feeCollector = _feeCollector;
@@ -59,11 +57,17 @@ contract FeeSettings is Ownable {
             "Fee change must be executed after the change time"
         );
         tokenFeeDenominator = proposedFees.tokenFeeDenominator;
-        continuousFundraisungFeeDenominator = proposedFees.continuousFundraisungFeeDenominator;
-        personalInviteFeeDenominator = proposedFees.personalInviteFeeDenominator;
+        continuousFundraisungFeeDenominator = proposedFees
+            .continuousFundraisungFeeDenominator;
+        personalInviteFeeDenominator = proposedFees
+            .personalInviteFeeDenominator;
         emit SetTokenFeeDenominator(proposedFees.tokenFeeDenominator);
-        emit SetContinuousFundraisungFeeDenominator(proposedFees.continuousFundraisungFeeDenominator);
-        emit SetPersonalInviteFeeDenominator(proposedFees.personalInviteFeeDenominator);
+        emit SetContinuousFundraisungFeeDenominator(
+            proposedFees.continuousFundraisungFeeDenominator
+        );
+        emit SetPersonalInviteFeeDenominator(
+            proposedFees.personalInviteFeeDenominator
+        );
         delete proposedFees;
     }
 
@@ -79,11 +83,13 @@ contract FeeSettings is Ownable {
             "Fee must be below 5% or 0"
         );
         require(
-            _fees.continuousFundraisungFeeDenominator >= 20 || _fees.continuousFundraisungFeeDenominator == 0,
+            _fees.continuousFundraisungFeeDenominator >= 20 ||
+                _fees.continuousFundraisungFeeDenominator == 0,
             "Fee must be below 5% or 0"
         );
         require(
-            _fees.personalInviteFeeDenominator >= 20 || _fees.personalInviteFeeDenominator == 0,
+            _fees.personalInviteFeeDenominator >= 20 ||
+                _fees.personalInviteFeeDenominator == 0,
             "Fee must be below 5% or 0"
         );
     }
