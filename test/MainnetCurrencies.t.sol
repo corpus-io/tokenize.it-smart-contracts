@@ -51,7 +51,8 @@ contract MainnetCurrencies is Test {
 
     function setUp() public {
         list = new AllowList();
-        feeSettings = new FeeSettings(100, 100, admin);
+        Fees memory fees = Fees(100,100,100,0);
+        feeSettings = new FeeSettings(fees, admin);
 
         token = new Token(
             trustedForwarder,
@@ -147,17 +148,17 @@ contract MainnetCurrencies is Test {
             _currency.balanceOf(receiver),
             _currencyCost -
                 _currencyCost /
-                token.feeSettings().investmentFeeDenominator(),
+                token.feeSettings().continuousFundraisungFeeDenominator(),
             "receiver should have received currency"
         );
         assertEq(
             _currency.balanceOf(token.feeSettings().feeCollector()),
-            _currencyCost / token.feeSettings().investmentFeeDenominator(),
+            _currencyCost / token.feeSettings().continuousFundraisungFeeDenominator(),
             "fee receiver should have received currency"
         );
         assertEq(
             token.balanceOf(token.feeSettings().feeCollector()),
-            amountOfTokenToBuy / token.feeSettings().investmentFeeDenominator(),
+            amountOfTokenToBuy / token.feeSettings().continuousFundraisungFeeDenominator(),
             "fee receiver should have received tokens"
         );
         assertEq(
@@ -253,17 +254,17 @@ contract MainnetCurrencies is Test {
             _currency.balanceOf(receiver),
             _currencyCost -
                 _currencyCost /
-                token.feeSettings().investmentFeeDenominator(),
+                token.feeSettings().continuousFundraisungFeeDenominator(),
             "receiver should have received currency"
         );
         assertEq(
             _currency.balanceOf(token.feeSettings().feeCollector()),
-            _currencyCost / token.feeSettings().investmentFeeDenominator(),
+            _currencyCost / token.feeSettings().continuousFundraisungFeeDenominator(),
             "fee receiver should have received currency"
         );
         assertEq(
             token.balanceOf(token.feeSettings().feeCollector()),
-            amountOfTokenToBuy / token.feeSettings().investmentFeeDenominator(),
+            amountOfTokenToBuy / token.feeSettings().continuousFundraisungFeeDenominator(),
             "fee receiver should have received tokens"
         );
         assertEq(
