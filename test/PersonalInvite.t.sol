@@ -35,7 +35,9 @@ contract PersonalInviteTest is Test {
     function setUp() public {
         factory = new PersonalInviteFactory();
         list = new AllowList();
-        feeSettings = new FeeSettings(100, 100, admin);
+        
+        Fees memory fees = Fees(100,100,100,0);
+        feeSettings = new FeeSettings(fees, admin);
 
         token = new Token(
             trustedForwarder,
@@ -154,7 +156,7 @@ contract PersonalInviteTest is Test {
             currency.balanceOf(receiver),
             currencyAmount -
                 currencyAmount /
-                token.feeSettings().investmentFeeDenominator()
+                token.feeSettings().personalInviteFeeDenominator()
         );
 
         console.log(
@@ -166,7 +168,7 @@ contract PersonalInviteTest is Test {
             currency.balanceOf(token.feeSettings().feeCollector()),
             feeCollectorCurrencyBalanceBefore +
                 currencyAmount /
-                token.feeSettings().investmentFeeDenominator(),
+                token.feeSettings().personalInviteFeeDenominator(),
             "feeCollector currency balance is not correct"
         );
 
