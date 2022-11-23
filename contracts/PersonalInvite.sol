@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "./Price.sol";
 import "./Token.sol";
 
 /**
@@ -49,22 +50,11 @@ contract PersonalInvite {
         require(_tokenPrice != 0, "_tokenPrice can not be zero");
         require(block.timestamp <= _expiration, "Deal expired");
 
-        /**
-        @dev To avoid rounding errors, (amount * tokenPrice) needs to be multiple of 10**token.decimals(). This is checked for here. 
-            With:
-                _tokenAmount = a * [token_bits]
-                _tokenPrice = p * [currency_bits]/[token]
-            The currency amount is calculated as: 
-                currencyAmount = _tokenAmount * tokenPrice 
-                = a * p * [currency_bits]/[token] * [token_bits]  with 1 [token] = (10**token.decimals) [token_bits]
-                = a * p * [currency_bits] / (10**token.decimals)
-         */
-        require(
-            (_amount * _tokenPrice) % (10 ** _token.decimals()) == 0,
-            "Amount * tokenprice needs to be a multiple of 10**token.decimals()"
+        uint256 currencyAmount = Price.getCurrencyAmount(
+            _token,
+            _amount,
+            _tokenPrice
         );
-        uint256 currencyAmount = (_amount * _tokenPrice) /
-            (10 ** _token.decimals());
 
         uint256 fee;
         if (_token.feeSettings().investmentFeeDenominator() == 0) {

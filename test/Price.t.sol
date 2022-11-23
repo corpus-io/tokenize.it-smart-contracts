@@ -14,10 +14,12 @@ contract PriceTest is Test {
     // }
 
     function testGetCurrencyAmountNotDivisible() public {
-        ERC20 token = new FakePaymentToken(700*10**18, 18);
+        ERC20 token = new FakePaymentToken(700 * 10 ** 18, 18);
         uint256 tokenAmount = 100;
         uint256 price = 100;
-        vm.expectRevert("Amount * tokenprice needs to be a multiple of 10**token.decimals()");
+        vm.expectRevert(
+            "Amount * tokenprice needs to be a multiple of 10**token.decimals()"
+        );
         Price.getCurrencyAmount(token, tokenAmount, price);
     }
 
@@ -32,10 +34,15 @@ contract PriceTest is Test {
         uint256 price = 7 * 10 ** paymentTokenDecimals;
         uint256 expectedCurrencyAmount = (tokenAmount * price) / 10 ** 18;
 
-        uint256 actualCurrencyAmount = Price.getCurrencyAmount(token, tokenAmount, price);
-        assertEq(actualCurrencyAmount, expectedCurrencyAmount, "Currency amount should match, but actualCurrencyAmount is not equal to expectedCurrencyAmount");
+        uint256 actualCurrencyAmount = Price.getCurrencyAmount(
+            token,
+            tokenAmount,
+            price
+        );
+        assertEq(
+            actualCurrencyAmount,
+            expectedCurrencyAmount,
+            "Currency amount should match, but actualCurrencyAmount is not equal to expectedCurrencyAmount"
+        );
     }
-
-    
-
 }
