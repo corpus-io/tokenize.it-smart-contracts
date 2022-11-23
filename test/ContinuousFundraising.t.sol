@@ -40,7 +40,8 @@ contract ContinuousFundraisingTest is Test {
 
     function setUp() public {
         list = new AllowList();
-        feeSettings = new FeeSettings(100, 100, admin);
+        Fees memory fees = Fees(100,100,100,100);
+        feeSettings = new FeeSettings(fees, admin);
 
         token = new Token(
             trustedForwarder,
@@ -199,7 +200,7 @@ contract ContinuousFundraisingTest is Test {
             // receiver should have the 990 FPT that were paid, minus the fee
             uint currencyAmount = 990 * 10 ** _paymentTokenDecimals;
             uint256 currencyFee = currencyAmount /
-                token.feeSettings().investmentFeeDenominator();
+                token.feeSettings().continuousFundraisungFeeDenominator();
             assertTrue(
                 _paymentToken.balanceOf(receiver) ==
                     currencyAmount - currencyFee,
@@ -337,13 +338,13 @@ contract ContinuousFundraisingTest is Test {
             paymentToken.balanceOf(receiver) ==
                 costInPaymentToken -
                     costInPaymentToken /
-                    token.feeSettings().investmentFeeDenominator(),
+                    token.feeSettings().continuousFundraisungFeeDenominator(),
             "receiver has payment tokens"
         );
         assertTrue(
             paymentToken.balanceOf(token.feeSettings().feeCollector()) ==
                 costInPaymentToken /
-                    token.feeSettings().investmentFeeDenominator(),
+                    token.feeSettings().continuousFundraisungFeeDenominator(),
             "fee collector has collected fee in payment tokens"
         );
         assertTrue(
@@ -470,7 +471,7 @@ contract ContinuousFundraisingTest is Test {
             token.feeSettings().tokenFeeDenominator();
         uint256 paymentTokenFee = (costInPaymentTokenForMinAmount * 3) /
             2 /
-            token.feeSettings().investmentFeeDenominator();
+            token.feeSettings().continuousFundraisungFeeDenominator();
         assertTrue(
             paymentToken.balanceOf(receiver) ==
                 (costInPaymentTokenForMinAmount * 3) / 2 - paymentTokenFee,

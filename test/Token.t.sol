@@ -31,7 +31,8 @@ contract tokenTest is Test {
         vm.prank(admin);
         allowList = new AllowList();
         vm.prank(feeSettingsOwner);
-        feeSettings = new FeeSettings(100, 100, admin);
+        Fees memory fees = Fees(100,100,100,0);
+        feeSettings = new FeeSettings(fees, admin);
         token = new Token(
             trustedForwarder,
             address(feeSettings),
@@ -902,7 +903,8 @@ contract tokenTest is Test {
 
     function testSuggestNewFeeSettingsWrongCaller(address wrongUpdater) public {
         vm.assume(wrongUpdater != feeSettings.owner());
-        FeeSettings newFeeSettings = new FeeSettings(0, 0, pauser);
+        Fees memory fees = Fees(0,0,0,0);
+        FeeSettings newFeeSettings = new FeeSettings(fees, pauser);
         vm.prank(wrongUpdater);
         vm.expectRevert(
             "Only fee settings owner can suggest fee settings update"
@@ -911,7 +913,8 @@ contract tokenTest is Test {
     }
 
     function testSuggestNewFeeSettingsFeeCollector() public {
-        FeeSettings newFeeSettings = new FeeSettings(0, 0, pauser);
+        Fees memory fees = Fees(0,0,0,0);
+        FeeSettings newFeeSettings = new FeeSettings(fees, pauser);
         vm.prank(feeSettings.feeCollector());
         vm.expectRevert(
             "Only fee settings owner can suggest fee settings update"
@@ -921,10 +924,11 @@ contract tokenTest is Test {
 
     function testSuggestNewFeeSettings(address newCollector) public {
         vm.assume(newCollector != address(0));
-        FeeSettings newFeeSettings = new FeeSettings(0, 0, newCollector);
+        Fees memory fees = Fees(0,0,0,0);
+        FeeSettings newFeeSettings = new FeeSettings(fees, newCollector);
         FeeSettings oldFeeSettings = token.feeSettings();
         uint oldInvestmentFeeDenominator = oldFeeSettings
-            .investmentFeeDenominator();
+            .continuousFundraisungFeeDenominator();
         uint oldTokenFeeDenominator = oldFeeSettings.tokenFeeDenominator();
         vm.prank(feeSettings.owner());
         token.suggestNewFeeSettings(newFeeSettings);
@@ -939,7 +943,7 @@ contract tokenTest is Test {
             "suggested fee settings not set!"
         );
         assertTrue(
-            token.feeSettings().investmentFeeDenominator() ==
+            token.feeSettings().continuousFundraisungFeeDenominator() ==
                 oldInvestmentFeeDenominator,
             "investment fee denominator changed!"
         );
@@ -951,10 +955,11 @@ contract tokenTest is Test {
 
     function testAcceptNewFeeSettings(address newCollector) public {
         vm.assume(newCollector != address(0));
-        FeeSettings newFeeSettings = new FeeSettings(0, 0, newCollector);
+        Fees memory fees = Fees(0,0,0,0);
+        FeeSettings newFeeSettings = new FeeSettings(fees, newCollector);
         FeeSettings oldFeeSettings = token.feeSettings();
         uint oldInvestmentFeeDenominator = oldFeeSettings
-            .investmentFeeDenominator();
+            .continuousFundraisungFeeDenominator();
         uint oldTokenFeeDenominator = oldFeeSettings.tokenFeeDenominator();
         vm.prank(feeSettings.owner());
         token.suggestNewFeeSettings(newFeeSettings);
@@ -976,7 +981,7 @@ contract tokenTest is Test {
             "suggested fee settings not reset!"
         );
         assertTrue(
-            token.feeSettings().investmentFeeDenominator() !=
+            token.feeSettings().continuousFundraisungFeeDenominator() !=
                 oldInvestmentFeeDenominator,
             "investment fee denominator changed!"
         );

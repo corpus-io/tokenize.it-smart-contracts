@@ -57,12 +57,12 @@ contract PersonalInvite {
         );
 
         uint256 fee;
-        if (_token.feeSettings().investmentFeeDenominator() == 0) {
+        if (_token.feeSettings().personalInviteFeeDenominator() == 0) {
             fee = 0;
         } else {
             fee =
                 currencyAmount /
-                _token.feeSettings().investmentFeeDenominator();
+                _token.feeSettings().personalInviteFeeDenominator();
             _currency.safeTransferFrom(
                 _buyer,
                 _token.feeSettings().feeCollector(),
