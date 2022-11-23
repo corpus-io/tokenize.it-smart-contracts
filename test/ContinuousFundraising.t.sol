@@ -338,13 +338,13 @@ contract ContinuousFundraisingTest is Test {
             paymentToken.balanceOf(receiver) ==
                 costInPaymentToken -
                     costInPaymentToken /
-                    token.feeSettings().investmentFeeDenominator(),
+                    token.feeSettings().continuousFundraisungFeeDenominator(),
             "receiver has payment tokens"
         );
         assertTrue(
             paymentToken.balanceOf(token.feeSettings().feeCollector()) ==
                 costInPaymentToken /
-                    token.feeSettings().investmentFeeDenominator(),
+                    token.feeSettings().continuousFundraisungFeeDenominator(),
             "fee collector has collected fee in payment tokens"
         );
         assertTrue(
@@ -471,7 +471,7 @@ contract ContinuousFundraisingTest is Test {
             token.feeSettings().tokenFeeDenominator();
         uint256 paymentTokenFee = (costInPaymentTokenForMinAmount * 3) /
             2 /
-            token.feeSettings().investmentFeeDenominator();
+            token.feeSettings().continuousFundraisungFeeDenominator();
         assertTrue(
             paymentToken.balanceOf(receiver) ==
                 (costInPaymentTokenForMinAmount * 3) / 2 - paymentTokenFee,
