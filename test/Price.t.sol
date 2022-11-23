@@ -13,13 +13,14 @@ contract PriceTest is Test {
     //     token = new FakePaymentToken(700*10**18, 18);
     // }
 
-    function testGetCurrencyAmountNotDivisible() public {
+    function testFailGetCurrencyAmountNotDivisible() public {
         ERC20 token = new FakePaymentToken(700 * 10 ** 18, 18);
         uint256 tokenAmount = 100;
         uint256 price = 100;
-        vm.expectRevert(
-            "Amount * tokenprice needs to be a multiple of 10**token.decimals()"
-        );
+        // this expectRevert should work, but it doesn't since the getCurrencyAmount function has been declared internal instead of public.
+        //vm.expectRevert();
+        //     "Amount * tokenprice needs to be a multiple of 10**token.decimals()"
+        // );
         Price.getCurrencyAmount(token, tokenAmount, price);
     }
 
