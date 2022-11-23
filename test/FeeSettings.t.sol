@@ -54,9 +54,10 @@ contract FeeSettingsTest is Test {
         vm.assume(!feeInValidRange(fee));
         FeeSettings _feeSettings = new FeeSettings(100, 100, admin);
 
-        Change memory feeChange = Change({
+        Fees memory feeChange = Fees({
             tokenFeeDenominator: fee,
-            investmentFeeDenominator: 100,
+            continuousFundraisungFeeDenominator: 100,
+            personalInviteFeeDenominator: 100,
             time: block.timestamp + 7884001
         });
         vm.expectRevert("Fee must be below 5% or 0");
@@ -69,9 +70,10 @@ contract FeeSettingsTest is Test {
         vm.assume(!feeInValidRange(fee));
         FeeSettings _feeSettings = new FeeSettings(100, 100, admin);
 
-        Change memory feeChange = Change({
+        Fees memory feeChange = Fees({
             tokenFeeDenominator: 100,
-            investmentFeeDenominator: fee,
+            continuousFundraisungFeeDenominator: 100,
+            personalInviteFeeDenominator: 100,
             time: block.timestamp + 7884001
         });
         vm.expectRevert("Fee must be below 5% or 0");
@@ -83,9 +85,9 @@ contract FeeSettingsTest is Test {
         vm.prank(admin);
         FeeSettings _feeSettings = new FeeSettings(50, 50, admin);
 
-        Change memory feeChange = Change({
-            tokenFeeDenominator: 100,
-            investmentFeeDenominator: 100,
+        Fees memory feeChange = Fees({
+            continuousFundraisungFeeDenominator: 100,
+            personalInviteFeeDenominator: 100,
             time: block.timestamp + delay
         });
         vm.prank(admin);
@@ -107,9 +109,10 @@ contract FeeSettingsTest is Test {
         vm.prank(admin);
         FeeSettings _feeSettings = new FeeSettings(50, 50, admin);
 
-        Change memory feeChange = Change({
+        Fees memory feeChange = Fees({
             tokenFeeDenominator: tokenFee,
-            investmentFeeDenominator: investmentFee,
+            continuousFundraisungFeeDenominator: investmentFee,
+            personalInviteFeeDenominator: 100,
             time: block.timestamp + delayAnnounced
         });
         vm.prank(admin);
@@ -132,9 +135,10 @@ contract FeeSettingsTest is Test {
         vm.prank(admin);
         FeeSettings _feeSettings = new FeeSettings(50, 50, admin);
 
-        Change memory feeChange = Change({
+        Fees memory feeChange = Fees({
             tokenFeeDenominator: tokenFee,
-            investmentFeeDenominator: investmentFee,
+            continuousFundraisungFeeDenominator: investmentFee,
+            personalInviteFeeDenominator: 100,
             time: block.timestamp + delayAnnounced
         });
         vm.prank(admin);
