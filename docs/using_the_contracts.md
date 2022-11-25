@@ -6,6 +6,7 @@ Tokenize.it has already deployed:
 
 1. [allowList](../contracts/AllowList.sol)
 2. [feeSettings](../contracts/FeeSettings.sol)
+3. [PersonalInviteFactory](../contracts/PersonalInviteFactory.sol)
 
 These will be used for the next steps.
 

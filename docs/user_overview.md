@@ -5,20 +5,21 @@
 3. **investor**: An entity that wants to receive shares of a company and is willing to pay for doing so
 4. (**employee**: A person that works for the company and may receive shares as part of their compensation. Emitting these shares can be done through 3rd party contracts, but is not the current focus of this project.)
 
-Let's assume that there will be one (1) platform, many (x) companies and many (y) investors. This leads to the following number of deployments for each contract:
+Let's assume that there will be one (1) platform, many (**X**) companies and many (Y) investors. This leads to the following number of deployments for each contract:
 | contract | number of deployments | admin | reason |
 |----|----|----|---|
 | AllowList | 1 | platform | used by all companies |
 | FeeSettings | 1 | platform | used by all companies |
+| PersonalInviteFactory | 1 | --- | helps to deploy PersonalInvite to deterministic address, can be used by all PersonalInvites |
 | Token | x | company | represents a specific companies shares |
 | ContinuousFundraising | x | company | most companies will want raise funds from all eligible investors |
 | PersonalInvite | >x | --- | most companies will extend special investment offers to specific investors, or receive these from investors |
 
-# Example work flow
+# Example work flow: creating company and raising funds
 
 ## Platform deployment
 
-Tokenize.it deploys AllowList and FeeSettings contracts once. Also, a web app will be provided. This app will not be described in depth here.
+Tokenize.it deploys AllowList, FeeSettings and PersonalInviteFactory contracts once. Also, a web app will be provided. This app will not be described in depth here .
 
 ## Company deployment
 
