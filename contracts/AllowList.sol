@@ -39,9 +39,9 @@ contract AllowList is Ownable {
     /**
     @notice sets (or updates) the attributes for an address
     */
-    function set(address _addr, uint256 _i) public onlyOwner {
-        map[_addr] = _i;
-        emit Set(_addr, _i);
+    function set(address _addr, uint256 _attributes) public onlyOwner {
+        map[_addr] = _attributes;
+        emit Set(_addr, _attributes);
     }
 
     /**
