@@ -29,7 +29,8 @@
     "ethers": "^5.6.6",
     "hardhat": "^2.10.2",
     "hardhat-gas-reporter": "^1.0.8",
-    "prettier": "^2.6.2",
+    "prettier": "^2.8.0",
+    "prettier-plugin-solidity": "^1.0.0",
     "solhint": "^3.3.7",
     "solidity-coverage": "^0.7.21",
     "ts-node": "^10.9.1",
@@ -38,8 +39,7 @@
   },
   "dependencies": {
     "@opengsn/contracts": "2.2.5",
-    "openzeppelin-contracts": "^4.0.0",
-    "prettier-plugin-solidity": "^1.0.0-rc.1"
+    "openzeppelin-contracts": "^4.0.0"
   },
   "scripts": {
     "build": "yarn hardhat compile && yarn tsc --declaration",
