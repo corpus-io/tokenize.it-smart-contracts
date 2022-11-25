@@ -25,7 +25,7 @@ contract MainnetCurrencies is Test {
 
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant buyer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
-    address public constant minterAdmin =
+    address public constant mintAllower =
         0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
     address public constant minter = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
     address public constant owner = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
@@ -112,11 +112,11 @@ contract MainnetCurrencies is Test {
         );
 
         // allow raise contract to mint
-        bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
+        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
         vm.prank(admin);
-        token.grantRole(roleMinterAdmin, minterAdmin);
-        vm.prank(minterAdmin);
-        token.setUpMinter(address(_raise), maxAmountOfTokenToBeSold);
+        token.grantRole(roleMintAllower, mintAllower);
+        vm.prank(mintAllower);
+        token.setMintingAllowance(address(_raise), maxAmountOfTokenToBeSold);
 
         // give the buyer funds
         //console.log("buyer's balance: ", _currency.balanceOf(buyer));
@@ -214,7 +214,7 @@ contract MainnetCurrencies is Test {
 
         // grant mint allowance to invite
         vm.prank(admin);
-        token.setUpMinter(expectedAddress, amountOfTokenToBuy);
+        token.setMintingAllowance(expectedAddress, amountOfTokenToBuy);
 
         // give the buyer funds and approve invite
         writeERC20Balance(buyer, address(_currency), _currencyAmount);

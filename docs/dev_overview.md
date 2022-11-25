@@ -11,8 +11,8 @@ Beyond being an ERC20 token, it has fine grained access control to:
 
 ### Minting
 
-Minting is very central to the usage of this contract. The Minteradmin role (see [access control](https://docs.openzeppelin.com/contracts/2.x/access-control)) can give an address minter rights. For example the admin (or CEO) of the company might have minting rights to create new shares. Each investment or vesting contract also needs minting rights in order to function.
-In addition to the right to mint, there is also a minting allowance, which needs to be issued by the Minteradmin. This is stored in the map `mintingAllowance`
+Minting is very central to the usage of this contract. The MintAllower role (see [access control](https://docs.openzeppelin.com/contracts/2.x/access-control)) can give an address a minting allowance. For example the admin (or CEO) of the company might have a minting allowance to create new shares. Each investment or vesting contract also needs a minting allowance in order to function.
+The allowances are stored in the map `mintingAllowance`.
 
 ### Requirements
 
