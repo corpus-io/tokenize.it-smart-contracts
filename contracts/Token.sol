@@ -55,7 +55,10 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         - position 0: 1 = must be KYCed (0 = no KYC required)
         - position 1: 1 = must be american citizen (0 = american citizenship not required)
         - position 2: 1 = must be a penguin (0 = penguin status not required)
-        These meanings are not defined within the token contract. They MUST match the definitions used in the corresponding allowList contract.
+        These meanings are not defined within code, neither in the token contract nor the allowList. Nevertheless, the definition used by the people responsible for both contracts MUST match, 
+        or the token contract will not work as expected. E.g. if the allowList defines position 2 as "is a penguin", while the token contract uses position 2 as "is a hedgehog", then the tokens 
+        might be sold to hedgehogs, which was never the intention.
+        Here some examples of how requirements can be used in practice:
         With requirements 0b0000000000000000000000000000000000000000000000000000000000000101, only KYCed penguins will be allowed to send or receive tokens.
         With requirements 0b0000000000000000000000000000000000000000000000000000000000000111, only KYCed american penguins will be allowed to send or receive tokens.
         With requirements 0b0000000000000000000000000000000000000000000000000000000000000000, even french hedgehogs will be allowed to send or receive tokens.
