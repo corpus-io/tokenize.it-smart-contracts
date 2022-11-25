@@ -35,7 +35,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         keccak256("TRANSFERERADMIN_ROLE");
     /// @notice Addresses with this role do not need to satisfy any requirements to send or receive tokens
     bytes32 public constant TRANSFERER_ROLE = keccak256("TRANSFERER_ROLE");
-    /// @notice The role that has the ability to pause the token
+    /// @notice The role that has the ability to pause the token. Transferring, burning and minting will not be possible while the contract is paused.
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
     // Map managed by tokenize.it, which assigns addresses requirements which they fulfill
