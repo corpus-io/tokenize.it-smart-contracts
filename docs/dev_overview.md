@@ -11,7 +11,7 @@ Beyond being an ERC20 token, it has fine grained access control to:
 
 ### Minting
 
-Minting is very central to the usage of this contract. The Minteradmin role (see [access control](https:/.openzeppelin.com/contracts/2.x/access-control)) can give an address minter rights. For example the admin (or CEO) of the company might have minting rights to create new shares. Each investment or vesting contract also needs minting rights in order to function.
+Minting is very central to the usage of this contract. The Minteradmin role (see [access control](https://docs.openzeppelin.com/contracts/2.x/access-control)) can give an address minter rights. For example the admin (or CEO) of the company might have minting rights to create new shares. Each investment or vesting contract also needs minting rights in order to function.
 In addition to the right to mint, there is also a minting allowance, which needs to be issued by the Minteradmin. This is stored in the map `mintingAllowance`
 
 ### Requirements
@@ -26,7 +26,7 @@ There are two ways to control who can transact with the token:
 
 Currently, WETH, WBTC, USDC, EUROC are supported as investment currencies.
 
-There are 2 types of investments:
+There are 2 investment contracts:
 
 ### 1. Personal invite (PersonalInvite.sol)
 
@@ -34,8 +34,7 @@ This is a personal investment invite allowing a particular investor (represented
 
 ### 2. ContinuousFundraising (ContinuousFundraising.sol)
 
-This contract allows everyone who has the `Transferer`-role on the `token` contract or who is certified by the allow-list to meet the requirements set in the `token` contract to buy newly issued tokens at a fixed price. Until a certain threshold of maximal tokens to be issued is met.
-The arguments in the constructor are similar to PersonalInvite.sol, with the addition of `maxAmountOfTokenToBeSold` , which is the maximal amount of token to be sold in this fundraising round.
+This contract allows everyone who has the `Transferer`-role on the `token` contract or who is certified by the allow-list to meet the requirements set in the `token` contract to buy newly issued tokens at a fixed price. The number of token that can be minted in this way can be limited to `maxAmountOfTokenToBeSold`, which is the maximal amount of token to be sold in this fundraising round.
 
 Furthermore, this contract can be paused by the owner to change the parameters. The pause is always at least 1 day.
 
