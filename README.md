@@ -22,7 +22,7 @@ For information regarding testing, please go to [testing](docs/testing.md). Ther
    - direct distribution of tokens (does not need another smart contract)
    - vesting can be realized using the [DssVest.sol](https://github.com/makerdao/dss-vest/blob/master/src/DssVest.sol) contract by MakerDao
 
-The requirements for participation in fundraising are checked against the [AllowList.sol](contracts/AllowList.sol) contract. Tokenize.it will deploy and manage one of these.
+The requirements for participation in fundraising are checked against the [AllowList.sol](contracts/AllowList.sol) contract. Fees are collected as according to the settings in [FeeSettings.sol](./contracts/FeeSettings.sol). Tokenize.it will deploy and manage at least on AllowList and one FeeSettings contract.
 
 # Contracts
 
