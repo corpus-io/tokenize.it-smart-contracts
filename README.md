@@ -30,6 +30,12 @@ The smart contracts can be found in the contracts/ folder.
 
 All contracts are based on the well documented and tested [OpenZeppelin smart contract suite](https://docs.openzeppelin.com/contracts/4.x/).
 
+## EIP-2771
+
+Two contracts use a trusted forwarder to implement EIP-2771. The forwarder used will be the openGSN v2 forwarder deployed on mainnet: https://docs-v2.opengsn.org/networks/ethereum/mainnet.html
+It has been audited and working well for over a year. It's address is 0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA, and it is also used in our [tests](./test/ContinuousFundraisingERC2771.t.sol).
+Instead of leveraging the full potential of the gas station network, tokenize.it will have it's own service for sending eligible transactions to the forwarder.
+
 # Resources
 
 The following resources are available regarding the contracts:

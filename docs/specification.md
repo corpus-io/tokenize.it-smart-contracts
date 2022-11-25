@@ -4,8 +4,8 @@ The following statements about the smart contracts should always be true
 
 ## Token.sol
 
-- Only addresses with MINTER_ROLE are able to mint tokens.
-- An address with MINTER_ROLE can only mint tokens as long as their remaining allowance is > 0.
+- Only addresses with minting allowances are able to mint tokens.
+- An address with minting allowance can only mint tokens if the remaining allowance after the mint will be larger or equal to zero.
 - An address can only receive tokens at least one of these statements is true:
   - The address fulfills the requirements as proven by the allowList.
   - The address has the TRANSFERER_ROLE.

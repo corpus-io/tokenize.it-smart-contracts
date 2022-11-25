@@ -15,7 +15,10 @@ contract AllowList is Ownable {
         - position 0: 1 = has been KYCed (0 = not KYCed)
         - position 1: 1 = is american citizen (0 = not american citizen)
         - position 2: 1 = is a penguin (0 = not a penguin)
-        These meanings are not defined within the token contract. They MUST match the definitions used in the corresponding Token contract.
+        These meanings are not defined within code, neither in the token contract nor the allowList. Nevertheless, the definition used by the people responsible for both contracts MUST match, 
+        or the token contract will not work as expected. E.g. if the allowList defines position 2 as "is a penguin", while the token contract uses position 2 as "is a hedgehog", then the tokens 
+        might be sold to hedgehogs, which was never the intention.
+        Here some examples of how requirements can be used in practice:
         value 0b0000000000000000000000000000000000000000000000000000000000000101, means "is KYCed and is a penguin"
         value 0b0000000000000000000000000000000000000000000000000000000000000111, means "is KYCed, is american and is a penguin"
         value 0b0000000000000000000000000000000000000000000000000000000000000000, means "has not proven any relevant attributes to the allowList operator" (default value)
@@ -36,9 +39,9 @@ contract AllowList is Ownable {
     /**
     @notice sets (or updates) the attributes for an address
     */
-    function set(address _addr, uint256 _i) public onlyOwner {
-        map[_addr] = _i;
-        emit Set(_addr, _i);
+    function set(address _addr, uint256 _attributes) public onlyOwner {
+        map[_addr] = _attributes;
+        emit Set(_addr, _attributes);
     }
 
     /**
