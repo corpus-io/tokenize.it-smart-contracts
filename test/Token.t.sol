@@ -13,7 +13,7 @@ contract tokenTest is Test {
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant requirer =
         0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
-    address public constant minterAdmin =
+    address public constant mintAllower =
         0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
     address public constant minter = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
     address public constant burner = 0x4109709eCFa91A80626ff3989d68F67f5b1DD124;
@@ -46,21 +46,19 @@ contract tokenTest is Test {
 
         // set up roles
         vm.startPrank(admin);
-        token.grantRole(token.MINTER_ROLE(), minter);
         token.grantRole(token.BURNER_ROLE(), burner);
         token.grantRole(token.TRANSFERER_ROLE(), transferer);
         token.grantRole(token.PAUSER_ROLE(), pauser);
         token.grantRole(token.REQUIREMENT_ROLE(), requirer);
-        token.grantRole(token.MINTERADMIN_ROLE(), minterAdmin);
+        token.grantRole(token.MINTALLOWER_ROLE(), mintAllower);
         token.grantRole(token.TRANSFERERADMIN_ROLE(), transfererAdmin);
 
         // revoke roles from admin
-        token.revokeRole(token.MINTER_ROLE(), admin);
         token.revokeRole(token.BURNER_ROLE(), admin);
         token.revokeRole(token.TRANSFERER_ROLE(), admin);
         token.revokeRole(token.PAUSER_ROLE(), admin);
         token.revokeRole(token.REQUIREMENT_ROLE(), admin);
-        token.revokeRole(token.MINTERADMIN_ROLE(), admin);
+        token.revokeRole(token.MINTALLOWER_ROLE(), admin);
         token.revokeRole(token.TRANSFERERADMIN_ROLE(), admin);
 
         vm.stopPrank();
@@ -80,27 +78,20 @@ contract tokenTest is Test {
     }
 
     function testFailAdmin() public {
-        assertTrue(
-            token.hasRole(
-                token.getRoleAdmin(token.MINTER_ROLE()),
-                address(this)
-            )
-        );
+        assertTrue(token.hasRole(token.MINTALLOWER_ROLE(), address(this)));
     }
 
     function testFailAdmin2() public {
-        assertTrue(
-            token.hasRole(token.getRoleAdmin(token.MINTER_ROLE()), msg.sender)
-        );
+        assertTrue(token.hasRole(token.MINTALLOWER_ROLE(), msg.sender));
     }
 
     /**
-    @notice test that addresses that are not the admin cannot perform the minter admin tasks
+    @notice test that addresses that are not the admin cannot perform the mint allower tasks
      */
     function testFailAdminX(address x) public {
         // test would fail (to fail) if x = admin. This has actually happened! Abort test in that case.
         vm.assume(x != admin);
-        assertTrue(token.hasRole(token.getRoleAdmin(token.MINTER_ROLE()), x));
+        assertTrue(token.hasRole(token.MINTALLOWER_ROLE(), x));
     }
 
     function testAdmin() public {
@@ -110,14 +101,12 @@ contract tokenTest is Test {
     }
 
     function testMinterAdmin() public {
-        assertTrue(
-            token.hasRole(token.getRoleAdmin(token.MINTER_ROLE()), minterAdmin)
-        );
+        assertTrue(token.hasRole(token.MINTALLOWER_ROLE(), mintAllower));
     }
 
-    function testMinterAdmin(address x) public {
+    function testMintAllower(address x) public {
         vm.assume(x != admin);
-        assertFalse(token.hasRole(token.getRoleAdmin(token.MINTER_ROLE()), x));
+        assertFalse(token.hasRole(token.MINTALLOWER_ROLE(), x));
     }
 
     function testFailSetRequirements() public {
@@ -147,15 +136,12 @@ contract tokenTest is Test {
         assertTrue(token.hasRole(role, requirer));
     }
 
-    function testSetRoleMinter() public {
-        bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
-        bytes32 roleMinter = token.MINTER_ROLE();
+    function testSetRoleMintallower() public {
+        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
         vm.prank(admin);
-        token.grantRole(roleMinterAdmin, minterAdmin);
-        vm.prank(minterAdmin);
-        token.grantRole(roleMinter, minter);
-        assertTrue(token.hasRole(roleMinter, minter));
+        token.grantRole(roleMintAllower, mintAllower);
+        assertTrue(token.hasRole(roleMintAllower, mintAllower));
     }
 
     function testSetRoleBurner() public {
@@ -220,12 +206,12 @@ contract tokenTest is Test {
     }
 
     function testSetUpMinter() public {
-        bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
+        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
         vm.prank(admin);
-        token.grantRole(roleMinterAdmin, minterAdmin);
-        vm.prank(minterAdmin);
-        token.setUpMinter(minter, 2);
+        token.grantRole(roleMintAllower, mintAllower);
+        vm.prank(mintAllower);
+        token.setMintingAllowance(minter, 2);
         assertTrue(token.mintingAllowance(minter) == 2);
 
         vm.prank(minter);
@@ -238,12 +224,12 @@ contract tokenTest is Test {
         vm.assume(
             x <= UINT256_MAX - x / token.feeSettings().tokenFeeDenominator()
         ); // avoid overflow
-        bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
+        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
         vm.prank(admin);
-        token.grantRole(roleMinterAdmin, minterAdmin);
-        vm.prank(minterAdmin);
-        token.setUpMinter(minter, x);
+        token.grantRole(roleMintAllower, mintAllower);
+        vm.prank(mintAllower);
+        token.setMintingAllowance(minter, x);
         assertTrue(token.mintingAllowance(minter) == x);
 
         vm.prank(minter);
@@ -254,7 +240,7 @@ contract tokenTest is Test {
 
     function testFailMintAllowanceUsed(uint256 x) public {
         vm.prank(admin);
-        token.setUpMinter(minter, x);
+        token.setMintingAllowance(minter, x);
         assertTrue(token.mintingAllowance(minter) == x);
 
         vm.prank(minter);
@@ -280,8 +266,8 @@ contract tokenTest is Test {
 
         steps = steps % 100; // don't be ridiculous
 
-        vm.prank(minterAdmin);
-        token.setUpMinter(minter, totalMintAmount);
+        vm.prank(mintAllower);
+        token.setMintingAllowance(minter, totalMintAmount);
         assertTrue(token.mintingAllowance(minter) == totalMintAmount);
 
         // mint in steps
@@ -310,7 +296,7 @@ contract tokenTest is Test {
         vm.assume(x > 0);
 
         vm.prank(admin);
-        token.setUpMinter(minter, 0); // set allowance to 0
+        token.setMintingAllowance(minter, 0); // set allowance to 0
         assertTrue(token.mintingAllowance(minter) == 0); // check allowance is 0
 
         vm.prank(minter);
@@ -321,13 +307,13 @@ contract tokenTest is Test {
         vm.assume(
             x <= UINT256_MAX - x / token.feeSettings().tokenFeeDenominator()
         ); // avoid overflow
-        bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
+        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
         bytes32 role = token.BURNER_ROLE();
 
         vm.prank(admin);
-        token.grantRole(roleMinterAdmin, minterAdmin);
-        vm.prank(minterAdmin);
-        token.setUpMinter(minter, x);
+        token.grantRole(roleMintAllower, mintAllower);
+        vm.prank(mintAllower);
+        token.setMintingAllowance(minter, x);
         assertTrue(token.mintingAllowance(minter) == x);
 
         console.log("minting %s tokens", x);
@@ -374,8 +360,8 @@ contract tokenTest is Test {
         vm.assume(
             x <= UINT256_MAX - x / token.feeSettings().tokenFeeDenominator()
         ); // avoid overflow
-        vm.prank(minterAdmin);
-        token.setUpMinter(minter, x);
+        vm.prank(mintAllower);
+        token.setMintingAllowance(minter, x);
         assertTrue(token.mintingAllowance(minter) == x);
 
         vm.prank(minter);
@@ -392,8 +378,8 @@ contract tokenTest is Test {
     }
 
     function testBurn0() public {
-        vm.prank(minterAdmin);
-        token.setUpMinter(minter, 0);
+        vm.prank(mintAllower);
+        token.setMintingAllowance(minter, 0);
         assertTrue(token.mintingAllowance(minter) == 0);
 
         vm.prank(minter);
@@ -406,13 +392,13 @@ contract tokenTest is Test {
     }
 
     function testFailBurn0() public {
-        bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
+        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
         bytes32 role = token.BURNER_ROLE();
 
         vm.prank(admin);
-        token.grantRole(roleMinterAdmin, minterAdmin);
-        vm.prank(minterAdmin);
-        token.setUpMinter(minter, 0);
+        token.grantRole(roleMintAllower, mintAllower);
+        vm.prank(mintAllower);
+        token.setMintingAllowance(minter, 0);
         assertTrue(token.mintingAllowance(minter) == 0);
 
         vm.prank(minter);
@@ -427,12 +413,12 @@ contract tokenTest is Test {
 
     function testBeforeTokenTransfer() public {
         // create tokens
-        bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
+        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
         vm.prank(admin);
-        token.grantRole(roleMinterAdmin, minterAdmin);
-        vm.prank(minterAdmin);
-        token.setUpMinter(minter, 100);
+        token.grantRole(roleMintAllower, mintAllower);
+        vm.prank(mintAllower);
+        token.setMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
         vm.prank(minter);
@@ -462,12 +448,12 @@ contract tokenTest is Test {
 
     function testFailBeforeTokenTransferRequirements1() public {
         // create tokens
-        bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
+        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
         vm.prank(admin);
-        token.grantRole(roleMinterAdmin, minterAdmin);
-        vm.prank(minterAdmin);
-        token.setUpMinter(minter, 100);
+        token.grantRole(roleMintAllower, mintAllower);
+        vm.prank(mintAllower);
+        token.setMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
         //testSetRequirements
@@ -507,12 +493,12 @@ contract tokenTest is Test {
 
     function testBeforeTokenTransferRequirementsOverfulfilled() public {
         // create tokens
-        bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
+        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
         vm.prank(admin);
-        token.grantRole(roleMinterAdmin, minterAdmin);
-        vm.prank(minterAdmin);
-        token.setUpMinter(minter, 100);
+        token.grantRole(roleMintAllower, mintAllower);
+        vm.prank(mintAllower);
+        token.setMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
         //testSetRequirements
@@ -534,12 +520,12 @@ contract tokenTest is Test {
 
     function testFailBeforeTokenTransferRequirementsNotfulfilled() public {
         // create tokens
-        bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
+        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
         vm.prank(admin);
-        token.grantRole(roleMinterAdmin, minterAdmin);
-        vm.prank(minterAdmin);
-        token.setUpMinter(minter, 100);
+        token.grantRole(roleMintAllower, mintAllower);
+        vm.prank(mintAllower);
+        token.setMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
         //testSetRequirements
@@ -561,12 +547,12 @@ contract tokenTest is Test {
 
     function testBeforeTokenTransferRequirements2() public {
         // create tokens
-        bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
+        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
         vm.prank(admin);
-        token.grantRole(roleMinterAdmin, minterAdmin);
-        vm.prank(minterAdmin);
-        token.setUpMinter(minter, 100);
+        token.grantRole(roleMintAllower, mintAllower);
+        vm.prank(mintAllower);
+        token.setMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
         //testSetRequirements
@@ -609,12 +595,12 @@ contract tokenTest is Test {
 
     function testFailTransferPause() public {
         // create tokens
-        bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
+        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
         vm.prank(admin);
-        token.grantRole(roleMinterAdmin, minterAdmin);
-        vm.prank(minterAdmin);
-        token.setUpMinter(minter, 100);
+        token.grantRole(roleMintAllower, mintAllower);
+        vm.prank(mintAllower);
+        token.setMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
         //testSetRequirements
@@ -672,12 +658,12 @@ contract tokenTest is Test {
 
     function testTransferUnpaused() public {
         // create tokens
-        bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
+        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
         vm.prank(admin);
-        token.grantRole(roleMinterAdmin, minterAdmin);
-        vm.prank(minterAdmin);
-        token.setUpMinter(minter, 100);
+        token.grantRole(roleMintAllower, mintAllower);
+        vm.prank(mintAllower);
+        token.setMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
         //testSetRequirements
@@ -744,8 +730,8 @@ contract tokenTest is Test {
         address person1 = vm.addr(1);
         address person2 = vm.addr(2);
 
-        vm.prank(minterAdmin);
-        token.setUpMinter(minter, 100);
+        vm.prank(mintAllower);
+        token.setMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
         // //testSetRequirements
@@ -813,8 +799,8 @@ contract tokenTest is Test {
         address person1 = vm.addr(1);
         address person2 = vm.addr(2);
 
-        vm.prank(minterAdmin);
-        token.setUpMinter(minter, 100);
+        vm.prank(mintAllower);
+        token.setMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
         // //testSetRequirements
@@ -831,10 +817,10 @@ contract tokenTest is Test {
         token.mint(person1, 50);
         assertTrue(token.balanceOf(person1) == 50);
 
-        vm.prank(minterAdmin);
-        token.setUpMinter(minter, 0);
-        vm.prank(minterAdmin);
-        token.setUpMinter(minter, 10);
+        vm.prank(mintAllower);
+        token.setMintingAllowance(minter, 0);
+        vm.prank(mintAllower);
+        token.setMintingAllowance(minter, 10);
         assertTrue(token.mintingAllowance(minter) == 10);
 
         vm.prank(minter);
@@ -847,8 +833,8 @@ contract tokenTest is Test {
         address person1 = vm.addr(1);
         address person2 = vm.addr(2);
 
-        vm.prank(minterAdmin);
-        token.setUpMinter(minter, 100);
+        vm.prank(mintAllower);
+        token.setMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
         // //testSetRequirements
@@ -865,8 +851,8 @@ contract tokenTest is Test {
         token.mint(person1, 50);
         assertTrue(token.balanceOf(person1) == 50);
 
-        vm.prank(minterAdmin);
-        token.setUpMinter(minter, 10);
+        vm.prank(mintAllower);
+        token.setMintingAllowance(minter, 10);
         assertTrue(token.mintingAllowance(minter) == 10);
 
         vm.prank(minter);
@@ -890,9 +876,8 @@ contract tokenTest is Test {
             localToken.hasRole(localToken.REQUIREMENT_ROLE(), deployer)
         );
         assertFalse(
-            localToken.hasRole(localToken.MINTERADMIN_ROLE(), deployer)
+            localToken.hasRole(localToken.MINTALLOWER_ROLE(), deployer)
         );
-        assertFalse(localToken.hasRole(localToken.MINTER_ROLE(), deployer));
         assertFalse(localToken.hasRole(localToken.BURNER_ROLE(), deployer));
         assertFalse(
             localToken.hasRole(localToken.TRANSFERERADMIN_ROLE(), deployer)

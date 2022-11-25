@@ -17,7 +17,7 @@ contract ContinuousFundraisingTest is Test {
 
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant buyer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
-    address public constant minterAdmin =
+    address public constant mintAllower =
         0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
     address public constant minter = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
     address public constant owner = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
@@ -77,12 +77,12 @@ contract ContinuousFundraisingTest is Test {
         );
 
         // allow raise contract to mint
-        bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
+        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
         vm.prank(admin);
-        token.grantRole(roleMinterAdmin, minterAdmin);
-        vm.prank(minterAdmin);
-        token.setUpMinter(address(raise), maxAmountOfTokenToBeSold);
+        token.grantRole(roleMintAllower, mintAllower);
+        vm.prank(mintAllower);
+        token.setMintingAllowance(address(raise), maxAmountOfTokenToBeSold);
 
         // give raise contract allowance
         vm.prank(buyer);
@@ -162,12 +162,12 @@ contract ContinuousFundraisingTest is Test {
             );
 
             // allow invite contract to mint
-            bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
+            bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
             vm.prank(admin);
-            _token.grantRole(roleMinterAdmin, minterAdmin);
-            vm.prank(minterAdmin);
-            _token.setUpMinter(address(_raise), _maxMintAmount);
+            _token.grantRole(roleMintAllower, mintAllower);
+            vm.prank(mintAllower);
+            _token.setMintingAllowance(address(_raise), _maxMintAmount);
 
             // mint _paymentToken for buyer
             vm.prank(paymentTokenProvider);
@@ -264,12 +264,12 @@ contract ContinuousFundraisingTest is Test {
         );
 
         // allow invite contract to mint
-        bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
+        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
         vm.prank(admin);
-        _token.grantRole(roleMinterAdmin, minterAdmin);
-        vm.prank(minterAdmin);
-        _token.setUpMinter(address(_raise), _maxMintAmount);
+        _token.grantRole(roleMintAllower, mintAllower);
+        vm.prank(mintAllower);
+        _token.setMintingAllowance(address(_raise), _maxMintAmount);
 
         // mint _paymentToken for buyer
         vm.prank(paymentTokenProvider);
@@ -410,10 +410,10 @@ contract ContinuousFundraisingTest is Test {
 
     function testExceedMintingAllowance() public {
         // reduce minting allowance of fundraising contract, so the revert happens in Token
-        vm.prank(minterAdmin);
-        token.setUpMinter(address(raise), 0);
-        vm.prank(minterAdmin);
-        token.setUpMinter(address(raise), maxAmountPerBuyer / 2);
+        vm.prank(mintAllower);
+        token.setMintingAllowance(address(raise), 0);
+        vm.prank(mintAllower);
+        token.setMintingAllowance(address(raise), maxAmountPerBuyer / 2);
 
         vm.prank(buyer);
         vm.expectRevert("MintingAllowance too low");

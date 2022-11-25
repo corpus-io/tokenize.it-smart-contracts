@@ -25,7 +25,7 @@ These will be used for the next steps.
    - `_name` : Name of the Token (e.g. PiedPiperToken)
    - `_symbol` : Ticker of the Token (e.g. PPT)
 
-2. Create initial cap table by minting tokens for various addresses. For this, the admin needs to give an account (can be himself) minting rights by calling `setUpMinter(address minter, uint _allowance)` :
+2. Create initial cap table by minting tokens for various addresses. For this, the admin needs to give an account (can be himself) minting rights by calling `setMintingAllowance(address minter, uint _allowance)` :
 
    - `minter` : account with minting rights
    - `_allowance`: amount of tokens he can mint, denominated in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate)
@@ -77,7 +77,7 @@ constructor(address payable _buyer, address payable _receiver, uint _minAmount, 
 
 The investment is executed during deployment of the contract. Therefore, two steps are necessary BEFORE deployment, or the deployment transaction will revert:
 
-- The future contract address needs to be given minting right in the company token contract by calling `setUpMinter` from an address which has the role of the Minter Admin. In that call, an allowance needs to be given which matches or exceeds the `_amount` of tokens. This step signals the offering company's invitation.
+- The future contract address needs to be given minting right in the company token contract by calling `setMintingAllowance` from an address which has the role of the Minter Admin. In that call, an allowance needs to be given which matches or exceeds the `_amount` of tokens. This step signals the offering company's invitation.
 - The investor needs to give a a sufficient allowance in the currency contract to the future address of the contract. This step signals the investors commitment to the offer.
 
 Once both steps have been completed, the Personal Invite contract can be deployed by anyone (either of the two parties or a third party) with [CREATE2](https://docs.openzeppelin.com/cli/2.8/deploying-with-create2), through the Personal Invite Factory's deploy() function.
@@ -110,7 +110,7 @@ The parameter are similar to the PersonalInvite constructor, except for:
 
 - `_token` : address of the token deployed when creating the new company
 
-The contract needs to be given minting right in the company token contract by calling `setUpMinter` from an address which has the role of the Minter Admin. In that call, an allowance needs to be given which matches the `_maxAmountOfTokenToBeSold` of tokens.
+The contract needs to be given minting right in the company token contract by calling `setMintingAllowance` from an address which has the role of the Minter Admin. In that call, an allowance needs to be given which matches the `_maxAmountOfTokenToBeSold` of tokens.
 
 An investor can buy tokens by calling the `buy(uint _amount)` function.
 `_amount` ist the amount of tokens he/she is buying.
@@ -127,4 +127,4 @@ In case there is no vesting, shares can directly be issued through minting as de
 
 For vesting the contract [DssVestMintable by makerdao](https://github.com/makerdao/dss-vest/blob/master/src/DssVest.sol) is used. See [documentation](https://github.com/makerdao/dss-vest) for general usage information.
 
-The contract needs to be given minting right in the company token contract by calling `setUpMinter` from an address which has the role of the Minter Admin. In that call, an allowance needs to be given which matches the maximal amount of tokens to be vested.
+The contract needs to be given minting right in the company token contract by calling `setMintingAllowance` from an address which has the role of the Minter Admin. In that call, an allowance needs to be given which matches the maximal amount of tokens to be vested.

@@ -24,10 +24,8 @@ import "./FeeSettings.sol";
 contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     /// @notice The role that has the ability to define which requirements an address must satisfy to receive tokens
     bytes32 public constant REQUIREMENT_ROLE = keccak256("REQUIREMENT_ROLE");
-    /// @notice The role that has the ability to grant the minter role
-    bytes32 public constant MINTERADMIN_ROLE = keccak256("MINTERADMIN_ROLE");
-    /// @notice The role that has the ability to mint tokens. Will be granted to the relevant PersonalInvite and ContinuousFundraising contracts.
-    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    /// @notice The role that has the ability to grant minting allowances
+    bytes32 public constant MINTALLOWER_ROLE = keccak256("MINTALLOWER_ROLE");
     /// @notice The role that has the ability to burn tokens from anywhere. Usage is planned for legal purposes and error recovery.
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
     /// @notice The role that has the ability to grant transfer rights to other addresses
@@ -73,7 +71,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     uint256 public requirements;
 
     /**
-    @notice defines the maximum amount of tokens that can be minted by a specific minter. If zero, no tokens can be minted.
+    @notice defines the maximum amount of tokens that can be minted by a specific address. If zero, no tokens can be minted.
         Tokens paid as fees, as specified in the `feeSettings` contract, do not require an allowance.
         Example: Fee is set to 1% and mintingAllowance is 100. When executing the `mint` function with 100 as `amount`,
         100 tokens will be minted to the `to` address, and 1 token to the feeCollector.
@@ -84,10 +82,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     event AllowListChanged(AllowList indexed newAllowList);
     event NewFeeSettingsSuggested(FeeSettings indexed _feeSettings);
     event FeeSettingsChanged(FeeSettings indexed newFeeSettings);
-    event MintingAllowanceChanged(
-        address indexed newMinter,
-        uint256 newAllowance
-    );
+    event MintingAllowanceChanged(address indexed minter, uint256 newAllowance);
 
     /**
     @notice Constructor for the token 
@@ -113,13 +108,12 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         ERC20(_name, _symbol)
     {
         // Grant admin roles
-        _setupRole(DEFAULT_ADMIN_ROLE, _admin); // except for the Minter and Transferer role, the _admin is the roles admin for all other roles
-        _setRoleAdmin(MINTER_ROLE, MINTERADMIN_ROLE);
+        _setupRole(DEFAULT_ADMIN_ROLE, _admin); // except for the Transferer role, the _admin is the roles admin for all other roles
         _setRoleAdmin(TRANSFERER_ROLE, TRANSFERERADMIN_ROLE);
 
         // grant all roles to admin for now. Can be changed later, see https://docs.openzeppelin.com/contracts/2.x/api/access#Roles
         _grantRole(REQUIREMENT_ROLE, _admin);
-        _grantRole(MINTERADMIN_ROLE, _admin);
+        _grantRole(MINTALLOWER_ROLE, _admin);
         _grantRole(BURNER_ROLE, _admin);
         _grantRole(TRANSFERERADMIN_ROLE, _admin);
         _grantRole(PAUSER_ROLE, _admin);
@@ -188,20 +182,19 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     }
 
     /** 
-        @notice minting contracts such as personal investment invite, vesting, crowdfunding must be granted minter role through this function. 
-            Each call of setUpMinter will make the contract: 
+        @notice minting contracts such as personal investment invite, vesting, crowdfunding must be granted a minting allowance through this function. 
+            Each call of setMintingAllowance will make the contract: 
                 1. forget how many tokens might have been minted by this minter before. 
                 2. set the allowance for this minter to the new value, discarding any remaining allowance that might have been left from before.
             This feels very natural on the first call, but might be surprising on subsequent calls, so be careful. Before setting it to a non-zero value, it must be zero.
         @dev The "forget last allowance and count of minted tokens" behavior is accepted in order to reduce the complexity of the contract as well as it's gas usage.
-        @param _minter address of the minter contract
-        @param _allowance maximum amount of tokens that can be minted by this minter (exclusive the tokens minted as a fee)
+        @param _minter address of the minter
+        @param _allowance maximum amount of tokens that can be minted by this minter (excluding the tokens minted as a fee)
     */
-    function setUpMinter(
+    function setMintingAllowance(
         address _minter,
         uint256 _allowance
-    ) public onlyRole(getRoleAdmin(MINTER_ROLE)) {
-        _grantRole(MINTER_ROLE, _minter);
+    ) public onlyRole(MINTALLOWER_ROLE) {
         require(
             mintingAllowance[_minter] == 0 || _allowance == 0,
             "Set up minter can only be called if the remaining allowance is 0 or to set the allowance to 0."
@@ -210,10 +203,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         emit MintingAllowanceChanged(_minter, _allowance);
     }
 
-    function mint(
-        address _to,
-        uint256 _amount
-    ) public onlyRole(MINTER_ROLE) returns (bool) {
+    function mint(address _to, uint256 _amount) public returns (bool) {
         require(
             mintingAllowance[_msgSender()] >= _amount,
             "MintingAllowance too low"

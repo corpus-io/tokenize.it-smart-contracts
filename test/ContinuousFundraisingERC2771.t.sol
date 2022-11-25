@@ -34,7 +34,7 @@ contract ContinuousFundraisingTest is Test {
     address public constant trustedForwarder =
         0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
-    address public constant minterAdmin =
+    address public constant mintAllower =
         0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
     address public constant minter = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
     address public constant owner = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
@@ -103,37 +103,6 @@ contract ContinuousFundraisingTest is Test {
         costInPaymentToken = (tokenBuyAmount * price) / 10 ** 18;
     }
 
-    // function setUpForwarderAndToken(address forwarder) public {
-    //     list = new AllowList();
-    //     token = new CorpusToken(admin, list, 0x0, "TESTTOKEN", "TEST");
-    //     trustedForwarder = new Forwarder();
-    //     ERC2771helper = new ERC2771Helper();
-
-    //     buyer = vm.addr(buyerPrivateKey);
-
-    //     // set up currency
-    //     vm.prank(paymentTokenProvider);
-    //     paymentToken = new FakePaymentToken(paymentTokenAmount, paymentTokenDecimals); // 1000 tokens with 6 decimals
-    //     // transfer currency to buyer
-    //     vm.prank(paymentTokenProvider);
-    //     paymentToken.transfer(buyer, paymentTokenAmount);
-    //     assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
-
-    //     vm.prank(owner);
-
-    //     // allow raise contract to mint
-    //     bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
-
-    //     vm.prank(admin);
-    //     token.grantRole(roleMinterAdmin, minterAdmin);
-    //     vm.prank(minterAdmin);
-    //     token.setUpMinter(address(raise), maxAmountOfTokenToBeSold);
-
-    //     // give raise contract allowance
-    //     vm.prank(buyer);
-    //     paymentToken.approve(address(raise), paymentTokenAmount);
-    // }
-
     function buyWithERC2771(Forwarder forwarder) public {
         vm.prank(owner);
         raise = new ContinuousFundraising(
@@ -148,12 +117,12 @@ contract ContinuousFundraisingTest is Test {
         );
 
         // allow raise contract to mint
-        bytes32 roleMinterAdmin = token.MINTERADMIN_ROLE();
+        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
         vm.prank(admin);
-        token.grantRole(roleMinterAdmin, minterAdmin);
-        vm.prank(minterAdmin);
-        token.setUpMinter(address(raise), maxAmountOfTokenToBeSold);
+        token.grantRole(roleMintAllower, mintAllower);
+        vm.prank(mintAllower);
+        token.setMintingAllowance(address(raise), maxAmountOfTokenToBeSold);
 
         // give raise contract allowance
         vm.prank(buyer);
