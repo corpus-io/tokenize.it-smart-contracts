@@ -99,7 +99,7 @@ contract ContinuousFundraising is
             "_maxAmountOfTokenToBeSold needs to be larger than zero"
         );
 
-        // after creating the contract, it needs to be set up as minter (in the token contract)
+        // after creating the contract, it needs a minting allowance (in the token contract)
     }
 
     /**
