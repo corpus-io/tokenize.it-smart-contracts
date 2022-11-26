@@ -234,7 +234,10 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         return true;
     }
 
-    function burn(address _from, uint256 _amount) external onlyRole(BURNER_ROLE) {
+    function burn(
+        address _from,
+        uint256 _amount
+    ) external onlyRole(BURNER_ROLE) {
         _burn(_from, _amount);
     }
 
