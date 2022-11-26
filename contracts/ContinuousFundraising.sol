@@ -107,7 +107,7 @@ contract ContinuousFundraising is
      */
     function buy(
         uint256 _amount
-    ) public whenNotPaused nonReentrant returns (bool) {
+    ) external whenNotPaused nonReentrant returns (bool) {
         require(
             tokensSold + _amount <= maxAmountOfTokenToBeSold,
             "Not enough tokens to sell left"
@@ -169,7 +169,7 @@ contract ContinuousFundraising is
      */
     function setCurrencyReceiver(
         address _currencyReceiver
-    ) public onlyOwner whenPaused {
+    ) external onlyOwner whenPaused {
         require(
             _currencyReceiver != address(0),
             "receiver can not be zero address"
@@ -185,7 +185,7 @@ contract ContinuousFundraising is
      */
     function setMinAmountPerBuyer(
         uint256 _minAmountPerBuyer
-    ) public onlyOwner whenPaused {
+    ) external onlyOwner whenPaused {
         require(
             _minAmountPerBuyer <= maxAmountPerBuyer,
             "_minAmount needs to be smaller or equal to maxAmount"
@@ -201,7 +201,7 @@ contract ContinuousFundraising is
      */
     function setMaxAmountPerBuyer(
         uint256 _maxAmountPerBuyer
-    ) public onlyOwner whenPaused {
+    ) external onlyOwner whenPaused {
         require(
             minAmountPerBuyer <= _maxAmountPerBuyer,
             "_maxAmount needs to be larger or equal to minAmount"
@@ -219,7 +219,7 @@ contract ContinuousFundraising is
     function setCurrencyAndTokenPrice(
         IERC20 _currency,
         uint256 _tokenPrice
-    ) public onlyOwner whenPaused {
+    ) external onlyOwner whenPaused {
         require(_tokenPrice != 0, "_tokenPrice needs to be a non-zero amount");
         tokenPrice = _tokenPrice;
         currency = _currency;
@@ -233,7 +233,7 @@ contract ContinuousFundraising is
      */
     function setMaxAmountOfTokenToBeSold(
         uint256 _maxAmountOfTokenToBeSold
-    ) public onlyOwner whenPaused {
+    ) external onlyOwner whenPaused {
         require(
             _maxAmountOfTokenToBeSold != 0,
             "_maxAmountOfTokenToBeSold needs to be larger than zero"
@@ -246,7 +246,7 @@ contract ContinuousFundraising is
     /**
      @notice pause the contract
      */
-    function pause() public onlyOwner {
+    function pause() external onlyOwner {
         _pause();
         coolDownStart = block.timestamp;
     }
@@ -254,7 +254,7 @@ contract ContinuousFundraising is
     /**
      @notice unpause the contract
      */
-    function unpause() public onlyOwner {
+    function unpause() external onlyOwner {
         require(
             block.timestamp > coolDownStart + delay,
             "There needs to be at minumum one day to change parameters"

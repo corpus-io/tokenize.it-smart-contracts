@@ -43,7 +43,7 @@ contract FeeSettings is Ownable {
         feeCollector = _feeCollector;
     }
 
-    function planFeeChange(Fees memory _fees) public onlyOwner {
+    function planFeeChange(Fees memory _fees) external onlyOwner {
         checkFeeLimits(_fees);
         require(
             _fees.time > block.timestamp + 12 weeks,
@@ -53,7 +53,7 @@ contract FeeSettings is Ownable {
         emit ChangeProposed(_fees);
     }
 
-    function executeFeeChange() public onlyOwner {
+    function executeFeeChange() external onlyOwner {
         require(
             block.timestamp >= proposedFees.time,
             "Fee change must be executed after the change time"
@@ -71,7 +71,7 @@ contract FeeSettings is Ownable {
         delete proposedFees;
     }
 
-    function setFeeCollector(address _feeCollector) public onlyOwner {
+    function setFeeCollector(address _feeCollector) external onlyOwner {
         require(_feeCollector != address(0), "Fee collector cannot be 0x0");
         feeCollector = _feeCollector;
         emit FeeCollectorChanged(_feeCollector);

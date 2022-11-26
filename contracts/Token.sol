@@ -141,14 +141,14 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
 
     function setAllowList(
         AllowList _allowList
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         allowList = _allowList;
         emit AllowListChanged(_allowList);
     }
 
     function setRequirements(
         uint256 _requirements
-    ) public onlyRole(REQUIREMENT_ROLE) {
+    ) external onlyRole(REQUIREMENT_ROLE) {
         requirements = _requirements;
         emit RequirementsChanged(_requirements);
     }
@@ -159,7 +159,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
      * @dev This is a possibility to change fees without honoring the delay enforced in the feeSettings contract. Therefore, approval of the admin is required.
      * @param _feeSettings the new feeSettings contract
      */
-    function suggestNewFeeSettings(FeeSettings _feeSettings) public {
+    function suggestNewFeeSettings(FeeSettings _feeSettings) external {
         require(
             _msgSender() == feeSettings.owner(),
             "Only fee settings owner can suggest fee settings update"
@@ -181,7 +181,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
      */
     function acceptNewFeeSettings(
         FeeSettings _feeSettings
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(
             address(suggestedFeeSettings) != address(0),
             "Fee settings cannot be zero address"
@@ -208,7 +208,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     function setMintingAllowance(
         address _minter,
         uint256 _allowance
-    ) public onlyRole(MINTALLOWER_ROLE) {
+    ) external onlyRole(MINTALLOWER_ROLE) {
         require(
             mintingAllowance[_minter] == 0 || _allowance == 0,
             "Set up minter can only be called if the remaining allowance is 0 or to set the allowance to 0."
@@ -217,7 +217,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         emit MintingAllowanceChanged(_minter, _allowance);
     }
 
-    function mint(address _to, uint256 _amount) public returns (bool) {
+    function mint(address _to, uint256 _amount) external returns (bool) {
         require(
             mintingAllowance[_msgSender()] >= _amount,
             "MintingAllowance too low"
@@ -234,7 +234,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         return true;
     }
 
-    function burn(address _from, uint256 _amount) public onlyRole(BURNER_ROLE) {
+    function burn(address _from, uint256 _amount) external onlyRole(BURNER_ROLE) {
         _burn(_from, _amount);
     }
 
@@ -265,11 +265,11 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         ); // address(0), because this is the _to address in case of burning tokens
     }
 
-    function pause() public onlyRole(PAUSER_ROLE) {
+    function pause() external onlyRole(PAUSER_ROLE) {
         _pause();
     }
 
-    function unpause() public onlyRole(PAUSER_ROLE) {
+    function unpause() external onlyRole(PAUSER_ROLE) {
         _unpause();
     }
 
