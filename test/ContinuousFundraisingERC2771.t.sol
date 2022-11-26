@@ -77,7 +77,7 @@ contract ContinuousFundraisingTest is Test {
 
         token = new Token(
             trustedForwarder,
-            address(feeSettings),
+            feeSettings,
             admin,
             list,
             0x0,

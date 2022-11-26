@@ -35,7 +35,7 @@ contract tokenTest is Test {
         feeSettings = new FeeSettings(fees, admin);
         token = new Token(
             trustedForwarder,
-            address(feeSettings),
+            feeSettings,
             admin,
             allowList,
             0x0,
@@ -74,6 +74,35 @@ contract tokenTest is Test {
         );
         assertTrue(
             keccak256(bytes(token.symbol())) == keccak256(bytes("TEST"))
+        );
+    }
+
+    function testAllowList0() public {
+        AllowList _noList = AllowList(address(0));
+        vm.expectRevert("AllowList must not be zero address");
+        new Token(
+            trustedForwarder,
+            feeSettings,
+            admin,
+            _noList,
+            0x0,
+            "testToken",
+            "TEST"
+        );
+    }
+
+    function testFeeSettings0() public {
+        FeeSettings _noFeeSettings = FeeSettings(address(0));
+        console.log("fee settings address:", address(_noFeeSettings));
+        vm.expectRevert("FeeSettings must not be zero address");
+        new Token(
+            trustedForwarder,
+            _noFeeSettings,
+            admin,
+            allowList,
+            0x0,
+            "testToken",
+            "TEST"
         );
     }
 
@@ -864,7 +893,7 @@ contract tokenTest is Test {
     function testDeployerDoesNotGetRole() public {
         Token localToken = new Token(
             trustedForwarder,
-            address(feeSettings),
+            feeSettings,
             admin,
             allowList,
             0x0,

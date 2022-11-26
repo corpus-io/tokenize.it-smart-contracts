@@ -89,7 +89,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
 
     /**
     @notice Constructor for the token 
-    @param _trustedForwarder trusted forwarder for the ERC2771Context constructor - used for meta-transactions
+    @param _trustedForwarder trusted forwarder for the ERC2771Context constructor - used for meta-transactions. OpenGSN v2 Forwarder should be used.
     @param _feeSettings fee settings contract that determines the fee for minting tokens
     @param _admin address of the admin. Admin will initially have all roles and can grant roles to other addresses.
     @param _name name of the specific token, e.g. "MyGmbH Token"
@@ -99,7 +99,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     */
     constructor(
         address _trustedForwarder,
-        address _feeSettings,
+        FeeSettings _feeSettings,
         address _admin,
         AllowList _allowList,
         uint256 _requirements,
@@ -122,9 +122,20 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         _grantRole(PAUSER_ROLE, _admin);
 
         // set up fee collection
-        feeSettings = FeeSettings(_feeSettings);
+        require(
+            address(_feeSettings) != address(0),
+            "FeeSettings must not be zero address"
+        );
+        feeSettings = _feeSettings;
 
+        // set up allowList
+        require(
+            address(_allowList) != address(0),
+            "AllowList must not be zero address"
+        );
         allowList = _allowList;
+
+        // set requirements (can be 0 to allow everyone to send and receive tokens)
         requirements = _requirements;
     }
 

@@ -45,7 +45,7 @@ contract ContinuousFundraisingTest is Test {
 
         token = new Token(
             trustedForwarder,
-            address(feeSettings),
+            feeSettings,
             admin,
             list,
             0x0,
@@ -136,7 +136,7 @@ contract ContinuousFundraisingTest is Test {
             list = new AllowList();
             Token _token = new Token(
                 trustedForwarder,
-                address(feeSettings),
+                feeSettings,
                 admin,
                 list,
                 0x0,
@@ -241,7 +241,7 @@ contract ContinuousFundraisingTest is Test {
         list = new AllowList();
         Token _token = new Token(
             trustedForwarder,
-            address(feeSettings),
+            feeSettings,
             admin,
             list,
             0x0,

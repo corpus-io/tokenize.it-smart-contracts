@@ -67,7 +67,7 @@ contract PersonalInviteFactoryTest is Test {
 
         token = new Token(
             trustedForwarder,
-            address(feeSettings),
+            feeSettings,
             admin,
             list,
             0x0,
@@ -76,7 +76,7 @@ contract PersonalInviteFactoryTest is Test {
         );
         currency = new Token(
             trustedForwarder,
-            address(feeSettings),
+            feeSettings,
             admin,
             list,
             0x0,

@@ -41,7 +41,7 @@ contract PersonalInviteTest is Test {
 
         token = new Token(
             trustedForwarder,
-            address(feeSettings),
+            feeSettings,
             admin,
             list,
             0x0,
@@ -50,7 +50,7 @@ contract PersonalInviteTest is Test {
         );
         currency = new Token(
             trustedForwarder,
-            address(feeSettings),
+            feeSettings,
             admin,
             list,
             0x0,
