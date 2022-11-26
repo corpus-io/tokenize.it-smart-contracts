@@ -73,9 +73,8 @@ The following statements about the smart contracts should always be true
 
 ## ContinuousFundraising.sol
 
-- Any address can execute the buy function.
 - The buy function can be executed many times.
-- To execute the buy function, the buyer must have granted the invite a sufficient allowance in currency.
+- To execute the buy function, the buyer must have granted the continuousFundraising contract a sufficient allowance in currency.
 - The buy can only be paid for in currency.
 - During the buy, the payment is immediately transferred to the receiver.
 - During the buy, tokens are minted to the buyer.
