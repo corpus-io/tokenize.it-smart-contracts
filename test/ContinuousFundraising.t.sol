@@ -653,7 +653,7 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(owner);
         raise.pause();
         assertTrue(raise.paused());
-        assertTrue(raise.lastPause() > 0);
+        assertTrue(raise.coolDownStart() > 0);
         vm.prank(owner);
         raise.unpause();
     }
@@ -667,7 +667,7 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(owner);
         raise.pause();
         assertTrue(raise.paused());
-        assertTrue(raise.lastPause() == time);
+        assertTrue(raise.coolDownStart() == time);
         vm.warp(time + raise.delay());
         vm.prank(owner);
         raise.unpause();
@@ -682,7 +682,7 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(owner);
         raise.pause();
         assertTrue(raise.paused());
-        assertTrue(raise.lastPause() == time);
+        assertTrue(raise.coolDownStart() == time);
         vm.warp(time + raise.delay() + 1 seconds);
         vm.prank(owner);
         raise.unpause();
@@ -697,11 +697,11 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(owner);
         raise.pause();
         assertTrue(raise.paused());
-        assertTrue(raise.lastPause() == time);
+        assertTrue(raise.coolDownStart() == time);
         vm.warp(time + 2 hours);
         vm.prank(owner);
         raise.setMaxAmountOfTokenToBeSold(700);
-        assertTrue(raise.lastPause() == time + 2 hours);
+        assertTrue(raise.coolDownStart() == time + 2 hours);
         vm.warp(time + raise.delay() + 1 seconds);
         vm.prank(owner);
         raise.unpause(); // must fail because of the parameter update
@@ -716,11 +716,11 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(owner);
         raise.pause();
         assertTrue(raise.paused());
-        assertTrue(raise.lastPause() == time);
+        assertTrue(raise.coolDownStart() == time);
         vm.warp(time + 2 hours);
         vm.prank(owner);
         raise.setMaxAmountOfTokenToBeSold(700);
-        assertTrue(raise.lastPause() == time + 2 hours);
+        assertTrue(raise.coolDownStart() == time + 2 hours);
         vm.warp(time + raise.delay() + 2 hours + 1 seconds);
         vm.prank(owner);
         raise.unpause();
@@ -735,11 +735,11 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(owner);
         raise.pause();
         assertTrue(raise.paused());
-        assertTrue(raise.lastPause() == time);
+        assertTrue(raise.coolDownStart() == time);
         vm.warp(time + 2 hours);
         vm.prank(owner);
         raise.setCurrencyReceiver(payable(address(buyer)));
-        assertTrue(raise.lastPause() == time + 2 hours);
+        assertTrue(raise.coolDownStart() == time + 2 hours);
         vm.warp(time + raise.delay() + 1 hours);
         vm.prank(owner);
         raise.unpause(); // must fail because of the parameter update
@@ -754,11 +754,11 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(owner);
         raise.pause();
         assertTrue(raise.paused());
-        assertTrue(raise.lastPause() == time);
+        assertTrue(raise.coolDownStart() == time);
         vm.warp(time + 2 hours);
         vm.prank(owner);
         raise.setCurrencyReceiver(paymentTokenProvider);
-        assertTrue(raise.lastPause() == time + 2 hours);
+        assertTrue(raise.coolDownStart() == time + 2 hours);
         vm.warp(time + raise.delay() + 2 hours + 1 seconds);
         vm.prank(owner);
         raise.unpause();
@@ -773,11 +773,11 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(owner);
         raise.pause();
         assertTrue(raise.paused());
-        assertTrue(raise.lastPause() == time);
+        assertTrue(raise.coolDownStart() == time);
         vm.warp(time + 2 hours);
         vm.prank(owner);
         raise.setMinAmountPerBuyer(700);
-        assertTrue(raise.lastPause() == time + 2 hours);
+        assertTrue(raise.coolDownStart() == time + 2 hours);
         vm.warp(time + raise.delay() + 1 hours);
         vm.prank(owner);
         raise.unpause(); // must fail because of the parameter update
@@ -792,11 +792,11 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(owner);
         raise.pause();
         assertTrue(raise.paused());
-        assertTrue(raise.lastPause() == time);
+        assertTrue(raise.coolDownStart() == time);
         vm.warp(time + 2 hours);
         vm.prank(owner);
         raise.setMinAmountPerBuyer(700);
-        assertTrue(raise.lastPause() == time + 2 hours);
+        assertTrue(raise.coolDownStart() == time + 2 hours);
         vm.warp(time + raise.delay() + 2 hours + 1 seconds);
         vm.prank(owner);
         raise.unpause();
@@ -811,11 +811,11 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(owner);
         raise.pause();
         assertTrue(raise.paused());
-        assertTrue(raise.lastPause() == time);
+        assertTrue(raise.coolDownStart() == time);
         vm.warp(time + 2 hours);
         vm.prank(owner);
         raise.setMaxAmountPerBuyer(700);
-        assertTrue(raise.lastPause() == time + 2 hours);
+        assertTrue(raise.coolDownStart() == time + 2 hours);
         vm.warp(time + raise.delay() + 1 hours);
         vm.prank(owner);
         raise.unpause(); // must fail because of the parameter update
@@ -830,11 +830,11 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(owner);
         raise.pause();
         assertTrue(raise.paused());
-        assertTrue(raise.lastPause() == time);
+        assertTrue(raise.coolDownStart() == time);
         vm.warp(time + 2 hours);
         vm.prank(owner);
         raise.setMaxAmountPerBuyer(2 * minAmountPerBuyer);
-        assertTrue(raise.lastPause() == time + 2 hours);
+        assertTrue(raise.coolDownStart() == time + 2 hours);
         vm.warp(time + raise.delay() + 2 hours + 1 seconds);
         vm.prank(owner);
         raise.unpause();
@@ -849,11 +849,11 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(owner);
         raise.pause();
         assertTrue(raise.paused());
-        assertTrue(raise.lastPause() == time);
+        assertTrue(raise.coolDownStart() == time);
         vm.warp(time + 2 hours);
         vm.prank(owner);
         raise.setCurrencyAndTokenPrice(paymentToken, 700);
-        assertTrue(raise.lastPause() == time + 2 hours);
+        assertTrue(raise.coolDownStart() == time + 2 hours);
         vm.warp(time + raise.delay() + 1 hours);
         vm.prank(owner);
         raise.unpause(); // must fail because of the parameter update
@@ -868,11 +868,11 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(owner);
         raise.pause();
         assertTrue(raise.paused());
-        assertTrue(raise.lastPause() == time);
+        assertTrue(raise.coolDownStart() == time);
         vm.warp(time + 2 hours);
         vm.prank(owner);
         raise.setCurrencyAndTokenPrice(paymentToken, 700);
-        assertTrue(raise.lastPause() == time + 2 hours);
+        assertTrue(raise.coolDownStart() == time + 2 hours);
         vm.warp(time + raise.delay() + 2 hours + 1 seconds);
         vm.prank(owner);
         raise.unpause();

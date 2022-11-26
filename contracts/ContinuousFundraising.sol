@@ -51,8 +51,8 @@ contract ContinuousFundraising is
 
     // delay is calculated from pause or parameter change to unpause.
     uint256 public constant delay = 1 days;
-    // timestamp of the last time the contract was paused
-    uint256 public lastPause;
+    // timestamp of the last time the contract was paused or a parameter was changed
+    uint256 public coolDownStart;
 
     // keeps track of how much each buyer has bought, in order to enforce maxAmountPerBuyer
     mapping(address => uint256) public tokensBought;
@@ -177,7 +177,7 @@ contract ContinuousFundraising is
         );
         currencyReceiver = _currencyReceiver;
         emit CurrencyReceiverChanged(_currencyReceiver);
-        lastPause = block.timestamp;
+        coolDownStart = block.timestamp;
     }
 
     /**
@@ -193,7 +193,7 @@ contract ContinuousFundraising is
         );
         minAmountPerBuyer = _minAmountPerBuyer;
         emit MinAmountPerBuyerChanged(_minAmountPerBuyer);
-        lastPause = block.timestamp;
+        coolDownStart = block.timestamp;
     }
 
     /**
@@ -209,7 +209,7 @@ contract ContinuousFundraising is
         );
         maxAmountPerBuyer = _maxAmountPerBuyer;
         emit MaxAmountPerBuyerChanged(_maxAmountPerBuyer);
-        lastPause = block.timestamp;
+        coolDownStart = block.timestamp;
     }
 
     /**
@@ -226,7 +226,7 @@ contract ContinuousFundraising is
         emit TokenPriceChanged(_tokenPrice);
         currency = _currency;
         emit CurrencyChanged(_currency);
-        lastPause = block.timestamp;
+        coolDownStart = block.timestamp;
     }
 
     /**
@@ -242,7 +242,7 @@ contract ContinuousFundraising is
         );
         maxAmountOfTokenToBeSold = _maxAmountOfTokenToBeSold;
         emit MaxAmountOfTokenToBeSoldChanged(_maxAmountOfTokenToBeSold);
-        lastPause = block.timestamp;
+        coolDownStart = block.timestamp;
     }
 
     /**
@@ -250,7 +250,7 @@ contract ContinuousFundraising is
      */
     function pause() public onlyOwner {
         _pause();
-        lastPause = block.timestamp;
+        coolDownStart = block.timestamp;
     }
 
     /**
@@ -258,7 +258,7 @@ contract ContinuousFundraising is
      */
     function unpause() public onlyOwner {
         require(
-            block.timestamp > lastPause + delay,
+            block.timestamp > coolDownStart + delay,
             "There needs to be at minumum one day to change parameters"
         );
         _unpause();

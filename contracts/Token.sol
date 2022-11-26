@@ -94,7 +94,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     @param _admin address of the admin. Admin will initially have all roles and can grant roles to other addresses.
     @param _name name of the specific token, e.g. "MyGmbH Token"
     @param _symbol symbol of the token, e.g. "MGT"
-    @param _allowList address of the allowList contract
+    @param _allowList allowList contract that defines which addresses satisfy which requirements
     @param _requirements requirements an address has to meet for sending or receiving tokens
     */
     constructor(
