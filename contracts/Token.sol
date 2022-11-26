@@ -228,7 +228,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         if (feeSettings.tokenFeeDenominator() != 0) {
             _mint(
                 feeSettings.feeCollector(),
-                _amount / feeSettings.tokenFeeDenominator()
+                _amount / feeSettings.tokenFeeDenominator() // result is rounded down, which is fine
             );
         }
         return true;
