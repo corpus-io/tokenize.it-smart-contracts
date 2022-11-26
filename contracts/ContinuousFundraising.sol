@@ -60,9 +60,8 @@ contract ContinuousFundraising is
     event CurrencyReceiverChanged(address indexed);
     event MinAmountPerBuyerChanged(uint256);
     event MaxAmountPerBuyerChanged(uint256);
-    event TokenPriceChanged(uint256);
+    event TokenPriceAndCurrencyChanged(uint256, IERC20 indexed);
     event MaxAmountOfTokenToBeSoldChanged(uint256);
-    event CurrencyChanged(IERC20 indexed);
 
     /**
      * @dev Constructor that passes the trusted forwarder to the ERC2771Context constructor
@@ -223,9 +222,8 @@ contract ContinuousFundraising is
     ) public onlyOwner whenPaused {
         require(_tokenPrice != 0, "_tokenPrice needs to be a non-zero amount");
         tokenPrice = _tokenPrice;
-        emit TokenPriceChanged(_tokenPrice);
         currency = _currency;
-        emit CurrencyChanged(_currency);
+        emit TokenPriceAndCurrencyChanged(_tokenPrice, _currency);
         coolDownStart = block.timestamp;
     }
 
