@@ -25,9 +25,11 @@ contract FeeSettings is Ownable {
 
     Fees public proposedFees;
 
-    event SetTokenFeeDenominator(uint256 value);
-    event SetContinuousFundraisungFeeDenominator(uint256 value);
-    event SetPersonalInviteFeeDenominator(uint256 value);
+    event SetFeeDenominators(
+        uint256 tokenFeeDenominator,
+        uint256 continuousFundraisungFeeDenominator,
+        uint256 personalInviteFeeDenominator
+    );
     event FeeCollectorChanged(address indexed newFeeCollector);
     event ChangeProposed(Fees proposal);
 
@@ -61,12 +63,10 @@ contract FeeSettings is Ownable {
             .continuousFundraisungFeeDenominator;
         personalInviteFeeDenominator = proposedFees
             .personalInviteFeeDenominator;
-        emit SetTokenFeeDenominator(proposedFees.tokenFeeDenominator);
-        emit SetContinuousFundraisungFeeDenominator(
-            proposedFees.continuousFundraisungFeeDenominator
-        );
-        emit SetPersonalInviteFeeDenominator(
-            proposedFees.personalInviteFeeDenominator
+        emit SetFeeDenominators(
+            tokenFeeDenominator,
+            continuousFundraisungFeeDenominator,
+            personalInviteFeeDenominator
         );
         delete proposedFees;
     }
