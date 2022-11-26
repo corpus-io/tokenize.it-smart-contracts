@@ -39,7 +39,7 @@ contract AllowList is Ownable {
     /**
     @notice sets (or updates) the attributes for an address
     */
-    function set(address _addr, uint256 _attributes) public onlyOwner {
+    function set(address _addr, uint256 _attributes) external onlyOwner {
         map[_addr] = _attributes;
         emit Set(_addr, _attributes);
     }
@@ -48,7 +48,7 @@ contract AllowList is Ownable {
     @notice purges an address from the allowList
     @dev this is a convenience function, it is equivalent to calling set(_addr, 0)
     */
-    function remove(address _addr) public onlyOwner {
+    function remove(address _addr) external onlyOwner {
         delete map[_addr];
         emit Set(_addr, 0);
     }

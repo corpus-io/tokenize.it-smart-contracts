@@ -51,8 +51,8 @@ contract ContinuousFundraising is
 
     // delay is calculated from pause or parameter change to unpause.
     uint256 public constant delay = 1 days;
-    // timestamp of the last time the contract was paused
-    uint256 public lastPause;
+    // timestamp of the last time the contract was paused or a parameter was changed
+    uint256 public coolDownStart;
 
     // keeps track of how much each buyer has bought, in order to enforce maxAmountPerBuyer
     mapping(address => uint256) public tokensBought;
@@ -60,9 +60,8 @@ contract ContinuousFundraising is
     event CurrencyReceiverChanged(address indexed);
     event MinAmountPerBuyerChanged(uint256);
     event MaxAmountPerBuyerChanged(uint256);
-    event TokenPriceChanged(uint256);
+    event TokenPriceAndCurrencyChanged(uint256, IERC20 indexed);
     event MaxAmountOfTokenToBeSoldChanged(uint256);
-    event CurrencyChanged(IERC20 indexed);
 
     /**
      * @dev Constructor that passes the trusted forwarder to the ERC2771Context constructor
@@ -108,7 +107,7 @@ contract ContinuousFundraising is
      */
     function buy(
         uint256 _amount
-    ) public whenNotPaused nonReentrant returns (bool) {
+    ) external whenNotPaused nonReentrant returns (bool) {
         require(
             tokensSold + _amount <= maxAmountOfTokenToBeSold,
             "Not enough tokens to sell left"
@@ -170,14 +169,14 @@ contract ContinuousFundraising is
      */
     function setCurrencyReceiver(
         address _currencyReceiver
-    ) public onlyOwner whenPaused {
+    ) external onlyOwner whenPaused {
         require(
             _currencyReceiver != address(0),
             "receiver can not be zero address"
         );
         currencyReceiver = _currencyReceiver;
         emit CurrencyReceiverChanged(_currencyReceiver);
-        lastPause = block.timestamp;
+        coolDownStart = block.timestamp;
     }
 
     /**
@@ -186,14 +185,14 @@ contract ContinuousFundraising is
      */
     function setMinAmountPerBuyer(
         uint256 _minAmountPerBuyer
-    ) public onlyOwner whenPaused {
+    ) external onlyOwner whenPaused {
         require(
             _minAmountPerBuyer <= maxAmountPerBuyer,
             "_minAmount needs to be smaller or equal to maxAmount"
         );
         minAmountPerBuyer = _minAmountPerBuyer;
         emit MinAmountPerBuyerChanged(_minAmountPerBuyer);
-        lastPause = block.timestamp;
+        coolDownStart = block.timestamp;
     }
 
     /**
@@ -202,14 +201,14 @@ contract ContinuousFundraising is
      */
     function setMaxAmountPerBuyer(
         uint256 _maxAmountPerBuyer
-    ) public onlyOwner whenPaused {
+    ) external onlyOwner whenPaused {
         require(
             minAmountPerBuyer <= _maxAmountPerBuyer,
             "_maxAmount needs to be larger or equal to minAmount"
         );
         maxAmountPerBuyer = _maxAmountPerBuyer;
         emit MaxAmountPerBuyerChanged(_maxAmountPerBuyer);
-        lastPause = block.timestamp;
+        coolDownStart = block.timestamp;
     }
 
     /**
@@ -220,13 +219,12 @@ contract ContinuousFundraising is
     function setCurrencyAndTokenPrice(
         IERC20 _currency,
         uint256 _tokenPrice
-    ) public onlyOwner whenPaused {
+    ) external onlyOwner whenPaused {
         require(_tokenPrice != 0, "_tokenPrice needs to be a non-zero amount");
         tokenPrice = _tokenPrice;
-        emit TokenPriceChanged(_tokenPrice);
         currency = _currency;
-        emit CurrencyChanged(_currency);
-        lastPause = block.timestamp;
+        emit TokenPriceAndCurrencyChanged(_tokenPrice, _currency);
+        coolDownStart = block.timestamp;
     }
 
     /**
@@ -235,30 +233,30 @@ contract ContinuousFundraising is
      */
     function setMaxAmountOfTokenToBeSold(
         uint256 _maxAmountOfTokenToBeSold
-    ) public onlyOwner whenPaused {
+    ) external onlyOwner whenPaused {
         require(
             _maxAmountOfTokenToBeSold != 0,
             "_maxAmountOfTokenToBeSold needs to be larger than zero"
         );
         maxAmountOfTokenToBeSold = _maxAmountOfTokenToBeSold;
         emit MaxAmountOfTokenToBeSoldChanged(_maxAmountOfTokenToBeSold);
-        lastPause = block.timestamp;
+        coolDownStart = block.timestamp;
     }
 
     /**
      @notice pause the contract
      */
-    function pause() public onlyOwner {
+    function pause() external onlyOwner {
         _pause();
-        lastPause = block.timestamp;
+        coolDownStart = block.timestamp;
     }
 
     /**
      @notice unpause the contract
      */
-    function unpause() public onlyOwner {
+    function unpause() external onlyOwner {
         require(
-            block.timestamp > lastPause + delay,
+            block.timestamp > coolDownStart + delay,
             "There needs to be at minumum one day to change parameters"
         );
         _unpause();

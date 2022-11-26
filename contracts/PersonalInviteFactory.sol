@@ -55,7 +55,7 @@ contract PersonalInviteFactory {
         uint256 _expiration,
         IERC20 _currency,
         IERC20 _token
-    ) public view returns (address) {
+    ) external view returns (address) {
         bytes memory bytecode = getBytecode(
             buyer,
             _receiver,
