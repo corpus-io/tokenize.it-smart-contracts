@@ -106,7 +106,7 @@ contract ContinuousFundraising is
      @param _amount amount of tokens to buy, in bits (smallest subunit of token)
      */
     function buy(
-        uint256 _amount
+        uint256 _amount, address _tokenReceiver
     ) external whenNotPaused nonReentrant returns (bool) {
         require(
             tokensSold + _amount <= maxAmountOfTokenToBeSold,
@@ -159,7 +159,7 @@ contract ContinuousFundraising is
             currencyAmount - fee
         );
 
-        require(token.mint(_msgSender(), _amount), "Minting new tokens failed");
+        require(token.mint(_tokenReceiver, _amount), "Minting new tokens failed");
         return true;
     }
 

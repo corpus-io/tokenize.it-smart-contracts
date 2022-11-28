@@ -29,6 +29,7 @@ contract PersonalInvite {
 
     event Deal(
         address indexed buyer,
+        address indexed tokenReceiver,
         uint256 amount,
         uint256 tokenPrice,
         IERC20 currency,
@@ -37,7 +38,8 @@ contract PersonalInvite {
 
     constructor(
         address _buyer,
-        address _receiver,
+        address _tokenReceiver,
+        address _currencyReceiver,
         uint256 _amount,
         uint256 _tokenPrice,
         uint256 _expiration,
@@ -45,7 +47,8 @@ contract PersonalInvite {
         Token _token
     ) {
         require(_buyer != address(0), "_buyer can not be zero address");
-        require(_receiver != address(0), "_receiver can not be zero address");
+        require(_tokenReceiver != address(0), "_tokenReceiver can not be zero address");
+        require(_currencyReceiver != address(0), "_currencyReceiver can not be zero address");
         require(_tokenPrice != 0, "_tokenPrice can not be zero");
         require(block.timestamp <= _expiration, "Deal expired");
 
@@ -79,8 +82,8 @@ contract PersonalInvite {
                 fee
             );
         }
-        _currency.safeTransferFrom(_buyer, _receiver, (currencyAmount - fee));
-        require(_token.mint(_buyer, _amount), "Minting new tokens failed");
-        emit Deal(_buyer, _amount, _tokenPrice, _currency, _token);
+        _currency.safeTransferFrom(_buyer, _currencyReceiver, (currencyAmount - fee));
+        require(_token.mint(_tokenReceiver, _amount), "Minting new tokens failed");
+        emit Deal(_buyer, _tokenReceiver, _amount, _tokenPrice, _currency, _token);
     }
 }
