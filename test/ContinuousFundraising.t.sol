@@ -200,7 +200,7 @@ contract ContinuousFundraisingTest is Test {
             // receiver should have the 990 FPT that were paid, minus the fee
             uint currencyAmount = 990 * 10 ** _paymentTokenDecimals;
             uint256 currencyFee = currencyAmount /
-                token.feeSettings().continuousFundraisungFeeDenominator();
+                token.feeSettings().continuousFundraisingFeeDenominator();
             assertTrue(
                 _paymentToken.balanceOf(receiver) ==
                     currencyAmount - currencyFee,
@@ -338,13 +338,13 @@ contract ContinuousFundraisingTest is Test {
             paymentToken.balanceOf(receiver) ==
                 costInPaymentToken -
                     costInPaymentToken /
-                    token.feeSettings().continuousFundraisungFeeDenominator(),
+                    token.feeSettings().continuousFundraisingFeeDenominator(),
             "receiver has payment tokens"
         );
         assertTrue(
             paymentToken.balanceOf(token.feeSettings().feeCollector()) ==
                 costInPaymentToken /
-                    token.feeSettings().continuousFundraisungFeeDenominator(),
+                    token.feeSettings().continuousFundraisingFeeDenominator(),
             "fee collector has collected fee in payment tokens"
         );
         assertTrue(
@@ -471,7 +471,7 @@ contract ContinuousFundraisingTest is Test {
             token.feeSettings().tokenFeeDenominator();
         uint256 paymentTokenFee = (costInPaymentTokenForMinAmount * 3) /
             2 /
-            token.feeSettings().continuousFundraisungFeeDenominator();
+            token.feeSettings().continuousFundraisingFeeDenominator();
         assertTrue(
             paymentToken.balanceOf(receiver) ==
                 (costInPaymentTokenForMinAmount * 3) / 2 - paymentTokenFee,

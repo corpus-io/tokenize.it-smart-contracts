@@ -148,19 +148,19 @@ contract MainnetCurrencies is Test {
             _currency.balanceOf(receiver),
             _currencyCost -
                 _currencyCost /
-                token.feeSettings().continuousFundraisungFeeDenominator(),
+                token.feeSettings().continuousFundraisingFeeDenominator(),
             "receiver should have received currency"
         );
         assertEq(
             _currency.balanceOf(token.feeSettings().feeCollector()),
             _currencyCost /
-                token.feeSettings().continuousFundraisungFeeDenominator(),
+                token.feeSettings().continuousFundraisingFeeDenominator(),
             "fee receiver should have received currency"
         );
         assertEq(
             token.balanceOf(token.feeSettings().feeCollector()),
             amountOfTokenToBuy /
-                token.feeSettings().continuousFundraisungFeeDenominator(),
+                token.feeSettings().continuousFundraisingFeeDenominator(),
             "fee receiver should have received tokens"
         );
         assertEq(
@@ -256,19 +256,19 @@ contract MainnetCurrencies is Test {
             _currency.balanceOf(receiver),
             _currencyCost -
                 _currencyCost /
-                token.feeSettings().continuousFundraisungFeeDenominator(),
+                token.feeSettings().continuousFundraisingFeeDenominator(),
             "receiver should have received currency"
         );
         assertEq(
             _currency.balanceOf(token.feeSettings().feeCollector()),
             _currencyCost /
-                token.feeSettings().continuousFundraisungFeeDenominator(),
+                token.feeSettings().continuousFundraisingFeeDenominator(),
             "fee receiver should have received currency"
         );
         assertEq(
             token.balanceOf(token.feeSettings().feeCollector()),
             amountOfTokenToBuy /
-                token.feeSettings().continuousFundraisungFeeDenominator(),
+                token.feeSettings().continuousFundraisingFeeDenominator(),
             "fee receiver should have received tokens"
         );
         assertEq(
