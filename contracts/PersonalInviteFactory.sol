@@ -17,7 +17,7 @@ contract PersonalInviteFactory {
      */
     function deploy(
         bytes32 _salt,
-        address buyer,
+        address _buyer,
         address _receiver,
         uint256 _amount,
         uint256 _tokenPrice,
@@ -29,7 +29,7 @@ contract PersonalInviteFactory {
             0,
             _salt,
             getBytecode(
-                buyer,
+                _buyer,
                 _receiver,
                 _amount,
                 _tokenPrice,
@@ -48,7 +48,7 @@ contract PersonalInviteFactory {
      */
     function getAddress(
         bytes32 _salt,
-        address buyer,
+        address _buyer,
         address _receiver,
         uint256 _amount,
         uint256 _tokenPrice,
@@ -57,7 +57,7 @@ contract PersonalInviteFactory {
         IERC20 _token
     ) external view returns (address) {
         bytes memory bytecode = getBytecode(
-            buyer,
+            _buyer,
             _receiver,
             _amount,
             _tokenPrice,
@@ -69,7 +69,7 @@ contract PersonalInviteFactory {
     }
 
     function getBytecode(
-        address buyer,
+        address _buyer,
         address _receiver,
         uint256 _amount,
         uint256 _tokenPrice,
@@ -81,7 +81,7 @@ contract PersonalInviteFactory {
             abi.encodePacked(
                 type(PersonalInvite).creationCode,
                 abi.encode(
-                    buyer,
+                    _buyer,
                     _receiver,
                     _amount,
                     _tokenPrice,
