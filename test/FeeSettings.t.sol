@@ -158,7 +158,7 @@ contract FeeSettingsTest is Test {
 
         assertEq(_feeSettings.tokenFeeDenominator(), tokenFee);
         assertEq(
-            _feeSettings.continuousFundraisungFeeDenominator(),
+            _feeSettings.continuousFundraisingFeeDenominator(),
             investmentFee
         );
         //assertEq(_feeSettings.change, 0);
@@ -179,7 +179,7 @@ contract FeeSettingsTest is Test {
             "Token fee mismatch"
         );
         assertEq(
-            _feeSettings.continuousFundraisungFeeDenominator(),
+            _feeSettings.continuousFundraisingFeeDenominator(),
             investmentFee,
             "Investment fee mismatch"
         );
