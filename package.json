@@ -43,6 +43,6 @@
   },
   "scripts": {
     "build": "yarn hardhat compile && yarn tsc --declaration",
-    "test": "forge test -vvv"
+    "test": "forge test --no-match-test Mainnet"
   }
 }

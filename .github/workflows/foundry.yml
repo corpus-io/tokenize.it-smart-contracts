@@ -22,13 +22,13 @@ jobs:
 
       - name: Run tests
         working-directory: .
-        run: yarn test --no-match-test Mainnet &&  forge coverage --no-match-test Mainnet --report lcov
+        run: yarn test &&  forge coverage --no-match-test Mainnet --report lcov
       - name: Coverage
         uses: VeryGoodOpenSource/very_good_coverage@v2
         with:
-          path: './lcov.info'
+          path: "./lcov.info"
           min_coverage: 95
-          exclude: 'test/* test/resources/*'
+          exclude: "test/* test/resources/*"
       - name: Run snapshot
         working-directory: .
         run: forge snapshot --no-match-test Mainnet

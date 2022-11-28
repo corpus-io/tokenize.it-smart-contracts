@@ -59,7 +59,7 @@ contract FeeSettingsTest is Test {
 
         Fees memory feeChange = Fees({
             tokenFeeDenominator: fee,
-            continuousFundraisungFeeDenominator: 100,
+            continuousFundraisingFeeDenominator: 100,
             personalInviteFeeDenominator: 100,
             time: block.timestamp + 7884001
         });
@@ -76,7 +76,7 @@ contract FeeSettingsTest is Test {
 
         Fees memory feeChange = Fees({
             tokenFeeDenominator: 100,
-            continuousFundraisungFeeDenominator: fee,
+            continuousFundraisingFeeDenominator: fee,
             personalInviteFeeDenominator: 100,
             time: block.timestamp + 7884001
         });
@@ -92,7 +92,7 @@ contract FeeSettingsTest is Test {
 
         Fees memory feeChange = Fees({
             tokenFeeDenominator: 100,
-            continuousFundraisungFeeDenominator: 100,
+            continuousFundraisingFeeDenominator: 100,
             personalInviteFeeDenominator: 100,
             time: block.timestamp + delay
         });
@@ -118,7 +118,7 @@ contract FeeSettingsTest is Test {
 
         Fees memory feeChange = Fees({
             tokenFeeDenominator: tokenFee,
-            continuousFundraisungFeeDenominator: investmentFee,
+            continuousFundraisingFeeDenominator: investmentFee,
             personalInviteFeeDenominator: 100,
             time: block.timestamp + delayAnnounced
         });
@@ -145,7 +145,7 @@ contract FeeSettingsTest is Test {
 
         Fees memory feeChange = Fees({
             tokenFeeDenominator: tokenFee,
-            continuousFundraisungFeeDenominator: investmentFee,
+            continuousFundraisingFeeDenominator: investmentFee,
             personalInviteFeeDenominator: 100,
             time: block.timestamp + delayAnnounced
         });

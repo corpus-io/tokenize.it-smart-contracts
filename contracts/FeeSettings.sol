@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 struct Fees {
     uint256 tokenFeeDenominator;
-    uint256 continuousFundraisungFeeDenominator;
+    uint256 continuousFundraisingFeeDenominator;
     uint256 personalInviteFeeDenominator;
     uint256 time;
 }
@@ -37,7 +37,7 @@ contract FeeSettings is Ownable {
         checkFeeLimits(_fees);
         tokenFeeDenominator = _fees.tokenFeeDenominator;
         continuousFundraisungFeeDenominator = _fees
-            .continuousFundraisungFeeDenominator;
+            .continuousFundraisingFeeDenominator;
         personalInviteFeeDenominator = _fees.personalInviteFeeDenominator;
         require(_feeCollector != address(0), "Fee collector cannot be 0x0");
         feeCollector = _feeCollector;
@@ -60,7 +60,7 @@ contract FeeSettings is Ownable {
         );
         tokenFeeDenominator = proposedFees.tokenFeeDenominator;
         continuousFundraisungFeeDenominator = proposedFees
-            .continuousFundraisungFeeDenominator;
+            .continuousFundraisingFeeDenominator;
         personalInviteFeeDenominator = proposedFees
             .personalInviteFeeDenominator;
         emit SetFeeDenominators(
@@ -83,8 +83,8 @@ contract FeeSettings is Ownable {
             "Fee must be below 5% or 0"
         );
         require(
-            _fees.continuousFundraisungFeeDenominator >= 20 ||
-                _fees.continuousFundraisungFeeDenominator == 0,
+            _fees.continuousFundraisingFeeDenominator >= 20 ||
+                _fees.continuousFundraisingFeeDenominator == 0,
             "Fee must be below 5% or 0"
         );
         require(
