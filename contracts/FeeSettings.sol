@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 struct Fees {
     uint256 tokenFeeDenominator;
-    uint256 continuousFundraisungFeeDenominator;
+    uint256 continuousFundraisingFeeDenominator;
     uint256 personalInviteFeeDenominator;
     uint256 time;
 }
@@ -17,7 +17,7 @@ contract FeeSettings is Ownable {
     /// @notice Denominator to calculate fees paid Token.sol
     uint256 public tokenFeeDenominator;
     /// @notice Denominator to calculate fees paid in all investment contracts
-    uint256 public continuousFundraisungFeeDenominator;
+    uint256 public continuousFundraisingFeeDenominator;
     /// @notice Denominator to calculate fees paid in all investment contracts
     uint256 public personalInviteFeeDenominator;
     /// @notice address used to pay platform fees to.
@@ -27,7 +27,7 @@ contract FeeSettings is Ownable {
 
     event SetFeeDenominators(
         uint256 tokenFeeDenominator,
-        uint256 continuousFundraisungFeeDenominator,
+        uint256 continuousFundraisingFeeDenominator,
         uint256 personalInviteFeeDenominator
     );
     event FeeCollectorChanged(address indexed newFeeCollector);
@@ -36,8 +36,8 @@ contract FeeSettings is Ownable {
     constructor(Fees memory _fees, address _feeCollector) {
         checkFeeLimits(_fees);
         tokenFeeDenominator = _fees.tokenFeeDenominator;
-        continuousFundraisungFeeDenominator = _fees
-            .continuousFundraisungFeeDenominator;
+        continuousFundraisingFeeDenominator = _fees
+            .continuousFundraisingFeeDenominator;
         personalInviteFeeDenominator = _fees.personalInviteFeeDenominator;
         require(_feeCollector != address(0), "Fee collector cannot be 0x0");
         feeCollector = _feeCollector;
@@ -59,13 +59,13 @@ contract FeeSettings is Ownable {
             "Fee change must be executed after the change time"
         );
         tokenFeeDenominator = proposedFees.tokenFeeDenominator;
-        continuousFundraisungFeeDenominator = proposedFees
-            .continuousFundraisungFeeDenominator;
+        continuousFundraisingFeeDenominator = proposedFees
+            .continuousFundraisingFeeDenominator;
         personalInviteFeeDenominator = proposedFees
             .personalInviteFeeDenominator;
         emit SetFeeDenominators(
             tokenFeeDenominator,
-            continuousFundraisungFeeDenominator,
+            continuousFundraisingFeeDenominator,
             personalInviteFeeDenominator
         );
         delete proposedFees;
@@ -83,8 +83,8 @@ contract FeeSettings is Ownable {
             "Fee must be below 5% or 0"
         );
         require(
-            _fees.continuousFundraisungFeeDenominator >= 20 ||
-                _fees.continuousFundraisungFeeDenominator == 0,
+            _fees.continuousFundraisingFeeDenominator >= 20 ||
+                _fees.continuousFundraisingFeeDenominator == 0,
             "Fee must be below 5% or 0"
         );
         require(

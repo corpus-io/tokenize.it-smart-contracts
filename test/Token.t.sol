@@ -942,7 +942,7 @@ contract tokenTest is Test {
         FeeSettings newFeeSettings = new FeeSettings(fees, newCollector);
         FeeSettings oldFeeSettings = token.feeSettings();
         uint oldInvestmentFeeDenominator = oldFeeSettings
-            .continuousFundraisungFeeDenominator();
+            .continuousFundraisingFeeDenominator();
         uint oldTokenFeeDenominator = oldFeeSettings.tokenFeeDenominator();
         vm.prank(feeSettings.owner());
         token.suggestNewFeeSettings(newFeeSettings);
@@ -957,7 +957,7 @@ contract tokenTest is Test {
             "suggested fee settings not set!"
         );
         assertTrue(
-            token.feeSettings().continuousFundraisungFeeDenominator() ==
+            token.feeSettings().continuousFundraisingFeeDenominator() ==
                 oldInvestmentFeeDenominator,
             "investment fee denominator changed!"
         );
@@ -973,7 +973,7 @@ contract tokenTest is Test {
         FeeSettings newFeeSettings = new FeeSettings(fees, newCollector);
         FeeSettings oldFeeSettings = token.feeSettings();
         uint oldInvestmentFeeDenominator = oldFeeSettings
-            .continuousFundraisungFeeDenominator();
+            .continuousFundraisingFeeDenominator();
         uint oldTokenFeeDenominator = oldFeeSettings.tokenFeeDenominator();
         vm.prank(feeSettings.owner());
         token.suggestNewFeeSettings(newFeeSettings);
@@ -995,7 +995,7 @@ contract tokenTest is Test {
             "suggested fee settings not reset!"
         );
         assertTrue(
-            token.feeSettings().continuousFundraisungFeeDenominator() !=
+            token.feeSettings().continuousFundraisingFeeDenominator() !=
                 oldInvestmentFeeDenominator,
             "investment fee denominator changed!"
         );
