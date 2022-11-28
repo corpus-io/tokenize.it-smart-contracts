@@ -113,7 +113,7 @@ contract ContinuousFundraising is
             "Not enough tokens to sell left"
         );
         require(
-            tokensBought[msg.sender] + _amount >= minAmountPerBuyer,
+            tokensBought[_msgSender()] + _amount >= minAmountPerBuyer,
             "Buyer needs to buy at least minAmount"
         );
         /**
