@@ -47,8 +47,14 @@ contract PersonalInvite {
         Token _token
     ) {
         require(_buyer != address(0), "_buyer can not be zero address");
-        require(_tokenReceiver != address(0), "_tokenReceiver can not be zero address");
-        require(_currencyReceiver != address(0), "_currencyReceiver can not be zero address");
+        require(
+            _tokenReceiver != address(0),
+            "_tokenReceiver can not be zero address"
+        );
+        require(
+            _currencyReceiver != address(0),
+            "_currencyReceiver can not be zero address"
+        );
         require(_tokenPrice != 0, "_tokenPrice can not be zero");
         require(block.timestamp <= _expiration, "Deal expired");
 
@@ -82,8 +88,22 @@ contract PersonalInvite {
                 fee
             );
         }
-        _currency.safeTransferFrom(_buyer, _currencyReceiver, (currencyAmount - fee));
-        require(_token.mint(_tokenReceiver, _amount), "Minting new tokens failed");
-        emit Deal(_buyer, _tokenReceiver, _amount, _tokenPrice, _currency, _token);
+        _currency.safeTransferFrom(
+            _buyer,
+            _currencyReceiver,
+            (currencyAmount - fee)
+        );
+        require(
+            _token.mint(_tokenReceiver, _amount),
+            "Minting new tokens failed"
+        );
+        emit Deal(
+            _buyer,
+            _tokenReceiver,
+            _amount,
+            _tokenPrice,
+            _currency,
+            _token
+        );
     }
 }
