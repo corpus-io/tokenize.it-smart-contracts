@@ -101,7 +101,7 @@ contract ContinuousFundraising is
         // after creating the contract, it needs a minting allowance (in the token contract)
     }
 
-     /**
+    /**
      @notice buy tokens
      @param _amount amount of tokens to buy, in bits (smallest subunit of token)
      */
