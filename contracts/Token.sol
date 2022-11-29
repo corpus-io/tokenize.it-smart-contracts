@@ -183,15 +183,11 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         FeeSettings _feeSettings
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(
-            address(suggestedFeeSettings) != address(0),
-            "Fee settings cannot be zero address"
-        );
-        require(
             _feeSettings == suggestedFeeSettings,
             "Only suggested fee settings can be accepted"
         );
         feeSettings = suggestedFeeSettings;
-        suggestedFeeSettings = FeeSettings(address(0));
+        delete suggestedFeeSettings;
         emit FeeSettingsChanged(_feeSettings);
     }
 
