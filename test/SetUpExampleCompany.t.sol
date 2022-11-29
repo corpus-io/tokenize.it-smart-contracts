@@ -84,9 +84,9 @@ contract CompanySetUpTest is Test {
     uint256 paymentTokenFeeDenominator = 50;
 
     function setUp() public {
-        // set up AllowList
-        vm.prank(platformAdmin);
-        list = new AllowList();
+        // derive addresses from the private keys. Irl the addresses would be provided by the wallet that holds their private keys.
+        investor = vm.addr(investorPrivateKey);
+        companyAdmin = vm.addr(companyAdminPrivateKey);
 
         // set up FeeSettings
         Fees memory fees = Fees(
@@ -98,11 +98,16 @@ contract CompanySetUpTest is Test {
         vm.prank(platformAdmin);
         feeSettings = new FeeSettings(fees, admin);
 
-        // setting up AllowList and FeeSettings is one-time step. These contracts will be used by all companies.
+        // set up AllowList
+        vm.prank(platformAdmin);
+        list = new AllowList();
 
-        // derive addresses from the private keys. Irl the addresses would be provided by the wallet that holds their private keys.
-        investor = vm.addr(investorPrivateKey);
-        companyAdmin = vm.addr(companyAdminPrivateKey);
+        // investor registers with the platform
+        // after kyc, the platform adds the investor to the allowlist with all the properties they were able to proof
+        vm.prank(platformAdmin);
+        list.set(investor, requirements); // it is possible to set more bits to true than the requirements, but not less, for the investor to be allowed to invest
+
+        // setting up AllowList and FeeSettings is one-time step. These contracts will be used by all companies.
 
         // set up currency. In real life (irl) this would be a real currency, but for testing purposes we use a fake one.
         vm.prank(paymentTokenProvider);
@@ -224,7 +229,7 @@ contract CompanySetUpTest is Test {
 
         // check the signature is correct
         require(
-            digest.recover(signature) == request.from,
+            digest.recover(signature) == companyAdmin,
             "FWD: signature mismatch"
         );
 
@@ -254,163 +259,74 @@ contract CompanySetUpTest is Test {
         );
 
         // ----------------------
-        // company and fundraising campaign are set up. Now the investor can buy tokens.
+        // company and fundraising campaign are set up. Now the investor can buy tokens. This requires 2 meta transactions:
+        // 1. the investor needs to approve the payment token to be transferred from their account to the fundraising contract using EIP-2612
+        // 2. the investor needs to call the buy function of the fundraising contract using EIP-2771
         // ----------------------
 
-        // forwarder.execute(
-        //     request,
-        //     domainSeparator,
-        //     requestType,
-        //     suffixData,
-        //     signature
-        // );
+        // todo: use EIP-2612 for this transaction
+        vm.prank(investor);
+        paymentToken.approve(address(raise), costInPaymentToken);
 
-        // // allow raise contract to mint
-        // bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
+        // now buy tokens using EIP-2771
+        /*
+            create data and signature for execution
+        */
+        // // https://github.com/foundry-rs/foundry/issues/3330
+        // // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/cryptography/ECDSA.sol
+        // bytes32 digest = ECDSA.toTypedDataHash(domainSeparator, keccak256(payload));
+        // (uint8 v, bytes32 r, bytes32 s) = vm.sign(privKey, digest);
 
-        // vm.prank(admin);
-        // token.grantRole(roleMintAllower, mintAllower);
-        // vm.prank(mintAllower);
-        // token.setMintingAllowance(address(raise), maxAmountOfTokenToBeSold);
+        // todo: get nonce from forwarder
 
-        // // give raise contract allowance
-        // vm.prank(investor);
-        // paymentToken.approve(address(raise), paymentTokenAmount);
+        // build request
+        payload = abi.encodeWithSelector(raise.buy.selector, tokenBuyAmount);
 
-        // assert(costInPaymentToken == 35 * 10 ** paymentTokenDecimals); // 35 payment tokens, manually calculated
+        request = IForwarder.ForwardRequest({
+            from: investor,
+            to: address(raise),
+            value: 0,
+            gas: 1000000,
+            nonce: forwarder.getNonce(investor),
+            data: payload,
+            validUntil: 0
+        });
 
-        // /*
-        //     create data and signature for execution
-        // */
-        // // // https://github.com/foundry-rs/foundry/issues/3330
-        // // // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/cryptography/ECDSA.sol
-        // // bytes32 digest = ECDSA.toTypedDataHash(domainSeparator, keccak256(payload));
-        // // (uint8 v, bytes32 r, bytes32 s) = vm.sign(privKey, digest);
+        // pack and hash request
+        digest = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                domainSeparator,
+                keccak256(
+                    forwarder._getEncoded(request, requestType, suffixData)
+                )
+            )
+        );
 
-        // // todo: get nonce from forwarder
+        // sign request
+        //bytes memory signature
+        (v, r, s) = vm.sign(investorPrivateKey, digest);
+        signature = abi.encodePacked(r, s, v); // https://docs.openzeppelin.com/contracts/2.x/utilities
 
-        // // build request
-        // bytes memory payload = abi.encodeWithSelector(
-        //     raise.buy.selector,
-        //     tokenBuyAmount
-        // );
+        require(
+            digest.recover(signature) == investor,
+            "FWD: signature mismatch"
+        );
 
-        // IForwarder.ForwardRequest memory request = IForwarder.ForwardRequest({
-        //     from: investor,
-        //     to: address(raise),
-        //     value: 0,
-        //     gas: 1000000,
-        //     nonce: forwarder.getNonce(investor),
-        //     data: payload,
-        //     validUntil: 0
-        // });
+        assertEq(token.balanceOf(investor), 0);
 
-        // bytes memory suffixData = "0";
+        // once the platform has received the signature, it can now execute the meta transaction.
+        vm.prank(platformHotWallet);
+        forwarder.execute(
+            request,
+            domainSeparator,
+            requestType,
+            suffixData,
+            signature
+        );
 
-        // // pack and hash request
-        // bytes32 digest = keccak256(
-        //     abi.encodePacked(
-        //         "\x19\x01",
-        //         domainSeparator,
-        //         keccak256(
-        //             forwarder._getEncoded(request, requestType, suffixData)
-        //         )
-        //     )
-        // );
-
-        // // sign request
-        // //bytes memory signature
-        // (uint8 v, bytes32 r, bytes32 s) = vm.sign(investorPrivateKey, digest);
-        // bytes memory signature = abi.encodePacked(r, s, v); // https://docs.openzeppelin.com/contracts/2.x/utilities
-
-        // require(
-        //     digest.recover(signature) == request.from,
-        //     "FWD: signature mismatch"
-        // );
-
-        // // // encode buy call and sign it https://book.getfoundry.sh/cheatcodes/sign
-        // // bytes memory buyCallData = abi.encodeWithSignature("buy(uint256)", tokenBuyAmount);
-
-        // /*
-        //     execute request and check results
-        // */
-        // vm.prank(investor);
-        // assertEq(token.balanceOf(investor), 0);
-        // assertEq(paymentToken.balanceOf(receiver), 0);
-        // assertEq(paymentToken.balanceOf(address(raise)), 0);
-        // assertEq(token.balanceOf(address(raise)), 0);
-        // assertEq(token.balanceOf(receiver), 0);
-        // assertEq(token.balanceOf(address(forwarder)), 0);
-        // assertTrue(raise.tokensSold() == 0);
-        // assertTrue(raise.tokensBought(investor) == 0);
-        // //assertTrue(vm.getNonce(buyer) == 0); // it seems forge does not increase nonces with prank
-
-        // console.log(
-        //     "Token balance of buyer before: ",
-        //     token.balanceOf(investor)
-        // );
-        // console.log("eth balance of buyer ", investor.balance);
-
-        // // send call through forwarder contract
-        // uint256 gasBefore = gasleft();
-        // forwarder.execute(
-        //     request,
-        //     domainSeparator,
-        //     requestType,
-        //     suffixData,
-        //     signature
-        // );
-        // // vm.prank(buyer);
-        // // raise.buy(tokenBuyAmount);
-        // console.log("Gas used: ", gasBefore - gasleft());
-
-        // // investor receives as many tokens as they paid for
-        // assertTrue(token.balanceOf(investor) == tokenBuyAmount);
-        // // but fee collector receives additional tokens
-        // assertTrue(
-        //     token.balanceOf(feeSettings.feeCollector()) ==
-        //         tokenBuyAmount / tokenFeeDenominator
-        // );
-
-        // // receiver receives payment tokens after fee has been deducted
-        // assertEq(
-        //     paymentToken.balanceOf(receiver),
-        //     costInPaymentToken - costInPaymentToken / paymentTokenFeeDenominator
-        // );
-        // // fee collector receives fee in payment tokens
-        // assertEq(
-        //     paymentToken.balanceOf(feeSettings.feeCollector()),
-        //     costInPaymentToken / paymentTokenFeeDenominator
-        // );
-
-        // assertEq(paymentToken.balanceOf(address(raise)), 0);
-        // assertEq(token.balanceOf(address(raise)), 0);
-        // assertEq(token.balanceOf(receiver), 0);
-        // assertEq(token.balanceOf(address(forwarder)), 0);
-        // assertTrue(raise.tokensSold() == tokenBuyAmount);
-        // assertTrue(raise.tokensBought(investor) == tokenBuyAmount);
-        // //assertTrue(vm.getNonce(buyer) == 0);
-
-        // console.log(
-        //     "paymentToken balance of receiver after: ",
-        //     paymentToken.balanceOf(receiver)
-        // );
-        // console.log(
-        //     "Token balance of buyer after: ",
-        //     token.balanceOf(investor)
-        // );
-
-        // /*
-        //     try to execute request again (must fail)
-        // */
-        // vm.expectRevert("FWD: nonce mismatch");
-        // forwarder.execute(
-        //     request,
-        //     domainSeparator,
-        //     requestType,
-        //     suffixData,
-        //     signature
-        // );
+        // investor receives as many tokens as they paid for
+        assertTrue(token.balanceOf(investor) == tokenBuyAmount);
     }
 
     function testLaunchCompanyAndInvestWithLocalForwarder() public {
