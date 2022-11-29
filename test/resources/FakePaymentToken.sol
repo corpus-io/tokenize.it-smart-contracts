@@ -7,13 +7,13 @@ import "../../contracts/Token.sol";
 /*
     fake currency to test the main contract with
 */
-contract FakePaymentToken is ERC20 {
+contract FakePaymentToken is ERC20Permit {
     uint8 decimalPlaces;
 
     constructor(
         uint256 _initialSupply,
         uint8 _decimals
-    ) ERC20("FakePaymentToken", "FPT") {
+    ) ERC20Permit("FakePaymentToken") ERC20("FakePaymentToken", "FPT") {
         decimalPlaces = _decimals;
         _mint(msg.sender, _initialSupply);
     }

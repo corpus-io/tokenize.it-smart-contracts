@@ -127,7 +127,7 @@ contract CompanySetUpTest is Test {
         // Instead, it is immediately controlled by the address provided in the constructor, which is the companyAdmin in this case.
         vm.prank(platformHotWallet);
         token = new Token(
-            trustedForwarder,
+            address(forwarder),
             feeSettings,
             companyAdmin,
             list,
@@ -228,10 +228,10 @@ contract CompanySetUpTest is Test {
             "FWD: signature mismatch"
         );
 
+        console.log("signing address: ", request.from);
+
         // check the raise contract has no allowance yet
-        assertTrue(
-            token.mintingAllowance(address(raise)) == maxAmountOfTokenToBeSold
-        );
+        assertTrue(token.mintingAllowance(address(raise)) == 0);
         // If the platform has received the signature, it can now execute the meta transaction.
         vm.prank(platformHotWallet);
         forwarder.execute(
@@ -248,10 +248,14 @@ contract CompanySetUpTest is Test {
             token.mintingAllowance(address(raise))
         );
 
-        // check the raise contract has the allowance now
+        // check the raise contract has a mintingAllowance now now
         assertTrue(
             token.mintingAllowance(address(raise)) == maxAmountOfTokenToBeSold
         );
+
+        // ----------------------
+        // company and fundraising campaign are set up. Now the investor can buy tokens.
+        // ----------------------
 
         // forwarder.execute(
         //     request,
