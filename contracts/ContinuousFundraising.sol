@@ -140,12 +140,12 @@ contract ContinuousFundraising is
         uint256 currencyAmount = (_amount * tokenPrice) /
             (10 ** token.decimals());
         uint256 fee;
-        if (token.feeSettings().continuousFundraisungFeeDenominator() == 0) {
+        if (token.feeSettings().continuousFundraisingFeeDenominator() == 0) {
             fee = 0;
         } else {
             fee =
                 currencyAmount /
-                token.feeSettings().continuousFundraisungFeeDenominator();
+                token.feeSettings().continuousFundraisingFeeDenominator();
             currency.safeTransferFrom(
                 _msgSender(),
                 token.feeSettings().feeCollector(),
