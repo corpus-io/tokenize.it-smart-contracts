@@ -167,18 +167,98 @@ contract CompanySetUpTest is Test {
         // Because the company admin does not hold eth, they will use a meta transaction to call the function.
         // this requires quite some preparation, on the platform's side
 
-        // register the token contract with the forwarder
-        // bytes32 domainSeparator = ERC2771helper.registerDomain(
-        //     forwarder,
-        //     Strings.toHexString(uint256(uint160(address(raise))), 20),
-        //     "1"
-        // );
+        // register a domain separator with the forwarder. The this is a one-time step that will be done by the platform.
+        // The domain separator identifies our platform to the forwarder, which prevents replay attacks (using same signature for other dapps).
+        bytes32 domainSeparator = ERC2771helper.registerDomain(
+            forwarder,
+            "tokenize.it", // dapp name
+            "v1.0" // dapp version
+        );
 
-        // // register the function with the forwarder
-        // bytes32 requestType = ERC2771helper.registerRequestType(
-        //     forwarder,
-        //     "buy",
-        //     "address buyer,uint256 amount"
+        // register the function with the forwarder. This is also a one-time step that will be done by the platform once for every function that is called via meta transaction.
+        bytes32 requestType = ERC2771helper.registerRequestType(
+            forwarder,
+            "setMintingAllowance",
+            "address _minter, uint256 _allowance"
+        );
+
+        // build the message the company admin will sign.
+        // build request
+        bytes memory payload = abi.encodeWithSelector(
+            token.setMintingAllowance.selector,
+            address(raise),
+            maxAmountOfTokenToBeSold
+        );
+
+        IForwarder.ForwardRequest memory request = IForwarder.ForwardRequest({
+            from: companyAdmin,
+            to: address(token),
+            value: 0,
+            gas: 1000000,
+            nonce: forwarder.getNonce(platformHotWallet),
+            data: payload,
+            validUntil: block.timestamp + 1 hours // like this, the signature will expire after 1 hour. So the platform hotwallet can take some time to execute the transaction.
+        });
+
+        // I honestly don't know why we need to do this.
+        bytes memory suffixData = "0";
+
+        // pack and hash request
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                domainSeparator,
+                keccak256(
+                    forwarder._getEncoded(request, requestType, suffixData)
+                )
+            )
+        );
+
+        // sign request. This would usually happen in the web app, which would present the companyAdmin with a request to sign the message. Metamask would come up and present the message to sign.
+        // If EIP-712 is used properly, Metamask is able to show some information about the contents of the message, too.
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            companyAdminPrivateKey,
+            digest
+        );
+        bytes memory signature = abi.encodePacked(r, s, v); // https://docs.openzeppelin.com/contracts/2.x/utilities
+
+        // check the signature is correct
+        require(
+            digest.recover(signature) == request.from,
+            "FWD: signature mismatch"
+        );
+
+        // check the raise contract has no allowance yet
+        assertTrue(
+            token.mintingAllowance(address(raise)) == maxAmountOfTokenToBeSold
+        );
+        // If the platform has received the signature, it can now execute the meta transaction.
+        vm.prank(platformHotWallet);
+        forwarder.execute(
+            request,
+            domainSeparator,
+            requestType,
+            suffixData,
+            signature
+        );
+
+        console.log("Forwarder address: ", address(forwarder));
+        console.log(
+            "allowance set to: ",
+            token.mintingAllowance(address(raise))
+        );
+
+        // check the raise contract has the allowance now
+        assertTrue(
+            token.mintingAllowance(address(raise)) == maxAmountOfTokenToBeSold
+        );
+
+        // forwarder.execute(
+        //     request,
+        //     domainSeparator,
+        //     requestType,
+        //     suffixData,
+        //     signature
         // );
 
         // // allow raise contract to mint
