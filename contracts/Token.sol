@@ -21,7 +21,7 @@ import "./FeeSettings.sol";
     The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support and meta-transactions.
 
  */
-contract Token is AccessControl, ERC20Permit, Pausable, ERC2771Context {
+contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     /// @notice The role that has the ability to define which requirements an address must satisfy to receive tokens
     bytes32 public constant REQUIREMENT_ROLE = keccak256("REQUIREMENT_ROLE");
     /// @notice The role that has the ability to grant minting allowances
