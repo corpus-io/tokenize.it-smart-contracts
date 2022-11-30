@@ -418,10 +418,10 @@ contract CompanySetUpTest is Test {
         launchCompanyAndInvest(new Forwarder());
     }
 
-    // function testBuyWithMainnetGSNForwarder() public {
-    //     // uses deployed forwarder on mainnet with fork. https://docs-v2.opengsn.org/networks/ethereum/mainnet.html
-    //     buyWithERC2771(
-    //         Forwarder(payable(0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA))
-    //     );
-    // }
+    function testLaunchCompanyAndInvestWithMainnetGSNForwarder() public {
+        // uses deployed forwarder on mainnet with fork. https://docs-v2.opengsn.org/networks/ethereum/mainnet.html
+        launchCompanyAndInvest(
+            Forwarder(payable(0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA))
+        );
+    }
 }
