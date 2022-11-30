@@ -36,6 +36,11 @@ contract CompanySetUpTest is Test {
         uint256 validUntil;
     }
 
+    struct EIP2612Data {
+        bytes32 dataStruct;
+        bytes32 dataHash;
+    }
+
     // this address will be the admin of contracts controlled by the platform (AllowList, FeeSettings)
     address public constant platformAdmin =
         0xDFcEB49eD21aE199b33A76B726E2bea7A72127B0;
@@ -265,8 +270,60 @@ contract CompanySetUpTest is Test {
         // ----------------------
 
         // todo: use EIP-2612 for this transaction
-        vm.prank(investor);
-        paymentToken.approve(address(raise), costInPaymentToken);
+        // vm.prank(investor);
+        // paymentToken.approve(address(raise), costInPaymentToken);
+
+        EIP2612Data memory eip2612Data;
+
+        // https://soliditydeveloper.com/erc20-permit
+        eip2612Data.dataStruct = keccak256(
+            abi.encode(
+                keccak256(
+                    "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
+                ),
+                investor,
+                address(raise),
+                costInPaymentToken,
+                paymentToken.nonces(investor),
+                block.timestamp + 1 hours
+            )
+        );
+
+        eip2612Data.dataHash = keccak256(
+            abi.encodePacked(
+                uint16(0x1901),
+                paymentToken.DOMAIN_SEPARATOR(), //eip2612Data.domainSeparator,
+                eip2612Data.dataStruct
+            )
+        );
+
+        // sign request
+        //bytes memory signature
+        (v, r, s) = vm.sign(investorPrivateKey, eip2612Data.dataHash);
+        require(
+            ecrecover(eip2612Data.dataHash, v, r, s) == investor,
+            "ERC20Permit: invalid _BIG signature"
+        );
+
+        // check allowance is 0 before permit
+        assertTrue(paymentToken.allowance(investor, address(raise)) == 0);
+
+        vm.prank(platformHotWallet);
+        paymentToken.permit(
+            investor,
+            address(raise),
+            costInPaymentToken,
+            block.timestamp + 1 hours,
+            v,
+            r,
+            s
+        );
+
+        // check allowance is set after permit
+        assertTrue(
+            paymentToken.allowance(investor, address(raise)) ==
+                costInPaymentToken
+        );
 
         // now buy tokens using EIP-2771
         /*
