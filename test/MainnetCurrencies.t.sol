@@ -44,7 +44,7 @@ contract MainnetCurrencies is Test {
     uint256 public constant amountOfTokenToBuy = maxAmountPerBuyer;
 
     // some math
-    uint256 public constant _price = 7 * 10 ** 18;
+    uint256 public constant price = 7 * 10 ** 18;
     uint256 public currencyCost;
     uint256 public currencyAmount;
 
@@ -72,7 +72,7 @@ contract MainnetCurrencies is Test {
             "TEST"
         );
         factory = new PersonalInviteFactory();
-        currencyCost = (amountOfTokenToBuy * _price) / 10 ** token.decimals();
+        currencyCost = (amountOfTokenToBuy * price) / 10 ** token.decimals();
         currencyAmount = currencyCost * 2;
     }
 
@@ -206,7 +206,7 @@ contract MainnetCurrencies is Test {
             buyer,
             receiver,
             amountOfTokenToBuy,
-            _price,
+            price,
             expiration,
             _currency,
             token
@@ -234,7 +234,7 @@ contract MainnetCurrencies is Test {
             buyer,
             receiver,
             amountOfTokenToBuy,
-            _price,
+            price,
             expiration,
             _currency,
             token

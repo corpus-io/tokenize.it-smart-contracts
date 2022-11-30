@@ -105,9 +105,7 @@ contract ContinuousFundraising is
      @notice buy tokens
      @param _amount amount of tokens to buy, in bits (smallest subunit of token)
      */
-    function buy(
-        uint256 _amount
-    ) external whenNotPaused nonReentrant returns (bool) {
+    function buy(uint256 _amount) external whenNotPaused returns (bool) {
         return buy(_amount, _msgSender());
     }
 
