@@ -22,7 +22,6 @@ contract CompanySetUpTest is Test {
 
     Token token;
     FakePaymentToken paymentToken;
-    //Forwarder trustedForwarder;
     ERC2771Helper ERC2771helper;
 
     // copied from openGSN IForwarder
@@ -36,6 +35,8 @@ contract CompanySetUpTest is Test {
         uint256 validUntil;
     }
 
+    // note: this struct is only used to reduce the number of local variables in the test function,
+    // because solidity contracts can only have 16 local variables :(
     struct EIP2612Data {
         bytes32 dataStruct;
         bytes32 dataHash;
@@ -46,19 +47,14 @@ contract CompanySetUpTest is Test {
         0xDFcEB49eD21aE199b33A76B726E2bea7A72127B0;
     address public constant platformHotWallet =
         0x5B38Da6a701c568545dCfcB03FcB875f56beddC4;
-
-    address public constant trustedForwarder =
-        0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
-    address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
-    address public constant mintAllower =
-        0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
-    address public constant minter = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
-    address public constant owner = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
-    address public constant receiver =
+    address public constant platformFeeCollector =
         0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
+
+    address public constant companyCurrencyReceiver =
+        0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
+
     address public constant paymentTokenProvider =
         0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
-    address public constant sender = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
 
     // DO NOT USE IN PRODUCTION! Key was generated online for testing only.
     uint256 public constant investorPrivateKey =
@@ -101,7 +97,7 @@ contract CompanySetUpTest is Test {
             0
         );
         vm.prank(platformAdmin);
-        feeSettings = new FeeSettings(fees, admin);
+        feeSettings = new FeeSettings(fees, platformFeeCollector);
 
         // set up AllowList
         vm.prank(platformAdmin);
@@ -160,7 +156,7 @@ contract CompanySetUpTest is Test {
         vm.prank(platformHotWallet);
         raise = new ContinuousFundraising(
             address(forwarder),
-            payable(receiver),
+            payable(companyCurrencyReceiver),
             minAmountPerBuyer,
             maxAmountPerBuyer,
             price,
@@ -269,9 +265,7 @@ contract CompanySetUpTest is Test {
         // 2. the investor needs to call the buy function of the fundraising contract using EIP-2771
         // ----------------------
 
-        // todo: use EIP-2612 for this transaction
-        // vm.prank(investor);
-        // paymentToken.approve(address(raise), costInPaymentToken);
+        // prepare and execute EIP-2612 approval (ERC-20 permit)
 
         EIP2612Data memory eip2612Data;
 
@@ -381,7 +375,13 @@ contract CompanySetUpTest is Test {
             "FWD: signature mismatch"
         );
 
+        // investor has no tokens before
         assertEq(token.balanceOf(investor), 0);
+        // platformFeeCollector has no tokens or currency before
+        assertEq(token.balanceOf(platformFeeCollector), 0);
+        assertEq(paymentToken.balanceOf(platformFeeCollector), 0);
+        // companyCurrencyReceiver has no currency before
+        assertEq(paymentToken.balanceOf(companyCurrencyReceiver), 0);
 
         // once the platform has received the signature, it can now execute the meta transaction.
         vm.prank(platformHotWallet);
@@ -394,7 +394,24 @@ contract CompanySetUpTest is Test {
         );
 
         // investor receives as many tokens as they paid for
-        assertTrue(token.balanceOf(investor) == tokenBuyAmount);
+        assertTrue(
+            token.balanceOf(investor) == tokenBuyAmount,
+            "Investor has no tokens"
+        );
+        // platformFeeCollector receives the platform fees in token and currency
+        assertTrue(
+            token.balanceOf(platformFeeCollector) > 0,
+            "Platform fee in token not received"
+        );
+        assertTrue(
+            paymentToken.balanceOf(platformFeeCollector) > 0,
+            "Platform fee in currency not received"
+        );
+        // companyCurrencyReceiver receives the currency
+        assertTrue(
+            paymentToken.balanceOf(companyCurrencyReceiver) > 0,
+            "Company currency not received"
+        );
     }
 
     function testLaunchCompanyAndInvestWithLocalForwarder() public {
