@@ -44,5 +44,19 @@
   "scripts": {
     "build": "yarn hardhat compile && yarn tsc --declaration",
     "test": "forge test --no-match-test Mainnet"
+  },
+  "prettier": {
+    "overrides": [
+      {
+        "files": "*.sol",
+        "options": {
+          "printWidth": 80,
+          "tabWidth": 4,
+          "useTabs": false,
+          "singleQuote": false,
+          "bracketSpacing": false
+        }
+      }
+    ]
   }
 }
