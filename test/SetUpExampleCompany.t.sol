@@ -272,12 +272,16 @@ contract CompanySetUpTest is Test {
         /*
             create data and signature for execution
         */
-        // // https://github.com/foundry-rs/foundry/issues/3330
-        // // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/cryptography/ECDSA.sol
-        // bytes32 digest = ECDSA.toTypedDataHash(domainSeparator, keccak256(payload));
-        // (uint8 v, bytes32 r, bytes32 s) = vm.sign(privKey, digest);
 
-        // todo: get nonce from forwarder
+        // domain separator is the same as before, it can be reused for all meta transactions executed by the same forwarder
+        // request type is different because the function name and signature is different
+        requestType = ERC2771helper.registerRequestType(
+            forwarder,
+            "buy",
+            "uint256 _amount"
+        );
+
+        // why does this also work if I don't update the requestType?
 
         // build request
         payload = abi.encodeWithSelector(raise.buy.selector, tokenBuyAmount);
