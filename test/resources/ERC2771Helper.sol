@@ -23,7 +23,7 @@ contract ERC2771Helper is Test {
         forwarder.registerDomainSeparator(domainName, version); // simply uses address string as name
 
         Vm.Log[] memory logs = vm.getRecordedLogs();
-
+        // the next line extracts the domain separator from the event emitted by the forwarder
         bytes32 domainSeparator = logs[0].topics[1]; // internally, the forwarder calls this domainHash in registerDomainSeparator. But expects is as domainSeparator in execute().
         console.log("domainSeparator", vm.toString(domainSeparator));
         require(forwarder.domains(domainSeparator), "Registering failed");
@@ -42,6 +42,7 @@ contract ERC2771Helper is Test {
         vm.recordLogs();
         forwarder.registerRequestType(functionName, functionParameters);
         Vm.Log[] memory logs = vm.getRecordedLogs();
+        // the next line extracts the request type from the event emitted by the forwarder
         bytes32 requestType = logs[0].topics[1];
         console.log("requestType", vm.toString(requestType));
         require(forwarder.typeHashes(requestType), "Registering failed");
