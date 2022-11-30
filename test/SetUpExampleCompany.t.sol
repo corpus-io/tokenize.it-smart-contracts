@@ -173,11 +173,11 @@ contract CompanySetUpTest is Test {
         // this requires quite some preparation, on the platform's side
 
         // register a domain separator with the forwarder. The this is a one-time step that will be done by the platform.
-        // The domain separator identifies our platform to the forwarder, which prevents replay attacks (using same signature for other dapps).
+        // The domain separator identifies the target contract to the forwarder, which prevents replay attacks (using same signature for other dapps).
         bytes32 domainSeparator = ERC2771helper.registerDomain(
             forwarder,
-            "tokenize.it", // dapp name
-            "v1.0" // dapp version
+            string(abi.encodePacked(address(token))), // contract address
+            "v1.0" // contract version
         );
 
         // register the function with the forwarder. This is also a one-time step that will be done by the platform once for every function that is called via meta transaction.
@@ -273,7 +273,14 @@ contract CompanySetUpTest is Test {
             create data and signature for execution
         */
 
-        // domain separator is the same as before, it can be reused for all meta transactions executed by the same forwarder
+        // register a domain separator with the forwarder. The this is a one-time step that will be done by the platform.
+        // The domain separator identifies the target contract to the forwarder, which prevents replay attacks (using same signature for other dapps).
+        domainSeparator = ERC2771helper.registerDomain(
+            forwarder,
+            string(abi.encodePacked(address(raise))), // contract address
+            "v1.0" // contract version
+        );
+
         // request type is different because the function name and signature is different
         requestType = ERC2771helper.registerRequestType(
             forwarder,
