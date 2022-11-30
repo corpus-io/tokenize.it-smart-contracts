@@ -154,7 +154,7 @@ contract ContinuousFundraisingTest is Test {
 
         // build request
         bytes memory payload = abi.encodeWithSelector(
-            raise.buy.selector,
+            bytes4(keccak256("buy(uint256)")), // sadly, the inbuilt lookup raise.buy.selector does not work with overloaded functions
             tokenBuyAmount
         );
 

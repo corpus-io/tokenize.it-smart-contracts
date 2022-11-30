@@ -342,7 +342,10 @@ contract CompanySetUpTest is Test {
         // why does this also work if I don't update the requestType?
 
         // build request
-        payload = abi.encodeWithSelector(raise.buy.selector, tokenBuyAmount);
+        payload = abi.encodeWithSelector(
+            bytes4(keccak256("buy(uint256)")), // sadly, the inbuilt lookup raise.buy.selector does not work with overloaded functions
+            tokenBuyAmount
+        );
 
         request = IForwarder.ForwardRequest({
             from: investor,

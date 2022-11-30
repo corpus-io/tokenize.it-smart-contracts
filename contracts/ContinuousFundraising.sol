@@ -114,6 +114,7 @@ contract ContinuousFundraising is
     /**
      @notice buy tokens
      @param _amount amount of tokens to buy, in bits (smallest subunit of token)
+     @param _tokenReceiver address the tokens should be minted to
      */
     function buy(
         uint256 _amount,
