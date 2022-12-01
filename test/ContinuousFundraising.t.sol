@@ -488,6 +488,46 @@ contract ContinuousFundraisingTest is Test {
         raise.buy(maxAmountOfTokenToBeSold / 2, buyer);
     }
 
+    function testCorrectAccounting() public {
+        address person1 = vm.addr(1);
+        address person2 = vm.addr(2);
+
+        uint256 availableBalance = paymentToken.balanceOf(buyer);
+
+        vm.prank(buyer);
+        paymentToken.transfer(person1, availableBalance / 2);
+        vm.prank(buyer);
+        paymentToken.transfer(person2, 10 ** 6);
+
+        vm.prank(person1);
+        paymentToken.approve(address(raise), paymentTokenAmount);
+
+        vm.prank(person2);
+        paymentToken.approve(address(raise), paymentTokenAmount);
+
+        // check all entries are 0 before
+        assertTrue(raise.tokensSold() == 0);
+        assertTrue(raise.tokensBought(buyer) == 0);
+        assertTrue(raise.tokensBought(person1) == 0);
+        assertTrue(raise.tokensBought(person2) == 0);
+
+        vm.prank(buyer);
+        raise.buy(maxAmountOfTokenToBeSold / 2, buyer);
+        vm.prank(buyer);
+        raise.buy(maxAmountOfTokenToBeSold / 4, person1);
+        vm.prank(buyer);
+        raise.buy(maxAmountOfTokenToBeSold / 8, person2);
+
+        // check all entries are correct after
+        assertTrue(raise.tokensSold() == (maxAmountOfTokenToBeSold * 7) / 8);
+        assertTrue(raise.tokensBought(buyer) == maxAmountOfTokenToBeSold / 2);
+        assertTrue(raise.tokensBought(person1) == maxAmountOfTokenToBeSold / 4);
+        assertTrue(raise.tokensBought(person2) == maxAmountOfTokenToBeSold / 8);
+        assertTrue(token.balanceOf(buyer) == maxAmountOfTokenToBeSold / 2);
+        assertTrue(token.balanceOf(person1) == maxAmountOfTokenToBeSold / 4);
+        assertTrue(token.balanceOf(person2) == maxAmountOfTokenToBeSold / 8);
+    }
+
     function testExceedMintingAllowance() public {
         // reduce minting allowance of fundraising contract, so the revert happens in Token
         vm.prank(mintAllower);
