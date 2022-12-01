@@ -21,9 +21,10 @@ contract PersonalInviteTest is Test {
     address public constant buyer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
     address public constant mintAllower =
         0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
-    address public constant minter = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
+    address public constant tokenReceiver =
+        0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
     address public constant owner = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
-    address public constant receiver =
+    address public constant currencyReceiver =
         0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
     address public constant paymentTokenProvider =
         0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
@@ -76,7 +77,7 @@ contract PersonalInviteTest is Test {
             salt,
             buyer,
             buyer,
-            receiver,
+            currencyReceiver,
             amount,
             price,
             expiration,
@@ -109,7 +110,7 @@ contract PersonalInviteTest is Test {
 
         uint currencyAmount = (amount * price) / 10 ** tokenDecimals;
         assertEq(currency.balanceOf(buyer), currencyAmount);
-        assertEq(currency.balanceOf(receiver), 0);
+        assertEq(currency.balanceOf(currencyReceiver), 0);
         assertEq(token.balanceOf(buyer), 0);
 
         console.log(
@@ -125,7 +126,7 @@ contract PersonalInviteTest is Test {
             salt,
             buyer,
             buyer,
-            receiver,
+            currencyReceiver,
             amount,
             price,
             expiration,
@@ -145,7 +146,10 @@ contract PersonalInviteTest is Test {
         );
 
         console.log("buyer balance: %s", currency.balanceOf(buyer));
-        console.log("receiver balance: %s", currency.balanceOf(receiver));
+        console.log(
+            "receiver balance: %s",
+            currency.balanceOf(currencyReceiver)
+        );
         console.log("buyer token balance: %s", token.balanceOf(buyer));
         uint256 len;
         assembly {
@@ -155,7 +159,7 @@ contract PersonalInviteTest is Test {
         assertEq(currency.balanceOf(buyer), 0);
 
         assertEq(
-            currency.balanceOf(receiver),
+            currency.balanceOf(currencyReceiver),
             currencyAmount -
                 currencyAmount /
                 token.feeSettings().personalInviteFeeDenominator()
@@ -179,6 +183,136 @@ contract PersonalInviteTest is Test {
         assertEq(
             token.balanceOf(token.feeSettings().feeCollector()),
             amount / token.feeSettings().tokenFeeDenominator()
+        );
+    }
+
+    function testAcceptWithDifferentTokenReceiver(uint256 rawSalt) public {
+        console.log(
+            "feeCollector currency balance: %s",
+            currency.balanceOf(token.feeSettings().feeCollector())
+        );
+
+        //uint rawSalt = 0;
+        bytes32 salt = bytes32(rawSalt);
+
+        //bytes memory creationCode = type(PersonalInvite).creationCode;
+        uint256 tokenAmount = 20000000000000;
+        uint256 expiration = block.timestamp + 1000;
+
+        address payer = buyer;
+        address expectedAddress = factory.getAddress(
+            salt,
+            payer,
+            tokenReceiver,
+            currencyReceiver,
+            tokenAmount,
+            price,
+            expiration,
+            currency,
+            token
+        );
+
+        vm.prank(admin);
+        token.setMintingAllowance(expectedAddress, tokenAmount);
+
+        vm.prank(admin);
+        currency.setMintingAllowance(admin, tokenAmount * price);
+
+        uint256 tokenDecimals = token.decimals();
+        vm.prank(admin);
+        currency.mint(payer, (tokenAmount * price) / 10 ** tokenDecimals); // during this call, the feeCollector gets 1% of the amount
+
+        vm.prank(payer);
+        currency.approve(
+            expectedAddress,
+            (tokenAmount * price) / 10 ** tokenDecimals
+        );
+
+        // make sure balances are as expected before deployment
+
+        console.log(
+            "feeCollector currency balance: %s",
+            currency.balanceOf(token.feeSettings().feeCollector())
+        );
+
+        uint currencyAmount = (tokenAmount * price) / 10 ** tokenDecimals;
+        assertEq(currency.balanceOf(payer), currencyAmount);
+        assertEq(currency.balanceOf(currencyReceiver), 0);
+        assertEq(token.balanceOf(tokenReceiver), 0);
+
+        console.log(
+            "feeCollector currency balance before deployment: %s",
+            currency.balanceOf(token.feeSettings().feeCollector())
+        );
+        // make sure balances are as expected after deployment
+        uint256 feeCollectorCurrencyBalanceBefore = currency.balanceOf(
+            token.feeSettings().feeCollector()
+        );
+
+        address inviteAddress = factory.deploy(
+            salt,
+            payer,
+            tokenReceiver,
+            currencyReceiver,
+            tokenAmount,
+            price,
+            expiration,
+            currency,
+            token
+        );
+
+        console.log(
+            "feeCollector currency balance after deployment: %s",
+            currency.balanceOf(token.feeSettings().feeCollector())
+        );
+
+        assertEq(
+            inviteAddress,
+            expectedAddress,
+            "deployed contract address is not correct"
+        );
+
+        console.log("payer balance: %s", currency.balanceOf(payer));
+        console.log(
+            "receiver balance: %s",
+            currency.balanceOf(currencyReceiver)
+        );
+        console.log(
+            "tokenReceiver token balance: %s",
+            token.balanceOf(tokenReceiver)
+        );
+        uint256 len;
+        assembly {
+            len := extcodesize(expectedAddress)
+        }
+        console.log("Deployed contract size: %s", len);
+        assertEq(currency.balanceOf(payer), 0);
+
+        assertEq(
+            currency.balanceOf(currencyReceiver),
+            currencyAmount -
+                currencyAmount /
+                token.feeSettings().personalInviteFeeDenominator()
+        );
+
+        console.log(
+            "feeCollector currency balance: %s",
+            currency.balanceOf(token.feeSettings().feeCollector())
+        );
+
+        assertEq(
+            currency.balanceOf(token.feeSettings().feeCollector()),
+            feeCollectorCurrencyBalanceBefore +
+                currencyAmount /
+                token.feeSettings().personalInviteFeeDenominator(),
+            "feeCollector currency balance is not correct"
+        );
+
+        assertEq(token.balanceOf(tokenReceiver), tokenAmount);
+
+        assertEq(
+            token.balanceOf(token.feeSettings().feeCollector()),
+            tokenAmount / token.feeSettings().tokenFeeDenominator()
         );
     }
 }
