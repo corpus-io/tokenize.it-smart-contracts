@@ -382,6 +382,60 @@ contract ContinuousFundraisingTest is Test {
         assertTrue(raise.tokensBought(buyer) == 0);
     }
 
+    function testBuyAndMintToDifferentAddress() public {
+        address addressWithFunds = vm.addr(1);
+        address addressForTokens = vm.addr(2);
+
+        uint256 availableBalance = paymentToken.balanceOf(buyer);
+
+        vm.prank(buyer);
+        paymentToken.transfer(addressWithFunds, availableBalance / 2);
+
+        vm.prank(addressWithFunds);
+        paymentToken.approve(address(raise), paymentTokenAmount);
+
+        // check state before
+        assertTrue(
+            paymentToken.balanceOf(addressWithFunds) == availableBalance / 2,
+            "addressWithFunds has no funds"
+        );
+        assertTrue(
+            paymentToken.balanceOf(addressForTokens) == 0,
+            "addressForTokens has funds"
+        );
+        assertTrue(
+            token.balanceOf(addressForTokens) == 0,
+            "addressForTokens has tokens before buy"
+        );
+        assertTrue(
+            token.balanceOf(addressWithFunds) == 0,
+            "addressWithFunds has tokens before buy"
+        );
+
+        // execute buy, with addressForTokens as recipient
+        vm.prank(addressWithFunds);
+        raise.buy(maxAmountOfTokenToBeSold / 2, addressForTokens);
+        vm.prank(addressForTokens);
+
+        // check state after
+        assertTrue(
+            paymentToken.balanceOf(addressWithFunds) < availableBalance / 2,
+            "addressWithFunds has funds after buy"
+        );
+        assertTrue(
+            paymentToken.balanceOf(addressForTokens) == 0,
+            "addressForTokens has funds after buy"
+        );
+        assertTrue(
+            token.balanceOf(addressForTokens) == maxAmountOfTokenToBeSold / 2,
+            "addressForTokens has wrong amount of tokens after buy"
+        );
+        assertTrue(
+            token.balanceOf(addressWithFunds) == 0,
+            "addressWithFunds has tokens after buy"
+        );
+    }
+
     function testMultiplePeopleBuyTooMuch() public {
         address person1 = vm.addr(1);
         address person2 = vm.addr(2);
