@@ -115,7 +115,7 @@ contract ContinuousFundraising is
             "Not enough tokens to sell left"
         );
         require(
-            tokensBought[_msgSender()] + _amount >= minAmountPerBuyer,
+            tokensBought[_tokenReceiver] + _amount >= minAmountPerBuyer,
             "Buyer needs to buy at least minAmount"
         );
         /**
@@ -133,11 +133,11 @@ contract ContinuousFundraising is
             "Amount * tokenprice needs to be a multiple of 10**token.decimals()"
         );
         require(
-            tokensBought[_msgSender()] + _amount <= maxAmountPerBuyer,
+            tokensBought[_tokenReceiver] + _amount <= maxAmountPerBuyer,
             "Total amount of bought tokens needs to be lower than or equal to maxAmount"
         );
         tokensSold += _amount;
-        tokensBought[_msgSender()] += _amount;
+        tokensBought[_tokenReceiver] += _amount;
 
         uint256 currencyAmount = (_amount * tokenPrice) /
             (10 ** token.decimals());

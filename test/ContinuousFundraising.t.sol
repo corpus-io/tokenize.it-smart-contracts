@@ -456,10 +456,36 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(buyer);
         raise.buy(maxAmountOfTokenToBeSold / 2, buyer);
         vm.prank(person1);
-        raise.buy(maxAmountOfTokenToBeSold / 2, buyer);
+        raise.buy(maxAmountOfTokenToBeSold / 2, person1);
         vm.prank(person2);
         vm.expectRevert("Not enough tokens to sell left");
-        raise.buy(10 ** 18, buyer);
+        raise.buy(10 ** 18, person2);
+    }
+
+    function testMultipleAddressesBuyForOneReceiver() public {
+        address person1 = vm.addr(1);
+        address person2 = vm.addr(2);
+
+        uint256 availableBalance = paymentToken.balanceOf(buyer);
+
+        vm.prank(buyer);
+        paymentToken.transfer(person1, availableBalance / 2);
+        vm.prank(buyer);
+        paymentToken.transfer(person2, 10 ** 6);
+
+        vm.prank(person1);
+        paymentToken.approve(address(raise), paymentTokenAmount);
+
+        vm.prank(person2);
+        paymentToken.approve(address(raise), paymentTokenAmount);
+
+        vm.prank(buyer);
+        raise.buy(maxAmountOfTokenToBeSold / 2, buyer);
+        vm.prank(person1);
+        vm.expectRevert(
+            "Total amount of bought tokens needs to be lower than or equal to maxAmount"
+        );
+        raise.buy(maxAmountOfTokenToBeSold / 2, buyer);
     }
 
     function testExceedMintingAllowance() public {
