@@ -43,7 +43,8 @@
   },
   "scripts": {
     "build": "yarn hardhat compile && yarn tsc --declaration",
-    "test": "forge test --no-match-test Mainnet"
+    "test": "forge test --no-match-test Mainnet",
+    "coverage": "forge coverage --no-match-test Mainnet --report lcov"
   },
   "prettier": {
     "overrides": [
