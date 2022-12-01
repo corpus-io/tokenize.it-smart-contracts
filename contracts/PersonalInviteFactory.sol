@@ -11,7 +11,7 @@ import "../contracts/PersonalInvite.sol";
     One deployment of this contract can be used for deployment of any number of PersonalInvites using create2.
 */
 contract PersonalInviteFactory {
-    event Deploy(address addr);
+    event Deploy(address indexed addr);
 
     /**
      * @notice Deploys a contract using create2.
