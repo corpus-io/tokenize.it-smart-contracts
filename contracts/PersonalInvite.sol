@@ -67,9 +67,7 @@ contract PersonalInvite {
             (10 ** _token.decimals());
 
         uint256 fee;
-        if (_token.feeSettings().personalInviteFeeDenominator() == 0) {
-            fee = 0;
-        } else {
+        if (_token.feeSettings().personalInviteFeeDenominator() != 0) {
             fee =
                 currencyAmount /
                 _token.feeSettings().personalInviteFeeDenominator();
