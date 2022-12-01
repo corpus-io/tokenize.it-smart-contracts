@@ -89,7 +89,7 @@ contract ContinuousFundraisingTest is Test {
         paymentToken.approve(address(raise), paymentTokenAmount);
     }
 
-    function testConstructor() public {
+    function testConstructorHappyCase() public {
         ContinuousFundraising _raise = new ContinuousFundraising(
             trustedForwarder,
             payable(receiver),
@@ -107,6 +107,56 @@ contract ContinuousFundraisingTest is Test {
         assertTrue(_raise.tokenPrice() == price);
         assertTrue(_raise.currency() == paymentToken);
         assertTrue(_raise.token() == token);
+    }
+
+    function testConstructorWithAddress0() public {
+        vm.expectRevert("trustedForwarder can not be zero address");
+        new ContinuousFundraising(
+            address(0),
+            receiver,
+            minAmountPerBuyer,
+            maxAmountPerBuyer,
+            price,
+            maxAmountOfTokenToBeSold,
+            paymentToken,
+            token
+        );
+
+        vm.expectRevert("currencyReceiver can not be zero address");
+        new ContinuousFundraising(
+            trustedForwarder,
+            address(0),
+            minAmountPerBuyer,
+            maxAmountPerBuyer,
+            price,
+            maxAmountOfTokenToBeSold,
+            paymentToken,
+            token
+        );
+
+        vm.expectRevert("currency can not be zero address");
+        new ContinuousFundraising(
+            trustedForwarder,
+            receiver,
+            minAmountPerBuyer,
+            maxAmountPerBuyer,
+            price,
+            maxAmountOfTokenToBeSold,
+            IERC20(address(0)),
+            token
+        );
+
+        vm.expectRevert("token can not be zero address");
+        new ContinuousFundraising(
+            trustedForwarder,
+            receiver,
+            minAmountPerBuyer,
+            maxAmountPerBuyer,
+            price,
+            maxAmountOfTokenToBeSold,
+            paymentToken,
+            Token(address(0))
+        );
     }
 
     /*
