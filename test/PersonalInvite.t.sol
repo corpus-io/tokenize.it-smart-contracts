@@ -21,8 +21,7 @@ contract PersonalInviteTest is Test {
     address public constant buyer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
     address public constant mintAllower =
         0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
-    address public constant tokenReceiver =
-        0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
+    address public constant payer = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
     address public constant owner = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
     address public constant currencyReceiver =
         0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
@@ -33,9 +32,13 @@ contract PersonalInviteTest is Test {
 
     uint256 public constant price = 10000000;
 
+    uint256 requirements = 92785934;
+
     function setUp() public {
         factory = new PersonalInviteFactory();
         list = new AllowList();
+
+        list.set(buyer, requirements);
 
         Fees memory fees = Fees(100, 100, 100, 0);
         feeSettings = new FeeSettings(fees, admin);
@@ -45,7 +48,7 @@ contract PersonalInviteTest is Test {
             feeSettings,
             admin,
             list,
-            0x0,
+            requirements,
             "token",
             "TOK"
         );
@@ -199,7 +202,7 @@ contract PersonalInviteTest is Test {
         uint256 tokenAmount = 20000000000000;
         uint256 expiration = block.timestamp + 1000;
 
-        address payer = buyer;
+        address tokenReceiver = buyer;
         address expectedAddress = factory.getAddress(
             salt,
             payer,
