@@ -343,8 +343,9 @@ contract CompanySetUpTest is Test {
 
         // build request
         payload = abi.encodeWithSelector(
-            bytes4(keccak256("buy(uint256)")), // sadly, the inbuilt lookup raise.buy.selector does not work with overloaded functions
-            tokenBuyAmount
+            raise.buy.selector,
+            tokenBuyAmount,
+            investor
         );
 
         request = IForwarder.ForwardRequest({

@@ -145,7 +145,7 @@ contract MainnetCurrencies is Test {
 
         // buy tokens
         vm.prank(buyer);
-        _raise.buy(maxAmountPerBuyer);
+        _raise.buy(maxAmountPerBuyer, buyer);
 
         // check buyer has tokens and receiver has _currency afterwards
         assertEq(

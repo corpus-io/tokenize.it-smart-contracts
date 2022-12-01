@@ -186,7 +186,7 @@ contract ContinuousFundraisingTest is Test {
             assertTrue(_paymentToken.balanceOf(buyer) == _paymentTokenAmount);
             // they should be able to buy 33 CT for 999 FPT
             vm.prank(buyer);
-            _raise.buy(tokenAmount);
+            _raise.buy(tokenAmount, buyer);
             // buyer should have 10 FPT left
             assertTrue(
                 _paymentToken.balanceOf(buyer) ==
@@ -295,7 +295,7 @@ contract ContinuousFundraisingTest is Test {
         uint256 buyAmount = _maxMintAmount / 100000;
         vm.prank(buyer);
         vm.expectRevert("ReentrancyGuard: reentrant call");
-        _raise.buy(buyAmount);
+        _raise.buy(buyAmount, buyer);
 
         // // tests to be run when exploit is successful
         // uint paymentTokensSpent = buyerPaymentBalanceBefore - _paymentToken.balanceOf(buyer);
@@ -325,7 +325,7 @@ contract ContinuousFundraisingTest is Test {
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
 
         vm.prank(buyer);
-        raise.buy(tokenBuyAmount); // this test fails if 5 * 10**18 is replaced with 5 * 10**token.decimals() for this argument, even though they should be equal
+        raise.buy(tokenBuyAmount, buyer); // this test fails if 5 * 10**18 is replaced with 5 * 10**token.decimals() for this argument, even though they should be equal
         assertTrue(
             paymentToken.balanceOf(buyer) ==
                 paymentTokenBalanceBefore - costInPaymentToken
@@ -374,7 +374,7 @@ contract ContinuousFundraisingTest is Test {
         vm.expectRevert(
             "Total amount of bought tokens needs to be lower than or equal to maxAmount"
         );
-        raise.buy(maxAmountPerBuyer + 10 ** 18); //+ 10**token.decimals());
+        raise.buy(maxAmountPerBuyer + 10 ** 18, buyer); //+ 10**token.decimals());
         assertTrue(paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore);
         assertTrue(token.balanceOf(buyer) == 0);
         assertTrue(paymentToken.balanceOf(receiver) == 0);
@@ -400,12 +400,12 @@ contract ContinuousFundraisingTest is Test {
         paymentToken.approve(address(raise), paymentTokenAmount);
 
         vm.prank(buyer);
-        raise.buy(maxAmountOfTokenToBeSold / 2);
+        raise.buy(maxAmountOfTokenToBeSold / 2, buyer);
         vm.prank(person1);
-        raise.buy(maxAmountOfTokenToBeSold / 2);
+        raise.buy(maxAmountOfTokenToBeSold / 2, buyer);
         vm.prank(person2);
         vm.expectRevert("Not enough tokens to sell left");
-        raise.buy(10 ** 18);
+        raise.buy(10 ** 18, buyer);
     }
 
     function testExceedMintingAllowance() public {
@@ -417,7 +417,7 @@ contract ContinuousFundraisingTest is Test {
 
         vm.prank(buyer);
         vm.expectRevert("MintingAllowance too low");
-        raise.buy(maxAmountPerBuyer); //+ 10**token.decimals());
+        raise.buy(maxAmountPerBuyer, buyer); //+ 10**token.decimals());
         assertTrue(token.balanceOf(buyer) == 0);
         assertTrue(paymentToken.balanceOf(receiver) == 0);
         assertTrue(raise.tokensSold() == 0);
@@ -434,7 +434,7 @@ contract ContinuousFundraisingTest is Test {
 
         vm.prank(buyer);
         vm.expectRevert("Buyer needs to buy at least minAmount");
-        raise.buy(minAmountPerBuyer / 2);
+        raise.buy(minAmountPerBuyer / 2, buyer);
         assertTrue(paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore);
         assertTrue(token.balanceOf(buyer) == 0);
         assertTrue(paymentToken.balanceOf(receiver) == 0);
@@ -449,11 +449,11 @@ contract ContinuousFundraisingTest is Test {
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
 
         vm.prank(buyer);
-        raise.buy(minAmountPerBuyer);
+        raise.buy(minAmountPerBuyer, buyer);
 
         // buy less than minAmount -> should be okay because minAmount has already been bought.
         vm.prank(buyer);
-        raise.buy(minAmountPerBuyer / 2);
+        raise.buy(minAmountPerBuyer / 2, buyer);
 
         assertTrue(
             paymentToken.balanceOf(buyer) ==
@@ -504,7 +504,7 @@ contract ContinuousFundraisingTest is Test {
         vm.expectRevert(
             "Amount * tokenprice needs to be a multiple of 10**token.decimals()"
         );
-        raise.buy(maxAmountPerBuyer + 1);
+        raise.buy(maxAmountPerBuyer + 1, buyer);
         assertTrue(paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore);
         assertTrue(token.balanceOf(buyer) == 0);
         assertTrue(paymentToken.balanceOf(receiver) == 0);
@@ -517,7 +517,7 @@ contract ContinuousFundraisingTest is Test {
     */
     function testFailOverflow() public {
         vm.prank(buyer);
-        raise.buy(maxAmountPerBuyer + 1);
+        raise.buy(maxAmountPerBuyer + 1, buyer);
     }
 
     /*
@@ -525,7 +525,7 @@ contract ContinuousFundraisingTest is Test {
     */
     function testFailUnderflow() public {
         vm.prank(buyer);
-        raise.buy(minAmountPerBuyer - 1);
+        raise.buy(minAmountPerBuyer - 1, buyer);
     }
 
     /*
@@ -535,7 +535,7 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(owner);
         raise.pause();
         vm.prank(buyer);
-        raise.buy(minAmountPerBuyer);
+        raise.buy(minAmountPerBuyer, buyer);
     }
 
     /*

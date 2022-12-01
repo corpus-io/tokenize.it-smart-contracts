@@ -104,20 +104,12 @@ contract ContinuousFundraising is
     /**
      @notice buy tokens
      @param _amount amount of tokens to buy, in bits (smallest subunit of token)
-     */
-    function buy(uint256 _amount) external whenNotPaused returns (bool) {
-        return buy(_amount, _msgSender());
-    }
-
-    /**
-     @notice buy tokens
-     @param _amount amount of tokens to buy, in bits (smallest subunit of token)
      @param _tokenReceiver address the tokens should be minted to
      */
     function buy(
         uint256 _amount,
         address _tokenReceiver
-    ) public whenNotPaused nonReentrant returns (bool) {
+    ) external whenNotPaused nonReentrant returns (bool) {
         require(
             tokensSold + _amount <= maxAmountOfTokenToBeSold,
             "Not enough tokens to sell left"
