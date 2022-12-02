@@ -42,7 +42,8 @@
   },
   "scripts": {
     "build": "yarn hardhat compile && yarn tsc --declaration",
-    "test": "forge test --no-match-test Mainnet"
+    "test": "forge test --no-match-test Mainnet",
+    "coverage": "forge coverage --report lcov && genhtml lcov.info --branch-coverage --output-directory=./coverage"
   },
   "prettier": {
     "overrides": [
