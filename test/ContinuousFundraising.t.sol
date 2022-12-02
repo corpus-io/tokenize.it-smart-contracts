@@ -552,6 +552,10 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(owner);
         raise.setMaxAmountPerBuyer(minAmountPerBuyer);
         assertTrue(raise.maxAmountPerBuyer() == minAmountPerBuyer);
+        uint256 _minAmountPerBuyer = raise.minAmountPerBuyer();
+        vm.expectRevert("_maxAmount needs to be larger or equal to minAmount");
+        vm.prank(owner);
+        raise.setMaxAmountPerBuyer(_minAmountPerBuyer - 1);
     }
 
     /*
@@ -578,6 +582,9 @@ contract ContinuousFundraisingTest is Test {
         raise.setCurrencyAndTokenPrice(newPaymentToken, 700);
         assertTrue(raise.tokenPrice() == 700);
         assertTrue(raise.currency() == newPaymentToken);
+        vm.prank(owner);
+        vm.expectRevert("_tokenPrice needs to be a non-zero amount");
+        raise.setCurrencyAndTokenPrice(paymentToken, 0);
     }
 
     /*
