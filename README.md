@@ -10,7 +10,17 @@ These smart contracts implement [tokenize.it](https://tokenize.it/)'s tokenized 
 4. init project: `yarn install`
 5. run tests: `forge test --no-match-test Mainnet`
 
-For information regarding testing, please go to [testing](docs/testing.md). There is no deploy script yet.
+If you are missing dependencies:
+
+- node/npm:
+  - install [nvm](https://github.com/nvm-sh/nvm)
+  - `nvm install 18`
+  - `nvm use 18`
+- yarn: `npm install yarn`
+- foundry: [install guide](https://book.getfoundry.sh/getting-started/installation)
+
+For information regarding testing, please go to [testing](docs/testing.md).
+There is no deploy script yet.
 
 # Main Concept
 
