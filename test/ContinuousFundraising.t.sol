@@ -607,6 +607,11 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(owner);
         raise.setMaxAmountOfTokenToBeSold(minAmountPerBuyer);
         assertTrue(raise.maxAmountOfTokenToBeSold() == minAmountPerBuyer);
+        vm.prank(owner);
+        vm.expectRevert(
+            "_maxAmountOfTokenToBeSold needs to be larger than zero"
+        );
+        raise.setMaxAmountOfTokenToBeSold(0);
     }
 
     /*
@@ -806,7 +811,7 @@ contract ContinuousFundraisingTest is Test {
     /*
         try to unpause too soon after setCurrencyAndTokenPrice
     */
-    function testFailUnpauseTooSoonAfterSetCurrencyAndTokenPrice() public {
+    function testUnpauseTooSoonAfterSetCurrencyAndTokenPrice() public {
         uint256 time = block.timestamp;
         vm.warp(time);
         vm.prank(owner);
@@ -819,6 +824,9 @@ contract ContinuousFundraisingTest is Test {
         assertTrue(raise.coolDownStart() == time + 2 hours);
         vm.warp(time + raise.delay() + 1 hours);
         vm.prank(owner);
+        vm.expectRevert(
+            "There needs to be at minimum one day to change parameters"
+        );
         raise.unpause(); // must fail because of the parameter update
     }
 

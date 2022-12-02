@@ -263,7 +263,7 @@ contract ContinuousFundraising is
     function unpause() external onlyOwner {
         require(
             block.timestamp > coolDownStart + delay,
-            "There needs to be at minumum one day to change parameters"
+            "There needs to be at minimum one day to change parameters"
         );
         _unpause();
     }
