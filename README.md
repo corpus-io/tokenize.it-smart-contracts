@@ -19,7 +19,8 @@ If you are missing dependencies:
 - yarn: `npm install yarn`
 - foundry: [install guide](https://book.getfoundry.sh/getting-started/installation)
 
-For information regarding testing, please go to [testing](docs/testing.md). There is no deploy script yet.
+For information regarding testing, please go to [testing](docs/testing.md).
+There is no deploy script yet.
 
 # Main Concept
 
