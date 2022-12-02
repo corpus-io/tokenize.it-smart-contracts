@@ -519,6 +519,19 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(owner);
         raise.setMinAmountPerBuyer(300);
         assertTrue(raise.minAmountPerBuyer() == 300);
+
+        console.log("minAmount: ", raise.minAmountPerBuyer());
+        console.log("maxAmount: ", raise.maxAmountPerBuyer());
+        console.log("owner: ", raise.owner());
+        console.log("_owner: ", owner);
+
+        uint256 _maxAmountPerBuyer = raise.maxAmountPerBuyer();
+        vm.expectRevert("_minAmount needs to be smaller or equal to maxAmount");
+        vm.prank(owner);
+        raise.setMinAmountPerBuyer(_maxAmountPerBuyer + 1); //raise.maxAmountPerBuyer() + 1);
+
+        console.log("minAmount: ", raise.minAmountPerBuyer());
+        console.log("maxAmount: ", raise.maxAmountPerBuyer());
     }
 
     /* 
