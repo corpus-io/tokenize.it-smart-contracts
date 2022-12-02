@@ -247,6 +247,18 @@ contract tokenTest is Test {
         token.mint(pauser, 1);
         assertTrue(token.balanceOf(pauser) == 1);
         assertTrue(token.mintingAllowance(minter) == 1);
+
+        // update minting allowance when it is not 0
+        vm.prank(mintAllower);
+        vm.expectRevert(
+            "Set up minter can only be called if the remaining allowance is 0 or to set the allowance to 0."
+        );
+        token.setMintingAllowance(minter, 3);
+
+        // set allowance to 0
+        vm.prank(mintAllower);
+        token.setMintingAllowance(minter, 0);
+        assertTrue(token.mintingAllowance(minter) == 0);
     }
 
     function testMintOnce(uint256 x) public {
@@ -936,6 +948,12 @@ contract tokenTest is Test {
         token.suggestNewFeeSettings(newFeeSettings);
     }
 
+    function testSuggestNewFeeSettings0() public {
+        vm.prank(feeSettings.owner());
+        vm.expectRevert("Fee settings cannot be zero address");
+        token.suggestNewFeeSettings(FeeSettings(address(0)));
+    }
+
     function testSuggestNewFeeSettings(address newCollector) public {
         vm.assume(newCollector != address(0));
         Fees memory fees = Fees(0, 0, 0, 0);
@@ -965,6 +983,12 @@ contract tokenTest is Test {
             token.feeSettings().tokenFeeDenominator() == oldTokenFeeDenominator,
             "token fee denominator changed!"
         );
+    }
+
+    function testAcceptFeeSettings0() public {
+        vm.prank(admin);
+        vm.expectRevert("Fee settings cannot be zero address");
+        token.acceptNewFeeSettings(FeeSettings(address(0)));
     }
 
     function testAcceptNewFeeSettings(address newCollector) public {
@@ -1003,5 +1027,19 @@ contract tokenTest is Test {
             token.feeSettings().tokenFeeDenominator() != oldTokenFeeDenominator,
             "token fee denominator changed!"
         );
+    }
+
+    function testFrontrunFeeSettingsAcceptance(address newCollector) public {
+        vm.assume(newCollector != address(0));
+        Fees memory fees = Fees(0, 0, 0, 0);
+        FeeSettings newFeeSettings = new FeeSettings(fees, newCollector);
+
+        vm.prank(feeSettings.owner());
+        token.suggestNewFeeSettings(newFeeSettings);
+
+        // admin thinks he is accepting a, but suggestion is b
+        vm.expectRevert("Only suggested fee settings can be accepted");
+        vm.prank(admin);
+        token.acceptNewFeeSettings(FeeSettings(newCollector));
     }
 }
