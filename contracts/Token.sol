@@ -81,7 +81,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     */
     mapping(address => uint256) public mintingAllowance; // used for token generating events such as vesting or new financing rounds
 
-    event RequirementsChanged(uint indexed newRequirements);
+    event RequirementsChanged(uint newRequirements);
     event AllowListChanged(AllowList indexed newAllowList);
     event NewFeeSettingsSuggested(FeeSettings indexed _feeSettings);
     event FeeSettingsChanged(FeeSettings indexed newFeeSettings);

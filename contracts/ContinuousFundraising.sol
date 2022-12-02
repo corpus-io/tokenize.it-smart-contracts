@@ -58,10 +58,10 @@ contract ContinuousFundraising is
     mapping(address => uint256) public tokensBought;
 
     event CurrencyReceiverChanged(address indexed);
-    event MinAmountPerBuyerChanged(uint256 indexed);
-    event MaxAmountPerBuyerChanged(uint256 indexed);
+    event MinAmountPerBuyerChanged(uint256);
+    event MaxAmountPerBuyerChanged(uint256);
     event TokenPriceAndCurrencyChanged(uint256, IERC20 indexed);
-    event MaxAmountOfTokenToBeSoldChanged(uint256 indexed);
+    event MaxAmountOfTokenToBeSoldChanged(uint256);
 
     /**
      * @dev Constructor that passes the trusted forwarder to the ERC2771Context constructor

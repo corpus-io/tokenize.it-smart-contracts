@@ -31,7 +31,7 @@ contract FeeSettings is Ownable {
         uint256 personalInviteFeeDenominator
     );
     event FeeCollectorChanged(address indexed newFeeCollector);
-    event ChangeProposed(Fees indexed proposal);
+    event ChangeProposed(Fees proposal);
 
     constructor(Fees memory _fees, address _feeCollector) {
         checkFeeLimits(_fees);
