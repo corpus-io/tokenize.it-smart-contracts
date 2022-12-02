@@ -495,6 +495,10 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(owner);
         raise.setCurrencyReceiver(payable(address(buyer)));
         assertTrue(raise.currencyReceiver() == address(buyer));
+
+        vm.prank(owner);
+        vm.expectRevert("receiver can not be zero address");
+        raise.setCurrencyReceiver(address(0));
     }
 
     /* 
