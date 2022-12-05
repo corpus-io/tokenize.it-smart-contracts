@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -83,14 +83,22 @@ contract ContinuousFundraising is
         maxAmountOfTokenToBeSold = _maxAmountOfTokenToBeSold;
         currency = _currency;
         token = _token;
-
         require(
-            _currencyReceiver != address(0),
-            "buyer can not be zero address"
+            _trustedForwarder != address(0),
+            "trustedForwarder can not be zero address"
         );
         require(
+            _currencyReceiver != address(0),
+            "currencyReceiver can not be zero address"
+        );
+        require(
+            address(_currency) != address(0),
+            "currency can not be zero address"
+        );
+        require(address(_token) != address(0), "token can not be zero address");
+        require(
             _minAmountPerBuyer <= _maxAmountPerBuyer,
-            "_minAmount needs to be smaller or equal to _maxAmount"
+            "_minAmountPerBuyer needs to be smaller or equal to _maxAmountPerBuyer"
         );
         require(_tokenPrice != 0, "_tokenPrice needs to be a non-zero amount");
         require(
@@ -140,9 +148,7 @@ contract ContinuousFundraising is
         uint256 currencyAmount = (_amount * tokenPrice) /
             (10 ** token.decimals());
         uint256 fee;
-        if (token.feeSettings().continuousFundraisingFeeDenominator() == 0) {
-            fee = 0;
-        } else {
+        if (token.feeSettings().continuousFundraisingFeeDenominator() != 0) {
             fee =
                 currencyAmount /
                 token.feeSettings().continuousFundraisingFeeDenominator();
@@ -257,7 +263,7 @@ contract ContinuousFundraising is
     function unpause() external onlyOwner {
         require(
             block.timestamp > coolDownStart + delay,
-            "There needs to be at minumum one day to change parameters"
+            "There needs to be at minimum one day to change parameters"
         );
         _unpause();
     }

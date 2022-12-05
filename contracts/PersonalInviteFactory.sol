@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
+pragma solidity 0.8.17;
+
 // taken from https://docs.alchemy.com/docs/create2-an-alternative-to-deriving-contract-addresses
-pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/utils/Create2.sol";
@@ -10,7 +11,7 @@ import "../contracts/PersonalInvite.sol";
     One deployment of this contract can be used for deployment of any number of PersonalInvites using create2.
 */
 contract PersonalInviteFactory {
-    event Deploy(address addr);
+    event Deploy(address indexed addr);
 
     /**
      * @notice Deploys a contract using create2.
