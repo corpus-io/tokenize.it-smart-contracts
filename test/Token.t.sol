@@ -798,9 +798,11 @@ contract tokenTest is Test {
         vm.prank(admin);
         allowList.set(person1, 3); // 0x0011 -> does not include required 0x1011
 
+        console.log("person1: ", person1);
+
         vm.prank(person1);
         vm.expectRevert(
-            "Sender is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
+            "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
         );
         token.transfer(person2, 20);
         assertTrue(token.balanceOf(person2) == 20);
@@ -808,7 +810,7 @@ contract tokenTest is Test {
 
         vm.prank(person2);
         vm.expectRevert(
-            "Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
+            "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
         );
         token.transfer(person1, 10);
         assertTrue(token.balanceOf(person2) == 20);
