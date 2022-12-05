@@ -15,7 +15,15 @@ These will be used for the next steps.
 1. Deploy Token Contract “Token”:
 
    ```solidity
-   constructor(address _trustedForwarder, address feeSettings, address _admin, AllowList _allowList, uint256 _requirements, string memory*name, string memory symbol)
+   constructor(
+        address _trustedForwarder,
+        FeeSettings _feeSettings,
+        address _admin,
+        AllowList _allowList,
+        uint256 _requirements,
+        string memory _name,
+        string memory _symbol
+    )
    ```
 
    - `trustedForwarder`: used for meta transactions following [EIP-2771](https://eips.ethereum.org/EIPS/eip-2771)
@@ -26,16 +34,19 @@ These will be used for the next steps.
    - `_name` : Name of the Token (e.g. PiedPiperToken)
    - `_symbol` : Ticker of the Token (e.g. PPT)
 
-2. Create initial cap table by minting tokens for various addresses. For this, the admin needs to give an account (can be himself) minting rights by calling `setMintingAllowance(address minter, uint _allowance)` :
+2. Create initial cap table by minting tokens for various addresses.
 
-   - `minter` : account that will be granted the minting allowance
-   - `_allowance`: amount of tokens he can mint, denominated in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate)
+For this, the admin needs to give an account (can be himself) minting rights by calling `setMintingAllowance(address minter, uint _allowance)` :
 
-   To create the initial cap table, `_amount` should be the total amount of shares in existence.
-   The minter can then create new shares for each shareholder, by calling `mint(address _to, uint256 _amount)`, where:
+- `minter` : account that will be granted the minting allowance
+- `_allowance`: amount of tokens they can mint, denominated in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate).
 
-   - `_to` is the shareholder
-   - `_amount` is the amount of shares, denominated in denominated in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate)
+To create the initial cap table, `_allowance` should be the total amount of shares in existence.
+
+The minter can then create new shares for each shareholder, by calling `mint(address _to, uint256 _amount)`, where:
+
+- `_to` is the shareholder's address
+- `_amount` is the amount of shares the shareholder holds, denominated in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate)
 
 ## Enabling addresses to receive tokens
 
@@ -61,7 +72,15 @@ In order to create a personal investment invite this [contract](../contracts/Per
 Constructor:
 
 ```solidity
-constructor(address payable _buyer, address payable _receiver, uint _minAmount, uint _maxAmount, uint _tokenPrice, uint _expiration, IERC20 _currency, Token _token)
+constructor(
+        address _buyer,
+        address _receiver,
+        uint256 _amount,
+        uint256 _tokenPrice,
+        uint256 _expiration,
+        IERC20 _currency,
+        Token _token
+    )
 ```
 
 - `_buyer`: address of the investor
@@ -95,7 +114,20 @@ This [contract](../contracts/PersonalInviteFactory.sol) can be used to:
 
 Deploy the [contract](../contracts/ContinuousFundraising.sol)
 
-Constructor: `constructor(address payable _currencyReceiver, uint _minAmountPerBuyer, uint _maxAmountPerBuyer, uint _tokenPrice, uint _maxAmountOfTokenToBeSold, IERC20 _currency, IERC20 _token)`
+Constructor:
+
+```solidity
+constructor(
+        address _trustedForwarder,
+        address _currencyReceiver,
+        uint256 _minAmountPerBuyer,
+        uint256 _maxAmountPerBuyer,
+        uint256 _tokenPrice,
+        uint256 _maxAmountOfTokenToBeSold,
+        IERC20 _currency,
+        Token _token
+    )
+```
 
 The parameter are similar to the PersonalInvite constructor, except for:
 
