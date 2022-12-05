@@ -252,20 +252,32 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     ) internal virtual override {
         super._beforeTokenTransfer(_from, _to, _amount);
         _requireNotPaused();
+        if (_from == address(0)) {
+            // token mint
+            // the minter's allowance is checked in the mint function. From 0x0 is not possible coming from any other place than the mint function.
+            _checkIfClearedToTransact(_to);
+        } else if (_to == address(0)) {
+            // token burn
+            require(
+                hasRole(BURNER_ROLE, _msgSender()),
+                "Only burner can burn tokens"
+            );
+        } else {
+            // token transfer
+            _checkIfClearedToTransact(_from);
+            _checkIfClearedToTransact(_to);
+        }
+    }
+
+    function _checkIfClearedToTransact(address _address) internal view {
         require(
-            allowList.map(_from) & requirements == requirements ||
-                _from == address(0) ||
-                hasRole(BURNER_ROLE, _msgSender()) ||
-                hasRole(TRANSFERER_ROLE, _from),
-            "Sender is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
-        ); // address(0), because this is the _from address in case of minting new tokens
-        require(
-            allowList.map(_to) & requirements == requirements ||
-                _to == address(0) ||
-                _to == feeSettings.feeCollector() ||
-                hasRole(TRANSFERER_ROLE, _to),
-            "Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
-        ); // address(0), because this is the _to address in case of burning tokens
+            hasRole(TRANSFERER_ROLE, _address) ||
+                allowList.map(_address) & requirements == requirements,
+            string.concat(
+                Strings.toHexString(uint256(uint160(_address)), 20),
+                " is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
+            )
+        );
     }
 
     function pause() external onlyRole(PAUSER_ROLE) {
