@@ -432,6 +432,29 @@ contract tokenTest is Test {
         assertTrue(token.balanceOf(pauser) == 0);
     }
 
+    function testTransferTo0(address _address) public {
+        uint _amount = 100;
+
+        vm.prank(mintAllower);
+        token.setMintingAllowance(minter, _amount);
+
+        vm.prank(minter);
+        token.mint(_address, _amount);
+        assertTrue(token.balanceOf(_address) == _amount);
+
+        vm.expectRevert("ERC20: transfer to the zero address");
+        vm.prank(_address);
+        token.transfer(address(0), _amount);
+    }
+
+    function testTransferFrom0(address _address) public {
+        uint _amount = 100;
+
+        vm.expectRevert("ERC20: transfer from the zero address");
+        vm.prank(address(0));
+        token.transfer(_address, _amount);
+    }
+
     function testFailBurn0() public {
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
         bytes32 role = token.BURNER_ROLE();
