@@ -433,6 +433,8 @@ contract tokenTest is Test {
     }
 
     function testTransferTo0(address _address) public {
+        vm.assume(token.balanceOf(_address) == 0);
+
         uint _amount = 100;
 
         vm.prank(mintAllower);
@@ -440,7 +442,7 @@ contract tokenTest is Test {
 
         vm.prank(minter);
         token.mint(_address, _amount);
-        assertTrue(token.balanceOf(_address) == _amount);
+        assertTrue(token.balanceOf(_address) == _amount, "balance is wrong");
 
         vm.expectRevert("ERC20: transfer to the zero address");
         vm.prank(_address);
