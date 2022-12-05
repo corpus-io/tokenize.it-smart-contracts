@@ -1029,17 +1029,24 @@ contract tokenTest is Test {
         );
     }
 
-    function testFrontrunFeeSettingsAcceptance(address newCollector) public {
-        vm.assume(newCollector != address(0));
+    function testFrontrunFeeSettingsAcceptance(
+        address newFeeSettingsPretendAddress
+    ) public {
+        vm.assume(newFeeSettingsPretendAddress != address(0));
         Fees memory fees = Fees(0, 0, 0, 0);
-        FeeSettings newFeeSettings = new FeeSettings(fees, newCollector);
+        FeeSettings newFeeSettings = new FeeSettings(
+            fees,
+            newFeeSettingsPretendAddress
+        );
+        vm.assume(newFeeSettingsPretendAddress != address(newFeeSettings));
 
         vm.prank(feeSettings.owner());
         token.suggestNewFeeSettings(newFeeSettings);
+        console.log("Suggested fee settings: ", address(newFeeSettings));
 
         // admin thinks he is accepting a, but suggestion is b
         vm.expectRevert("Only suggested fee settings can be accepted");
         vm.prank(admin);
-        token.acceptNewFeeSettings(FeeSettings(newCollector));
+        token.acceptNewFeeSettings(FeeSettings(newFeeSettingsPretendAddress));
     }
 }
