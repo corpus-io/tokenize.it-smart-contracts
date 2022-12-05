@@ -22,7 +22,7 @@ Math in this project wants to be exact. Rounding errors are not acceptable when 
 In order to make sure price can be expressed exactly with integers, the definition was chosen as:
 
 ```solidity
-price = PaymentTokenBits/Token = PaymentTokenBits/TokenBits * Token.decimals()
+price = PaymentTokenBits/Token = PaymentTokenBits/TokenBits * 10**Token.decimals()
 ```
 
 With this, the payment amount is calculated from the token amount as:
