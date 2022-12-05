@@ -111,7 +111,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         ERC20(_name, _symbol)
     {
         // Grant admin roles
-        _setupRole(DEFAULT_ADMIN_ROLE, _admin); // except for the Transferer role, the _admin is the roles admin for all other roles
+        _grantRole(DEFAULT_ADMIN_ROLE, _admin); // except for the Transferer role, the _admin is the roles admin for all other roles
         _setRoleAdmin(TRANSFERER_ROLE, TRANSFERERADMIN_ROLE);
 
         // grant all roles to admin for now. Can be changed later, see https://docs.openzeppelin.com/contracts/2.x/api/access#Roles
