@@ -242,7 +242,10 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     }
 
     /**
-    @notice aborts transfer if the sender or receiver is neither transferer nor fulfills the requirements nor is the 0x0 address
+    @notice There are 3 types of transfers:
+        1. minting: transfers from the zero address to another address. Only minters can do this, which is checked in the mint function. The recipient must be allowed to transact.
+        2. burning: transfers from an address to the zero address. Only burners can do this, which is checked in the burn function.
+        3. transfers from one address to another. The sender and recipient must be allowed to transact.
     @dev this hook is executed before the transfer function itself 
      */
     function _beforeTokenTransfer(
@@ -254,26 +257,22 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         _requireNotPaused();
         if (_from == address(0)) {
             // token mint
-            // the minter's allowance is checked in the mint function. From 0x0 is not possible coming from any other place than the mint function.
-            _checkIfClearedToTransact(_to);
+            // the minter's allowance is checked in the mint function.
+            _checkIfAllowedToTransact(_to);
         } else if (_to == address(0)) {
-            // token burn
-            require(
-                hasRole(BURNER_ROLE, _msgSender()),
-                "Only burner can burn tokens"
-            );
+            // token burn: all checks are done in the burn function
         } else {
             // token transfer
-            _checkIfClearedToTransact(_from);
-            _checkIfClearedToTransact(_to);
+            _checkIfAllowedToTransact(_from);
+            _checkIfAllowedToTransact(_to);
         }
     }
 
-    function _checkIfClearedToTransact(address _address) internal view {
+    function _checkIfAllowedToTransact(address _address) internal view {
         require(
             hasRole(TRANSFERER_ROLE, _address) ||
                 allowList.map(_address) & requirements == requirements ||
-                _address == feeSettings.feeCollector(),
+                _address == feeSettings.feeCollector(), // fee collector is always allowed to send and receive tokens
             string.concat(
                 Strings.toHexString(uint256(uint160(_address)), 20),
                 " is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
