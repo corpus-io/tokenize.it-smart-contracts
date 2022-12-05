@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
@@ -23,7 +23,7 @@ The contract inherits from ERC2771Context in order to be usable with Gas Station
  */
 contract ContinuousFundraising is
     ERC2771Context,
-    Ownable,
+    Ownable2Step,
     Pausable,
     ReentrancyGuard
 {

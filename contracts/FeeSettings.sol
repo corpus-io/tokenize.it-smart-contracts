@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 struct Fees {
     uint256 tokenFeeDenominator;
@@ -13,7 +13,7 @@ struct Fees {
 /*
     This FeeSettings contract is used to manage fees paid to the tokenize.it platfom
 */
-contract FeeSettings is Ownable {
+contract FeeSettings is Ownable2Step {
     /// @notice Denominator to calculate fees paid Token.sol
     uint256 public tokenFeeDenominator;
     /// @notice Denominator to calculate fees paid in all investment contracts
