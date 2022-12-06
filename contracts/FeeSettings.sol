@@ -45,10 +45,17 @@ contract FeeSettings is Ownable2Step {
 
     function planFeeChange(Fees memory _fees) external onlyOwner {
         checkFeeLimits(_fees);
-        require(
-            _fees.time > block.timestamp + 12 weeks,
-            "Fee change must be at least 12 weeks in the future"
-        ); // can only be executed in 3 months
+        // Setting all fees to 0 is possible immediately. Other fee changes can only be executed after a minimum of 12 weeks.
+        if (
+            _fees.tokenFeeDenominator != 0 ||
+            _fees.continuousFundraisingFeeDenominator != 0 ||
+            _fees.personalInviteFeeDenominator != 0
+        ) {
+            require(
+                _fees.time > block.timestamp + 12 weeks,
+                "Fee change must be at least 12 weeks in the future"
+            );
+        }
         proposedFees = _fees;
         emit ChangeProposed(_fees);
     }
