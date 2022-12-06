@@ -258,26 +258,29 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         if (_from == address(0)) {
             // token mint
             // the minter's allowance is checked in the mint function.
-            _checkIfAllowedToTransact(_to);
+            require(
+                hasRole(TRANSFERER_ROLE, _to) ||
+                    allowList.map(_to) & requirements == requirements ||
+                    _to == feeSettings.feeCollector(), // fee collector is always allowed to send and receive tokens
+                "Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
+            );
         } else if (_to == address(0)) {
             // token burn: all checks are done in the burn function
         } else {
             // token transfer
-            _checkIfAllowedToTransact(_from);
-            _checkIfAllowedToTransact(_to);
+            require(
+                hasRole(TRANSFERER_ROLE, _from) ||
+                    allowList.map(_from) & requirements == requirements ||
+                    _from == feeSettings.feeCollector(), // fee collector is always allowed to send and receive tokens
+                "Sender is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
+            );
+            require(
+                hasRole(TRANSFERER_ROLE, _to) ||
+                    allowList.map(_to) & requirements == requirements ||
+                    _to == feeSettings.feeCollector(), // fee collector is always allowed to send and receive tokens
+                "Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
+            );
         }
-    }
-
-    function _checkIfAllowedToTransact(address _address) internal view {
-        require(
-            hasRole(TRANSFERER_ROLE, _address) ||
-                allowList.map(_address) & requirements == requirements ||
-                _address == feeSettings.feeCollector(), // fee collector is always allowed to send and receive tokens
-            string.concat(
-                Strings.toHexString(uint256(uint160(_address)), 20),
-                " is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
-            )
-        );
     }
 
     function pause() external onlyRole(PAUSER_ROLE) {

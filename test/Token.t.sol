@@ -117,10 +117,10 @@ contract tokenTest is Test {
     /**
     @notice test that addresses that are not the admin cannot perform the mint allower tasks
      */
-    function testFailAdminX(address x) public {
+    function testIsNotAdmin(address x) public {
         // test would fail (to fail) if x = admin. This has actually happened! Abort test in that case.
         vm.assume(x != admin);
-        assertTrue(token.hasRole(token.MINTALLOWER_ROLE(), x));
+        assertFalse(token.hasRole(token.DEFAULT_ADMIN_ROLE(), x));
     }
 
     function testAdmin() public {
@@ -134,7 +134,7 @@ contract tokenTest is Test {
     }
 
     function testMintAllower(address x) public {
-        vm.assume(x != admin);
+        vm.assume(x != mintAllower);
         assertFalse(token.hasRole(token.MINTALLOWER_ROLE(), x));
     }
 
@@ -434,6 +434,7 @@ contract tokenTest is Test {
 
     function testTransferTo0(address _address) public {
         vm.assume(token.balanceOf(_address) == 0);
+        vm.assume(_address != address(0));
 
         uint _amount = 100;
 
@@ -827,7 +828,7 @@ contract tokenTest is Test {
 
         vm.prank(person1);
         vm.expectRevert(
-            "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
+            "Sender is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
         );
         token.transfer(person2, 20);
         assertTrue(token.balanceOf(person2) == 20);
@@ -835,7 +836,7 @@ contract tokenTest is Test {
 
         vm.prank(person2);
         vm.expectRevert(
-            "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
+            "Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
         );
         token.transfer(person1, 10);
         assertTrue(token.balanceOf(person2) == 20);
