@@ -69,8 +69,8 @@ Take the following example:
 - tokenAmount = 1 tokenBit
 - this results in paymentAmount = 1 currencyBit
 - so the pricePaid is 1 currencyBit/tokenBit
-- with token.decimals() = 18, this results in: pricePaid = priceNominal \* 10\*\*18
+- with token.decimals() = 18, this results in: **pricePaid = priceNominal \* 10\*\*18**
 
 Keep in mind that this seemingly HUGE difference in price still results in a paymentAmount difference of only 1 currencyBit. Or, as was just explained, is the result thereof.
 
-The buyer can do all of these calculations beforehand, and just decide to buy the maximum amount of tokens possible for the currency they have to spend anyway. This is not enforced by the smart contracts though.
+The buyer can do all of these calculations beforehand, and just decide to buy the maximum amount of tokens possible for the currency they have to spend anyway. This is not enforced by the smart contracts though. It can be implemented in Frontends.
