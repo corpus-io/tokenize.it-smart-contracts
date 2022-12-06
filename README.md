@@ -46,6 +46,21 @@ Two contracts use a trusted forwarder to implement EIP-2771. The forwarder used 
 It has been audited and working well for over a year. It's address is 0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA, and it is also used in our [tests](./test/ContinuousFundraisingERC2771.t.sol).
 Instead of leveraging the full potential of the gas station network, tokenize.it will have it's own service for sending eligible transactions to the forwarder.
 
+## Supported Currencies
+
+The currencies used for payments must conform to the ERC20 standard. This standard is not very strict though. It can be implemented in many ways, including **incompatible and even malicious contracts**. Therefore, tokenize.it will limit the currencies supported in the web frontend to this list:
+
+- WETH: [0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2](https://etherscan.io/address/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2)
+- WBTC: [0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599](https://etherscan.io/address/0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599)
+- USDC: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48](https://etherscan.io/address/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48)
+- EUROC: [0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c](https://etherscan.io/address/0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c)
+
+These four implementations have been checked and tested to work well with the tokenize.it smart contracts. The use of any other currencies is HIGHLY DISCOURAGED and might lead to:
+
+- loss of funds due to various attacks
+- partial payments due to the currency deducting a transfer fee
+- other issues
+
 # Resources
 
 The following resources are available regarding the contracts:
