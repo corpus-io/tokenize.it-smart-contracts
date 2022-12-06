@@ -148,29 +148,29 @@ contract ContinuousFundraising is
         tokensSold += _amount;
         tokensBought[_msgSender()] += _amount;
 
-        uint256 _currencyAmount = (_amount * tokenPrice) /
+        uint256 currencyAmount = (_amount * tokenPrice) /
             (10 ** token.decimals());
-        uint256 _fee;
+        uint256 fee;
         if (token.feeSettings().continuousFundraisingFeeDenominator() != 0) {
-            _fee =
-                _currencyAmount /
+            fee =
+                currencyAmount /
                 token.feeSettings().continuousFundraisingFeeDenominator();
             currency.safeTransferFrom(
                 _msgSender(),
                 token.feeSettings().feeCollector(),
-                _fee
+                fee
             );
         }
 
         currency.safeTransferFrom(
             _msgSender(),
             currencyReceiver,
-            _currencyAmount - _fee
+            currencyAmount - fee
         );
 
         token.mint(_msgSender(), _amount);
 
-        emit TokensBought(_msgSender(), _amount, _currencyAmount);
+        emit TokensBought(_msgSender(), _amount, currencyAmount);
     }
 
     /**
