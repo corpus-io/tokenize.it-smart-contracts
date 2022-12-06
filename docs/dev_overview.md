@@ -24,7 +24,7 @@ There are two ways to control who can transact with the token:
 
 ## Investments
 
-Currently, WETH, WBTC, USDC, EUROC are supported as investment currencies.
+Please read the [supported currencies](../README.md#supported-currencies) section first.
 
 There are 2 investment contracts:
 
