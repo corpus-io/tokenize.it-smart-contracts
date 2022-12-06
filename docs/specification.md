@@ -39,10 +39,12 @@ The following statements about the smart contracts should always be true
 ## FeeSettings.sol
 
 - TokenFeeDenominator must always be equal to zero or greater equal 20.
-- InvestmentFeeDenominator must always be equal to zero or greater equal 20.
+- ContinuousFundraisingFeeDenominator must always be equal to zero or greater equal 20.
+- PersonalInviteFeeDenominator must always be equal to zero or greater equal 20.
 - The feeCollector can never be 0.
-- Only owner can change feeCollector, tokenFeeDenominator and investmentFeeDenominator.
-- Changes to tokenFeeDenominator and or investmentFeeDenominator take at least 12 weeks.
+- Only owner can change feeCollector, tokenFeeDenominator, ContinuousFundraisingFeeDenominator and PersonalInviteFeeDenominator.
+- Changes to tokenFeeDenominator, ContinuousFundraisingFeeDenominator and or PersonalInviteFeeDenominator take at least 12 weeks, unless all 3 are set to 0.
+- Setting tokenFeeDenominator, ContinuousFundraisingFeeDenominator and PersonalInviteFeeDenominator to 0 is possible without delay.
 - Charging 0 fees is possible.
 - Charging a fee higher than 5% is not possible.
 
