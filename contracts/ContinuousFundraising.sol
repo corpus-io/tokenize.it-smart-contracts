@@ -62,6 +62,11 @@ contract ContinuousFundraising is
     event MaxAmountPerBuyerChanged(uint256);
     event TokenPriceAndCurrencyChanged(uint256, IERC20 indexed);
     event MaxAmountOfTokenToBeSoldChanged(uint256);
+    event TokensBought(
+        address indexed buyer,
+        uint256 tokenAmount,
+        uint256 currencyAmount
+    );
 
     /**
      * @dev Constructor that passes the trusted forwarder to the ERC2771Context constructor
@@ -113,9 +118,7 @@ contract ContinuousFundraising is
      @notice buy tokens
      @param _amount amount of tokens to buy, in bits (smallest subunit of token)
      */
-    function buy(
-        uint256 _amount
-    ) external whenNotPaused nonReentrant returns (bool) {
+    function buy(uint256 _amount) external whenNotPaused nonReentrant {
         require(
             tokensSold + _amount <= maxAmountOfTokenToBeSold,
             "Not enough tokens to sell left"
@@ -145,28 +148,29 @@ contract ContinuousFundraising is
         tokensSold += _amount;
         tokensBought[_msgSender()] += _amount;
 
-        uint256 currencyAmount = (_amount * tokenPrice) /
+        uint256 _currencyAmount = (_amount * tokenPrice) /
             (10 ** token.decimals());
-        uint256 fee;
+        uint256 _fee;
         if (token.feeSettings().continuousFundraisingFeeDenominator() != 0) {
-            fee =
-                currencyAmount /
+            _fee =
+                _currencyAmount /
                 token.feeSettings().continuousFundraisingFeeDenominator();
             currency.safeTransferFrom(
                 _msgSender(),
                 token.feeSettings().feeCollector(),
-                fee
+                _fee
             );
         }
 
         currency.safeTransferFrom(
             _msgSender(),
             currencyReceiver,
-            currencyAmount - fee
+            _currencyAmount - _fee
         );
 
-        require(token.mint(_msgSender(), _amount), "Minting new tokens failed");
-        return true;
+        token.mint(_msgSender(), _amount);
+
+        emit TokensBought(_msgSender(), _amount, _currencyAmount);
     }
 
     /**
