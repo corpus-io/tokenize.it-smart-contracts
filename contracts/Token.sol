@@ -42,8 +42,6 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     // Fee settings of tokenize.it
     FeeSettings public feeSettings;
 
-    msg.sender
-
     // Suggested new fee settings, which will be applied after admin approval
     FeeSettings public suggestedFeeSettings;
     /**
