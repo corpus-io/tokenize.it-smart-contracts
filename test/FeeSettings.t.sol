@@ -28,28 +28,24 @@ contract FeeSettingsTest is Test {
 
     uint256 public constant price = 10000000;
 
-    // function setUp() public {
-    //     feeSettings = new FeeSettings(100, 100, admin);
-    // }
-
-    function testEnforceTokenFeeDenominatorRangeinConstructor(
-        uint8 fee
-    ) public {
+    function testEnforceFeeDenominatorRangeinConstructor(uint8 fee) public {
         vm.assume(!feeInValidRange(fee));
-        FeeSettings _feeSettings;
-        Fees memory fees = Fees(fee, 100, 100, 0);
-        vm.expectRevert("Fee must be below 5% or 0");
-        _feeSettings = new FeeSettings(fees, admin);
-    }
+        Fees memory _fees;
 
-    function testEnforceInvestmentFeeDenominatorRangeinConstructor(
-        uint8 fee
-    ) public {
-        vm.assume(!feeInValidRange(fee));
-        FeeSettings _feeSettings;
-        Fees memory fees = Fees(fee, 100, 100, 0);
+        console.log("Testing token fee");
+        _fees = Fees(fee, 30, 100, 0);
         vm.expectRevert("Fee must be below 5% or 0");
-        _feeSettings = new FeeSettings(fees, admin);
+        new FeeSettings(_fees, admin);
+
+        console.log("Testing ContinuousFundraising fee");
+        _fees = Fees(30, fee, 100, 0);
+        vm.expectRevert("Fee must be below 5% or 0");
+        new FeeSettings(_fees, admin);
+
+        console.log("Testing PersonalInvite fee");
+        _fees = Fees(30, 40, fee, 0);
+        vm.expectRevert("Fee must be below 5% or 0");
+        new FeeSettings(_fees, admin);
     }
 
     function testEnforceTokenFeeDenominatorRangeinFeeChanger(uint8 fee) public {
@@ -112,6 +108,8 @@ contract FeeSettingsTest is Test {
         vm.assume(delayAnnounced > 12 weeks && delayAnnounced < 1000000000000);
         vm.assume(feeInValidRange(tokenFee));
         vm.assume(feeInValidRange(investmentFee));
+        vm.assume(tokenFee >= 20 || investmentFee >= 20);
+
         Fees memory fees = Fees(50, 50, 50, 0);
         vm.prank(admin);
         FeeSettings _feeSettings = new FeeSettings(fees, admin);
@@ -161,6 +159,36 @@ contract FeeSettingsTest is Test {
             _feeSettings.continuousFundraisingFeeDenominator(),
             investmentFee
         );
+        //assertEq(_feeSettings.change, 0);
+    }
+
+    function testSetFeeTo0Immediately() public {
+        Fees memory fees = Fees(50, 20, 30, 0);
+        vm.prank(admin);
+        FeeSettings _feeSettings = new FeeSettings(fees, admin);
+
+        Fees memory feeChange = Fees({
+            tokenFeeDenominator: 0,
+            continuousFundraisingFeeDenominator: 0,
+            personalInviteFeeDenominator: 0,
+            time: 0
+        });
+
+        assertEq(_feeSettings.tokenFeeDenominator(), 50);
+        assertEq(_feeSettings.continuousFundraisingFeeDenominator(), 20);
+        assertEq(_feeSettings.personalInviteFeeDenominator(), 30);
+
+        vm.prank(admin);
+        _feeSettings.planFeeChange(feeChange);
+
+        vm.prank(admin);
+        //vm.warp(block.timestamp + delayAnnounced + 1);
+        _feeSettings.executeFeeChange();
+
+        assertEq(_feeSettings.tokenFeeDenominator(), 0);
+        assertEq(_feeSettings.continuousFundraisingFeeDenominator(), 0);
+        assertEq(_feeSettings.personalInviteFeeDenominator(), 0);
+
         //assertEq(_feeSettings.change, 0);
     }
 
