@@ -62,6 +62,11 @@ contract ContinuousFundraising is
     event MaxAmountPerBuyerChanged(uint256);
     event TokenPriceAndCurrencyChanged(uint256, IERC20 indexed);
     event MaxAmountOfTokenToBeSoldChanged(uint256);
+    event TokensBought(
+        address indexed buyer,
+        uint256 tokenAmount,
+        uint256 currencyAmount
+    );
 
     /**
      * @dev Constructor that passes the trusted forwarder to the ERC2771Context constructor
@@ -113,9 +118,7 @@ contract ContinuousFundraising is
      @notice buy tokens
      @param _amount amount of tokens to buy, in bits (smallest subunit of token)
      */
-    function buy(
-        uint256 _amount
-    ) external whenNotPaused nonReentrant returns (bool) {
+    function buy(uint256 _amount) external whenNotPaused nonReentrant {
         require(
             tokensSold + _amount <= maxAmountOfTokenToBeSold,
             "Not enough tokens to sell left"
@@ -165,8 +168,9 @@ contract ContinuousFundraising is
             currencyAmount - fee
         );
 
-        require(token.mint(_msgSender(), _amount), "Minting new tokens failed");
-        return true;
+        token.mint(_msgSender(), _amount);
+
+        emit TokensBought(_msgSender(), _amount, currencyAmount);
     }
 
     /**

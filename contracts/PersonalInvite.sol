@@ -78,7 +78,7 @@ contract PersonalInvite {
             );
         }
         _currency.safeTransferFrom(_buyer, _receiver, (currencyAmount - fee));
-        require(_token.mint(_buyer, _amount), "Minting new tokens failed");
+        _token.mint(_buyer, _amount);
         emit Deal(_buyer, _amount, _tokenPrice, _currency, _token);
     }
 }
