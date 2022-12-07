@@ -440,24 +440,76 @@ contract ContinuousFundraisingTest is Test {
         );
     }
 
-    function testAmountWithRest() public {
-        uint256 tokenBuyAmount = 5 * 10 ** token.decimals();
-        uint256 costInPaymentToken = (tokenBuyAmount * price) / 10 ** 18;
+    function ensureRealCostIsHigherEqualAdvertisedCost(
+        uint256 tokenBuyAmount
+    ) public {
+        uint256 _price = 1; // price = 1 currency bit per full token (10**18 token bits)
 
-        assert(costInPaymentToken == 35 * 10 ** paymentTokenDecimals); // 35 payment tokens, manually calculated
+        // set price that is finer than the resolution of the payment token
+        vm.startPrank(owner);
+        raise.pause();
+        raise.setCurrencyAndTokenPrice(raise.currency(), _price);
+        raise.setMinAmountPerBuyer(1); // min amount = 1 currency bit
+        vm.warp(block.timestamp + 1 days + 1 seconds);
+        raise.unpause();
+        vm.stopPrank();
+
+        // this is rounded down and resolves to 0 cost in payment token
+        uint256 naiveCostInPaymentToken = (tokenBuyAmount * _price) / 10 ** 18;
+        console.log("naiveCostInPaymentToken", naiveCostInPaymentToken);
+        //assertTrue(naiveCostInPaymentToken == 0, "Naive cost is not 0"); // 35 payment tokens, manually calculated
 
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
 
         vm.prank(buyer);
-        vm.expectRevert(
-            "Amount * tokenprice needs to be a multiple of 10**token.decimals()"
+        raise.buy(tokenBuyAmount);
+
+        console.log("paymentTokenBalanceBefore", paymentTokenBalanceBefore);
+        console.log(
+            "paymentToken.balanceOf(buyer)",
+            paymentToken.balanceOf(buyer)
         );
-        raise.buy(maxAmountPerBuyer + 1);
-        assertTrue(paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore);
-        assertTrue(token.balanceOf(buyer) == 0);
-        assertTrue(paymentToken.balanceOf(receiver) == 0);
-        assertTrue(raise.tokensSold() == 0);
-        assertTrue(raise.tokensBought(buyer) == 0);
+
+        uint256 realCostInPaymentToken = paymentTokenBalanceBefore -
+            paymentToken.balanceOf(buyer);
+        uint256 realPrice = (realCostInPaymentToken * 10 ** 18) /
+            token.balanceOf(buyer);
+        console.log("realCostInPaymentToken", realCostInPaymentToken);
+        console.log("token.balanceOf(buyer)", token.balanceOf(buyer));
+        console.log("advertised price: ", raise.tokenPrice());
+        console.log("real price: ", realPrice);
+        assertTrue(
+            token.balanceOf(buyer) == tokenBuyAmount,
+            "buyer has not received tokens"
+        );
+        assertTrue(
+            paymentToken.balanceOf(receiver) >= 1,
+            "receiver has not received any payment"
+        );
+        assertTrue(
+            realCostInPaymentToken >= 1,
+            "real cost is 0, but should be at least 1"
+        );
+        assertTrue(
+            realCostInPaymentToken - naiveCostInPaymentToken >= 0,
+            "real cost is less than advertised cost"
+        );
+        assertTrue(
+            realCostInPaymentToken - naiveCostInPaymentToken <= 1,
+            "more than 1 currency bit was rounded!"
+        );
+        assertTrue(realPrice >= _price, "real price is less than advertised");
+    }
+
+    function testBuyAnyAmountRoundsUp(uint tokenBuyAmount) public {
+        vm.assume(tokenBuyAmount < raise.maxAmountPerBuyer());
+        vm.assume(tokenBuyAmount > 0);
+        ensureRealCostIsHigherEqualAdvertisedCost(tokenBuyAmount);
+    }
+
+    function testBuy1BitRoundsUp() public {
+        // this will result in the naive cost being 0
+        ensureRealCostIsHigherEqualAdvertisedCost(1);
     }
 
     /*

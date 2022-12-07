@@ -7,6 +7,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
+
 import "./Token.sol";
 
 /*
@@ -127,29 +129,20 @@ contract ContinuousFundraising is
             tokensBought[_msgSender()] + _amount >= minAmountPerBuyer,
             "Buyer needs to buy at least minAmount"
         );
-        /**
-        @dev To avoid rounding errors, tokenprice needs to be multiple of 10**token.decimals(). This is checked for here. 
-            With:
-                _tokenAmount = a * [token_bits]
-                tokenPrice = p * [currency_bits]/[token]
-            The currency amount is calculated as: 
-                currencyAmount = _tokenAmount * tokenPrice 
-                = a * p * [currency_bits]/[token] * [token_bits]  with 1 [token] = (10**token.decimals) [token_bits]
-                = a * p * [currency_bits] / (10**token.decimals)
-         */
-        require(
-            (_amount * tokenPrice) % (10 ** token.decimals()) == 0,
-            "Amount * tokenprice needs to be a multiple of 10**token.decimals()"
-        );
         require(
             tokensBought[_msgSender()] + _amount <= maxAmountPerBuyer,
             "Total amount of bought tokens needs to be lower than or equal to maxAmount"
         );
+
         tokensSold += _amount;
         tokensBought[_msgSender()] += _amount;
 
-        uint256 currencyAmount = (_amount * tokenPrice) /
-            (10 ** token.decimals());
+        // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
+        uint256 currencyAmount = Math.ceilDiv(
+            _amount * tokenPrice,
+            10 ** token.decimals()
+        );
+
         uint256 fee;
         if (token.feeSettings().continuousFundraisingFeeDenominator() != 0) {
             fee =
