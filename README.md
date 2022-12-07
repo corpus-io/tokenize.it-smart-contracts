@@ -42,7 +42,14 @@ All contracts are based on the well documented and tested [OpenZeppelin smart co
 
 ## EIP-2771
 
-Two contracts use a trusted forwarder to implement [EIP-2771](https://eips.ethereum.org/EIPS/eip-2771). The forwarder used will be the openGSN v2 forwarder deployed on mainnet:
+It is possible to directly use all smart contracts in this project, without going through the platform's frontend at all.
+In order to improve UX, though, a frontend will be offered. In order to improve UX even more, the user will not have to pay gas when using this frontend. This is achieved through two approaches:
+
+1. the platform executes transactions like contract deployments
+2. actions concerning our own contracts that require the user's approval are executed as meta-transactions, using EIP-2711
+3. granting allowances on external currencies is possible through EIP-2612 (ERC20Permit), which is widely adopted. This is not in the scope of this documentation though.
+
+Two contracts implement [EIP-2771](https://eips.ethereum.org/EIPS/eip-2771), and therefore use a trusted forwarder. The forwarder will be set in the constructor and there is no way to change it after deployment. The forwarder used will be the openGSN v2 forwarder deployed on mainnet:
 
 - https://docs-v2.opengsn.org/networks/ethereum/mainnet.html
 - It has been audited and working well for over a year.
@@ -65,11 +72,11 @@ The platform will maintain a hot wallet (EOA) in order to send transactions to t
 
 This is a trustless process, because:
 
-1. the forwarder contract is not updateable
+1. the forwarder contract can not be updated
 2. the trusted forwarder setting in contract A is immutable
 3. signature verification is executed on-chain
 
-Open gas station network provides tools to execute meta transactions without involving a third party hot wallet. Tokenize.it will not use these tools though. Exclusively using a hotwallet for transaction execution does not harm security at all.
+Open gas station network provides tools to execute meta transactions without involving a third party hot wallet. Tokenize.it will not use these tools though. Exclusively using a hot wallet for transaction execution does not harm security at all.
 
 The hot wallet approach might reduce availability, which is not a major concern for this use case (the hot wallet being available whenever the frontend is available is good enough). Keep in mind that EIP-2771 is purely offered for UX reasons. All smart contracts can be used directly, too, further reducing concerns about hot wallet availability.
 
