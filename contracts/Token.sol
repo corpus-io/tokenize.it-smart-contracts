@@ -268,19 +268,12 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     }
 
     function _checkIfAllowedToTransact(address _address) internal view {
-        if (
-            !(hasRole(TRANSFERER_ROLE, _address) || // TRANSFERER role is allowed to send and receive tokens
-                allowList.map(_address) & requirements == requirements || // if the address is in the allowList and meets the requirements, it is allowed to send and receive tokens
-                _address == feeSettings.feeCollector()) // fee collector is always allowed to send and receive tokens
-        ) {
-            // if none of the above conditions are met, the address is not allowed to send and receive tokens -> revert
-            revert(
-                string.concat(
-                    Strings.toHexString(uint256(uint160(_address)), 20),
-                    " is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
-                )
-            );
-        }
+        require(
+            hasRole(TRANSFERER_ROLE, _address) ||
+                allowList.map(_address) & requirements == requirements ||
+                _address == feeSettings.feeCollector(), // fee collector is always allowed to send and receive tokens
+            "Sender or Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
+        );
     }
 
     function pause() external onlyRole(PAUSER_ROLE) {
