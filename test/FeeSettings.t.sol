@@ -8,7 +8,7 @@ import "../contracts/FeeSettings.sol";
 contract FeeSettingsTest is Test {
     FeeSettings feeSettings;
     Token token;
-    Token currency; // todo: add different ERC20 token as currency!
+    Token currency;
 
     uint256 MAX_INT =
         115792089237316195423570985008687907853269984665640564039457584007913129639935;
@@ -80,24 +80,41 @@ contract FeeSettingsTest is Test {
         _feeSettings.planFeeChange(feeChange);
     }
 
-    function testEnforceFeeChangeDelay(uint delay) public {
+    function testEnforceFeeChangeDelayOnIncrease(uint delay) public {
         vm.assume(delay <= 12 weeks);
         Fees memory fees = Fees(50, 50, 50, 0);
         vm.prank(admin);
         FeeSettings _feeSettings = new FeeSettings(fees, admin);
 
         Fees memory feeChange = Fees({
-            tokenFeeDenominator: 100,
-            continuousFundraisingFeeDenominator: 100,
-            personalInviteFeeDenominator: 100,
+            tokenFeeDenominator: 51,
+            continuousFundraisingFeeDenominator: 0,
+            personalInviteFeeDenominator: 0,
             time: block.timestamp + delay
         });
         vm.prank(admin);
         vm.expectRevert("Fee change must be at least 12 weeks in the future");
         _feeSettings.planFeeChange(feeChange);
 
-        // vm.prank(admin);
-        // _feeSettings.executeFeeChange();
+        feeChange = Fees({
+            tokenFeeDenominator: 0,
+            continuousFundraisingFeeDenominator: 51,
+            personalInviteFeeDenominator: 0,
+            time: block.timestamp + delay
+        });
+        vm.prank(admin);
+        vm.expectRevert("Fee change must be at least 12 weeks in the future");
+        _feeSettings.planFeeChange(feeChange);
+
+        feeChange = Fees({
+            tokenFeeDenominator: 0,
+            continuousFundraisingFeeDenominator: 0,
+            personalInviteFeeDenominator: 51,
+            time: block.timestamp + delay
+        });
+        vm.prank(admin);
+        vm.expectRevert("Fee change must be at least 12 weeks in the future");
+        _feeSettings.planFeeChange(feeChange);
     }
 
     function testExecuteFeeChangeTooEarly(
@@ -188,6 +205,46 @@ contract FeeSettingsTest is Test {
         assertEq(_feeSettings.tokenFeeDenominator(), 0);
         assertEq(_feeSettings.continuousFundraisingFeeDenominator(), 0);
         assertEq(_feeSettings.personalInviteFeeDenominator(), 0);
+
+        //assertEq(_feeSettings.change, 0);
+    }
+
+    function testReduceFeeImmediately(
+        uint256 tokenReductor,
+        uint256 continuousReductor,
+        uint256 personalReductor
+    ) public {
+        vm.assume(tokenReductor >= 50);
+        vm.assume(continuousReductor >= 20);
+        vm.assume(personalReductor >= 30);
+        Fees memory fees = Fees(50, 20, 30, 0);
+        vm.prank(admin);
+        FeeSettings _feeSettings = new FeeSettings(fees, admin);
+
+        Fees memory feeChange = Fees({
+            tokenFeeDenominator: tokenReductor,
+            continuousFundraisingFeeDenominator: continuousReductor,
+            personalInviteFeeDenominator: personalReductor,
+            time: 0
+        });
+
+        assertEq(_feeSettings.tokenFeeDenominator(), 50);
+        assertEq(_feeSettings.continuousFundraisingFeeDenominator(), 20);
+        assertEq(_feeSettings.personalInviteFeeDenominator(), 30);
+
+        vm.prank(admin);
+        _feeSettings.planFeeChange(feeChange);
+
+        vm.prank(admin);
+        //vm.warp(block.timestamp + delayAnnounced + 1);
+        _feeSettings.executeFeeChange();
+
+        assertEq(_feeSettings.tokenFeeDenominator(), tokenReductor);
+        assertEq(
+            _feeSettings.continuousFundraisingFeeDenominator(),
+            continuousReductor
+        );
+        assertEq(_feeSettings.personalInviteFeeDenominator(), personalReductor);
 
         //assertEq(_feeSettings.change, 0);
     }
