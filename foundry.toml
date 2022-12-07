@@ -1,2 +1,7 @@
 [profile.ci]
 fuzz-runs = 10_000
+
+[profile.default]
+optimizer = true
+optimizer_runs = 2000
+gas_reports = ["AllowList", "ContinuousFundraising", "FeeSettings", "PersonalInvite", "PersonalInviteFactory", "Token"]
