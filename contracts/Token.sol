@@ -214,24 +214,35 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         emit MintingAllowanceChanged(_minter, _allowance);
     }
 
+    /** 
+        @notice minting contracts such as personal investment invite, vesting, crowdfunding must be granted a minting allowance.
+        @notice the contract does not keep track of how many tokens a minter has minted over time
+        @param _minter address of the minter
+        @param _allowance how many tokens can be minted by this minter, in addition to their current allowance (excluding the tokens minted as a fee)
+    */
     function increaseMintingAllowance(
         address _minter,
         uint256 _allowance
     ) external onlyRole(MINTALLOWER_ROLE) {
-        setMintingAllowance(_minter, mintingAllowance[_minter] + _allowance);
+        mintingAllowance[_minter] += _allowance;
+        emit MintingAllowanceChanged(_minter, mintingAllowance[_minter]);
     }
 
+    /** 
+        @dev underflow is cast to 0 in order to be able to use decreaseMintingAllowance(minter, UINT256_MAX) to reset the allowance to 0
+        @param _minter address of the minter
+        @param _allowance how many tokens should be deducted from the current minting allowance (excluding the tokens minted as a fee)
+    */
     function decreaseMintingAllowance(
         address _minter,
         uint256 _allowance
     ) external onlyRole(MINTALLOWER_ROLE) {
         if (mintingAllowance[_minter] > _allowance) {
-            setMintingAllowance(
-                _minter,
-                mintingAllowance[_minter] - _allowance
-            );
+            mintingAllowance[_minter] -= _allowance;
+            emit MintingAllowanceChanged(_minter, mintingAllowance[_minter]);
         } else {
-            setMintingAllowance(_minter, 0);
+            mintingAllowance[_minter] = 0;
+            emit MintingAllowanceChanged(_minter, 0);
         }
     }
 
