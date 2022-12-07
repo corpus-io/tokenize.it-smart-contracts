@@ -271,9 +271,8 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         if (
             hasRole(TRANSFERER_ROLE, _address) ||
             allowList.map(_address) & requirements == requirements ||
-            _address == feeSettings.feeCollector()
+            _address == feeSettings.feeCollector() // fee collector is always allowed to send and receive tokens
         ) {} else {
-            // fee collector is always allowed to send and receive tokens
             revert(
                 string.concat(
                     Strings.toHexString(uint256(uint160(_address)), 20),
