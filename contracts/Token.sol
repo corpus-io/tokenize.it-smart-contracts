@@ -196,25 +196,36 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     }
 
     /** 
-        @notice minting contracts such as personal investment invite, vesting, crowdfunding must be granted a minting allowance through this function. 
+        @notice minting contracts such as personal investment invite, vesting, crowdfunding must be granted a minting allowance. 
             Each call of setMintingAllowance will make the contract: 
                 1. forget how many tokens might have been minted by this minter before. 
                 2. set the allowance for this minter to the new value, discarding any remaining allowance that might have been left from before.
             This feels very natural on the first call, but might be surprising on subsequent calls, so be careful. Before setting it to a non-zero value, it must be zero.
         @dev The "forget last allowance and count of minted tokens" behavior is accepted in order to reduce the complexity of the contract as well as it's gas usage.
+        @dev this function is internal, use the increase/decreaseMintingAllowance functions instead. See https://www.adrianhetman.com/unboxing-erc20-approve-issues/
         @param _minter address of the minter
         @param _allowance maximum amount of tokens that can be minted by this minter (excluding the tokens minted as a fee)
     */
     function setMintingAllowance(
         address _minter,
         uint256 _allowance
-    ) external onlyRole(MINTALLOWER_ROLE) {
-        require(
-            mintingAllowance[_minter] == 0 || _allowance == 0,
-            "Set up minter can only be called if the remaining allowance is 0 or to set the allowance to 0."
-        ); // to prevent frontrunning when setting a new allowance, see https://www.adrianhetman.com/unboxing-erc20-approve-issues/
+    ) internal onlyRole(MINTALLOWER_ROLE) {
         mintingAllowance[_minter] = _allowance;
         emit MintingAllowanceChanged(_minter, _allowance);
+    }
+
+    function increaseMintingAllowance(
+        address _minter,
+        uint256 _allowance
+    ) external onlyRole(MINTALLOWER_ROLE) {
+        setMintingAllowance(_minter, mintingAllowance[_minter] + _allowance);
+    }
+
+    function decreaseMintingAllowance(
+        address _minter,
+        uint256 _allowance
+    ) external onlyRole(MINTALLOWER_ROLE) {
+        setMintingAllowance(_minter, mintingAllowance[_minter] - _allowance);
     }
 
     function mint(address _to, uint256 _amount) external {
