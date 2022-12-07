@@ -488,7 +488,7 @@ contract tokenTest is Test {
         uint _amount = 100;
 
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, _amount);
+        token.increaseMintingAllowance(minter, _amount);
 
         vm.prank(minter);
         token.mint(_address, _amount);

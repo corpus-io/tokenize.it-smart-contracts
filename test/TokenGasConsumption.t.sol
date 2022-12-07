@@ -57,7 +57,7 @@ contract tokenTest is Test {
         // set up roles
         vm.startPrank(admin);
         token.grantRole(token.MINTALLOWER_ROLE(), mintAllower);
-        token.setMintingAllowance(minter, 200);
+        token.increaseMintingAllowance(minter, 200);
         vm.stopPrank();
 
         vm.prank(minter);
