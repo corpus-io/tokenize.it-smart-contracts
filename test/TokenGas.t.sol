@@ -35,9 +35,11 @@ contract tokenTest is Test {
         Fees memory fees = Fees(100, 100, 100, 0);
         feeSettings = new FeeSettings(fees, feeSettingsAndAllowListOwner);
 
+        address tokenHolder = address(this);
+
         allowList.set(pauser, requirements);
         allowList.set(transferer, requirements);
-        allowList.set(admin, requirements);
+        allowList.set(tokenHolder, requirements);
 
         vm.stopPrank();
 
@@ -55,12 +57,18 @@ contract tokenTest is Test {
         // set up roles
         vm.startPrank(admin);
         token.grantRole(token.MINTALLOWER_ROLE(), mintAllower);
-        token.setMintingAllowance(minter, 100);
+        token.setMintingAllowance(minter, 200);
         vm.stopPrank();
 
         vm.prank(minter);
+        token.mint(tokenHolder, 100);
+        vm.prank(minter);
         token.mint(pauser, 100);
 
+        assertTrue(
+            token.balanceOf(tokenHolder) == 100,
+            "tokenHolder balance is wrong"
+        );
         assertTrue(token.balanceOf(pauser) == 100, "pauser balance is wrong");
     }
 
