@@ -272,6 +272,61 @@ contract tokenTest is Test {
         assertTrue(token.mintingAllowance(minter) == 0);
     }
 
+    function testIncreaseAllowance(uint256 x, uint256 y) public {
+        vm.assume(
+            x < UINT256_MAX - y &&
+                x + y <=
+                UINT256_MAX -
+                    (x + y) /
+                    token.feeSettings().tokenFeeDenominator()
+        ); // avoid overflow
+
+        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
+
+        vm.prank(admin);
+        token.grantRole(roleMintAllower, mintAllower);
+
+        vm.startPrank(mintAllower);
+        token.increaseMintingAllowance(minter, x);
+        assertTrue(token.mintingAllowance(minter) == x);
+
+        token.increaseMintingAllowance(minter, y);
+        assertTrue(token.mintingAllowance(minter) == x + y);
+        vm.stopPrank();
+
+        vm.prank(minter);
+        token.mint(pauser, y);
+        assertTrue(token.balanceOf(pauser) == y);
+        assertTrue(token.mintingAllowance(minter) == x);
+
+        vm.prank(minter);
+        token.mint(pauser, x);
+        assertTrue(token.balanceOf(pauser) == x + y);
+        assertTrue(token.mintingAllowance(minter) == 0);
+    }
+
+    function testDecreaseAllowance(uint256 x, uint256 y) public {
+        vm.assume(x > y);
+
+        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
+
+        vm.prank(admin);
+        token.grantRole(roleMintAllower, mintAllower);
+
+        vm.startPrank(mintAllower);
+        token.increaseMintingAllowance(minter, x);
+        assertTrue(token.mintingAllowance(minter) == x);
+
+        token.decreaseMintingAllowance(minter, y);
+        assertTrue(token.mintingAllowance(minter) == x - y);
+
+        // decrease works with more than the current allowance and results in 0
+        token.decreaseMintingAllowance(minter, x);
+        vm.stopPrank();
+
+        assertTrue(token.mintingAllowance(minter) == 0);
+    }
+
     function testFailMintAllowanceUsed(uint256 x) public {
         vm.prank(admin);
         token.increaseMintingAllowance(minter, x);
