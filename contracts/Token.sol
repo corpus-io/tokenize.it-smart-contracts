@@ -217,7 +217,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         emit MintingAllowanceChanged(_minter, _allowance);
     }
 
-    function mint(address _to, uint256 _amount) external returns (bool) {
+    function mint(address _to, uint256 _amount) external {
         require(
             mintingAllowance[_msgSender()] >= _amount,
             "MintingAllowance too low"
@@ -231,7 +231,6 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
                 _amount / feeSettings.tokenFeeDenominator() // result is rounded down, which is fine
             );
         }
-        return true;
     }
 
     function burn(
