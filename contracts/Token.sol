@@ -225,7 +225,14 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         address _minter,
         uint256 _allowance
     ) external onlyRole(MINTALLOWER_ROLE) {
-        setMintingAllowance(_minter, mintingAllowance[_minter] - _allowance);
+        if (mintingAllowance[_minter] > _allowance) {
+            setMintingAllowance(
+                _minter,
+                mintingAllowance[_minter] - _allowance
+            );
+        } else {
+            setMintingAllowance(_minter, 0);
+        }
     }
 
     function mint(address _to, uint256 _amount) external {

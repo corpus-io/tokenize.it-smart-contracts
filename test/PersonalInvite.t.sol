@@ -84,10 +84,10 @@ contract PersonalInviteTest is Test {
         );
 
         vm.prank(admin);
-        token.setMintingAllowance(expectedAddress, amount);
+        token.increaseMintingAllowance(expectedAddress, amount);
 
         vm.prank(admin);
-        currency.setMintingAllowance(admin, amount * price);
+        currency.increaseMintingAllowance(admin, amount * price);
 
         uint256 tokenDecimals = token.decimals();
         vm.prank(admin);

@@ -240,7 +240,7 @@ contract tokenTest is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 2);
+        token.increaseMintingAllowance(minter, 2);
         assertTrue(token.mintingAllowance(minter) == 2);
 
         vm.prank(minter);
@@ -248,16 +248,9 @@ contract tokenTest is Test {
         assertTrue(token.balanceOf(pauser) == 1);
         assertTrue(token.mintingAllowance(minter) == 1);
 
-        // update minting allowance when it is not 0
-        vm.prank(mintAllower);
-        vm.expectRevert(
-            "Set up minter can only be called if the remaining allowance is 0 or to set the allowance to 0."
-        );
-        token.setMintingAllowance(minter, 3);
-
         // set allowance to 0
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 0);
+        token.decreaseMintingAllowance(minter, UINT256_MAX);
         assertTrue(token.mintingAllowance(minter) == 0);
     }
 
@@ -270,7 +263,7 @@ contract tokenTest is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, x);
+        token.increaseMintingAllowance(minter, x);
         assertTrue(token.mintingAllowance(minter) == x);
 
         vm.prank(minter);
@@ -281,7 +274,7 @@ contract tokenTest is Test {
 
     function testFailMintAllowanceUsed(uint256 x) public {
         vm.prank(admin);
-        token.setMintingAllowance(minter, x);
+        token.increaseMintingAllowance(minter, x);
         assertTrue(token.mintingAllowance(minter) == x);
 
         vm.prank(minter);
@@ -308,7 +301,7 @@ contract tokenTest is Test {
         steps = steps % 100; // don't be ridiculous
 
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, totalMintAmount);
+        token.increaseMintingAllowance(minter, totalMintAmount);
         assertTrue(token.mintingAllowance(minter) == totalMintAmount);
 
         // mint in steps
@@ -337,7 +330,7 @@ contract tokenTest is Test {
         vm.assume(x > 0);
 
         vm.prank(admin);
-        token.setMintingAllowance(minter, 0); // set allowance to 0
+        token.decreaseMintingAllowance(minter, token.mintingAllowance(minter)); // set allowance to 0
         assertTrue(token.mintingAllowance(minter) == 0); // check allowance is 0
 
         vm.prank(minter);
@@ -354,7 +347,7 @@ contract tokenTest is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, x);
+        token.increaseMintingAllowance(minter, x);
         assertTrue(token.mintingAllowance(minter) == x);
 
         console.log("minting %s tokens", x);
@@ -402,7 +395,7 @@ contract tokenTest is Test {
             x <= UINT256_MAX - x / token.feeSettings().tokenFeeDenominator()
         ); // avoid overflow
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, x);
+        token.increaseMintingAllowance(minter, x);
         assertTrue(token.mintingAllowance(minter) == x);
 
         vm.prank(minter);
@@ -420,7 +413,7 @@ contract tokenTest is Test {
 
     function testBurn0() public {
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 0);
+        token.decreaseMintingAllowance(minter, UINT256_MAX);
         assertTrue(token.mintingAllowance(minter) == 0);
 
         vm.prank(minter);
@@ -439,7 +432,7 @@ contract tokenTest is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 0);
+        token.decreaseMintingAllowance(minter, token.mintingAllowance(minter));
         assertTrue(token.mintingAllowance(minter) == 0);
 
         vm.prank(minter);
@@ -459,7 +452,7 @@ contract tokenTest is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 100);
+        token.increaseMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
         vm.prank(minter);
@@ -494,7 +487,7 @@ contract tokenTest is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 100);
+        token.increaseMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
         //testSetRequirements
@@ -539,7 +532,7 @@ contract tokenTest is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 100);
+        token.increaseMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
         //testSetRequirements
@@ -566,7 +559,7 @@ contract tokenTest is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 100);
+        token.increaseMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
         //testSetRequirements
@@ -593,7 +586,7 @@ contract tokenTest is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 100);
+        token.increaseMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
         //testSetRequirements
@@ -641,7 +634,7 @@ contract tokenTest is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 100);
+        token.increaseMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
         //testSetRequirements
@@ -704,7 +697,7 @@ contract tokenTest is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 100);
+        token.increaseMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
         //testSetRequirements
@@ -772,7 +765,7 @@ contract tokenTest is Test {
         address person2 = vm.addr(2);
 
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 100);
+        token.increaseMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
         // //testSetRequirements
@@ -841,7 +834,7 @@ contract tokenTest is Test {
         address person2 = vm.addr(2);
 
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 100);
+        token.increaseMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
         // //testSetRequirements
@@ -859,9 +852,9 @@ contract tokenTest is Test {
         assertTrue(token.balanceOf(person1) == 50);
 
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 0);
+        token.decreaseMintingAllowance(minter, UINT256_MAX);
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 10);
+        token.increaseMintingAllowance(minter, 10);
         assertTrue(token.mintingAllowance(minter) == 10);
 
         vm.prank(minter);
@@ -875,7 +868,7 @@ contract tokenTest is Test {
         address person2 = vm.addr(2);
 
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 100);
+        token.increaseMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
         // //testSetRequirements
@@ -893,7 +886,7 @@ contract tokenTest is Test {
         assertTrue(token.balanceOf(person1) == 50);
 
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 10);
+        token.increaseMintingAllowance(minter, 10);
         assertTrue(token.mintingAllowance(minter) == 10);
 
         vm.prank(minter);

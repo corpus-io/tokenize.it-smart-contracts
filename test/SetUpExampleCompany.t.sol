@@ -184,14 +184,14 @@ contract CompanySetUpTest is Test {
         // register the function with the forwarder. This is also a one-time step that will be done by the platform once for every function that is called via meta transaction.
         bytes32 requestType = ERC2771helper.registerRequestType(
             forwarder,
-            "setMintingAllowance",
+            "increaseMintingAllowance",
             "address _minter, uint256 _allowance"
         );
 
         // build the message the company admin will sign.
         // build request
         bytes memory payload = abi.encodeWithSelector(
-            token.setMintingAllowance.selector,
+            token.increaseMintingAllowance.selector,
             address(raise),
             maxAmountOfTokenToBeSold
         );
