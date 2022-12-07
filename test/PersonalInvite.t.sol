@@ -179,4 +179,196 @@ contract PersonalInviteTest is Test {
             amount / token.feeSettings().tokenFeeDenominator()
         );
     }
+
+    function ensureCostIsRoundedUp(
+        uint256 _tokenBuyAmount,
+        uint256 _nominalPrice
+    ) public {
+        console.log(
+            "feeCollector currency balance: %s",
+            currency.balanceOf(token.feeSettings().feeCollector())
+        );
+
+        //uint rawSalt = 0;
+        bytes32 salt = bytes32(uint256(8));
+
+        //bytes memory creationCode = type(PersonalInvite).creationCode;
+        uint256 expiration = block.timestamp + 1000;
+
+        address expectedAddress = factory.getAddress(
+            salt,
+            payable(buyer),
+            payable(receiver),
+            _tokenBuyAmount,
+            _nominalPrice,
+            expiration,
+            currency,
+            token
+        );
+
+        vm.prank(admin);
+        token.setMintingAllowance(expectedAddress, _tokenBuyAmount);
+
+        vm.prank(admin);
+        currency.setMintingAllowance(
+            admin,
+            _tokenBuyAmount * _nominalPrice + 1
+        );
+
+        uint256 tokenDecimals = token.decimals();
+        uint minCurrencyAmount = (_tokenBuyAmount * _nominalPrice) /
+            10 ** tokenDecimals;
+        console.log("minCurrencyAmount: %s", minCurrencyAmount);
+        uint maxCurrencyAmount = minCurrencyAmount + 1;
+        console.log("maxCurrencyAmount: %s", maxCurrencyAmount);
+
+        vm.startPrank(admin);
+        currency.mint(buyer, maxCurrencyAmount); // during this call, the feeCollector gets 1% of the amount
+        // burn the feeCollector balance to simplify accounting
+        currency.burn(
+            token.feeSettings().feeCollector(),
+            currency.balanceOf(token.feeSettings().feeCollector())
+        ); // burn 1 wei to make sure the feeCollector balance is not rounded up
+        vm.stopPrank();
+
+        vm.prank(buyer);
+        currency.approve(expectedAddress, maxCurrencyAmount);
+
+        // make sure balances are as expected before deployment
+
+        console.log(
+            "feeCollector currency balance: %s",
+            currency.balanceOf(token.feeSettings().feeCollector())
+        );
+
+        assertEq(currency.balanceOf(buyer), maxCurrencyAmount);
+        assertEq(currency.balanceOf(receiver), 0);
+        assertEq(token.balanceOf(token.feeSettings().feeCollector()), 0);
+        assertEq(token.balanceOf(buyer), 0);
+
+        console.log(
+            "feeCollector currency balance before deployment: %s",
+            currency.balanceOf(token.feeSettings().feeCollector())
+        );
+        // make sure balances are as expected after deployment
+        uint256 feeCollectorCurrencyBalanceBefore = currency.balanceOf(
+            token.feeSettings().feeCollector()
+        );
+        uint256 currencyReceiverBalanceBefore = currency.balanceOf(receiver);
+
+        address inviteAddress = factory.deploy(
+            salt,
+            payable(buyer),
+            payable(receiver),
+            _tokenBuyAmount,
+            _nominalPrice,
+            expiration,
+            currency,
+            token
+        );
+
+        console.log(
+            "feeCollector currency balance after deployment: %s",
+            currency.balanceOf(token.feeSettings().feeCollector())
+        );
+
+        assertEq(
+            inviteAddress,
+            expectedAddress,
+            "deployed contract address is not correct"
+        );
+
+        console.log("buyer balance: %s", currency.balanceOf(buyer));
+        console.log("receiver balance: %s", currency.balanceOf(receiver));
+        console.log("buyer token balance: %s", token.balanceOf(buyer));
+        uint256 len;
+        assembly {
+            len := extcodesize(expectedAddress)
+        }
+        console.log("Deployed contract size: %s", len);
+        assertTrue(
+            currency.balanceOf(buyer) <= 1,
+            "Buyer has too much currency left"
+        );
+
+        assertTrue(
+            currency.balanceOf(receiver) > currencyReceiverBalanceBefore,
+            "receiver received no payment"
+        );
+
+        console.log(
+            "feeCollector currency balance: %s",
+            currency.balanceOf(token.feeSettings().feeCollector())
+        );
+
+        if (
+            // if the currency amount is big enough, fee collector must receive fees
+            minCurrencyAmount >
+            token.feeSettings().personalInviteFeeDenominator()
+        ) {
+            assertTrue(
+                currency.balanceOf(token.feeSettings().feeCollector()) >
+                    feeCollectorCurrencyBalanceBefore,
+                "feeCollector received no payment"
+            );
+        }
+
+        assertTrue(
+            maxCurrencyAmount - currency.balanceOf(buyer) >= 1,
+            "Buyer paid nothing"
+        );
+        uint totalCurrencyReceived = currency.balanceOf(receiver) +
+            currency.balanceOf(token.feeSettings().feeCollector());
+        console.log("totalCurrencyReceived: %s", totalCurrencyReceived);
+        assertTrue(
+            totalCurrencyReceived >= minCurrencyAmount,
+            "Receiver and feeCollector received less than expected"
+        );
+
+        assertTrue(
+            totalCurrencyReceived <= maxCurrencyAmount,
+            "Receiver and feeCollector received more than expected"
+        );
+
+        assertEq(
+            token.balanceOf(buyer),
+            _tokenBuyAmount,
+            "buyer received no tokens"
+        );
+
+        assertEq(
+            token.balanceOf(token.feeSettings().feeCollector()),
+            _tokenBuyAmount / token.feeSettings().tokenFeeDenominator(),
+            "feeCollector received wrong amount"
+        );
+    }
+
+    function testRoundUp0() public {
+        // buy one token bit with price 1 currency bit per full token
+        // -> would have to pay 10^-18 currency bits, which is not possible
+        // we expect to round up to 1 currency bit
+        ensureCostIsRoundedUp(1, 1);
+    }
+
+    function testRoundFixedExample0() public {
+        ensureCostIsRoundedUp(583 * 10 ** token.decimals(), 82742);
+    }
+
+    function testRoundFixedExample1() public {
+        ensureCostIsRoundedUp(583 * 10 ** token.decimals(), 82742);
+    }
+
+    function testRoundUpAnything(
+        uint256 _tokenBuyAmount,
+        uint256 _tokenPrice
+    ) public {
+        vm.assume(_tokenBuyAmount > 0);
+        vm.assume(_tokenPrice > 0);
+        vm.assume(UINT256_MAX / _tokenPrice > 10 ** token.decimals());
+        vm.assume(
+            UINT256_MAX / _tokenBuyAmount > _tokenPrice * 10 ** token.decimals()
+        ); // amount * price *10**18 < UINT256_MAX
+        //vm.assume(_tokenPrice < UINT256_MAX / (100 * 10 ** token.decimals()));
+        ensureCostIsRoundedUp(_tokenBuyAmount, _tokenPrice);
+    }
 }
