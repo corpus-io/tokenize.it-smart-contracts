@@ -117,10 +117,10 @@ contract tokenTest is Test {
     /**
     @notice test that addresses that are not the admin cannot perform the mint allower tasks
      */
-    function testFailAdminX(address x) public {
+    function testIsNotAdmin(address x) public {
         // test would fail (to fail) if x = admin. This has actually happened! Abort test in that case.
         vm.assume(x != admin);
-        assertTrue(token.hasRole(token.MINTALLOWER_ROLE(), x));
+        assertFalse(token.hasRole(token.DEFAULT_ADMIN_ROLE(), x));
     }
 
     function testAdmin() public {
@@ -134,7 +134,7 @@ contract tokenTest is Test {
     }
 
     function testMintAllower(address x) public {
-        vm.assume(x != admin);
+        vm.assume(x != mintAllower);
         assertFalse(token.hasRole(token.MINTALLOWER_ROLE(), x));
     }
 
@@ -153,7 +153,8 @@ contract tokenTest is Test {
     }
 
     function testFailSetRequirementsX(address X) public {
-        // this contract has not the Requirements role
+        // x is missing the Requirements role
+        vm.assume(X != requirer);
         vm.prank(X);
         token.setRequirements(3);
     }
@@ -478,6 +479,32 @@ contract tokenTest is Test {
         vm.prank(burner);
         token.burn(pauser, 0);
         assertTrue(token.balanceOf(pauser) == 0);
+    }
+
+    function testTransferTo0(address _address) public {
+        vm.assume(token.balanceOf(_address) == 0);
+        vm.assume(_address != address(0));
+
+        uint _amount = 100;
+
+        vm.prank(mintAllower);
+        token.setMintingAllowance(minter, _amount);
+
+        vm.prank(minter);
+        token.mint(_address, _amount);
+        assertTrue(token.balanceOf(_address) == _amount, "balance is wrong");
+
+        vm.expectRevert("ERC20: transfer to the zero address");
+        vm.prank(_address);
+        token.transfer(address(0), _amount);
+    }
+
+    function testTransferFrom0(address _address) public {
+        uint _amount = 100;
+
+        vm.expectRevert("ERC20: transfer from the zero address");
+        vm.prank(address(0));
+        token.transfer(_address, _amount);
     }
 
     function testFailBurn0() public {
@@ -846,9 +873,11 @@ contract tokenTest is Test {
         vm.prank(admin);
         allowList.set(person1, 3); // 0x0011 -> does not include required 0x1011
 
+        console.log("person1: ", person1);
+
         vm.prank(person1);
         vm.expectRevert(
-            "Sender is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
+            "Sender or Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
         );
         token.transfer(person2, 20);
         assertTrue(token.balanceOf(person2) == 20);
@@ -856,7 +885,7 @@ contract tokenTest is Test {
 
         vm.prank(person2);
         vm.expectRevert(
-            "Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
+            "Sender or Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
         );
         token.transfer(person1, 10);
         assertTrue(token.balanceOf(person2) == 20);
@@ -975,126 +1004,9 @@ contract tokenTest is Test {
         assertFalse(localToken.hasRole(localToken.PAUSER_ROLE(), deployer));
     }
 
-    function testSuggestNewFeeSettingsWrongCaller(address wrongUpdater) public {
-        vm.assume(wrongUpdater != feeSettings.owner());
-        Fees memory fees = Fees(0, 0, 0, 0);
-        FeeSettings newFeeSettings = new FeeSettings(fees, pauser);
-        vm.prank(wrongUpdater);
-        vm.expectRevert(
-            "Only fee settings owner can suggest fee settings update"
-        );
-        token.suggestNewFeeSettings(newFeeSettings);
-    }
-
-    function testSuggestNewFeeSettingsFeeCollector() public {
-        Fees memory fees = Fees(0, 0, 0, 0);
-        FeeSettings newFeeSettings = new FeeSettings(fees, pauser);
-        vm.prank(feeSettings.feeCollector());
-        vm.expectRevert(
-            "Only fee settings owner can suggest fee settings update"
-        );
-        token.suggestNewFeeSettings(newFeeSettings);
-    }
-
-    function testSuggestNewFeeSettings0() public {
-        vm.prank(feeSettings.owner());
-        vm.expectRevert("Fee settings cannot be zero address");
-        token.suggestNewFeeSettings(FeeSettings(address(0)));
-    }
-
-    function testSuggestNewFeeSettings(address newCollector) public {
-        vm.assume(newCollector != address(0));
-        Fees memory fees = Fees(0, 0, 0, 0);
-        FeeSettings newFeeSettings = new FeeSettings(fees, newCollector);
-        FeeSettings oldFeeSettings = token.feeSettings();
-        uint oldInvestmentFeeDenominator = oldFeeSettings
-            .continuousFundraisingFeeDenominator();
-        uint oldTokenFeeDenominator = oldFeeSettings.tokenFeeDenominator();
-        vm.prank(feeSettings.owner());
-        token.suggestNewFeeSettings(newFeeSettings);
-
-        // make sure old fees are still in effect
-        assertTrue(
-            address(token.feeSettings()) == address(oldFeeSettings),
-            "fee settings have changed!"
-        );
-        assertTrue(
-            token.suggestedFeeSettings() == newFeeSettings,
-            "suggested fee settings not set!"
-        );
-        assertTrue(
-            token.feeSettings().continuousFundraisingFeeDenominator() ==
-                oldInvestmentFeeDenominator,
-            "investment fee denominator changed!"
-        );
-        assertTrue(
-            token.feeSettings().tokenFeeDenominator() == oldTokenFeeDenominator,
-            "token fee denominator changed!"
-        );
-    }
-
     function testAcceptFeeSettings0() public {
         vm.prank(admin);
         vm.expectRevert("Fee settings cannot be zero address");
         token.acceptNewFeeSettings(FeeSettings(address(0)));
-    }
-
-    function testAcceptNewFeeSettings(address newCollector) public {
-        vm.assume(newCollector != address(0));
-        Fees memory fees = Fees(0, 0, 0, 0);
-        FeeSettings newFeeSettings = new FeeSettings(fees, newCollector);
-        FeeSettings oldFeeSettings = token.feeSettings();
-        uint oldInvestmentFeeDenominator = oldFeeSettings
-            .continuousFundraisingFeeDenominator();
-        uint oldTokenFeeDenominator = oldFeeSettings.tokenFeeDenominator();
-        vm.prank(feeSettings.owner());
-        token.suggestNewFeeSettings(newFeeSettings);
-
-        // accept
-        vm.prank(admin);
-        token.acceptNewFeeSettings(newFeeSettings);
-        assertTrue(
-            token.feeSettings() == newFeeSettings,
-            "fee settings not changed!"
-        );
-        assertEq(
-            token.feeSettings().feeCollector(),
-            newCollector,
-            "Wrong feeCollector"
-        );
-        assertTrue(
-            address(token.suggestedFeeSettings()) == address(0),
-            "suggested fee settings not reset!"
-        );
-        assertTrue(
-            token.feeSettings().continuousFundraisingFeeDenominator() !=
-                oldInvestmentFeeDenominator,
-            "investment fee denominator changed!"
-        );
-        assertTrue(
-            token.feeSettings().tokenFeeDenominator() != oldTokenFeeDenominator,
-            "token fee denominator changed!"
-        );
-    }
-
-    function testFrontrunFeeSettingsAcceptance(
-        address newFeeSettingsPretendAddress
-    ) public {
-        vm.assume(newFeeSettingsPretendAddress != address(0));
-        Fees memory fees = Fees(0, 0, 0, 0);
-        FeeSettings newFeeSettings = new FeeSettings(
-            fees,
-            newFeeSettingsPretendAddress
-        );
-        vm.assume(newFeeSettingsPretendAddress != address(newFeeSettings));
-
-        vm.prank(feeSettings.owner());
-        token.suggestNewFeeSettings(newFeeSettings);
-        console.log("Suggested fee settings: ", address(newFeeSettings));
-
-        // admin thinks he is accepting a, but suggestion is b
-        vm.expectRevert("Only suggested fee settings can be accepted");
-        vm.prank(admin);
-        token.acceptNewFeeSettings(FeeSettings(newFeeSettingsPretendAddress));
     }
 }

@@ -259,7 +259,10 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     }
 
     /**
-    @notice aborts transfer if the sender or receiver is neither transferer nor fulfills the requirements nor is the 0x0 address
+    @notice There are 3 types of transfers:
+        1. minting: transfers from the zero address to another address. Only minters can do this, which is checked in the mint function. The recipient must be allowed to transact.
+        2. burning: transfers from an address to the zero address. Only burners can do this, which is checked in the burn function.
+        3. transfers from one address to another. The sender and recipient must be allowed to transact.
     @dev this hook is executed before the transfer function itself 
      */
     function _beforeTokenTransfer(
@@ -269,20 +272,26 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     ) internal virtual override {
         super._beforeTokenTransfer(_from, _to, _amount);
         _requireNotPaused();
+        if (_from == address(0)) {
+            // token mint
+            // the minter's allowance is checked in the mint function.
+            _checkIfAllowedToTransact(_to);
+        } else if (_to == address(0)) {
+            // token burn: all checks are done in the burn function
+        } else {
+            // token transfer
+            _checkIfAllowedToTransact(_from);
+            _checkIfAllowedToTransact(_to);
+        }
+    }
+
+    function _checkIfAllowedToTransact(address _address) internal view {
         require(
-            allowList.map(_from) & requirements == requirements ||
-                _from == address(0) ||
-                hasRole(BURNER_ROLE, _msgSender()) ||
-                hasRole(TRANSFERER_ROLE, _from),
-            "Sender is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
-        ); // address(0), because this is the _from address in case of minting new tokens
-        require(
-            allowList.map(_to) & requirements == requirements ||
-                _to == address(0) ||
-                _to == feeSettings.feeCollector() ||
-                hasRole(TRANSFERER_ROLE, _to),
-            "Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
-        ); // address(0), because this is the _to address in case of burning tokens
+            hasRole(TRANSFERER_ROLE, _address) ||
+                allowList.map(_address) & requirements == requirements ||
+                _address == feeSettings.feeCollector(), // fee collector is always allowed to send and receive tokens
+            "Sender or Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
+        );
     }
 
     function pause() external onlyRole(PAUSER_ROLE) {
