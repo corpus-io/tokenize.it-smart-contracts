@@ -153,7 +153,8 @@ contract tokenTest is Test {
     }
 
     function testFailSetRequirementsX(address X) public {
-        // this contract has not the Requirements role
+        // x is missing the Requirements role
+        vm.assume(X != requirer);
         vm.prank(X);
         token.setRequirements(3);
     }
