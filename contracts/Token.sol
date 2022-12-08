@@ -195,7 +195,6 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
             "Only suggested fee settings can be accepted"
         );
         feeSettings = suggestedFeeSettings;
-        suggestedFeeSettings = FeeSettings(address(0));
         emit FeeSettingsChanged(_feeSettings);
     }
 
