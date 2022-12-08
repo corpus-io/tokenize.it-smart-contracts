@@ -111,4 +111,13 @@ contract FeeSettings is Ownable2Step {
             "Fee must be below 5% or 0"
         );
     }
+
+    function calculateContinuousFundraisingFee(
+        uint256 _currencyAmount
+    ) external view returns (uint256) {
+        if (continuousFundraisingFeeDenominator == 0) {
+            return 0;
+        }
+        return _currencyAmount / continuousFundraisingFeeDenominator;
+    }
 }
