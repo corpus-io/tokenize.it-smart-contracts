@@ -42,9 +42,44 @@ All contracts are based on the well documented and tested [OpenZeppelin smart co
 
 ## EIP-2771
 
-Two contracts use a trusted forwarder to implement EIP-2771. The forwarder used will be the openGSN v2 forwarder deployed on mainnet: https://docs-v2.opengsn.org/networks/ethereum/mainnet.html
-It has been audited and working well for over a year. It's address is 0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA, and it is also used in our [tests](./test/ContinuousFundraisingERC2771.t.sol).
-Instead of leveraging the full potential of the gas station network, tokenize.it will have it's own service for sending eligible transactions to the forwarder.
+It is possible to directly use all smart contracts in this project, without going through the platform's frontend at all.
+In order to improve UX, though, a frontend will be offered. In order to improve UX even more, the user will not have to pay gas when using this frontend. This is achieved through two approaches:
+
+1. the platform executes transactions like contract deployments
+2. actions concerning our own contracts that require the user's approval are executed as meta-transactions, using EIP-2711
+3. granting allowances on external currencies is possible through EIP-2612 (ERC20Permit), which is widely adopted. This is not in the scope of this documentation though.
+
+Two contracts implement [EIP-2771](https://eips.ethereum.org/EIPS/eip-2771), and therefore use a trusted forwarder. The forwarder will be set in the constructor and there is no way to change it after deployment. The forwarder used will be the openGSN v2 forwarder deployed on mainnet. Some information about this contract:
+
+- [Documentation and addresses](https://docs-v2.opengsn.org/networks/ethereum/mainnet.html)
+- [Audit reports](https://docs-v2.opengsn.org/audits.html)
+- Was deployed 2022-04-21
+- It's address is **0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA**
+- Visit on [etherscan](https://etherscan.io/address/0xaa3e82b4c4093b4ba13cb5714382c99adbf750ca) ([see transactions here](https://etherscan.io/txsInternal?a=0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA&&m=advanced&p=1))
+- This [dashboard](https://dune.com/oren/meta-transactions-on-ethereum-over-time) lists the forwarder as second most active forwarder contract with over 2000 transactions executed
+- it is also used in our [tests](./test/ContinuousFundraisingERC2771.t.sol).
+
+The platform will maintain a hot wallet (EOA) in order to send transactions to the forwarder contract. This results in the following flow:
+
+- contract A supports EIP-2771 and uses `forwarder` as its (one and only immutable) trusted forwarder
+- user (investor or founder) wants to use function `a(...)` of contract `A` and uses the platform for this
+- platform (tokenize.it) prepares meta transaction payload and asks user for signature
+- user signs the payload with their own key (using metamask or similar)
+- platform now has payload and signature and uses its hot wallet to call `forwarder.execute(payload, signature, ...)`
+- forwarder verifies signature and payload on-chain
+- forwarder executes `A.a(...)` with parameters according to payload
+- contract `A` only verifies it is being called by the ONE forwarder it trusts. It does not verify any signatures. This is why the forwarder is called trusted forwarder: it is trusted to do the verification.
+- contract `A` executes function `a(...)` in the name of user
+
+This is a trustless process, because:
+
+1. the forwarder contract can not be updated
+2. the trusted forwarder setting in contract A is immutable
+3. signature verification is executed on-chain
+
+Open gas station network provides tools to execute meta transactions without involving a third party hot wallet. Tokenize.it will not use these tools though. Exclusively using a hot wallet for transaction execution does not harm security at all.
+
+The hot wallet approach might reduce availability, which is not a major concern for this use case (the hot wallet being available whenever the frontend is available is good enough). Keep in mind that EIP-2771 is purely offered for UX reasons. All smart contracts can be used directly, too, further reducing concerns about hot wallet availability.
 
 ## Supported Currencies
 
