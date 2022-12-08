@@ -146,10 +146,6 @@ contract tokenTest is Test {
             "Wrong feeCollector"
         );
         assertTrue(
-            address(token.suggestedFeeSettings()) == address(0),
-            "suggested fee settings not reset!"
-        );
-        assertTrue(
             token.feeSettings().continuousFundraisingFeeDenominator() !=
                 oldInvestmentFeeDenominator,
             "investment fee denominator changed!"
