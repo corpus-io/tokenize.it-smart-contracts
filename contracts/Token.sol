@@ -142,6 +142,10 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     function setAllowList(
         AllowList _allowList
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(
+            address(_allowList) != address(0),
+            "AllowList must not be zero address"
+        );
         allowList = _allowList;
         emit AllowListChanged(_allowList);
     }
