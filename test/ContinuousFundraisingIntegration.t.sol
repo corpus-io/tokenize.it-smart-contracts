@@ -86,7 +86,10 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(companyOwner);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.setMintingAllowance(address(raise), maxAmountOfTokenToBeSold);
+        token.increaseMintingAllowance(
+            address(raise),
+            maxAmountOfTokenToBeSold
+        );
 
         // give raise contract allowance
         vm.prank(investor);
@@ -188,7 +191,7 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(platformAdmin);
         _token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        _token.setMintingAllowance(address(_raise), _maxMintAmount);
+        _token.increaseMintingAllowance(address(_raise), _maxMintAmount);
 
         // mint _paymentToken for buyer
         vm.prank(paymentTokenProvider);
@@ -321,7 +324,7 @@ contract ContinuousFundraisingTest is Test {
             vm.prank(platformAdmin);
             _token.grantRole(roleMintAllower, mintAllower);
             vm.prank(mintAllower);
-            _token.setMintingAllowance(address(_raise), _maxMintAmount);
+            _token.increaseMintingAllowance(address(_raise), _maxMintAmount);
 
             // mint _paymentToken for buyer
             vm.prank(paymentTokenProvider);

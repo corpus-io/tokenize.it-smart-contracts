@@ -116,7 +116,10 @@ contract MainnetCurrencies is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.setMintingAllowance(address(_raise), maxAmountOfTokenToBeSold);
+        token.increaseMintingAllowance(
+            address(_raise),
+            maxAmountOfTokenToBeSold
+        );
 
         // give the buyer funds
         //console.log("buyer's balance: ", _currency.balanceOf(buyer));
@@ -214,7 +217,7 @@ contract MainnetCurrencies is Test {
 
         // grant mint allowance to invite
         vm.prank(admin);
-        token.setMintingAllowance(expectedAddress, amountOfTokenToBuy);
+        token.increaseMintingAllowance(expectedAddress, amountOfTokenToBuy);
 
         // give the buyer funds and approve invite
         writeERC20Balance(buyer, address(_currency), _currencyAmount);
