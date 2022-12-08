@@ -82,7 +82,10 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.setMintingAllowance(address(raise), maxAmountOfTokenToBeSold);
+        token.increaseMintingAllowance(
+            address(raise),
+            maxAmountOfTokenToBeSold
+        );
 
         // give raise contract allowance
         vm.prank(buyer);
@@ -207,8 +210,12 @@ contract ContinuousFundraisingTest is Test {
 
         vm.prank(admin);
         _token.grantRole(roleMintAllower, mintAllower);
-        vm.prank(mintAllower);
-        _token.setMintingAllowance(address(_raise), _maxMintAmount);
+        vm.startPrank(mintAllower);
+        _token.increaseMintingAllowance(
+            address(_raise),
+            _maxMintAmount - token.mintingAllowance(address(_raise))
+        );
+        vm.stopPrank();
 
         // mint _paymentToken for buyer
         vm.prank(paymentTokenProvider);
@@ -349,10 +356,12 @@ contract ContinuousFundraisingTest is Test {
 
     function testExceedMintingAllowance() public {
         // reduce minting allowance of fundraising contract, so the revert happens in Token
-        vm.prank(mintAllower);
-        token.setMintingAllowance(address(raise), 0);
-        vm.prank(mintAllower);
-        token.setMintingAllowance(address(raise), maxAmountPerBuyer / 2);
+        vm.startPrank(mintAllower);
+        token.decreaseMintingAllowance(
+            address(raise),
+            token.mintingAllowance(address(raise)) - (maxAmountPerBuyer / 2)
+        );
+        vm.stopPrank();
 
         vm.prank(buyer);
         vm.expectRevert("MintingAllowance too low");

@@ -112,10 +112,10 @@ contract PersonalInviteFactoryTest is Test {
         assert(len == 0);
 
         vm.prank(admin);
-        token.setMintingAllowance(expectedAddress, amount);
+        token.increaseMintingAllowance(expectedAddress, amount);
 
         vm.prank(admin);
-        currency.setMintingAllowance(admin, amount * price);
+        currency.increaseMintingAllowance(admin, amount * price);
 
         vm.prank(admin);
         currency.mint(buyer, amount * price);

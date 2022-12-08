@@ -201,7 +201,7 @@ contract tokenTest is Test {
 
         // allow minter to mint
         vm.prank(mintAllower);
-        token.setMintingAllowance(localMinter, _amount);
+        token.increaseMintingAllowance(localMinter, _amount);
 
         // allow token holder to transfer
         console.log("before");

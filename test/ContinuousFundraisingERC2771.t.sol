@@ -122,7 +122,10 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.setMintingAllowance(address(raise), maxAmountOfTokenToBeSold);
+        token.increaseMintingAllowance(
+            address(raise),
+            maxAmountOfTokenToBeSold
+        );
 
         // give raise contract allowance
         vm.prank(buyer);
