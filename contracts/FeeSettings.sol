@@ -112,6 +112,13 @@ contract FeeSettings is Ownable2Step {
         );
     }
 
+    function tokenFee(uint256 _tokenAmount) external view returns (uint256) {
+        if (tokenFeeDenominator == 0) {
+            return 0;
+        }
+        return _tokenAmount / tokenFeeDenominator;
+    }
+
     function continuousFundraisingFee(
         uint256 _currencyAmount
     ) external view returns (uint256) {

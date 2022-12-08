@@ -235,11 +235,9 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         mintingAllowance[_msgSender()] -= _amount;
         _mint(_to, _amount);
         // collect fees
-        if (feeSettings.tokenFeeDenominator() != 0) {
-            _mint(
-                feeSettings.feeCollector(),
-                _amount / feeSettings.tokenFeeDenominator() // result is rounded down, which is fine
-            );
+        uint256 fee = feeSettings.tokenFee(_amount);
+        if (fee != 0) {
+            _mint(feeSettings.feeCollector(), fee);
         }
     }
 
