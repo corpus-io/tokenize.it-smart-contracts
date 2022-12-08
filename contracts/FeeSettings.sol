@@ -45,10 +45,28 @@ contract FeeSettings is Ownable2Step {
 
     function planFeeChange(Fees memory _fees) external onlyOwner {
         checkFeeLimits(_fees);
-        require(
-            _fees.time > block.timestamp + 12 weeks,
-            "Fee change must be at least 12 weeks in the future"
-        ); // can only be executed in 3 months
+        // Reducing fees is possible immediately. Increasing fees can only be executed after a minimum of 12 weeks.
+        // Beware: reducing fees = increasing the denominator
+
+        // check for increasing fees
+        bool aDenominatorDecreases = _fees.tokenFeeDenominator <
+            tokenFeeDenominator ||
+            _fees.continuousFundraisingFeeDenominator <
+            continuousFundraisingFeeDenominator ||
+            _fees.personalInviteFeeDenominator < personalInviteFeeDenominator;
+
+        // check for all fees set to 0
+        bool allDenominatorsAreZero = _fees.tokenFeeDenominator == 0 &&
+            _fees.continuousFundraisingFeeDenominator == 0 &&
+            _fees.personalInviteFeeDenominator == 0;
+
+        // if fees are increasing and not set to 0, enforce minimum delay
+        if (aDenominatorDecreases && !allDenominatorsAreZero) {
+            require(
+                _fees.time > block.timestamp + 12 weeks,
+                "Fee change must be at least 12 weeks in the future"
+            );
+        }
         proposedFees = _fees;
         emit ChangeProposed(_fees);
     }
