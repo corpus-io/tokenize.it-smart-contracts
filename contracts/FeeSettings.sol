@@ -111,4 +111,38 @@ contract FeeSettings is Ownable2Step {
             "Fee must be below 5% or 0"
         );
     }
+
+    /**
+    @notice Returns the fee for a given token amount
+     */
+    function tokenFee(uint256 _tokenAmount) external view returns (uint256) {
+        if (tokenFeeDenominator == 0) {
+            return 0;
+        }
+        return _tokenAmount / tokenFeeDenominator;
+    }
+
+    /**
+    @notice Returns the fee for a given currency amount
+     */
+    function continuousFundraisingFee(
+        uint256 _currencyAmount
+    ) external view returns (uint256) {
+        if (continuousFundraisingFeeDenominator == 0) {
+            return 0;
+        }
+        return _currencyAmount / continuousFundraisingFeeDenominator;
+    }
+
+    /** 
+    @notice Returns the fee for a given currency amount
+     */
+    function personalInviteFee(
+        uint256 _currencyAmount
+    ) external view returns (uint256) {
+        if (personalInviteFeeDenominator == 0) {
+            return 0;
+        }
+        return _currencyAmount / personalInviteFeeDenominator;
+    }
 }
