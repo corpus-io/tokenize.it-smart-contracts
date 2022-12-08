@@ -235,6 +235,12 @@ contract tokenTest is Test {
         assertTrue(token.allowList() == newAllowList);
     }
 
+    function testUpdateAllowList0() public {
+        vm.expectRevert("AllowList must not be zero address");
+        vm.prank(admin);
+        token.setAllowList(AllowList(address(0)));
+    }
+
     function testSetUpMinter() public {
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
