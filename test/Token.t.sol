@@ -484,6 +484,7 @@ contract tokenTest is Test {
     function testTransferTo0(address _address) public {
         vm.assume(token.balanceOf(_address) == 0);
         vm.assume(_address != address(0));
+        vm.assume(_address != token.feeSettings().feeCollector());
 
         uint _amount = 100;
 
