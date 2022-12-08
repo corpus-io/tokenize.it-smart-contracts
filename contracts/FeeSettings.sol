@@ -112,6 +112,9 @@ contract FeeSettings is Ownable2Step {
         );
     }
 
+    /**
+    @notice Returns the fee for a given token amount
+     */
     function tokenFee(uint256 _tokenAmount) external view returns (uint256) {
         if (tokenFeeDenominator == 0) {
             return 0;
@@ -119,6 +122,9 @@ contract FeeSettings is Ownable2Step {
         return _tokenAmount / tokenFeeDenominator;
     }
 
+    /**
+    @notice Returns the fee for a given currency amount
+     */
     function continuousFundraisingFee(
         uint256 _currencyAmount
     ) external view returns (uint256) {
@@ -128,6 +134,9 @@ contract FeeSettings is Ownable2Step {
         return _currencyAmount / continuousFundraisingFeeDenominator;
     }
 
+    /** 
+    @notice Returns the fee for a given currency amount
+     */
     function personalInviteFee(
         uint256 _currencyAmount
     ) external view returns (uint256) {
