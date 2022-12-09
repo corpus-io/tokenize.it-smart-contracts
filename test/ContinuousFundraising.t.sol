@@ -909,4 +909,110 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(owner);
         raise.unpause();
     }
+
+    function testRevertsOnOverflow(
+        uint256 _tokenBuyAmount,
+        uint256 _price
+    ) public {
+        vm.assume(_tokenBuyAmount > 0);
+        vm.assume(_price > 0);
+        vm.assume(UINT256_MAX / _price < _tokenBuyAmount); // this will cause an overflow on multiplication
+
+        // new currency
+        // set up currency
+        vm.prank(paymentTokenProvider);
+        paymentToken = new FakePaymentToken(UINT256_MAX, paymentTokenDecimals); // 1000 tokens with 6 decimals
+        // transfer currency to buyer
+        vm.prank(paymentTokenProvider);
+        paymentToken.transfer(buyer, UINT256_MAX);
+
+        // create the raise contract
+        vm.prank(owner);
+        raise = new ContinuousFundraising(
+            trustedForwarder,
+            payable(receiver),
+            0,
+            UINT256_MAX,
+            _price,
+            UINT256_MAX,
+            paymentToken,
+            token
+        );
+
+        // grant allowances
+        vm.prank(mintAllower);
+        token.increaseMintingAllowance(address(raise), UINT256_MAX);
+        vm.prank(buyer);
+        paymentToken.increaseAllowance(address(raise), UINT256_MAX);
+
+        vm.expectRevert(); //("Arithmetic over/underflow"); //("Division or modulo by 0");
+        vm.prank(buyer);
+        raise.buy(_tokenBuyAmount);
+    }
+
+    function testRoundsUp(uint256 _tokenBuyAmount, uint256 _price) public {
+        vm.assume(_tokenBuyAmount > 0);
+        vm.assume(_price > 0);
+        vm.assume(UINT256_MAX / _price > _tokenBuyAmount); // this will cause an overflow on multiplication
+
+        uint256 tokenDecimals = token.decimals();
+        uint minCurrencyAmount = (_tokenBuyAmount * _price) /
+            10 ** tokenDecimals;
+        console.log("minCurrencyAmount: %s", minCurrencyAmount);
+        uint maxCurrencyAmount = minCurrencyAmount + 1;
+        console.log("maxCurrencyAmount: %s", maxCurrencyAmount);
+
+        // new currency
+        // set up currency
+        vm.prank(paymentTokenProvider);
+        paymentToken = new FakePaymentToken(
+            maxCurrencyAmount,
+            paymentTokenDecimals
+        ); // 1000 tokens with 6 decimals
+        // transfer currency to buyer
+        vm.prank(paymentTokenProvider);
+        paymentToken.transfer(buyer, maxCurrencyAmount);
+
+        // create the raise contract
+        vm.prank(owner);
+        raise = new ContinuousFundraising(
+            trustedForwarder,
+            payable(receiver),
+            _tokenBuyAmount,
+            _tokenBuyAmount,
+            _price,
+            _tokenBuyAmount,
+            paymentToken,
+            token
+        );
+
+        // set fees to 0, otherwise extra currency is minted which causes an overflow
+        Fees memory fees = Fees(0, 0, 0, 0);
+        token.feeSettings().planFeeChange(fees);
+        token.feeSettings().executeFeeChange();
+
+        // grant allowances
+        vm.prank(mintAllower);
+        token.increaseMintingAllowance(address(raise), _tokenBuyAmount);
+        vm.prank(buyer);
+        paymentToken.increaseAllowance(address(raise), maxCurrencyAmount);
+
+        vm.prank(buyer);
+        raise.buy(_tokenBuyAmount);
+
+        // check that the buyer got the correct amount of tokens
+        assertTrue(
+            token.balanceOf(buyer) == _tokenBuyAmount,
+            "buyer got wrong amount of tokens"
+        );
+        // check that the raise got the correct amount of currency
+        assertTrue(
+            paymentToken.balanceOf(receiver) <= maxCurrencyAmount,
+            "raise got wrong amount of currency"
+        );
+        assertTrue(
+            paymentToken.balanceOf(receiver) >= minCurrencyAmount,
+            "raise got wrong amount of currency"
+        );
+    }
 }

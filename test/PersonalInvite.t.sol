@@ -206,6 +206,13 @@ contract PersonalInviteTest is Test {
             token
         );
 
+        // set fees to 0, otherwise extra currency is minted which causes an overflow
+        Fees memory fees = Fees(0, 0, 0, 0);
+        currency.feeSettings().planFeeChange(fees);
+        currency.feeSettings().executeFeeChange();
+        token.feeSettings().planFeeChange(fees);
+        token.feeSettings().executeFeeChange();
+
         vm.prank(admin);
         token.increaseMintingAllowance(expectedAddress, _tokenBuyAmount);
 
@@ -215,9 +222,8 @@ contract PersonalInviteTest is Test {
             _tokenBuyAmount * _nominalPrice + 1
         );
 
-        uint256 tokenDecimals = token.decimals();
         uint minCurrencyAmount = (_tokenBuyAmount * _nominalPrice) /
-            10 ** tokenDecimals;
+            10 ** token.decimals();
         console.log("minCurrencyAmount: %s", minCurrencyAmount);
         uint maxCurrencyAmount = minCurrencyAmount + 1;
         console.log("maxCurrencyAmount: %s", maxCurrencyAmount);
@@ -251,9 +257,6 @@ contract PersonalInviteTest is Test {
             currency.balanceOf(token.feeSettings().feeCollector())
         );
         // make sure balances are as expected after deployment
-        uint256 feeCollectorCurrencyBalanceBefore = currency.balanceOf(
-            token.feeSettings().feeCollector()
-        );
         uint256 currencyReceiverBalanceBefore = currency.balanceOf(receiver);
 
         address inviteAddress = factory.deploy(
@@ -301,18 +304,6 @@ contract PersonalInviteTest is Test {
             currency.balanceOf(token.feeSettings().feeCollector())
         );
 
-        if (
-            // if the currency amount is big enough, fee collector must receive fees
-            minCurrencyAmount >
-            token.feeSettings().personalInviteFeeDenominator()
-        ) {
-            assertTrue(
-                currency.balanceOf(token.feeSettings().feeCollector()) >
-                    feeCollectorCurrencyBalanceBefore,
-                "feeCollector received no payment"
-            );
-        }
-
         assertTrue(
             maxCurrencyAmount - currency.balanceOf(buyer) >= 1,
             "Buyer paid nothing"
@@ -334,12 +325,6 @@ contract PersonalInviteTest is Test {
             token.balanceOf(buyer),
             _tokenBuyAmount,
             "buyer received no tokens"
-        );
-
-        assertEq(
-            token.balanceOf(token.feeSettings().feeCollector()),
-            _tokenBuyAmount / token.feeSettings().tokenFeeDenominator(),
-            "feeCollector received wrong amount"
         );
     }
 
@@ -364,11 +349,88 @@ contract PersonalInviteTest is Test {
     ) public {
         vm.assume(_tokenBuyAmount > 0);
         vm.assume(_tokenPrice > 0);
-        vm.assume(UINT256_MAX / _tokenPrice > 10 ** token.decimals());
-        vm.assume(
-            UINT256_MAX / _tokenBuyAmount > _tokenPrice * 10 ** token.decimals()
-        ); // amount * price *10**18 < UINT256_MAX
+        vm.assume(UINT256_MAX / _tokenPrice > _tokenBuyAmount);
+        // vm.assume(UINT256_MAX / _tokenPrice > 10 ** token.decimals());
+        // vm.assume(
+        //     UINT256_MAX / _tokenBuyAmount > _tokenPrice * 10 ** token.decimals()
+        // ); // amount * price *10**18 < UINT256_MAX
         //vm.assume(_tokenPrice < UINT256_MAX / (100 * 10 ** token.decimals()));
         ensureCostIsRoundedUp(_tokenBuyAmount, _tokenPrice);
+    }
+
+    function ensureReverts(
+        uint256 _tokenBuyAmount,
+        uint256 _nominalPrice
+    ) public {
+        //uint rawSalt = 0;
+        bytes32 salt = bytes32(uint256(8));
+
+        //bytes memory creationCode = type(PersonalInvite).creationCode;
+        uint256 expiration = block.timestamp + 1000;
+
+        address expectedAddress = factory.getAddress(
+            salt,
+            payable(buyer),
+            payable(receiver),
+            _tokenBuyAmount,
+            _nominalPrice,
+            expiration,
+            currency,
+            token
+        );
+
+        vm.startPrank(admin);
+        console.log(
+            "expectedAddress: %s",
+            token.mintingAllowance(expectedAddress)
+        );
+        token.increaseMintingAllowance(expectedAddress, _tokenBuyAmount);
+
+        currency.increaseMintingAllowance(admin, UINT256_MAX);
+        vm.stopPrank();
+
+        uint maxCurrencyAmount = UINT256_MAX;
+
+        // set fees to 0, otherwise extra currency is minted which causes an overflow
+        Fees memory fees = Fees(0, 0, 0, 0);
+        currency.feeSettings().planFeeChange(fees);
+        currency.feeSettings().executeFeeChange();
+
+        vm.startPrank(admin);
+        currency.mint(buyer, maxCurrencyAmount); // during this call, the feeCollector gets 1% of the amount
+        // burn the feeCollector balance to simplify accounting
+        currency.burn(
+            token.feeSettings().feeCollector(),
+            currency.balanceOf(token.feeSettings().feeCollector())
+        ); // burn 1 wei to make sure the feeCollector balance is not rounded up
+        vm.stopPrank();
+
+        vm.prank(buyer);
+        currency.approve(expectedAddress, maxCurrencyAmount);
+
+        // make sure balances are as expected before deployment
+        vm.expectRevert("Create2: Failed on deploy");
+        factory.deploy(
+            salt,
+            buyer,
+            receiver,
+            _tokenBuyAmount,
+            _nominalPrice,
+            expiration,
+            currency,
+            token
+        );
+    }
+
+    function testRevertOnOverflow(
+        uint256 _tokenBuyAmount,
+        uint256 _tokenPrice
+    ) public {
+        vm.assume(_tokenBuyAmount > 0);
+        vm.assume(_tokenPrice > 0);
+
+        vm.assume(UINT256_MAX / _tokenPrice < _tokenBuyAmount);
+        //vm.assume(UINT256_MAX / _tokenBuyAmount > _tokenPrice);
+        ensureReverts(_tokenBuyAmount, _tokenPrice);
     }
 }
