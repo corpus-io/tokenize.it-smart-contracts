@@ -364,10 +364,11 @@ contract PersonalInviteTest is Test {
     ) public {
         vm.assume(_tokenBuyAmount > 0);
         vm.assume(_tokenPrice > 0);
-        vm.assume(UINT256_MAX / _tokenPrice > 10 ** token.decimals());
-        vm.assume(
-            UINT256_MAX / _tokenBuyAmount > _tokenPrice * 10 ** token.decimals()
-        ); // amount * price *10**18 < UINT256_MAX
+        vm.assume(UINT256_MAX / _tokenPrice > _tokenBuyAmount);
+        // vm.assume(UINT256_MAX / _tokenPrice > 10 ** token.decimals());
+        // vm.assume(
+        //     UINT256_MAX / _tokenBuyAmount > _tokenPrice * 10 ** token.decimals()
+        // ); // amount * price *10**18 < UINT256_MAX
         //vm.assume(_tokenPrice < UINT256_MAX / (100 * 10 ** token.decimals()));
         ensureCostIsRoundedUp(_tokenBuyAmount, _tokenPrice);
     }
@@ -394,15 +395,21 @@ contract PersonalInviteTest is Test {
         );
 
         vm.startPrank(admin);
+        console.log("expectedAddress: %s", token.mintingAllowance(expectedAddress));
         token.increaseMintingAllowance(expectedAddress, _tokenBuyAmount);
 
         currency.increaseMintingAllowance(
             admin,
-            _tokenBuyAmount * _nominalPrice + 1
+            UINT256_MAX
         );
         vm.stopPrank();
 
         uint maxCurrencyAmount = UINT256_MAX;
+
+        // set fees to 0, otherwise extra currency is minted which causes an overflow
+        Fees memory fees = Fees(0, 0, 0, 0);
+        currency.feeSettings().planFeeChange(fees);
+        currency.feeSettings().executeFeeChange();
 
         vm.startPrank(admin);
         currency.mint(buyer, maxCurrencyAmount); // during this call, the feeCollector gets 1% of the amount
@@ -417,8 +424,8 @@ contract PersonalInviteTest is Test {
         currency.approve(expectedAddress, maxCurrencyAmount);
 
         // make sure balances are as expected before deployment
-        vm.expectRevert("Arithmetic over/underflow");
-        address inviteAddress = factory.deploy(
+        vm.expectRevert("Create2: Failed on deploy");
+        factory.deploy(
             salt,
             payable(buyer),
             payable(receiver),
