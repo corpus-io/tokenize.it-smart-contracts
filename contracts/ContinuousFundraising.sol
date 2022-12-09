@@ -138,9 +138,11 @@ contract ContinuousFundraising is
         tokensBought[_msgSender()] += _amount;
 
         // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
-        uint256 currencyAmount = Math.ceilDiv(
-            _amount * tokenPrice,
-            10 ** token.decimals()
+        uint256 currencyAmount = Math.mulDiv(
+            _amount,
+            tokenPrice,
+            10 ** token.decimals(),
+            Math.Rounding.Up
         );
 
         FeeSettings feeSettings = token.feeSettings();

@@ -50,9 +50,11 @@ contract PersonalInvite {
         require(block.timestamp <= _expiration, "Deal expired");
 
         // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
-        uint256 currencyAmount = Math.ceilDiv(
-            _amount * _tokenPrice,
-            10 ** _token.decimals()
+        uint256 currencyAmount = Math.mulDiv(
+            _amount,
+            _tokenPrice,
+            10 ** _token.decimals(),
+            Math.Rounding.Up
         );
 
         FeeSettings feeSettings = _token.feeSettings();
