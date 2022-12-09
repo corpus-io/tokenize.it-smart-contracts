@@ -206,21 +206,36 @@ contract PersonalInviteTest is Test {
             token
         );
 
-        vm.prank(admin);
-        token.increaseMintingAllowance(expectedAddress, _tokenBuyAmount);
-
-        vm.prank(admin);
-        currency.increaseMintingAllowance(
-            admin,
-            _tokenBuyAmount * _nominalPrice + 1
-        );
-
         uint256 tokenDecimals = token.decimals();
-        uint minCurrencyAmount = (_tokenBuyAmount * _nominalPrice) /
-            10 ** tokenDecimals;
+        uint minCurrencyAmount;
+        if (_tokenBuyAmount < UINT256_MAX / _nominalPrice) {
+            // if the multiplication does not overflow, we can use 256 bit arithmetic
+            minCurrencyAmount =
+                (_tokenBuyAmount * _nominalPrice) /
+                10 ** tokenDecimals;
+        } else {
+            // if the multiplication overflows, we have to use 512 bit arithmetic
+            minCurrencyAmount = Math.mulDiv(
+                _tokenBuyAmount,
+                _nominalPrice,
+                10 ** tokenDecimals
+            );
+        }
         console.log("minCurrencyAmount: %s", minCurrencyAmount);
         uint maxCurrencyAmount = minCurrencyAmount + 1;
         console.log("maxCurrencyAmount: %s", maxCurrencyAmount);
+
+        vm.startPrank(admin);
+        token.increaseMintingAllowance(
+            expectedAddress,
+            _tokenBuyAmount - token.mintingAllowance(expectedAddress)
+        );
+
+        currency.increaseMintingAllowance(
+            admin,
+            maxCurrencyAmount - token.mintingAllowance(admin)
+        );
+        vm.stopPrank();
 
         vm.startPrank(admin);
         currency.mint(buyer, maxCurrencyAmount); // during this call, the feeCollector gets 1% of the amount
@@ -364,11 +379,30 @@ contract PersonalInviteTest is Test {
     ) public {
         vm.assume(_tokenBuyAmount > 0);
         vm.assume(_tokenPrice > 0);
-        vm.assume(UINT256_MAX / _tokenPrice > 10 ** token.decimals());
+        /* 
+        need to enforce: _tokenBuyAmount * _tokenPrice / 10 ** token.decimals() < UINT256_MAX
+        otherwise the multiplication will overflow
+        this is equivalent to: 
+        _tokenBuyAmount < UINT256_MAX / _tokenPrice  * 10 ** token.decimals(), which can be checked for _tokenPrice > 10**token.decimals()
+        and
+        _tokenPrice < UINT256_MAX / _tokenBuyAmount * 10 ** token.decimals(), which can be checked for tokenBuyAmount > 10**token.decimals()
+        if _tokenBuyAmount > 10**token.decimals() and _tokenPrice > 10**token.decimals() then no overflow occurs anyway 
+        */
+        // if (_tokenPrice > 10 ** token.decimals()) {
+        //     vm.assume(_tokenBuyAmount < (UINT256_MAX - 1) / _tokenPrice  * 10 ** token.decimals());
+        // }
+        // if (_tokenBuyAmount > 10 ** token.decimals()) {
+        //     vm.assume(_tokenPrice < (UINT256_MAX - 1) / _tokenBuyAmount * 10 ** token.decimals());
+        // }
         vm.assume(
-            UINT256_MAX / _tokenBuyAmount > _tokenPrice * 10 ** token.decimals()
-        ); // amount * price *10**18 < UINT256_MAX
-        //vm.assume(_tokenPrice < UINT256_MAX / (100 * 10 ** token.decimals()));
+            _tokenBuyAmount / (10 ** token.decimals()) <
+                UINT256_MAX / _tokenPrice - 1
+        );
+        vm.assume(
+            _tokenPrice / (10 ** token.decimals()) <
+                UINT256_MAX / _tokenBuyAmount - 1
+        );
+
         ensureCostIsRoundedUp(_tokenBuyAmount, _tokenPrice);
     }
 }
