@@ -395,13 +395,13 @@ contract PersonalInviteTest is Test {
         );
 
         vm.startPrank(admin);
-        console.log("expectedAddress: %s", token.mintingAllowance(expectedAddress));
+        console.log(
+            "expectedAddress: %s",
+            token.mintingAllowance(expectedAddress)
+        );
         token.increaseMintingAllowance(expectedAddress, _tokenBuyAmount);
 
-        currency.increaseMintingAllowance(
-            admin,
-            UINT256_MAX
-        );
+        currency.increaseMintingAllowance(admin, UINT256_MAX);
         vm.stopPrank();
 
         uint maxCurrencyAmount = UINT256_MAX;
