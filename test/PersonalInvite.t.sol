@@ -206,6 +206,13 @@ contract PersonalInviteTest is Test {
             token
         );
 
+        // set fees to 0, otherwise extra currency is minted which causes an overflow
+        Fees memory fees = Fees(0, 0, 0, 0);
+        currency.feeSettings().planFeeChange(fees);
+        currency.feeSettings().executeFeeChange();
+        token.feeSettings().planFeeChange(fees);
+        token.feeSettings().executeFeeChange();
+
         vm.prank(admin);
         token.increaseMintingAllowance(expectedAddress, _tokenBuyAmount);
 
@@ -215,9 +222,8 @@ contract PersonalInviteTest is Test {
             _tokenBuyAmount * _nominalPrice + 1
         );
 
-        uint256 tokenDecimals = token.decimals();
         uint minCurrencyAmount = (_tokenBuyAmount * _nominalPrice) /
-            10 ** tokenDecimals;
+            10 ** token.decimals();
         console.log("minCurrencyAmount: %s", minCurrencyAmount);
         uint maxCurrencyAmount = minCurrencyAmount + 1;
         console.log("maxCurrencyAmount: %s", maxCurrencyAmount);
@@ -251,9 +257,6 @@ contract PersonalInviteTest is Test {
             currency.balanceOf(token.feeSettings().feeCollector())
         );
         // make sure balances are as expected after deployment
-        uint256 feeCollectorCurrencyBalanceBefore = currency.balanceOf(
-            token.feeSettings().feeCollector()
-        );
         uint256 currencyReceiverBalanceBefore = currency.balanceOf(receiver);
 
         address inviteAddress = factory.deploy(
@@ -301,18 +304,6 @@ contract PersonalInviteTest is Test {
             currency.balanceOf(token.feeSettings().feeCollector())
         );
 
-        if (
-            // if the currency amount is big enough, fee collector must receive fees
-            minCurrencyAmount >
-            token.feeSettings().personalInviteFeeDenominator()
-        ) {
-            assertTrue(
-                currency.balanceOf(token.feeSettings().feeCollector()) >
-                    feeCollectorCurrencyBalanceBefore,
-                "feeCollector received no payment"
-            );
-        }
-
         assertTrue(
             maxCurrencyAmount - currency.balanceOf(buyer) >= 1,
             "Buyer paid nothing"
@@ -334,12 +325,6 @@ contract PersonalInviteTest is Test {
             token.balanceOf(buyer),
             _tokenBuyAmount,
             "buyer received no tokens"
-        );
-
-        assertEq(
-            token.balanceOf(token.feeSettings().feeCollector()),
-            _tokenBuyAmount / token.feeSettings().tokenFeeDenominator(),
-            "feeCollector received wrong amount"
         );
     }
 
@@ -427,8 +412,8 @@ contract PersonalInviteTest is Test {
         vm.expectRevert("Create2: Failed on deploy");
         factory.deploy(
             salt,
-            payable(buyer),
-            payable(receiver),
+            buyer,
+            receiver,
             _tokenBuyAmount,
             _nominalPrice,
             expiration,
