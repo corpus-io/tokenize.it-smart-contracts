@@ -382,18 +382,10 @@ contract PersonalInviteTest is Test {
         /* 
         need to enforce: _tokenBuyAmount * _tokenPrice / 10 ** token.decimals() < UINT256_MAX
         otherwise the multiplication will overflow
-        this is equivalent to: 
-        _tokenBuyAmount < UINT256_MAX / _tokenPrice  * 10 ** token.decimals(), which can be checked for _tokenPrice > 10**token.decimals()
-        and
-        _tokenPrice < UINT256_MAX / _tokenBuyAmount * 10 ** token.decimals(), which can be checked for tokenBuyAmount > 10**token.decimals()
-        if _tokenBuyAmount > 10**token.decimals() and _tokenPrice > 10**token.decimals() then no overflow occurs anyway 
+        this is equivalent to both of these expressions, which don't overflow: 
+        _tokenBuyAmount / 10 ** token.decimals() < UINT256_MAX / _tokenPrice
+        _tokenPrice / 10 ** token.decimals() < UINT256_MAX / _tokenBuyAmount
         */
-        // if (_tokenPrice > 10 ** token.decimals()) {
-        //     vm.assume(_tokenBuyAmount < (UINT256_MAX - 1) / _tokenPrice  * 10 ** token.decimals());
-        // }
-        // if (_tokenBuyAmount > 10 ** token.decimals()) {
-        //     vm.assume(_tokenPrice < (UINT256_MAX - 1) / _tokenBuyAmount * 10 ** token.decimals());
-        // }
         vm.assume(
             _tokenBuyAmount / (10 ** token.decimals()) <
                 UINT256_MAX / _tokenPrice - 1

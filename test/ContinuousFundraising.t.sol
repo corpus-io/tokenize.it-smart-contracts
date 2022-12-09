@@ -512,6 +512,110 @@ contract ContinuousFundraisingTest is Test {
         ensureRealCostIsHigherEqualAdvertisedCost(1);
     }
 
+    function testWithAllPossiblePricesAndAmounts(
+        uint _tokenBuyAmount,
+        uint _tokenPrice
+    ) public {
+        vm.assume(_tokenBuyAmount > 0);
+        vm.assume(_tokenPrice > 0);
+        /* 
+        need to enforce: _tokenBuyAmount * _tokenPrice / 10 ** token.decimals() < UINT256_MAX
+        otherwise the multiplication will overflow
+        this is equivalent to both of these expressions, which don't overflow: 
+        _tokenBuyAmount / 10 ** token.decimals() < UINT256_MAX / _tokenPrice
+        _tokenPrice / 10 ** token.decimals() < UINT256_MAX / _tokenBuyAmount
+        */
+        vm.assume(
+            _tokenBuyAmount / (10 ** token.decimals()) <
+                UINT256_MAX / _tokenPrice - 1
+        );
+        vm.assume(
+            _tokenPrice / (10 ** token.decimals()) <
+                UINT256_MAX / _tokenBuyAmount - 1
+        );
+
+        // calculate amounts
+        uint256 tokenDecimals = token.decimals();
+        uint minCurrencyAmount;
+        if (_tokenBuyAmount < UINT256_MAX / _tokenPrice) {
+            // if the multiplication does not overflow, we can use 256 bit arithmetic
+            minCurrencyAmount =
+                (_tokenBuyAmount * _tokenPrice) /
+                10 ** tokenDecimals;
+        } else {
+            // if the multiplication overflows, we have to use 512 bit arithmetic
+            minCurrencyAmount = Math.mulDiv(
+                _tokenBuyAmount,
+                _tokenPrice,
+                10 ** tokenDecimals
+            );
+        }
+        console.log("minCurrencyAmount: %s", minCurrencyAmount);
+        uint maxCurrencyAmount = minCurrencyAmount + 1;
+        console.log("maxCurrencyAmount: %s", maxCurrencyAmount);
+
+        // set up currency
+        vm.startPrank(paymentTokenProvider);
+        paymentToken = new FakePaymentToken(
+            maxCurrencyAmount,
+            paymentTokenDecimals
+        ); // 1000 tokens with 6 decimals
+        // transfer currency to buyer
+        paymentToken.transfer(buyer, maxCurrencyAmount);
+        vm.stopPrank();
+        assertTrue(paymentToken.balanceOf(buyer) == maxCurrencyAmount);
+
+        assertEq(paymentToken.balanceOf(receiver), 0);
+        assertEq(paymentToken.balanceOf(token.feeSettings().feeCollector()), 0);
+
+        vm.startPrank(owner);
+        raise = new ContinuousFundraising(
+            trustedForwarder,
+            payable(receiver),
+            _tokenBuyAmount,
+            _tokenBuyAmount,
+            _tokenPrice,
+            _tokenBuyAmount,
+            paymentToken,
+            token
+        );
+        vm.stopPrank();
+
+        vm.startPrank(mintAllower);
+        token.increaseMintingAllowance(
+            address(raise),
+            _tokenBuyAmount - token.mintingAllowance(address(raise))
+        );
+        vm.stopPrank();
+
+        vm.startPrank(buyer);
+        paymentToken.approve(address(raise), maxCurrencyAmount);
+        raise.buy(_tokenBuyAmount);
+        vm.stopPrank();
+
+        assertTrue(
+            token.balanceOf(buyer) == _tokenBuyAmount,
+            "buyer has not received tokens"
+        );
+        assertTrue(
+            paymentToken.balanceOf(buyer) <= 1,
+            "buyer did not pay expected amount"
+        );
+        assertTrue(
+            paymentToken.balanceOf(receiver) +
+                paymentToken.balanceOf(token.feeSettings().feeCollector()) >=
+                minCurrencyAmount,
+            "payment did not reach receiver or fee collector"
+        );
+        assertTrue(
+            paymentToken.balanceOf(receiver) +
+                paymentToken.balanceOf(token.feeSettings().feeCollector()) +
+                paymentToken.balanceOf(buyer) ==
+                maxCurrencyAmount,
+            "currency does not add up"
+        );
+    }
+
     /*
         try to buy more than allowed
     */
