@@ -371,4 +371,74 @@ contract PersonalInviteTest is Test {
         //vm.assume(_tokenPrice < UINT256_MAX / (100 * 10 ** token.decimals()));
         ensureCostIsRoundedUp(_tokenBuyAmount, _tokenPrice);
     }
+
+    function ensureReverts(
+        uint256 _tokenBuyAmount,
+        uint256 _nominalPrice
+    ) public {
+        //uint rawSalt = 0;
+        bytes32 salt = bytes32(uint256(8));
+
+        //bytes memory creationCode = type(PersonalInvite).creationCode;
+        uint256 expiration = block.timestamp + 1000;
+
+        address expectedAddress = factory.getAddress(
+            salt,
+            payable(buyer),
+            payable(receiver),
+            _tokenBuyAmount,
+            _nominalPrice,
+            expiration,
+            currency,
+            token
+        );
+
+        vm.startPrank(admin);
+        token.increaseMintingAllowance(expectedAddress, _tokenBuyAmount);
+
+        currency.increaseMintingAllowance(
+            admin,
+            _tokenBuyAmount * _nominalPrice + 1
+        );
+        vm.stopPrank();
+
+        uint maxCurrencyAmount = UINT256_MAX;
+
+        vm.startPrank(admin);
+        currency.mint(buyer, maxCurrencyAmount); // during this call, the feeCollector gets 1% of the amount
+        // burn the feeCollector balance to simplify accounting
+        currency.burn(
+            token.feeSettings().feeCollector(),
+            currency.balanceOf(token.feeSettings().feeCollector())
+        ); // burn 1 wei to make sure the feeCollector balance is not rounded up
+        vm.stopPrank();
+
+        vm.prank(buyer);
+        currency.approve(expectedAddress, maxCurrencyAmount);
+
+        // make sure balances are as expected before deployment
+        vm.expectRevert("Arithmetic over/underflow");
+        address inviteAddress = factory.deploy(
+            salt,
+            payable(buyer),
+            payable(receiver),
+            _tokenBuyAmount,
+            _nominalPrice,
+            expiration,
+            currency,
+            token
+        );
+    }
+
+    function testRevertOnOverflow(
+        uint256 _tokenBuyAmount,
+        uint256 _tokenPrice
+    ) public {
+        vm.assume(_tokenBuyAmount > 0);
+        vm.assume(_tokenPrice > 0);
+
+        vm.assume(UINT256_MAX / _tokenPrice < _tokenBuyAmount);
+        //vm.assume(UINT256_MAX / _tokenBuyAmount > _tokenPrice);
+        ensureReverts(_tokenBuyAmount, _tokenPrice);
+    }
 }
