@@ -19,7 +19,7 @@ Let's assume that there will be one (1) platform, many (**X**) companies and man
 
 ## Platform deployment
 
-Tokenize.it deploys AllowList, FeeSettings and PersonalInviteFactory contracts once. Also, a web app will be provided. This app will not be described in depth here .
+Tokenize.it deploys AllowList, FeeSettings and PersonalInviteFactory contracts once. See [deployment](deployment.md) for more information. Also, a web app will be provided. This app will not be described in depth here.
 
 ## Company deployment
 
