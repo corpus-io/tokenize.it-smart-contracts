@@ -226,6 +226,37 @@ contract FeeSettingsTest is Test {
         //assertEq(_feeSettings.change, 0);
     }
 
+    function testSetFeeToXFrom0Immediately() public {
+        Fees memory fees = Fees(0, 0, 0, 0);
+        vm.prank(admin);
+        FeeSettings _feeSettings = new FeeSettings(fees, admin);
+
+        Fees memory feeChange = Fees({
+            tokenFeeDenominator: 20,
+            continuousFundraisingFeeDenominator: 30,
+            personalInviteFeeDenominator: 50,
+            time: 0
+        });
+
+        assertEq(_feeSettings.tokenFeeDenominator(), 0);
+        assertEq(_feeSettings.continuousFundraisingFeeDenominator(), 0);
+        assertEq(_feeSettings.personalInviteFeeDenominator(), 0);
+
+        vm.prank(admin);
+        _feeSettings.planFeeChange(feeChange);
+
+        vm.expectRevert();
+        vm.prank(admin);
+        //vm.warp(block.timestamp + delayAnnounced + 1);
+        _feeSettings.executeFeeChange();
+
+        assertEq(_feeSettings.tokenFeeDenominator(), 20);
+        assertEq(_feeSettings.continuousFundraisingFeeDenominator(), 30);
+        assertEq(_feeSettings.personalInviteFeeDenominator(), 50);
+
+        //assertEq(_feeSettings.change, 0);
+    }
+
     function testReduceFeeImmediately(
         uint256 tokenReductor,
         uint256 continuousReductor,
