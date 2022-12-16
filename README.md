@@ -107,4 +107,5 @@ The following resources are available regarding the contracts:
 - [Specification](docs/specification.md)
 - [Price format explainer](docs/price.md)
 - [Fee Collection](./docs/fees.md)
+- [Deployment](./docs/deployment.md)
 - Remaining questions: please get in touch at [hi@tokenize.it](mailto:hi@tokenize.it)
