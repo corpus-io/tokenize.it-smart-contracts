@@ -91,15 +91,15 @@ contract FeeSettings is Ownable2Step {
     function checkFeeLimits(Fees memory _fees) internal pure {
         require(
             _fees.tokenFeeDenominator >= 20,
-            "Fee must be below equal or less 5%"
+            "Fee must be equal or less 5% (denominator must be >= 20)"
         );
         require(
             _fees.continuousFundraisingFeeDenominator >= 20,
-            "Fee must be below equal or less 5%"
+            "Fee must be equal or less 5% (denominator must be >= 20)"
         );
         require(
             _fees.personalInviteFeeDenominator >= 20,
-            "Fee must be below equal or less 5%"
+            "Fee must be equal or less 5% (denominator must be >= 20)"
         );
     }
 
