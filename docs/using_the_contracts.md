@@ -17,7 +17,7 @@ These will be used for the next steps.
    ```solidity
    constructor(
         address _trustedForwarder,
-        FeeSettings _feeSettings,
+        IFeeSettingsV1 _feeSettings,
         address _admin,
         AllowList _allowList,
         uint256 _requirements,
