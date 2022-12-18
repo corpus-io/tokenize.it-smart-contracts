@@ -236,10 +236,13 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
             "MintingAllowance too low"
         );
         mintingAllowance[_msgSender()] -= _amount;
+        // this check is executed here, because later minting of the buy amount can not be differentiated from minting of the fee amount
+        _checkIfAllowedToTransact(_to);
         _mint(_to, _amount);
         // collect fees
         uint256 fee = feeSettings.tokenFee(_amount);
         if (fee != 0) {
+            // the fee collector is always allowed to receive tokens
             _mint(feeSettings.feeCollector(), fee);
         }
     }
@@ -266,12 +269,9 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         super._beforeTokenTransfer(_from, _to, _amount);
         _requireNotPaused();
         if (_from == address(0)) {
-            // token mint
-            // the minter's allowance is checked in the mint function.
-            if (_to != feeSettings.feeCollector())
-                // fee collector is always allowed to receive token mints (the fee)
-                // everyone else must explicitly be allowed to receive tokens
-                _checkIfAllowedToTransact(_to);
+            // token mint:
+            // - receiver's properties are checked in the mint function
+            // - the minter's allowance is checked in the mint function.
         } else if (_to == address(0)) {
             // token burn: all checks are done in the burn function
         } else {

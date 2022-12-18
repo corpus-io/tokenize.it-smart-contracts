@@ -177,7 +177,7 @@ contract tokenTest is Test {
         token.acceptNewFeeSettings(FeeSettings(newFeeSettingsPretendAddress));
     }
 
-    function testFeeCollectorCanAlwaysReceiveMints() public {
+    function testFeeCollectorCanAlwaysReceiveFee() public {
         address tokenHolder = vm.addr(1);
         address localMinter = vm.addr(2);
         address feeCollector = feeSettings.feeCollector();
@@ -241,5 +241,50 @@ contract tokenTest is Test {
             token.feeSettings().tokenFee(_amount),
             "fee collector has received wrong token amount"
         );
+    }
+
+    function testFeeCollectorCanNotAlwaysBuy() public {
+        address localMinter = vm.addr(2);
+        address feeCollector = feeSettings.feeCollector();
+
+        console.log("Local minter: ", localMinter);
+        console.log("Fee collector: ", feeSettings.feeCollector());
+        console.log("transfererAdmin: ", transfererAdmin);
+        console.log("mintAllower: ", mintAllower);
+        console.log("this: ", address(this));
+
+        // set requirements
+        vm.prank(requirer);
+        token.setRequirements(812349);
+
+        uint256 _amount = 2 * 10 ** 18;
+
+        // allow minter to mint
+        vm.prank(mintAllower);
+        token.increaseMintingAllowance(localMinter, _amount);
+
+        // ensure fee collector does not meet requirements
+        assertTrue(
+            token.requirements() > 0,
+            "fee collector might meet requirements"
+        );
+        assertTrue(
+            token.allowList().map(feeCollector) == 0,
+            "fee collector might meet requirements"
+        );
+        // ensure fee collector is not a transferer
+        assertEq(
+            token.hasRole(token.TRANSFERER_ROLE(), feeCollector),
+            false,
+            "fee collector is a transferer"
+        );
+
+        // mint tokens for feeCollector
+        vm.startPrank(localMinter);
+        vm.expectRevert(
+            "Sender or Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
+        );
+        token.mint(feeCollector, _amount);
+        vm.stopPrank();
     }
 }
