@@ -207,7 +207,7 @@ contract PersonalInviteTest is Test {
         );
 
         // set fees to 0, otherwise extra currency is minted which causes an overflow
-        Fees memory fees = Fees(0, 0, 0, 0);
+        Fees memory fees = Fees(UINT256_MAX, UINT256_MAX, UINT256_MAX, 0);
         currency.feeSettings().planFeeChange(fees);
         currency.feeSettings().executeFeeChange();
         token.feeSettings().planFeeChange(fees);
@@ -392,7 +392,7 @@ contract PersonalInviteTest is Test {
         uint maxCurrencyAmount = UINT256_MAX;
 
         // set fees to 0, otherwise extra currency is minted which causes an overflow
-        Fees memory fees = Fees(0, 0, 0, 0);
+        Fees memory fees = Fees(UINT256_MAX, UINT256_MAX, UINT256_MAX, 0);
         currency.feeSettings().planFeeChange(fees);
         currency.feeSettings().executeFeeChange();
 
