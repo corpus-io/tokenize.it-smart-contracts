@@ -46,18 +46,18 @@ These values can be changed by tokenize.it. Fee changes are subject to a delay o
 Both fees are calculated as follows:
 
 ```solidity
-if (feeDenominator == 0) {
+if (feeDenominator == UINT256_MAX) {
    fee = 0;
 }
 else {
-   fee    = amount     / feeDenominator
+   fee    = amount / feeDenominator
 }
 ```
 
-Taking into account the [limits](#fee-limits), the following is enforced for both denominators:
+Taking into account the [limits](#fee-limits), the following is enforced for all denominators:
 
 ```solidity
-0 == denominator || denominator >= 20
+denominator >= 20
 ```
 
 ### Token contracts
