@@ -506,6 +506,29 @@ contract FeeSettingsTest is Test {
         );
     }
 
+    function testERC165IsAvailable() public {
+        FeeSettings _feeSettings;
+        Fees memory fees = Fees(100, 100, 100, 0);
+        _feeSettings = new FeeSettings(fees, admin);
+        assertEq(
+            _feeSettings.supportsInterface(0x01ffc9a7),
+            true,
+            "ERC165 not supported"
+        );
+    }
+
+    function testIFeeSettingsV1IsAvailable() public {
+        FeeSettings _feeSettings;
+        Fees memory fees = Fees(100, 100, 100, 0);
+        _feeSettings = new FeeSettings(fees, admin);
+
+        assertEq(
+            _feeSettings.supportsInterface(0x8d9b0c1a),
+            true,
+            "IFeeSettingsV1 not supported"
+        );
+    }
+
     /**
      * @dev the fee calculation is implemented to accept a wrong result in one case:
      *      if denominator is UINT256_MAX and amount is UINT256_MAX, the result will be 1 instead of 0
