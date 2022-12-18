@@ -77,9 +77,11 @@ This is a trustless process, because:
 2. the trusted forwarder setting in contract A is immutable
 3. signature verification is executed on-chain
 
-Open gas station network provides tools to execute meta transactions without involving a third party hot wallet. Tokenize.it will not use these tools though. Exclusively using a hot wallet for transaction execution does not harm security at all.
+Open gas station network provides tools to execute meta transactions without involving a third party hot wallet. Tokenize.it does not plan on using these tools though. Exclusively using a hot wallet for transaction execution does not harm security at all.
 
 The hot wallet approach might reduce availability, which is not a major concern for this use case (the hot wallet being available whenever the frontend is available is good enough). Keep in mind that EIP-2771 is purely offered for UX reasons. All smart contracts can be used directly, too, further reducing concerns about hot wallet availability.
+
+An [Openzeppelin Defender Relay](https://docs.openzeppelin.com/defender/relay) may be used as hot wallet.
 
 ## Supported Currencies
 
