@@ -177,7 +177,7 @@ contract tokenTest is Test {
         token.acceptNewFeeSettings(FeeSettings(newFeeSettingsPretendAddress));
     }
 
-    function testFeeCollectorCanAlwaysTransact() public {
+    function testFeeCollectorCanAlwaysReceiveMints() public {
         address tokenHolder = vm.addr(1);
         address localMinter = vm.addr(2);
         address feeCollector = feeSettings.feeCollector();
@@ -207,48 +207,39 @@ contract tokenTest is Test {
 
         console.log("after: ", tokenHolder);
 
+        // ensure fee collector does not meet requirements
+        assertTrue(
+            token.requirements() > 0,
+            "fee collector might meet requirements"
+        );
+        assertTrue(
+            token.allowList().map(feeCollector) == 0,
+            "fee collector might meet requirements"
+        );
+        // ensure fee collector is not a transferer
+        assertEq(
+            token.hasRole(token.TRANSFERER_ROLE(), feeCollector),
+            false,
+            "fee collector is a transferer"
+        );
+
+        uint feeCollectorBalanceBeforeMint = token.balanceOf(feeCollector);
         // mint tokens for token holder. Currently, this also mints tokens to the fee collector, already proving they can receive tokens.
         // But if the test fee is ever set to 0, the tests above might fail if the fee collector can't send or receive tokens for some reason.
         vm.startPrank(localMinter);
         token.mint(tokenHolder, _amount);
         vm.stopPrank();
 
-        uint feeCollectorBalanceBeforeTransfer = token.balanceOf(feeCollector);
+        uint feeCollectorBalanceAfterMint = token.balanceOf(feeCollector);
 
         assertTrue(
-            token.balanceOf(feeCollector) == feeCollectorBalanceBeforeTransfer,
-            "fee collector has too many tokens"
+            feeCollectorBalanceBeforeMint <= feeCollectorBalanceAfterMint,
+            "fee collector has not received tokens"
         );
-
-        // test if fee collector can receive
-        vm.prank(tokenHolder);
-        token.transfer(feeCollector, _amount);
-
-        assertTrue(
-            token.balanceOf(feeCollector) ==
-                feeCollectorBalanceBeforeTransfer + _amount,
-            "fee collector has no tokens"
-        );
-        console.log(
-            "fee collector balance is: ",
-            token.balanceOf(feeCollector)
-        );
-        console.log("_amount is: ", _amount);
-
-        // test if fee collector can send
-        vm.prank(feeCollector);
-        token.transfer(tokenHolder, 500);
-
-        console.log(
-            "fee collector balance is: ",
-            token.balanceOf(feeCollector)
-        );
-        console.log("fee collector balance should be: ", _amount - 500);
-
-        assertTrue(
-            token.balanceOf(feeCollector) ==
-                feeCollectorBalanceBeforeTransfer + _amount - 500,
-            "fee collector has wrong balance"
+        assertEq(
+            feeCollectorBalanceAfterMint - feeCollectorBalanceBeforeMint,
+            token.feeSettings().tokenFee(_amount),
+            "fee collector has received wrong token amount"
         );
     }
 }

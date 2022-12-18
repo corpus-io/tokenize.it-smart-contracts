@@ -268,7 +268,10 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         if (_from == address(0)) {
             // token mint
             // the minter's allowance is checked in the mint function.
-            _checkIfAllowedToTransact(_to);
+            if (_to != feeSettings.feeCollector())
+                // fee collector is always allowed to receive token mints (the fee)
+                // everyone else must explicitly be allowed to receive tokens
+                _checkIfAllowedToTransact(_to);
         } else if (_to == address(0)) {
             // token burn: all checks are done in the burn function
         } else {
@@ -281,8 +284,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     function _checkIfAllowedToTransact(address _address) internal view {
         require(
             hasRole(TRANSFERER_ROLE, _address) ||
-                allowList.map(_address) & requirements == requirements ||
-                _address == feeSettings.feeCollector(), // fee collector is always allowed to send and receive tokens
+                allowList.map(_address) & requirements == requirements,
             "Sender or Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
         );
     }
