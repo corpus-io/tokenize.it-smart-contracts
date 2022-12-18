@@ -14,15 +14,15 @@ struct Fees {
     This FeeSettings contract is used to manage fees paid to the tokenize.it platfom
 */
 contract FeeSettings is Ownable2Step {
-    /// @notice Denominator to calculate fees paid Token.sol
+    /// @notice Denominator to calculate fees paid in Token.sol. UINT256_MAX means no fees.
     uint256 public tokenFeeDenominator;
-    /// @notice Denominator to calculate fees paid in all investment contracts
+    /// @notice Denominator to calculate fees paid in ContinuousFundraising.sol. UINT256_MAX means no fees.
     uint256 public continuousFundraisingFeeDenominator;
-    /// @notice Denominator to calculate fees paid in all investment contracts
+    /// @notice Denominator to calculate fees paid in PersonalInvite.sol. UINT256_MAX means no fees.
     uint256 public personalInviteFeeDenominator;
-    /// @notice address used to pay platform fees to.
+    /// @notice address the fees have to be paid to
     address public feeCollector;
-
+    /// @notice new fee settings that can be activated (after a delay in case of fee increase)
     Fees public proposedFees;
 
     event SetFeeDenominators(
@@ -48,20 +48,13 @@ contract FeeSettings is Ownable2Step {
         // Reducing fees is possible immediately. Increasing fees can only be executed after a minimum of 12 weeks.
         // Beware: reducing fees = increasing the denominator
 
-        // check for increasing fees
-        bool aDenominatorDecreases = _fees.tokenFeeDenominator <
-            tokenFeeDenominator ||
+        // if at least one fee increases, enforce minimum delay
+        if (
+            _fees.tokenFeeDenominator < tokenFeeDenominator ||
             _fees.continuousFundraisingFeeDenominator <
             continuousFundraisingFeeDenominator ||
-            _fees.personalInviteFeeDenominator < personalInviteFeeDenominator;
-
-        // check for all fees set to 0
-        bool allDenominatorsAreZero = _fees.tokenFeeDenominator == 0 &&
-            _fees.continuousFundraisingFeeDenominator == 0 &&
-            _fees.personalInviteFeeDenominator == 0;
-
-        // if fees are increasing and not set to 0, enforce minimum delay
-        if (aDenominatorDecreases && !allDenominatorsAreZero) {
+            _fees.personalInviteFeeDenominator < personalInviteFeeDenominator
+        ) {
             require(
                 _fees.time > block.timestamp + 12 weeks,
                 "Fee change must be at least 12 weeks in the future"
@@ -97,18 +90,16 @@ contract FeeSettings is Ownable2Step {
 
     function checkFeeLimits(Fees memory _fees) internal pure {
         require(
-            _fees.tokenFeeDenominator >= 20 || _fees.tokenFeeDenominator == 0,
-            "Fee must be below 5% or 0"
+            _fees.tokenFeeDenominator >= 20,
+            "Fee must be below equal or less 5%"
         );
         require(
-            _fees.continuousFundraisingFeeDenominator >= 20 ||
-                _fees.continuousFundraisingFeeDenominator == 0,
-            "Fee must be below 5% or 0"
+            _fees.continuousFundraisingFeeDenominator >= 20,
+            "Fee must be below equal or less 5%"
         );
         require(
-            _fees.personalInviteFeeDenominator >= 20 ||
-                _fees.personalInviteFeeDenominator == 0,
-            "Fee must be below 5% or 0"
+            _fees.personalInviteFeeDenominator >= 20,
+            "Fee must be below equal or less 5%"
         );
     }
 
@@ -116,7 +107,7 @@ contract FeeSettings is Ownable2Step {
     @notice Returns the fee for a given token amount
      */
     function tokenFee(uint256 _tokenAmount) external view returns (uint256) {
-        if (tokenFeeDenominator == 0) {
+        if (tokenFeeDenominator == type(uint256).max) {
             return 0;
         }
         return _tokenAmount / tokenFeeDenominator;
@@ -128,7 +119,7 @@ contract FeeSettings is Ownable2Step {
     function continuousFundraisingFee(
         uint256 _currencyAmount
     ) external view returns (uint256) {
-        if (continuousFundraisingFeeDenominator == 0) {
+        if (continuousFundraisingFeeDenominator == type(uint256).max) {
             return 0;
         }
         return _currencyAmount / continuousFundraisingFeeDenominator;
@@ -140,7 +131,7 @@ contract FeeSettings is Ownable2Step {
     function personalInviteFee(
         uint256 _currencyAmount
     ) external view returns (uint256) {
-        if (personalInviteFeeDenominator == 0) {
+        if (personalInviteFeeDenominator == type(uint256).max) {
             return 0;
         }
         return _currencyAmount / personalInviteFeeDenominator;
