@@ -36,17 +36,19 @@ These will be used for the next steps.
 
 2. Create initial cap table by minting tokens for various addresses.
 
-For this, the admin needs to give an account (can be himself) minting rights by calling `setMintingAllowance(address minter, uint _allowance)` :
+   For this, the admin needs to give an account (can be himself) a minting allowance by calling `setMintingAllowance(address minter, uint _allowance)` :
 
-- `minter` : account that will be granted the minting allowance
-- `_allowance`: amount of tokens they can mint, denominated in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate).
+   - `minter` : account that will be granted the minting allowance
+   - `_allowance`: amount of tokens they can mint, denominated in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate).
 
-To create the initial cap table, `_allowance` should be the total amount of shares in existence so far.
+   To create the initial cap table, `_allowance` should be the total amount of shares in existence so far.
 
-The minter can then create new shares for each shareholder, by calling `mint(address _to, uint256 _amount)`, where:
+   The minter can then create new shares for each shareholder, by calling `mint(address _to, uint256 _amount)`, where:
 
-- `_to` is the shareholder's address
-- `_amount` is the amount of shares the shareholder holds, denominated in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate)
+   - `_to` is the shareholder's address
+   - `_amount` is the amount of shares the shareholder holds, denominated in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate)
+
+   Note that extra tokens will be minted to feeCollector. See the section on [fees](fees.md) for more information.
 
 ## Enabling addresses to receive tokens
 
