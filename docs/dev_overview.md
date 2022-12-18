@@ -4,7 +4,7 @@ The [token contract](./contracts/Token.sol) is based on the OpenZeppelin ERC20 c
 Beyond being an ERC20 token, it has fine grained access control to:
 
 - define minting rights
-- setting requirements which a user has to meet in order to transact
+- define who can set requirements which a user has to meet in order to transact
 - define burning rights (only company admin)
 - define who is allowed to transfer the token
 - define who is allowed to pause the contract
