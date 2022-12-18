@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 import "./AllowList.sol";
-import "./FeeSettings.sol";
 import "./interfaces/IFeeSettings.sol";
 
 /**
@@ -41,10 +40,10 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     AllowList public allowList;
 
     // Fee settings of tokenize.it
-    FeeSettings public feeSettings;
+    IFeeSettingsV1 public feeSettings;
 
     // Suggested new fee settings, which will be applied after admin approval
-    FeeSettings public suggestedFeeSettings;
+    IFeeSettingsV1 public suggestedFeeSettings;
     /**
     @notice  defines requirements to send or receive tokens for non-TRANSFERER_ROLE. If zero, everbody can transfer the token. If non-zero, then only those who have met the requirements can send or receive tokens. 
         Requirements can be defined by the REQUIREMENT_ROLE, and are validated against the allowList. They can include things like "must have a verified email address", "must have a verified phone number", "must have a verified identity", etc. 
@@ -84,8 +83,8 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
 
     event RequirementsChanged(uint newRequirements);
     event AllowListChanged(AllowList indexed newAllowList);
-    event NewFeeSettingsSuggested(FeeSettings indexed _feeSettings);
-    event FeeSettingsChanged(FeeSettings indexed newFeeSettings);
+    event NewFeeSettingsSuggested(IFeeSettingsV1 indexed _feeSettings);
+    event FeeSettingsChanged(IFeeSettingsV1 indexed newFeeSettings);
     event MintingAllowanceChanged(address indexed minter, uint256 newAllowance);
 
     /**
@@ -100,7 +99,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     */
     constructor(
         address _trustedForwarder,
-        FeeSettings _feeSettings,
+        IFeeSettingsV1 _feeSettings,
         address _admin,
         AllowList _allowList,
         uint256 _requirements,
@@ -161,7 +160,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
      * @dev This is a possibility to change fees without honoring the delay enforced in the feeSettings contract. Therefore, approval of the admin is required.
      * @param _feeSettings the new feeSettings contract
      */
-    function suggestNewFeeSettings(FeeSettings _feeSettings) external {
+    function suggestNewFeeSettings(IFeeSettingsV1 _feeSettings) external {
         require(
             _msgSender() == feeSettings.owner(),
             "Only fee settings owner can suggest fee settings update"
@@ -179,12 +178,12 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
      * @param _feeSettings the new feeSettings contract
      */
     function acceptNewFeeSettings(
-        FeeSettings _feeSettings
+        IFeeSettingsV1 _feeSettings
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(
-            address(suggestedFeeSettings) != address(0),
-            "Fee settings cannot be zero address"
-        );
+        // after deployment, suggestedFeeSettings is 0x0. Therefore, this check is necessary, otherwise the admin could accept 0x0 as new feeSettings.
+        // Checking that the suggestedFeeSettings is not 0x0 would work, too, but this check is used in other places, too.
+        _checkIfFeeSettingsImplementsInterface(_feeSettings);
+
         require(
             _feeSettings == suggestedFeeSettings,
             "Only suggested fee settings can be accepted"
@@ -291,7 +290,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
      * @dev  This check uses EIP165, see https://eips.ethereum.org/EIPS/eip-165
      */
     function _checkIfFeeSettingsImplementsInterface(
-        FeeSettings _feeSettings
+        IFeeSettingsV1 _feeSettings
     ) internal view {
         // step 1: needs to return true if EIP165 is supported
         require(

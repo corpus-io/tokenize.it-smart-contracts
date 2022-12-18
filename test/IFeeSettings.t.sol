@@ -14,6 +14,7 @@ contract IFeeSettingsTest is Test {
         expected = expected ^ getFunctionSelector("personalInviteFee(uint256)");
         expected = expected ^ getFunctionSelector("feeCollector()");
         expected = expected ^ getFunctionSelector("owner()");
+        expected = expected ^ getFunctionSelector("supportsInterface(bytes4)");
         bytes4 actual = type(IFeeSettingsV1).interfaceId;
 
         assertEq(actual, expected, "interface ID mismatch");

@@ -55,7 +55,7 @@ contract PersonalInvite {
             10 ** _token.decimals()
         );
 
-        FeeSettings feeSettings = _token.feeSettings();
+        IFeeSettingsV1 feeSettings = _token.feeSettings();
         uint256 fee = feeSettings.personalInviteFee(currencyAmount);
         if (fee != 0) {
             _currency.safeTransferFrom(_buyer, feeSettings.feeCollector(), fee);
