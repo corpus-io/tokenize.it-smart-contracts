@@ -87,7 +87,7 @@ contract tokenTest is Test {
 
     function testSuggestNewFeeSettings0() public {
         vm.prank(feeSettings.owner());
-        vm.expectRevert("Fee settings cannot be zero address");
+        vm.expectRevert();
         token.suggestNewFeeSettings(FeeSettings(address(0)));
     }
 

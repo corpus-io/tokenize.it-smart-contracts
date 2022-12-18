@@ -94,10 +94,23 @@ contract tokenTest is Test {
     function testFeeSettings0() public {
         FeeSettings _noFeeSettings = FeeSettings(address(0));
         console.log("fee settings address:", address(_noFeeSettings));
-        vm.expectRevert("FeeSettings must not be zero address");
+        vm.expectRevert();
         new Token(
             trustedForwarder,
             _noFeeSettings,
+            admin,
+            allowList,
+            0x0,
+            "testToken",
+            "TEST"
+        );
+    }
+
+    function testFeeSettingsNoERC165() public {
+        vm.expectRevert();
+        new Token(
+            trustedForwarder,
+            FeeSettings(address(allowList)),
             admin,
             allowList,
             0x0,
