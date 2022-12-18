@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/Token.sol";
+import "../contracts/FeeSettings.sol";
 
 contract tokenTest is Test {
     Token token;
@@ -95,7 +96,7 @@ contract tokenTest is Test {
         vm.assume(newCollector != address(0));
         Fees memory fees = Fees(UINT256_MAX, UINT256_MAX, UINT256_MAX, 0);
         FeeSettings newFeeSettings = new FeeSettings(fees, newCollector);
-        FeeSettings oldFeeSettings = token.feeSettings();
+        FeeSettings oldFeeSettings = FeeSettings(address(token.feeSettings()));
         uint oldInvestmentFeeDenominator = oldFeeSettings
             .continuousFundraisingFeeDenominator();
         uint oldTokenFeeDenominator = oldFeeSettings.tokenFeeDenominator();
@@ -104,7 +105,8 @@ contract tokenTest is Test {
 
         // make sure old fees are still in effect
         assertTrue(
-            address(token.feeSettings()) == address(oldFeeSettings),
+            address(FeeSettings(address(token.feeSettings()))) ==
+                address(oldFeeSettings),
             "fee settings have changed!"
         );
         assertTrue(
@@ -112,12 +114,14 @@ contract tokenTest is Test {
             "suggested fee settings not set!"
         );
         assertTrue(
-            token.feeSettings().continuousFundraisingFeeDenominator() ==
+            FeeSettings(address(token.feeSettings()))
+                .continuousFundraisingFeeDenominator() ==
                 oldInvestmentFeeDenominator,
             "investment fee denominator changed!"
         );
         assertTrue(
-            token.feeSettings().tokenFeeDenominator() == oldTokenFeeDenominator,
+            FeeSettings(address(token.feeSettings())).tokenFeeDenominator() ==
+                oldTokenFeeDenominator,
             "token fee denominator changed!"
         );
     }
@@ -126,7 +130,7 @@ contract tokenTest is Test {
         vm.assume(newCollector != address(0));
         Fees memory fees = Fees(UINT256_MAX, UINT256_MAX, UINT256_MAX, 0);
         FeeSettings newFeeSettings = new FeeSettings(fees, newCollector);
-        FeeSettings oldFeeSettings = token.feeSettings();
+        FeeSettings oldFeeSettings = FeeSettings(address(token.feeSettings()));
         uint oldInvestmentFeeDenominator = oldFeeSettings
             .continuousFundraisingFeeDenominator();
         uint oldTokenFeeDenominator = oldFeeSettings.tokenFeeDenominator();
@@ -137,26 +141,28 @@ contract tokenTest is Test {
         vm.prank(admin);
         token.acceptNewFeeSettings(newFeeSettings);
         assertTrue(
-            token.feeSettings() == newFeeSettings,
+            FeeSettings(address(token.feeSettings())) == newFeeSettings,
             "fee settings not changed!"
         );
         assertEq(
-            token.feeSettings().feeCollector(),
+            FeeSettings(address(token.feeSettings())).feeCollector(),
             newCollector,
             "Wrong feeCollector"
         );
         assertTrue(
-            token.feeSettings().continuousFundraisingFeeDenominator() !=
+            FeeSettings(address(token.feeSettings()))
+                .continuousFundraisingFeeDenominator() !=
                 oldInvestmentFeeDenominator,
             "investment fee denominator changed!"
         );
         assertTrue(
-            token.feeSettings().tokenFeeDenominator() != oldTokenFeeDenominator,
+            FeeSettings(address(token.feeSettings())).tokenFeeDenominator() !=
+                oldTokenFeeDenominator,
             "token fee denominator changed!"
         );
     }
 
-    function testFrontrunFeeSettingsAcceptance(
+    function testAcceptFeeCollectorInsteadOfFeeSettings(
         address newFeeSettingsPretendAddress
     ) public {
         vm.assume(newFeeSettingsPretendAddress != address(0));
@@ -172,9 +178,35 @@ contract tokenTest is Test {
         console.log("Suggested fee settings: ", address(newFeeSettings));
 
         // admin thinks he is accepting a, but suggestion is b
-        vm.expectRevert("Only suggested fee settings can be accepted");
+        vm.expectRevert();
         vm.prank(admin);
         token.acceptNewFeeSettings(FeeSettings(newFeeSettingsPretendAddress));
+    }
+
+    function testAcceptWrongFeeSettings() public {
+        Fees memory fees = Fees(0, 0, 0, 0);
+        FeeSettings realNewFeeSettings = new FeeSettings(
+            fees,
+            feeSettings.feeCollector()
+        );
+        FeeSettings fakeNewFeeSettings = new FeeSettings(
+            fees,
+            feeSettings.feeCollector()
+        );
+
+        assertTrue(
+            address(fakeNewFeeSettings) != address(realNewFeeSettings),
+            "fakeNewFeeSettings == realNewFeeSettings, that should never happen"
+        );
+
+        vm.prank(feeSettings.owner());
+        token.suggestNewFeeSettings(realNewFeeSettings);
+        console.log("Suggested fee settings: ", address(realNewFeeSettings));
+
+        // admin thinks he is accepting a, but suggestion is b
+        vm.expectRevert("Only suggested fee settings can be accepted");
+        vm.prank(admin);
+        token.acceptNewFeeSettings(fakeNewFeeSettings);
     }
 
     function testFeeCollectorCanAlwaysTransact() public {

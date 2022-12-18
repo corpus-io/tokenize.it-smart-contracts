@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/Token.sol";
 import "../contracts/ContinuousFundraising.sol";
+import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
 
@@ -206,7 +207,8 @@ contract ContinuousFundraisingTest is Test {
         uint currencyAmount = 990 * 10 ** _paymentTokenDecimals;
         uint256 currencyFee = continuousFundraisingFeeDenominator != UINT256_MAX
             ? currencyAmount /
-                token.feeSettings().continuousFundraisingFeeDenominator()
+                FeeSettings(address(token.feeSettings()))
+                    .continuousFundraisingFeeDenominator()
             : 0;
         assertTrue(
             _paymentToken.balanceOf(receiver) == currencyAmount - currencyFee,
@@ -220,7 +222,9 @@ contract ContinuousFundraisingTest is Test {
         );
         assertEq(
             tokenFeeDenominator != UINT256_MAX
-                ? tokenAmount / token.feeSettings().tokenFeeDenominator()
+                ? tokenAmount /
+                    FeeSettings(address(token.feeSettings()))
+                        .tokenFeeDenominator()
                 : 0,
             _token.balanceOf(feeSettings.feeCollector()),
             "fee collector has wrong amount of token"
@@ -338,7 +342,8 @@ contract ContinuousFundraisingTest is Test {
             // receiver should have the 990 FPT that were paid, minus the fee
             uint currencyAmount = 990 * 10 ** _paymentTokenDecimals;
             uint256 currencyFee = currencyAmount /
-                token.feeSettings().continuousFundraisingFeeDenominator();
+                FeeSettings(address(token.feeSettings()))
+                    .continuousFundraisingFeeDenominator();
             assertTrue(
                 _paymentToken.balanceOf(receiver) ==
                     currencyAmount - currencyFee,
@@ -351,7 +356,9 @@ contract ContinuousFundraisingTest is Test {
                 "fee collector has wrong amount of currency"
             );
             assertEq(
-                tokenAmount / token.feeSettings().tokenFeeDenominator(),
+                tokenAmount /
+                    FeeSettings(address(token.feeSettings()))
+                        .tokenFeeDenominator(),
                 _token.balanceOf(feeSettings.feeCollector()),
                 "fee collector has wrong amount of token"
             );

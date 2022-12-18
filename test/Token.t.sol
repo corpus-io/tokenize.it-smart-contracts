@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/Token.sol";
+import "../contracts/FeeSettings.sol";
 
 contract tokenTest is Test {
     Token token;
@@ -276,7 +277,11 @@ contract tokenTest is Test {
 
     function testMintOnce(uint256 x) public {
         vm.assume(
-            x <= UINT256_MAX - x / token.feeSettings().tokenFeeDenominator()
+            x <=
+                UINT256_MAX -
+                    x /
+                    FeeSettings(address(token.feeSettings()))
+                        .tokenFeeDenominator()
         ); // avoid overflow
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
@@ -314,7 +319,8 @@ contract tokenTest is Test {
                 x + y <=
                 UINT256_MAX -
                     (x + y) /
-                    token.feeSettings().tokenFeeDenominator()
+                    FeeSettings(address(token.feeSettings()))
+                        .tokenFeeDenominator()
         ); // avoid overflow
 
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
@@ -385,7 +391,8 @@ contract tokenTest is Test {
             totalMintAmount <=
                 UINT256_MAX -
                     totalMintAmount /
-                    token.feeSettings().tokenFeeDenominator()
+                    FeeSettings(address(token.feeSettings()))
+                        .tokenFeeDenominator()
         ); // avoid overflow
         //vm.assume(steps < 200);
 
@@ -430,7 +437,11 @@ contract tokenTest is Test {
 
     function testBurnSimple(uint256 x) public {
         vm.assume(
-            x <= UINT256_MAX - x / token.feeSettings().tokenFeeDenominator()
+            x <=
+                UINT256_MAX -
+                    x /
+                    FeeSettings(address(token.feeSettings()))
+                        .tokenFeeDenominator()
         ); // avoid overflow
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
         bytes32 role = token.BURNER_ROLE();
@@ -444,25 +455,31 @@ contract tokenTest is Test {
         console.log("minting %s tokens", x);
         console.log(
             "fee demoninator: %s",
-            token.feeSettings().tokenFeeDenominator()
+            FeeSettings(address(token.feeSettings())).tokenFeeDenominator()
         );
         console.log("amount: %s", x);
 
         console.log(
             "remainder: %s",
-            x % token.feeSettings().tokenFeeDenominator()
+            x % FeeSettings(address(token.feeSettings())).tokenFeeDenominator()
         );
         console.log(
             "amount without remainder: %s",
-            x - (x % token.feeSettings().tokenFeeDenominator())
+            x -
+                (x %
+                    FeeSettings(address(token.feeSettings()))
+                        .tokenFeeDenominator())
         );
 
         console.log(
             "total tokens to mint (amount + fee): %s",
-            x + x / token.feeSettings().tokenFeeDenominator()
+            x +
+                x /
+                FeeSettings(address(token.feeSettings())).tokenFeeDenominator()
         );
 
-        uint fee = x / token.feeSettings().tokenFeeDenominator();
+        uint fee = x /
+            FeeSettings(address(token.feeSettings())).tokenFeeDenominator();
         console.log("fee: %s", fee);
         vm.prank(minter);
         token.mint(pauser, x);
@@ -483,7 +500,11 @@ contract tokenTest is Test {
      */
     function testBurnWithRequirements(uint256 x) public {
         vm.assume(
-            x <= UINT256_MAX - x / token.feeSettings().tokenFeeDenominator()
+            x <=
+                UINT256_MAX -
+                    x /
+                    FeeSettings(address(token.feeSettings()))
+                        .tokenFeeDenominator()
         ); // avoid overflow
         vm.prank(mintAllower);
         token.increaseMintingAllowance(minter, x);
@@ -519,7 +540,9 @@ contract tokenTest is Test {
     function testTransferTo0(address _address) public {
         vm.assume(token.balanceOf(_address) == 0);
         vm.assume(_address != address(0));
-        vm.assume(_address != token.feeSettings().feeCollector());
+        vm.assume(
+            _address != FeeSettings(address(token.feeSettings())).feeCollector()
+        );
 
         uint _amount = 100;
 
@@ -1042,7 +1065,7 @@ contract tokenTest is Test {
 
     function testAcceptFeeSettings0() public {
         vm.prank(admin);
-        vm.expectRevert("Fee settings cannot be zero address");
+        vm.expectRevert();
         token.acceptNewFeeSettings(FeeSettings(address(0)));
     }
 }
