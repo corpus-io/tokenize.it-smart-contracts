@@ -105,35 +105,29 @@ contract FeeSettings is Ownable2Step {
 
     /**
     @notice Returns the fee for a given token amount
+    @dev will wrongly return 1 if denominator and amount are both uint256 max
      */
     function tokenFee(uint256 _tokenAmount) external view returns (uint256) {
-        if (tokenFeeDenominator == type(uint256).max) {
-            return 0;
-        }
         return _tokenAmount / tokenFeeDenominator;
     }
 
     /**
     @notice Returns the fee for a given currency amount
+    @dev will wrongly return 1 if denominator and amount are both uint256 max
      */
     function continuousFundraisingFee(
         uint256 _currencyAmount
     ) external view returns (uint256) {
-        if (continuousFundraisingFeeDenominator == type(uint256).max) {
-            return 0;
-        }
         return _currencyAmount / continuousFundraisingFeeDenominator;
     }
 
     /** 
     @notice Returns the fee for a given currency amount
+    @dev will wrongly return 1 if denominator and amount are both uint256 max
      */
     function personalInviteFee(
         uint256 _currencyAmount
     ) external view returns (uint256) {
-        if (personalInviteFeeDenominator == type(uint256).max) {
-            return 0;
-        }
         return _currencyAmount / personalInviteFeeDenominator;
     }
 }
