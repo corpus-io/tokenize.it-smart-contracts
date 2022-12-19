@@ -184,7 +184,7 @@ contract tokenTest is Test {
     }
 
     function testAcceptWrongFeeSettings() public {
-        Fees memory fees = Fees(0, 0, 0, 0);
+        Fees memory fees = Fees(UINT256_MAX, UINT256_MAX, UINT256_MAX, 0);
         FeeSettings realNewFeeSettings = new FeeSettings(
             fees,
             feeSettings.feeCollector()
