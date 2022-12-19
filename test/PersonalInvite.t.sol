@@ -5,6 +5,7 @@ import "../lib/forge-std/src/Test.sol";
 import "../contracts/Token.sol";
 import "../contracts/PersonalInvite.sol";
 import "../contracts/PersonalInviteFactory.sol";
+import "./resources/FakePaymentToken.sol";
 
 contract PersonalInviteTest is Test {
     PersonalInviteFactory factory;
@@ -12,7 +13,7 @@ contract PersonalInviteTest is Test {
     AllowList list;
     FeeSettings feeSettings;
     Token token;
-    Token currency; // todo: add different ERC20 token as currency!
+    FakePaymentToken currency;
 
     uint256 MAX_INT =
         115792089237316195423570985008687907853269984665640564039457584007913129639935;
@@ -48,15 +49,8 @@ contract PersonalInviteTest is Test {
             "token",
             "TOK"
         );
-        currency = new Token(
-            trustedForwarder,
-            feeSettings,
-            admin,
-            list,
-            0x0,
-            "currency",
-            "CUR"
-        );
+        vm.prank(paymentTokenProvider);
+        currency = new FakePaymentToken(0, 18);
     }
 
     function testAcceptDeal(uint256 rawSalt) public {
@@ -83,15 +77,14 @@ contract PersonalInviteTest is Test {
             token
         );
 
+        uint256 tokenDecimals = token.decimals();
+
+        vm.startPrank(paymentTokenProvider);
+        currency.mint(buyer, (amount * price) / 10 ** tokenDecimals);
+        vm.stopPrank();
+
         vm.prank(admin);
         token.increaseMintingAllowance(expectedAddress, amount);
-
-        vm.prank(admin);
-        currency.increaseMintingAllowance(admin, amount * price);
-
-        uint256 tokenDecimals = token.decimals();
-        vm.prank(admin);
-        currency.mint(buyer, (amount * price) / 10 ** tokenDecimals); // during this call, the feeCollector gets 1% of the amount
 
         vm.prank(buyer);
         currency.approve(
@@ -206,21 +199,13 @@ contract PersonalInviteTest is Test {
             token
         );
 
-        // set fees to 0, otherwise extra currency is minted which causes an overflow
+        // set fees to 0, otherwise extra tokens are minted which causes an overflow
         Fees memory fees = Fees(UINT256_MAX, UINT256_MAX, UINT256_MAX, 0);
-        currency.feeSettings().planFeeChange(fees);
-        currency.feeSettings().executeFeeChange();
         token.feeSettings().planFeeChange(fees);
         token.feeSettings().executeFeeChange();
 
         vm.prank(admin);
         token.increaseMintingAllowance(expectedAddress, _tokenBuyAmount);
-
-        vm.prank(admin);
-        currency.increaseMintingAllowance(
-            admin,
-            _tokenBuyAmount * _nominalPrice + 1
-        );
 
         uint minCurrencyAmount = (_tokenBuyAmount * _nominalPrice) /
             10 ** token.decimals();
@@ -228,13 +213,8 @@ contract PersonalInviteTest is Test {
         uint maxCurrencyAmount = minCurrencyAmount + 1;
         console.log("maxCurrencyAmount: %s", maxCurrencyAmount);
 
-        vm.startPrank(admin);
-        currency.mint(buyer, maxCurrencyAmount); // during this call, the feeCollector gets 1% of the amount
-        // burn the feeCollector balance to simplify accounting
-        currency.burn(
-            token.feeSettings().feeCollector(),
-            currency.balanceOf(token.feeSettings().feeCollector())
-        ); // burn 1 wei to make sure the feeCollector balance is not rounded up
+        vm.prank(paymentTokenProvider);
+        currency.mint(buyer, maxCurrencyAmount);
         vm.stopPrank();
 
         vm.prank(buyer);
@@ -385,25 +365,12 @@ contract PersonalInviteTest is Test {
             token.mintingAllowance(expectedAddress)
         );
         token.increaseMintingAllowance(expectedAddress, _tokenBuyAmount);
-
-        currency.increaseMintingAllowance(admin, UINT256_MAX);
         vm.stopPrank();
 
         uint maxCurrencyAmount = UINT256_MAX;
 
-        // set fees to 0, otherwise extra currency is minted which causes an overflow
-        Fees memory fees = Fees(UINT256_MAX, UINT256_MAX, UINT256_MAX, 0);
-        currency.feeSettings().planFeeChange(fees);
-        currency.feeSettings().executeFeeChange();
-
-        vm.startPrank(admin);
-        currency.mint(buyer, maxCurrencyAmount); // during this call, the feeCollector gets 1% of the amount
-        // burn the feeCollector balance to simplify accounting
-        currency.burn(
-            token.feeSettings().feeCollector(),
-            currency.balanceOf(token.feeSettings().feeCollector())
-        ); // burn 1 wei to make sure the feeCollector balance is not rounded up
-        vm.stopPrank();
+        vm.prank(paymentTokenProvider);
+        currency.mint(buyer, maxCurrencyAmount);
 
         vm.prank(buyer);
         currency.approve(expectedAddress, maxCurrencyAmount);
