@@ -17,7 +17,7 @@ In order to make sure price can be expressed exactly with integers, the definiti
 price = PaymentTokenBits/Token = PaymentTokenBits/TokenBits * 10**Token.decimals()
 ```
 
-With this, the payment amount is calculated from the token amount as:
+With this, the payment amount could be calculated from the token amount as:
 
 ```solidity
 paymentAmount = (_tokenAmount * tokenPrice) / (10**token.decimals())
@@ -29,7 +29,7 @@ Since this is done using integer math, it rounds down by default. For example:
 - USDC has 6 decimals
   So if price was defined as 1 USDC/T and the investor wanted to buy 1Tbit, they would have to pay 10^-18 USDC, which would be rounded to 0 USDC because 1 USDCbit = 10^-6 USDC. They would get a fraction of a token for free.
 
-Giving away equity without payment is not acceptable. Therefore, the calculation is done rounding up to the next integer. This is done using openzeppelin's ceilDiv function:
+Giving away equity without payment is not acceptable. Therefore, the calculation is done rounding up to the next integer, using openzeppelin's ceilDiv function:
 
 ```solidity
 paymentAmount = Math.ceilDiv(_tokenAmount * tokenPrice,  10**token.decimals())
@@ -73,4 +73,4 @@ Take the following example:
 
 Keep in mind that this seemingly HUGE difference in price still results in a paymentAmount difference of only 1 currencyBit. Or, as was just explained, is the result thereof.
 
-The buyer can do all of these calculations beforehand, and just decide to buy the maximum amount of tokens possible for the currency they have to spend anyway. This is not enforced by the smart contracts though. It can be implemented in Frontends.
+The buyer can do all of these calculations beforehand, and just decide to buy the maximum amount of tokens possible for the currency they have to spend anyway. This is not enforced by the smart contracts though. It can be implemented in a frontend.

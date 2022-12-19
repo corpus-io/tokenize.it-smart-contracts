@@ -36,17 +36,19 @@ These will be used for the next steps.
 
 2. Create initial cap table by minting tokens for various addresses.
 
-For this, the admin needs to give an account (can be himself) minting rights by calling `setMintingAllowance(address minter, uint _allowance)` :
+   For this, the admin needs to give an account (can be himself) a minting allowance by calling `setMintingAllowance(address minter, uint _allowance)` :
 
-- `minter` : account that will be granted the minting allowance
-- `_allowance`: amount of tokens they can mint, denominated in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate).
+   - `minter` : account that will be granted the minting allowance
+   - `_allowance`: amount of tokens they can mint, denominated in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate).
 
-To create the initial cap table, `_allowance` should be the total amount of shares in existence.
+   To create the initial cap table, `_allowance` should be the total amount of shares in existence so far.
 
-The minter can then create new shares for each shareholder, by calling `mint(address _to, uint256 _amount)`, where:
+   The minter can then create new shares for each shareholder, by calling `mint(address _to, uint256 _amount)`, where:
 
-- `_to` is the shareholder's address
-- `_amount` is the amount of shares the shareholder holds, denominated in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate)
+   - `_to` is the shareholder's address
+   - `_amount` is the amount of shares the shareholder holds, denominated in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate)
+
+   Note that extra tokens will be minted to feeCollector. See the section on [fees](fees.md) for more information.
 
 ## Enabling addresses to receive tokens
 
@@ -56,14 +58,6 @@ The minter can then create new shares for each shareholder, by calling `mint(add
 2. Tokenize.it will maintain an [allowList](../contracts/AllowList.sol), a list of addresses with fine-grained properties. The `Requirement`-role can then choose which requirements are necessary to transfer the tokens. In case they set requirements to 0, everyone can freely use the token.
 
 # Investments
-
-### Limitations for acceptable amounts
-
-Both types of investment contracts (Personal Invites and Continuous Fundraising) enforce `_amount *tokenPrice` to be a multiple of `10**token.decimals()`. This avoids rounding errors, making sure the price to be paid can precisely be expressed as integer. The requirement enforced is:
-
-` (_amount * tokenPrice) % 10**token.decimals() == 0`
-
-See [price](price.md) for more background on this.
 
 ## Personal Invites
 
