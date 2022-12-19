@@ -8,7 +8,13 @@ import "./interfaces/IFeeSettings.sol";
 /*
     This FeeSettings contract is used to manage fees paid to the tokenize.it platfom
 */
-contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV1 {
+contract FeeSettings is
+    Ownable2Step,
+    ERC165,
+    IFeeSettingsV1,
+    ERC165,
+    IFeeSettingsV1
+{
     /// @notice Denominator to calculate fees paid in Token.sol. UINT256_MAX means no fees.
     uint256 public tokenFeeDenominator;
     /// @notice Denominator to calculate fees paid in ContinuousFundraising.sol. UINT256_MAX means no fees.
