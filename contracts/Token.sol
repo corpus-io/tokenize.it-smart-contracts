@@ -268,17 +268,18 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     ) internal virtual override {
         super._beforeTokenTransfer(_from, _to, _amount);
         _requireNotPaused();
-        if (_from == address(0)) {
-            // token mint:
-            // - receiver's properties are checked in the mint function
-            // - the minter's allowance is checked in the mint function.
-        } else if (_to == address(0)) {
-            // token burn: all checks are done in the burn function
-        } else {
+        if (_from != address(0) && _to != address(0)) {
             // token transfer
             _checkIfAllowedToTransact(_from);
             _checkIfAllowedToTransact(_to);
         }
+        /*  if _from is 0x0, tokens are minted:
+                - receiver's properties are checked in the mint function
+                - the minter's allowance is checked in the mint function
+                - extra tokens can be minted for feeCollector in the mint function
+            if _to is 0x0, tokens are burned: 
+                - only burner is allowed to do this, which is checked in the burn function
+        */
     }
 
     function _checkIfAllowedToTransact(address _address) internal view {
