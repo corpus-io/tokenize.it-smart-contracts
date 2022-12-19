@@ -205,11 +205,9 @@ contract ContinuousFundraisingTest is Test {
         // receiver should have the 990 FPT that were paid, minus the fee
 
         uint currencyAmount = 990 * 10 ** _paymentTokenDecimals;
-        uint256 currencyFee = continuousFundraisingFeeDenominator != UINT256_MAX
-            ? currencyAmount /
-                FeeSettings(address(token.feeSettings()))
-                    .continuousFundraisingFeeDenominator()
-            : 0;
+        uint256 currencyFee = currencyAmount /
+            FeeSettings(address(token.feeSettings()))
+                .continuousFundraisingFeeDenominator();
         assertTrue(
             _paymentToken.balanceOf(receiver) == currencyAmount - currencyFee,
             "receiver has wrong amount of currency"
@@ -221,11 +219,8 @@ contract ContinuousFundraisingTest is Test {
             "fee collector has wrong amount of currency"
         );
         assertEq(
-            tokenFeeDenominator != UINT256_MAX
-                ? tokenAmount /
-                    FeeSettings(address(token.feeSettings()))
-                        .tokenFeeDenominator()
-                : 0,
+            tokenAmount /
+                FeeSettings(address(token.feeSettings())).tokenFeeDenominator(),
             _token.balanceOf(feeSettings.feeCollector()),
             "fee collector has wrong amount of token"
         );
