@@ -2,18 +2,13 @@
 pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
-
-struct Fees {
-    uint256 tokenFeeDenominator;
-    uint256 continuousFundraisingFeeDenominator;
-    uint256 personalInviteFeeDenominator;
-    uint256 time;
-}
+import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import "./interfaces/IFeeSettings.sol";
 
 /*
     This FeeSettings contract is used to manage fees paid to the tokenize.it platfom
 */
-contract FeeSettings is Ownable2Step {
+contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV1 {
     /// @notice Denominator to calculate fees paid Token.sol
     uint256 public tokenFeeDenominator;
     /// @notice Denominator to calculate fees paid in all investment contracts
@@ -144,5 +139,29 @@ contract FeeSettings is Ownable2Step {
             return 0;
         }
         return _currencyAmount / personalInviteFeeDenominator;
+    }
+
+    /**
+     * Specify where the implementation of owner() is located
+     */
+    function owner()
+        public
+        view
+        override(Ownable, IFeeSettingsV1)
+        returns (address)
+    {
+        return Ownable.owner();
+    }
+
+    /**
+     * @notice This contract implements the ERC165 interface in order to enable other contracts to query which interfaces this contract implements.
+     * @dev See https://eips.ethereum.org/EIPS/eip-165
+     */
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(ERC165, IFeeSettingsV1) returns (bool) {
+        return
+            interfaceId == type(IFeeSettingsV1).interfaceId || // we implement IFeeSettingsV1
+            ERC165.supportsInterface(interfaceId); // default implementation that enables further querying
     }
 }
