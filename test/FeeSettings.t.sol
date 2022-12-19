@@ -159,13 +159,12 @@ contract FeeSettingsTest is Test {
 
     function testExecuteFeeChangeTooEarly(
         uint delayAnnounced,
-        uint8 tokenFee,
-        uint8 investmentFee
+        uint256 tokenFee,
+        uint256 investmentFee
     ) public {
         vm.assume(delayAnnounced > 12 weeks && delayAnnounced < 1000000000000);
         vm.assume(feeInValidRange(tokenFee));
         vm.assume(feeInValidRange(investmentFee));
-        vm.assume(tokenFee >= 20 || investmentFee >= 20);
 
         Fees memory fees = Fees(50, 50, 50, 0);
         vm.prank(admin);
@@ -188,8 +187,8 @@ contract FeeSettingsTest is Test {
 
     function testExecuteFeeChangeProperly(
         uint delayAnnounced,
-        uint8 tokenFee,
-        uint8 investmentFee
+        uint256 tokenFee,
+        uint256 investmentFee
     ) public {
         vm.assume(delayAnnounced > 12 weeks && delayAnnounced < 100000000000);
         vm.assume(feeInValidRange(tokenFee));
@@ -365,7 +364,7 @@ contract FeeSettingsTest is Test {
         assertEq(_feeSettings.feeCollector(), newCollector);
     }
 
-    function feeInValidRange(uint8 fee) internal pure returns (bool) {
+    function feeInValidRange(uint256 fee) internal pure returns (bool) {
         return fee >= 20;
     }
 
