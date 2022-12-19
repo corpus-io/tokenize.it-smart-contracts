@@ -36,7 +36,9 @@ This is a personal investment invite allowing a particular investor (represented
 
 This contract allows everyone who has the `Transferer`-role on the `token` contract or who is certified by the allow-list to meet the requirements set in the `token` contract to buy newly issued tokens at a fixed price. The number of token that can be minted in this way can be limited to `maxAmountOfTokenToBeSold`, which is the maximal amount of token to be sold in this fundraising round.
 
-Furthermore, this contract can be paused by the owner to change the parameters. The pause is always at least 1 day.
+Remember that extra tokens will be minted to cover [fees](fees.md), unless the fee is set to 0.
+
+Furthermore, this contract can be paused by the owner to change the parameters. The pause is always at least 1 day, and starts new after each parameter change.
 
 ## Employee participation
 
@@ -44,4 +46,4 @@ In case there is no vesting, shares can directly be issued through minting as de
 
 For vesting the contract [DssVestMintable by makerdao](https://github.com/makerdao/dss-vest/blob/master/src/DssVest.sol) is used. See [documentation](https://github.com/makerdao/dss-vest) for general usage information.
 
-The contract needs to be given minting right in the company token contract by calling `setUpMinter` from an address which has the role of the Minter Admin. In that call, an allowance needs to be given which matches the maximal amount of tokens to be vested.
+The contract needs to be given a minting allowance in the company token contract by calling `increaseMintingAllowance(contractAddress, amount)` from an address which has the MintAllower role. In that call, an allowance needs to be given which matches the maximum amount of tokens to be vested.
