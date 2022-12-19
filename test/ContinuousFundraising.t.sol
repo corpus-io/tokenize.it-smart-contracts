@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/Token.sol";
+import "../contracts/FeeSettings.sol";
 import "../contracts/ContinuousFundraising.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
@@ -10,7 +11,7 @@ import "./resources/MaliciousPaymentToken.sol";
 contract ContinuousFundraisingTest is Test {
     ContinuousFundraising raise;
     AllowList list;
-    FeeSettings feeSettings;
+    IFeeSettingsV1 feeSettings;
 
     Token token;
     FakePaymentToken paymentToken;
@@ -270,6 +271,10 @@ contract ContinuousFundraisingTest is Test {
 
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
 
+        FeeSettings localFeeSettings = FeeSettings(
+            address(token.feeSettings())
+        );
+
         vm.prank(buyer);
         raise.buy(tokenBuyAmount); // this test fails if 5 * 10**18 is replaced with 5 * 10**token.decimals() for this argument, even though they should be equal
         assertTrue(
@@ -284,18 +289,18 @@ contract ContinuousFundraisingTest is Test {
             paymentToken.balanceOf(receiver) ==
                 costInPaymentToken -
                     costInPaymentToken /
-                    token.feeSettings().continuousFundraisingFeeDenominator(),
+                    localFeeSettings.continuousFundraisingFeeDenominator(),
             "receiver has payment tokens"
         );
         assertTrue(
             paymentToken.balanceOf(token.feeSettings().feeCollector()) ==
                 costInPaymentToken /
-                    token.feeSettings().continuousFundraisingFeeDenominator(),
+                    localFeeSettings.continuousFundraisingFeeDenominator(),
             "fee collector has collected fee in payment tokens"
         );
         assertTrue(
             token.balanceOf(token.feeSettings().feeCollector()) ==
-                tokenBuyAmount / token.feeSettings().tokenFeeDenominator(),
+                tokenBuyAmount / localFeeSettings.tokenFeeDenominator(),
             "fee collector has collected fee in tokens"
         );
         assertTrue(
@@ -416,10 +421,11 @@ contract ContinuousFundraisingTest is Test {
         );
         uint256 tokenFee = (minAmountPerBuyer * 3) /
             2 /
-            token.feeSettings().tokenFeeDenominator();
+            FeeSettings(address(token.feeSettings())).tokenFeeDenominator();
         uint256 paymentTokenFee = (costInPaymentTokenForMinAmount * 3) /
             2 /
-            token.feeSettings().continuousFundraisingFeeDenominator();
+            FeeSettings(address(token.feeSettings()))
+                .continuousFundraisingFeeDenominator();
         assertTrue(
             paymentToken.balanceOf(receiver) ==
                 (costInPaymentTokenForMinAmount * 3) / 2 - paymentTokenFee,
@@ -988,8 +994,8 @@ contract ContinuousFundraisingTest is Test {
 
         // set fees to 0, otherwise extra currency is minted which causes an overflow
         Fees memory fees = Fees(UINT256_MAX, UINT256_MAX, UINT256_MAX, 0);
-        token.feeSettings().planFeeChange(fees);
-        token.feeSettings().executeFeeChange();
+        FeeSettings(address(token.feeSettings())).planFeeChange(fees);
+        FeeSettings(address(token.feeSettings())).executeFeeChange();
 
         // grant allowances
         vm.prank(mintAllower);

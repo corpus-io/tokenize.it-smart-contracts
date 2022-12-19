@@ -8,6 +8,7 @@ import "../contracts/Token.sol";
 import "../contracts/ContinuousFundraising.sol";
 import "../contracts/PersonalInvite.sol";
 import "../contracts/PersonalInviteFactory.sol";
+import "../contracts/FeeSettings.sol";
 
 /**
  * @dev These tests need a mainnet fork of the blockchain, as they access contracts deployed on mainnet. Take a look at docs/testing.md for more information.
@@ -151,19 +152,26 @@ contract MainnetCurrencies is Test {
             _currency.balanceOf(receiver),
             _currencyCost -
                 _currencyCost /
-                token.feeSettings().continuousFundraisingFeeDenominator(),
+                FeeSettings(address(token.feeSettings()))
+                    .continuousFundraisingFeeDenominator(),
             "receiver should have received currency"
         );
         assertEq(
-            _currency.balanceOf(token.feeSettings().feeCollector()),
+            _currency.balanceOf(
+                FeeSettings(address(token.feeSettings())).feeCollector()
+            ),
             _currencyCost /
-                token.feeSettings().continuousFundraisingFeeDenominator(),
+                FeeSettings(address(token.feeSettings()))
+                    .continuousFundraisingFeeDenominator(),
             "fee receiver should have received currency"
         );
         assertEq(
-            token.balanceOf(token.feeSettings().feeCollector()),
+            token.balanceOf(
+                FeeSettings(address(token.feeSettings())).feeCollector()
+            ),
             amountOfTokenToBuy /
-                token.feeSettings().continuousFundraisingFeeDenominator(),
+                FeeSettings(address(token.feeSettings()))
+                    .continuousFundraisingFeeDenominator(),
             "fee receiver should have received tokens"
         );
         assertEq(
@@ -259,19 +267,26 @@ contract MainnetCurrencies is Test {
             _currency.balanceOf(receiver),
             _currencyCost -
                 _currencyCost /
-                token.feeSettings().continuousFundraisingFeeDenominator(),
+                FeeSettings(address(token.feeSettings()))
+                    .continuousFundraisingFeeDenominator(),
             "receiver should have received currency"
         );
         assertEq(
-            _currency.balanceOf(token.feeSettings().feeCollector()),
+            _currency.balanceOf(
+                FeeSettings(address(token.feeSettings())).feeCollector()
+            ),
             _currencyCost /
-                token.feeSettings().continuousFundraisingFeeDenominator(),
+                FeeSettings(address(token.feeSettings()))
+                    .continuousFundraisingFeeDenominator(),
             "fee receiver should have received currency"
         );
         assertEq(
-            token.balanceOf(token.feeSettings().feeCollector()),
+            token.balanceOf(
+                FeeSettings(address(token.feeSettings())).feeCollector()
+            ),
             amountOfTokenToBuy /
-                token.feeSettings().continuousFundraisingFeeDenominator(),
+                FeeSettings(address(token.feeSettings()))
+                    .continuousFundraisingFeeDenominator(),
             "fee receiver should have received tokens"
         );
         assertEq(

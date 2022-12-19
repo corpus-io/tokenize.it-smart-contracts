@@ -143,7 +143,7 @@ contract ContinuousFundraising is
             10 ** token.decimals()
         );
 
-        FeeSettings feeSettings = token.feeSettings();
+        IFeeSettingsV1 feeSettings = token.feeSettings();
         uint256 fee = feeSettings.continuousFundraisingFee(currencyAmount);
         if (fee != 0) {
             currency.safeTransferFrom(
