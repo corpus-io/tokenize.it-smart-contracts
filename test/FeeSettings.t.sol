@@ -34,17 +34,23 @@ contract FeeSettingsTest is Test {
 
         console.log("Testing token fee");
         _fees = Fees(fee, 30, 100, 0);
-        vm.expectRevert("Fee must be below 5% or 0");
+        vm.expectRevert(
+            "Fee must be equal or less 5% (denominator must be >= 20)"
+        );
         new FeeSettings(_fees, admin);
 
         console.log("Testing ContinuousFundraising fee");
         _fees = Fees(30, fee, 100, 0);
-        vm.expectRevert("Fee must be below 5% or 0");
+        vm.expectRevert(
+            "Fee must be equal or less 5% (denominator must be >= 20)"
+        );
         new FeeSettings(_fees, admin);
 
         console.log("Testing PersonalInvite fee");
         _fees = Fees(30, 40, fee, 0);
-        vm.expectRevert("Fee must be below 5% or 0");
+        vm.expectRevert(
+            "Fee must be equal or less 5% (denominator must be >= 20)"
+        );
         new FeeSettings(_fees, admin);
     }
 
@@ -59,7 +65,9 @@ contract FeeSettingsTest is Test {
             personalInviteFeeDenominator: 100,
             time: block.timestamp + 7884001
         });
-        vm.expectRevert("Fee must be below 5% or 0");
+        vm.expectRevert(
+            "Fee must be equal or less 5% (denominator must be >= 20)"
+        );
         _feeSettings.planFeeChange(feeChange);
     }
 
@@ -76,7 +84,9 @@ contract FeeSettingsTest is Test {
             personalInviteFeeDenominator: 100,
             time: block.timestamp + 7884001
         });
-        vm.expectRevert("Fee must be below 5% or 0");
+        vm.expectRevert(
+            "Fee must be equal or less 5% (denominator must be >= 20)"
+        );
         _feeSettings.planFeeChange(feeChange);
     }
 
@@ -93,20 +103,33 @@ contract FeeSettingsTest is Test {
             personalInviteFeeDenominator: fee,
             time: block.timestamp + 7884001
         });
-        vm.expectRevert("Fee must be below 5% or 0");
+        vm.expectRevert(
+            "Fee must be equal or less 5% (denominator must be >= 20)"
+        );
         _feeSettings.planFeeChange(feeChange);
     }
 
-    function testEnforceFeeChangeDelayOnIncrease(uint delay) public {
+    function testEnforceFeeChangeDelayOnIncrease(
+        uint delay,
+        uint startDenominator,
+        uint newDenominator
+    ) public {
         vm.assume(delay <= 12 weeks);
-        Fees memory fees = Fees(50, 50, 50, 0);
+        vm.assume(startDenominator >= 20 && newDenominator >= 20);
+        vm.assume(newDenominator < startDenominator);
+        Fees memory fees = Fees(
+            startDenominator,
+            startDenominator,
+            startDenominator,
+            0
+        );
         vm.prank(admin);
         FeeSettings _feeSettings = new FeeSettings(fees, admin);
 
         Fees memory feeChange = Fees({
-            tokenFeeDenominator: 51,
-            continuousFundraisingFeeDenominator: 0,
-            personalInviteFeeDenominator: 0,
+            tokenFeeDenominator: newDenominator,
+            continuousFundraisingFeeDenominator: UINT256_MAX,
+            personalInviteFeeDenominator: UINT256_MAX,
             time: block.timestamp + delay
         });
         vm.prank(admin);
@@ -114,9 +137,9 @@ contract FeeSettingsTest is Test {
         _feeSettings.planFeeChange(feeChange);
 
         feeChange = Fees({
-            tokenFeeDenominator: 0,
-            continuousFundraisingFeeDenominator: 51,
-            personalInviteFeeDenominator: 0,
+            tokenFeeDenominator: UINT256_MAX,
+            continuousFundraisingFeeDenominator: newDenominator,
+            personalInviteFeeDenominator: UINT256_MAX,
             time: block.timestamp + delay
         });
         vm.prank(admin);
@@ -124,9 +147,9 @@ contract FeeSettingsTest is Test {
         _feeSettings.planFeeChange(feeChange);
 
         feeChange = Fees({
-            tokenFeeDenominator: 0,
-            continuousFundraisingFeeDenominator: 0,
-            personalInviteFeeDenominator: 51,
+            tokenFeeDenominator: UINT256_MAX,
+            continuousFundraisingFeeDenominator: UINT256_MAX,
+            personalInviteFeeDenominator: newDenominator,
             time: block.timestamp + delay
         });
         vm.prank(admin);
@@ -136,13 +159,12 @@ contract FeeSettingsTest is Test {
 
     function testExecuteFeeChangeTooEarly(
         uint delayAnnounced,
-        uint8 tokenFee,
-        uint8 investmentFee
+        uint256 tokenFee,
+        uint256 investmentFee
     ) public {
         vm.assume(delayAnnounced > 12 weeks && delayAnnounced < 1000000000000);
         vm.assume(feeInValidRange(tokenFee));
         vm.assume(feeInValidRange(investmentFee));
-        vm.assume(tokenFee >= 20 || investmentFee >= 20);
 
         Fees memory fees = Fees(50, 50, 50, 0);
         vm.prank(admin);
@@ -165,8 +187,8 @@ contract FeeSettingsTest is Test {
 
     function testExecuteFeeChangeProperly(
         uint delayAnnounced,
-        uint8 tokenFee,
-        uint8 investmentFee
+        uint256 tokenFee,
+        uint256 investmentFee
     ) public {
         vm.assume(delayAnnounced > 12 weeks && delayAnnounced < 100000000000);
         vm.assume(feeInValidRange(tokenFee));
@@ -202,9 +224,9 @@ contract FeeSettingsTest is Test {
         FeeSettings _feeSettings = new FeeSettings(fees, admin);
 
         Fees memory feeChange = Fees({
-            tokenFeeDenominator: 0,
-            continuousFundraisingFeeDenominator: 0,
-            personalInviteFeeDenominator: 0,
+            tokenFeeDenominator: UINT256_MAX,
+            continuousFundraisingFeeDenominator: UINT256_MAX,
+            personalInviteFeeDenominator: UINT256_MAX,
             time: 0
         });
 
@@ -219,11 +241,38 @@ contract FeeSettingsTest is Test {
         //vm.warp(block.timestamp + delayAnnounced + 1);
         _feeSettings.executeFeeChange();
 
-        assertEq(_feeSettings.tokenFeeDenominator(), 0);
-        assertEq(_feeSettings.continuousFundraisingFeeDenominator(), 0);
-        assertEq(_feeSettings.personalInviteFeeDenominator(), 0);
+        assertEq(_feeSettings.tokenFeeDenominator(), UINT256_MAX);
+        assertEq(
+            _feeSettings.continuousFundraisingFeeDenominator(),
+            UINT256_MAX
+        );
+        assertEq(_feeSettings.personalInviteFeeDenominator(), UINT256_MAX);
 
         //assertEq(_feeSettings.change, 0);
+    }
+
+    function testSetFeeToXFrom0Immediately() public {
+        Fees memory fees = Fees(UINT256_MAX, UINT256_MAX, UINT256_MAX, 0);
+        vm.prank(admin);
+        FeeSettings _feeSettings = new FeeSettings(fees, admin);
+
+        Fees memory feeChange = Fees({
+            tokenFeeDenominator: 20,
+            continuousFundraisingFeeDenominator: 30,
+            personalInviteFeeDenominator: 50,
+            time: 0
+        });
+
+        assertEq(_feeSettings.tokenFeeDenominator(), UINT256_MAX);
+        assertEq(
+            _feeSettings.continuousFundraisingFeeDenominator(),
+            UINT256_MAX
+        );
+        assertEq(_feeSettings.personalInviteFeeDenominator(), UINT256_MAX);
+
+        vm.prank(admin);
+        vm.expectRevert("Fee change must be at least 12 weeks in the future");
+        _feeSettings.planFeeChange(feeChange);
     }
 
     function testReduceFeeImmediately(
@@ -315,8 +364,8 @@ contract FeeSettingsTest is Test {
         assertEq(_feeSettings.feeCollector(), newCollector);
     }
 
-    function feeInValidRange(uint8 fee) internal pure returns (bool) {
-        return fee == 0 || fee >= 20;
+    function feeInValidRange(uint256 fee) internal pure returns (bool) {
+        return fee >= 20;
     }
 
     function testCalculateProperFees(
@@ -325,9 +374,17 @@ contract FeeSettingsTest is Test {
         uint256 personalInviteFeeDenominator,
         uint256 amount
     ) public {
-        vm.assume(tokenFeeDenominator >= 20);
-        vm.assume(continuousFundraisingFeeDenominator >= 20);
-        vm.assume(personalInviteFeeDenominator >= 20);
+        vm.assume(
+            tokenFeeDenominator >= 20 && tokenFeeDenominator < UINT256_MAX
+        );
+        vm.assume(
+            continuousFundraisingFeeDenominator >= 20 &&
+                continuousFundraisingFeeDenominator < UINT256_MAX
+        );
+        vm.assume(
+            personalInviteFeeDenominator >= 20 &&
+                personalInviteFeeDenominator < UINT256_MAX
+        );
 
         Fees memory _fees = Fees(
             tokenFeeDenominator,
@@ -354,20 +411,29 @@ contract FeeSettingsTest is Test {
         );
     }
 
-    function testCalculate0Fees(
+    function testCalculate0FeesForAmountLessThanUINT256_MAX(
         uint256 tokenFeeDenominator,
         uint256 continuousFundraisingFeeDenominator,
         uint256 personalInviteFeeDenominator,
         uint256 amount
     ) public {
-        vm.assume(tokenFeeDenominator >= 20);
-        vm.assume(continuousFundraisingFeeDenominator >= 20);
-        vm.assume(personalInviteFeeDenominator >= 20);
+        vm.assume(
+            tokenFeeDenominator >= 20 && tokenFeeDenominator < UINT256_MAX
+        );
+        vm.assume(
+            continuousFundraisingFeeDenominator >= 20 &&
+                continuousFundraisingFeeDenominator < UINT256_MAX
+        );
+        vm.assume(
+            personalInviteFeeDenominator >= 20 &&
+                personalInviteFeeDenominator < UINT256_MAX
+        );
+        vm.assume(amount < UINT256_MAX);
 
         // only token fee is 0
 
         Fees memory _fees = Fees(
-            0,
+            UINT256_MAX,
             continuousFundraisingFeeDenominator,
             personalInviteFeeDenominator,
             0
@@ -388,7 +454,12 @@ contract FeeSettingsTest is Test {
 
         // only continuous fundraising fee is 0
 
-        _fees = Fees(tokenFeeDenominator, 0, personalInviteFeeDenominator, 0);
+        _fees = Fees(
+            tokenFeeDenominator,
+            UINT256_MAX,
+            personalInviteFeeDenominator,
+            0
+        );
         _feeSettings = new FeeSettings(_fees, admin);
 
         assertEq(
@@ -412,7 +483,7 @@ contract FeeSettingsTest is Test {
         _fees = Fees(
             tokenFeeDenominator,
             continuousFundraisingFeeDenominator,
-            0,
+            UINT256_MAX,
             0
         );
         _feeSettings = new FeeSettings(_fees, admin);
@@ -470,6 +541,103 @@ contract FeeSettingsTest is Test {
             _feeSettings.supportsInterface(0x01ffc9b7),
             false,
             "This interface should not be supported"
+        );
+    }
+
+    /**
+     * @dev the fee calculation is implemented to accept a wrong result in one case:
+     *      if denominator is UINT256_MAX and amount is UINT256_MAX, the result will be 1 instead of 0
+     */
+    function testCalculate0FeesForAmountUINT256_MAX(
+        uint256 tokenFeeDenominator,
+        uint256 continuousFundraisingFeeDenominator,
+        uint256 personalInviteFeeDenominator
+    ) public {
+        vm.assume(
+            tokenFeeDenominator >= 20 && tokenFeeDenominator < UINT256_MAX
+        );
+        vm.assume(
+            continuousFundraisingFeeDenominator >= 20 &&
+                continuousFundraisingFeeDenominator < UINT256_MAX
+        );
+        vm.assume(
+            personalInviteFeeDenominator >= 20 &&
+                personalInviteFeeDenominator < UINT256_MAX
+        );
+        uint256 amount = UINT256_MAX;
+
+        // only token fee is 0
+
+        Fees memory _fees = Fees(
+            UINT256_MAX,
+            continuousFundraisingFeeDenominator,
+            personalInviteFeeDenominator,
+            0
+        );
+        FeeSettings _feeSettings = new FeeSettings(_fees, admin);
+
+        assertEq(_feeSettings.tokenFee(amount), 1, "Token fee mismatch");
+        assertEq(
+            _feeSettings.continuousFundraisingFee(amount),
+            amount / continuousFundraisingFeeDenominator,
+            "Investment fee mismatch"
+        );
+        assertEq(
+            _feeSettings.personalInviteFee(amount),
+            amount / personalInviteFeeDenominator,
+            "Personal invite fee mismatch"
+        );
+
+        // only continuous fundraising fee is 0
+
+        _fees = Fees(
+            tokenFeeDenominator,
+            UINT256_MAX,
+            personalInviteFeeDenominator,
+            0
+        );
+        _feeSettings = new FeeSettings(_fees, admin);
+
+        assertEq(
+            _feeSettings.tokenFee(amount),
+            amount / tokenFeeDenominator,
+            "Token fee mismatch"
+        );
+        assertEq(
+            _feeSettings.continuousFundraisingFee(amount),
+            1,
+            "Investment fee mismatch"
+        );
+        assertEq(
+            _feeSettings.personalInviteFee(amount),
+            amount / personalInviteFeeDenominator,
+            "Personal invite fee mismatch"
+        );
+
+        // only personal invite fee is 0
+
+        _fees = Fees(
+            tokenFeeDenominator,
+            continuousFundraisingFeeDenominator,
+            UINT256_MAX,
+            0
+        );
+        _feeSettings = new FeeSettings(_fees, admin);
+
+        assertEq(
+            _feeSettings.tokenFee(amount),
+            amount / tokenFeeDenominator,
+            "Token fee mismatch"
+        );
+        assertEq(
+            _feeSettings.continuousFundraisingFee(amount),
+            amount / continuousFundraisingFeeDenominator,
+            "Investment fee mismatch"
+        );
+        assertEq(
+            _feeSettings.personalInviteFee(amount),
+            1,
+            "Personal invite fee mismatch"
         );
     }
 }

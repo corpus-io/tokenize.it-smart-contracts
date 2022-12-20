@@ -97,26 +97,6 @@ contract ContinuousFundraisingTest is Test {
         paymentToken.approve(address(raise), paymentTokenAmount);
     }
 
-    // function testFee0() public {
-    //     ContinuousFundraising _raise = new ContinuousFundraising(
-    //         trustedForwarder,
-    //         payable(receiver),
-    //         minAmountPerBuyer,
-    //         maxAmountPerBuyer,
-    //         price,
-    //         maxAmountOfTokenToBeSold,
-    //         paymentToken,
-    //         token
-    //     );
-    //     assertTrue(_raise.owner() == address(this));
-    //     assertTrue(_raise.currencyReceiver() == receiver);
-    //     assertTrue(_raise.minAmountPerBuyer() == minAmountPerBuyer);
-    //     assertTrue(_raise.maxAmountPerBuyer() == maxAmountPerBuyer);
-    //     assertTrue(_raise.tokenPrice() == price);
-    //     assertTrue(_raise.currency() == paymentToken);
-    //     assertTrue(_raise.token() == token);
-    // }
-
     /*
     set up with FakePaymentToken which has variable decimals to make sure that doesn't break anything
     */
@@ -225,11 +205,9 @@ contract ContinuousFundraisingTest is Test {
         // receiver should have the 990 FPT that were paid, minus the fee
 
         uint currencyAmount = 990 * 10 ** _paymentTokenDecimals;
-        uint256 currencyFee = continuousFundraisingFeeDenominator != 0
-            ? currencyAmount /
-                FeeSettings(address(token.feeSettings()))
-                    .continuousFundraisingFeeDenominator()
-            : 0;
+        uint256 currencyFee = currencyAmount /
+            FeeSettings(address(token.feeSettings()))
+                .continuousFundraisingFeeDenominator();
         assertTrue(
             _paymentToken.balanceOf(receiver) == currencyAmount - currencyFee,
             "receiver has wrong amount of currency"
@@ -241,11 +219,8 @@ contract ContinuousFundraisingTest is Test {
             "fee collector has wrong amount of currency"
         );
         assertEq(
-            tokenFeeDenominator != 0
-                ? tokenAmount /
-                    FeeSettings(address(token.feeSettings()))
-                        .tokenFeeDenominator()
-                : 0,
+            tokenAmount /
+                FeeSettings(address(token.feeSettings())).tokenFeeDenominator(),
             _token.balanceOf(feeSettings.feeCollector()),
             "fee collector has wrong amount of token"
         );
@@ -253,18 +228,15 @@ contract ContinuousFundraisingTest is Test {
     }
 
     function testFee0() public {
-        feeCalculation(0, 0);
+        feeCalculation(UINT256_MAX, UINT256_MAX);
     }
 
     function testVariousFees(
         uint256 tokenFeeDenominator,
         uint256 continuousFundraisingFeeDenominator
     ) public {
-        vm.assume(tokenFeeDenominator >= 20 || tokenFeeDenominator == 0);
-        vm.assume(
-            continuousFundraisingFeeDenominator >= 20 ||
-                continuousFundraisingFeeDenominator == 0
-        );
+        vm.assume(tokenFeeDenominator >= 20);
+        vm.assume(continuousFundraisingFeeDenominator >= 20);
         feeCalculation(
             tokenFeeDenominator,
             continuousFundraisingFeeDenominator
