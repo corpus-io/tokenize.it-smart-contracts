@@ -21,7 +21,7 @@ If you are missing dependencies:
 
 For information regarding testing, please go to [testing](docs/testing.md).
 
-A deploy script is currently only available only for AllowList and FeeSettings.
+For information regarding deployment, please go to [deployment](docs/deployment.md).
 
 # Main Concept
 
