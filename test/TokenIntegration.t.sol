@@ -338,9 +338,11 @@ contract tokenTest is Test {
         );
 
         vm.startPrank(feeSettings.owner());
+        // cycle through the fake contracts and make sure each one triggers a revert
         for (uint i = 0; i < feeSettingsArray.length; i++) {
             vm.expectRevert("FeeSettings must implement IFeeSettingsV1");
             token.suggestNewFeeSettings(feeSettingsArray[i]);
         }
+        vm.stopPrank();
     }
 }

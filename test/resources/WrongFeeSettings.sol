@@ -56,7 +56,7 @@ contract FeeSettingsFailIFeeSettingsV1Check is FeeSettings {
         } else if (interfaceId == 0xffffffff) {
             return false; // signal that we support ERC165
         } else if (interfaceId == type(IFeeSettingsV1).interfaceId) {
-            return false; // signal that we support ERC165
+            return false; // signal that we don't support IFeeSettingsV1
         }
         return FeeSettings.supportsInterface(interfaceId);
     }
