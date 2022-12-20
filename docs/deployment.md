@@ -21,7 +21,7 @@ Note:
 
 - for this to work, prepare an [environment file](https://book.getfoundry.sh/tutorials/solidity-scripting#environment-configuration) first
 - drop the --broadcast in order to simulate the transaction, but not publish it
-- edit the script (commenting out parts) to deploy just one of the contracts instead of both
+- edit the script (commenting out parts) to deploy less contracts
 - generally, contracts with simple constructor arguments can also be deployed without script:
   ```bash
   forge create --rpc-url $GOERLI_RPC_URL --private-key $PRIVATE_KEY contracts/AllowList.sol:AllowList
