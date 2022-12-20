@@ -3,7 +3,7 @@
 1. **tokenize.it** or **platform**: A platform that enables company shares to be created and traded on an evm-compatible chain
 2. **company** or **founder**: A company that wants to emit shares, and in most cases receive capital in return
 3. **investor**: An entity that wants to receive shares of a company and is willing to pay for doing so
-4. (**employee**: A person that works for the company and may receive shares as part of their compensation. Emitting these shares can be done through 3rd party contracts, but is not the current focus of this project.)
+4. (**employee**: A person that works for the company and may receive shares as part of their compensation. Emitting these shares can be done directly or through 3rd party contracts, but is not the current focus of this project.)
 
 Let's assume that there will be one (1) platform, many (**X**) companies and many (Y) investors. This leads to the following number of deployments for each contract:
 | contract | number of deployments | admin | reason |
@@ -11,9 +11,9 @@ Let's assume that there will be one (1) platform, many (**X**) companies and man
 | AllowList | 1 | platform | used by all companies |
 | FeeSettings | 1 | platform | used by all companies |
 | PersonalInviteFactory | 1 | --- | helps to deploy PersonalInvite to deterministic address, can be used by all PersonalInvites |
-| Token | x | company | represents a specific companies shares |
-| ContinuousFundraising | x | company | most companies will want raise funds from all eligible investors |
-| PersonalInvite | >x | --- | most companies will extend special investment offers to specific investors, or receive these from investors |
+| Token | X | company | represents a specific companies shares |
+| ContinuousFundraising | X | company | most companies will want raise funds from all eligible investors |
+| PersonalInvite | >X | --- | most companies will extend special investment offers to specific investors, or receive these from investors |
 
 # Example work flow: creating company and raising funds
 
@@ -47,7 +47,7 @@ All transactions can be performed without founders or investors having to pay et
 
 ### Closed fundraising
 
-Founders and investors can agree on specific terms for an investment, e.g. a special price or a special currency to pay with (the platform will support WETH, WBTC, EUROC and USDC at the beginning). This investment is executed during deployment of the PersonalInvite contract.
+Founders and investors can agree on specific terms for an investment, e.g. a special price or a special currency to pay with (see [supported currencies](../README.md#supported-currencies)). This investment is executed during deployment of the PersonalInvite contract.
 
 Founder and investor have to agree on the deal in 3 ways before the contract can be deployed:
 
@@ -61,9 +61,8 @@ Once these steps have been taken completed, the platform executes the deal by de
 
 ## Transaction fees
 
-The platform will pay all ethereum transaction fees for deployments and other transactions performed through it's web app. This is made possible through the use of meta transactions (EIP-2771) and trustless deployment procedures.
-
-Note that the, independent of ethereum transaction fees, the platform charges fees for token minting and investments!
+The platform will pay all ethereum transaction fees for deployments and other transactions performed through it's web app. This is made possible through the use of [meta transactions (EIP-2771) and trustless deployment procedures](../README.md#eip-2771).
+Note that, independent of ethereum transaction fees, the platform charges [fees for token minting and investments](fees.md)!
 
 ## Investor and company pool
 

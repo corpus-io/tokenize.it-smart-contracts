@@ -20,7 +20,8 @@ If you are missing dependencies:
 - foundry: [install guide](https://book.getfoundry.sh/getting-started/installation)
 
 For information regarding testing, please go to [testing](docs/testing.md).
-There is no deploy script yet.
+
+A deploy script is currently only available only for AllowList and FeeSettings.
 
 # Main Concept
 
@@ -32,7 +33,7 @@ There is no deploy script yet.
    - direct distribution of tokens (does not need another smart contract)
    - vesting can be realized using the [DssVest.sol](https://github.com/makerdao/dss-vest/blob/master/src/DssVest.sol) contract by MakerDao
 
-The requirements for participation in fundraising are checked against the [AllowList.sol](contracts/AllowList.sol) contract. Fees are collected according to the settings in [FeeSettings.sol](./contracts/FeeSettings.sol). Tokenize.it will deploy and manage at least one AllowList and one FeeSettings contract.
+The requirements for an address to send or receive tokens are checked against the [AllowList.sol](contracts/AllowList.sol) contract. Fees are collected according to the settings in [FeeSettings.sol](./contracts/FeeSettings.sol). Tokenize.it will deploy and manage at least one AllowList and one FeeSettings contract.
 
 # Contracts
 
@@ -43,9 +44,9 @@ All contracts are based on the well documented and tested [OpenZeppelin smart co
 ## EIP-2771
 
 It is possible to directly use all smart contracts in this project, without going through the platform's frontend at all.
-In order to improve UX, though, a frontend will be offered. In order to improve UX even more, the user will not have to pay gas when using this frontend. This is achieved through two approaches:
+In order to improve UX, though, a frontend will be offered. In order to improve UX even more, the user will not have to pay gas when using this frontend. This is achieved through three approaches:
 
-1. the platform executes transactions like contract deployments
+1. the platform executes transactions like contract deployments that do not require the user's signature
 2. actions concerning our own contracts that require the user's approval are executed as meta-transactions, using EIP-2711
 3. granting allowances on external currencies is possible through EIP-2612 (ERC20Permit), which is widely adopted. This is not in the scope of this documentation though.
 
