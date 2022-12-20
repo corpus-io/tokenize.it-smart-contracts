@@ -4,7 +4,7 @@ The following statements about the smart contracts should always be true
 
 ## Token.sol
 
-- Only addresses with minting allowances are able to mint tokens.
+- Only addresses with minting allowances > 0 are able to mint tokens.
 - An address with minting allowance can only mint tokens if the remaining allowance after the mint will be larger or equal to zero.
 - An address can only receive tokens at least one of these statements is true:
   - The address fulfills the requirements as proven by the allowList.
@@ -15,7 +15,7 @@ The following statements about the smart contracts should always be true
   - The address fulfills the requirements as proven by the allowList.
   - The address has the TRANSFERER_ROLE.
   - The address has the BURNER_ROLE.
-- No transfers can be made while the contract is paused.
+- No transfers (including mints and burns) can be made while the contract is paused.
 - Only an address with PAUSER_ROLE can pause or unpause the contract.
 - Granting and revoking of roles is possible regardless of the contract being paused or not.
 - An address with BURNER_ROLE can burn tokens from any address that holds these tokens any time unless the contract is paused.
@@ -27,7 +27,9 @@ The following statements about the smart contracts should always be true
 - All functions can be called directly or as meta transaction using EIP-2771.
 - Calling a function directly or through EIP-2771 yield equivalent results given equivalent inputs.
 - The token supports permit() as defined in EIP-2612.
-- Only the owner of feeSettings can change feeSettings to another address.
+- Only the owner of feeSettings can suggest to change feeSettings to another address.
+- Only addresses with DEFAULT_ADMIN_ROLE can accept a new feeSettings contract.
+- Only addresses that implement the IFeeSettingsV1 interface can be suggested or accepted as feeSettings.
 
 ## AllowList.sol
 
@@ -38,14 +40,16 @@ The following statements about the smart contracts should always be true
 
 ## FeeSettings.sol
 
-- TokenFeeDenominator must always be equal to zero or greater equal 20.
-- ContinuousFundraisingFeeDenominator must always be equal to zero or greater equal 20.
-- PersonalInviteFeeDenominator must always be equal to zero or greater equal 20.
+- TokenFeeDenominator must always be greater equal 20.
+- ContinuousFundraisingFeeDenominator must always be greater equal 20.
+- PersonalInviteFeeDenominator must always be greater equal 20.
 - The feeCollector can never be 0.
-- Only owner can change feeCollector, tokenFeeDenominator, ContinuousFundraisingFeeDenominator and PersonalInviteFeeDenominator.
-- Changes to tokenFeeDenominator, ContinuousFundraisingFeeDenominator and or PersonalInviteFeeDenominator take at least 12 weeks, unless all 3 are set to 0.
-- Setting tokenFeeDenominator, ContinuousFundraisingFeeDenominator and PersonalInviteFeeDenominator to 0 is possible without delay.
-- Charging 0 fees is possible.
+- Only owner can change feeCollector, tokenFeeDenominator, continuousFundraisingFeeDenominator and personalInviteFeeDenominator.
+- Changes to tokenFeeDenominator, continuousFundraisingFeeDenominator and or personalInviteFeeDenominator take at least 12 weeks, if at least one of the denominators decreases (e.g. if a fee increases).
+- Setting tokenFeeDenominator, ContinuousFundraisingFeeDenominator and PersonalInviteFeeDenominator to UINT256_MAX is possible without delay.
+- Increasing tokenFeeDenominator, ContinuousFundraisingFeeDenominator or PersonalInviteFeeDenominator is possible without delay.
+- Fees for amounts less than UINT256_MAX will be 0 when the denominator is set to UINT256_MAX.
+- The Fee for an amount of UINT256_MAX will always at least 1 bit. (This is accepted behavior to reduce gas.)
 - Charging a fee higher than 5% is not possible.
 
 ## PersonalInvite.sol
@@ -55,7 +59,7 @@ The following statements about the smart contracts should always be true
 - During deployment, the payment after fee deduction is transferred to the receiver.
 - During deployment, the fee is deducted from the payment and sent to the feeCollector.
 - During deployment, tokens are minted to the buyer.
-- After deployment, the currency sent by the buyer and the tokens minted to the buyer always exactly correspond to the price set during deployment of the contract.
+- During deployment, the payment amount is rounded up by a maximum of 1 currency bit.
 - Funds sent to the contract can not be recovered.
 - The contract does not offer any functions after deployment is complete.
 - Token amount bought is exactly the amount configured.
@@ -78,9 +82,10 @@ The following statements about the smart contracts should always be true
 - The buy function can be executed many times.
 - To execute the buy function, the buyer must have granted the continuousFundraising contract a sufficient allowance in currency.
 - The buy can only be paid for in currency.
-- During the buy, the payment is immediately transferred to the receiver.
+- During the buy, the fee is deducted from the payment and the remaining payment is immediately transferred to the receiver.
+- During the buy, the fee is immediately transferred to the feeCollector.
 - During the buy, tokens are minted to the buyer.
-- After the buy, the currency transferred from the buyer and the tokens minted to the buyer always exactly correspond to the price.
+- During the buy, the payment amount is rounded up by a maximum of 1 currency bit.
 - After the buy, currency received by the receiver and fee received by feeCollector always exactly corresponds to the currency transferred from the buyer.
 - The contract address never holds funds during the buy or any other use it was designed for.
 - Funds sent to the contract can not be recovered.
@@ -97,6 +102,6 @@ The following statements about the smart contracts should always be true
 - Each setting update (re-)starts the cool down period of 24h hours.
 - The contract can only be unpaused after the cool down period has passed.
 - Only the contract owner can call pause, unpause, or the functions that update settings.
-- In sum, the contract will never mint more tokens to the buyers than maxAmountOfTokenToBeSold at the time of minting. This does not take into account the tokens minted to feeCollector.
+- In sum, the contract will never mint more tokens to the buyers than maxAmountOfTokenToBeSold at the time of minting. This does not take into account the tokens minted to feeCollector in Token.sol.
 - All functions can be called directly or as meta transaction using ERC2771.
 - Calling a function directly or through ERC2771 yield equivalent results given equivalent inputs.
