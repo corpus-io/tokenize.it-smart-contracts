@@ -230,10 +230,13 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
             "MintingAllowance too low"
         );
         mintingAllowance[_msgSender()] -= _amount;
+        // this check is executed here, because later minting of the buy amount can not be differentiated from minting of the fee amount
+        _checkIfAllowedToTransact(_to);
         _mint(_to, _amount);
         // collect fees
         uint256 fee = feeSettings.tokenFee(_amount);
         if (fee != 0) {
+            // the fee collector is always allowed to receive tokens
             _mint(feeSettings.feeCollector(), fee);
         }
     }
@@ -259,17 +262,18 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     ) internal virtual override {
         super._beforeTokenTransfer(_from, _to, _amount);
         _requireNotPaused();
-        if (_from == address(0)) {
-            // token mint
-            // the minter's allowance is checked in the mint function.
-            _checkIfAllowedToTransact(_to);
-        } else if (_to == address(0)) {
-            // token burn: all checks are done in the burn function
-        } else {
+        if (_from != address(0) && _to != address(0)) {
             // token transfer
             _checkIfAllowedToTransact(_from);
             _checkIfAllowedToTransact(_to);
         }
+        /*  if _from is 0x0, tokens are minted:
+                - receiver's properties are checked in the mint function
+                - the minter's allowance is checked in the mint function
+                - extra tokens can be minted for feeCollector in the mint function
+            if _to is 0x0, tokens are burned: 
+                - only burner is allowed to do this, which is checked in the burn function
+        */
     }
 
     /**
@@ -278,8 +282,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     function _checkIfAllowedToTransact(address _address) internal view {
         require(
             hasRole(TRANSFERER_ROLE, _address) ||
-                allowList.map(_address) & requirements == requirements ||
-                _address == feeSettings.feeCollector(), // fee collector is always allowed to send and receive tokens
+                allowList.map(_address) & requirements == requirements,
             "Sender or Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
         );
     }

@@ -209,7 +209,7 @@ contract tokenTest is Test {
         token.acceptNewFeeSettings(fakeNewFeeSettings);
     }
 
-    function testFeeCollectorCanAlwaysTransact() public {
+    function testFeeCollectorCanAlwaysReceiveFee() public {
         address tokenHolder = vm.addr(1);
         address localMinter = vm.addr(2);
         address feeCollector = feeSettings.feeCollector();
@@ -239,48 +239,84 @@ contract tokenTest is Test {
 
         console.log("after: ", tokenHolder);
 
+        // ensure fee collector does not meet requirements
+        assertTrue(
+            token.requirements() > 0,
+            "fee collector might meet requirements"
+        );
+        assertTrue(
+            token.allowList().map(feeCollector) == 0,
+            "fee collector might meet requirements"
+        );
+        // ensure fee collector is not a transferer
+        assertEq(
+            token.hasRole(token.TRANSFERER_ROLE(), feeCollector),
+            false,
+            "fee collector is a transferer"
+        );
+
+        uint feeCollectorBalanceBeforeMint = token.balanceOf(feeCollector);
         // mint tokens for token holder. Currently, this also mints tokens to the fee collector, already proving they can receive tokens.
         // But if the test fee is ever set to 0, the tests above might fail if the fee collector can't send or receive tokens for some reason.
         vm.startPrank(localMinter);
         token.mint(tokenHolder, _amount);
         vm.stopPrank();
 
-        uint feeCollectorBalanceBeforeTransfer = token.balanceOf(feeCollector);
+        uint feeCollectorBalanceAfterMint = token.balanceOf(feeCollector);
 
         assertTrue(
-            token.balanceOf(feeCollector) == feeCollectorBalanceBeforeTransfer,
-            "fee collector has too many tokens"
+            feeCollectorBalanceBeforeMint <= feeCollectorBalanceAfterMint,
+            "fee collector has not received tokens"
         );
+        assertEq(
+            feeCollectorBalanceAfterMint - feeCollectorBalanceBeforeMint,
+            token.feeSettings().tokenFee(_amount),
+            "fee collector has received wrong token amount"
+        );
+    }
 
-        // test if fee collector can receive
-        vm.prank(tokenHolder);
-        token.transfer(feeCollector, _amount);
+    function testFeeCollectorCanNotAlwaysBuy() public {
+        address localMinter = vm.addr(2);
+        address feeCollector = feeSettings.feeCollector();
 
+        console.log("Local minter: ", localMinter);
+        console.log("Fee collector: ", feeSettings.feeCollector());
+        console.log("transfererAdmin: ", transfererAdmin);
+        console.log("mintAllower: ", mintAllower);
+        console.log("this: ", address(this));
+
+        // set requirements
+        vm.prank(requirer);
+        token.setRequirements(812349);
+
+        uint256 _amount = 2 * 10 ** 18;
+
+        // allow minter to mint
+        vm.prank(mintAllower);
+        token.increaseMintingAllowance(localMinter, _amount);
+
+        // ensure fee collector does not meet requirements
         assertTrue(
-            token.balanceOf(feeCollector) ==
-                feeCollectorBalanceBeforeTransfer + _amount,
-            "fee collector has no tokens"
+            token.requirements() > 0,
+            "fee collector might meet requirements"
         );
-        console.log(
-            "fee collector balance is: ",
-            token.balanceOf(feeCollector)
-        );
-        console.log("_amount is: ", _amount);
-
-        // test if fee collector can send
-        vm.prank(feeCollector);
-        token.transfer(tokenHolder, 500);
-
-        console.log(
-            "fee collector balance is: ",
-            token.balanceOf(feeCollector)
-        );
-        console.log("fee collector balance should be: ", _amount - 500);
-
         assertTrue(
-            token.balanceOf(feeCollector) ==
-                feeCollectorBalanceBeforeTransfer + _amount - 500,
-            "fee collector has wrong balance"
+            token.allowList().map(feeCollector) == 0,
+            "fee collector might meet requirements"
         );
+        // ensure fee collector is not a transferer
+        assertEq(
+            token.hasRole(token.TRANSFERER_ROLE(), feeCollector),
+            false,
+            "fee collector is a transferer"
+        );
+
+        // mint tokens for feeCollector
+        vm.startPrank(localMinter);
+        vm.expectRevert(
+            "Sender or Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
+        );
+        token.mint(feeCollector, _amount);
+        vm.stopPrank();
     }
 }
