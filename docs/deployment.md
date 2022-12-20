@@ -10,7 +10,7 @@ The platform-related contracts are:
 
 Currently, there is no need for them to be deployed automatically. Instead, deployment can be done with foundry. For some background, review the [foundry book's chapter on deployments](https://book.getfoundry.sh/forge/deploying).
 
-Deploy both contract like this:
+Deploy these contracts like this:
 
 ```bash
 source .env
