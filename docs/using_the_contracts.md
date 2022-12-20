@@ -26,8 +26,8 @@ These will be used for the next steps.
     )
    ```
 
-   - `trustedForwarder`: used for meta transactions following [EIP-2771](https://eips.ethereum.org/EIPS/eip-2771)
-   - `feeSettings`: defines which fees have to be paid for minting and investing
+   - `trustedForwarder`: used for meta transactions following [EIP-2771](../README.md#eip-2771)
+   - `feeSettings`: defines which fees have to be paid to the platform
    - `admin` : address of the administrator. Be careful, they have all the power in the beginning. They can do everything, and can give permissions (aka roles as defined in the OpenZeppelin AccessControl module).
    - `_allowList` : Allow list from tokenize.it.
    - `_requirements`: requirements addresses need to fulfill in order to send and receive tokens
@@ -36,12 +36,12 @@ These will be used for the next steps.
 
 2. Create initial cap table by minting tokens for various addresses.
 
-   For this, the admin needs to give an account (can be himself) a minting allowance by calling `setMintingAllowance(address minter, uint _allowance)` :
+   For this, the admin needs to give an account (can be himself) a minting allowance by calling `increaseMintingAllowance(address minter, uint _allowance)` :
 
    - `minter` : account that will be granted the minting allowance
-   - `_allowance`: amount of tokens they can mint, denominated in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate).
+   - `_allowance`: amount of tokens they can mint, denominated in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate) (assuming their minting allowance was 0 before).
 
-   To create the initial cap table, `_allowance` should be the total amount of shares in existence so far.
+   To create the initial cap table, `_allowance` should be the total amount of shares in existence so far, in bits (be sure to understand the concept of [decimals](https://docs.openzeppelin.com/contracts/3.x/api/token/erc20#ERC20-decimals--)).
 
    The minter can then create new shares for each shareholder, by calling `mint(address _to, uint256 _amount)`, where:
 
@@ -89,13 +89,13 @@ constructor(
 
 - `_token` : address of the token deployed when creating the new company
 
-The investment is executed during deployment of the contract. Therefore, two steps are necessary BEFORE deployment, or the deployment transaction will revert:
+The investment is executed during deployment of the contract. Therefore, three steps are necessary BEFORE deployment, or the deployment transaction will revert:
 
-- The future contract address needs to be given minting right in the company token contract by calling `setMintingAllowance` from an address which has the role of the Minter Admin. In that call, an allowance needs to be given which matches or exceeds the `_amount` of tokens. This step signals the offering company's invitation.
+- All constructor arguments must be agreed upon to calculate the future address of the contract.
+- The future contract address needs to be given minting right in the company token contract by calling `increaseMintingAllowance` from an address which has the role of the Minter Admin. In that call, an allowance needs to be given which matches or exceeds the `_amount` of tokens. This step signals the offering company's invitation.
 - The investor needs to give a a sufficient allowance in the currency contract to the future address of the contract. This step signals the investors commitment to the offer.
 
-Once both steps have been completed, the Personal Invite contract can be deployed by anyone (either of the two parties or a third party) with [CREATE2](https://docs.openzeppelin.com/cli/2.8/deploying-with-create2), through the Personal Invite Factory's deploy() function.
-Limitations apply for `_amount`, see [above](###-Limitations-for-acceptable-amounts)
+Once these steps have been completed, the Personal Invite contract can be deployed by anyone (either of the two parties or a third party) with [CREATE2](https://docs.openzeppelin.com/cli/2.8/deploying-with-create2), through the Personal Invite Factory's deploy() function.
 
 ## Personal Invite Factory
 
@@ -123,35 +123,32 @@ constructor(
     )
 ```
 
-The parameter are similar to the PersonalInvite constructor, except for:
-
+- `_trustedForwarder`: contract that performs on-chain signature verification for [EIP-2771 meta transactions](../README.md#eip-2771)
 - `_currencyReceiver`: address of the recipient of the payment
-- `_minAmountPerBuyer`: Minimal amount of tokens an investor needs to buy, in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate)
+- `_minAmountPerBuyer`: Minimum amount of tokens an investor needs to buy, in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate)
 
-- `_maxAmountPerBuyer`: Maximal amount of tokens an investor can buy (can be the same as `_minAmount`), in bits
-  `_tokenPrice`: price per token denoted in the currency defined in the next field, and denominated in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate) (smallest subunit, e.g. WEI for Ether). Please refer to the [price explanation](price.md) for more details.
+- `_maxAmountPerBuyer`: Maximum amount of tokens an investor can buy (can be the same as `_minAmountPerBuyer`), in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate)
+- `_tokenPrice`: price per token denoted in `_currency`, and denominated in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate). Please refer to the [price explanation](price.md) for more details.
 
 - `_maxAmountOfTokenToBeSold` : the maximum amount of token to be sold in this round, denominated in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate)
 
-- `_currency` : ERC20 token used for the payment. The `_buyer` must first give this contract the allowance to spend the amount he wants to invest.
+- `_currency` : ERC20 token used for the payment.
 
 - `_token` : address of the token deployed when creating the new company
 
-The contract needs to be given minting right in the company token contract by calling `setMintingAllowance` from an address which has the role of the Minter Admin. In that call, an allowance needs to be given which matches the `_maxAmountOfTokenToBeSold` of tokens.
+The contract needs to be given a minting allowance in the company token contract by calling `increaseMintingAllowance` from an address which has the role of the MintAllower. The allowance should be set to `_maxAmountOfTokenToBeSold` tokens.
 
 An investor can buy tokens by calling the `buy(uint _amount)` function.
-`_amount` ist the amount of tokens he/she is buying.
-
-Limitations apply for `_amount`, see [above](###-Limitations-for-acceptable-amounts)
+`_amount` ist the amount of tokens they are buying, in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate).
 
 The investor needs to give a a sufficient allowance in the currency contract to the continuousFundraising contract for the deal to be successful
 
-The account who has created the continuous round can pause the contract by calling `pause()`, which stops further buys. When paused, all parameters of the fundraising can be changed through setter functions in the contract. Pausing the contract as well as each setting update starts a cool down period (defaulting to 24h hours). Only after this cool down period has passed can the fundraising be unpaused by calling `unpause()`. This is to ensure an investor can know the conditions that currently apply before investing.
+The owner of the ContinuousFundraising contract can pause the contract by calling `pause()`, which stops further buys. When paused, parameters of the fundraising can be changed. Pausing the contract as well as each setting update starts a cool down period of 24 hours. Only after this cool down period has passed can the fundraising be unpaused by calling `unpause()`. This is to ensure an investor can know the conditions that currently apply before investing (e.g. frontrunning in a buy with a price increase is not possible).
 
 # Employee participation with or without vesting
 
 In case there is no vesting, shares can directly be issued through minting as described when setting up a new company.
 
-For vesting the contract [DssVestMintable by makerdao](https://github.com/makerdao/dss-vest/blob/master/src/DssVest.sol) is used. See [documentation](https://github.com/makerdao/dss-vest) for general usage information.
+For vesting the contract [DssVestMintable by makerdao](https://github.com/makerdao/dss-vest/blob/master/src/DssVest.sol) can be used. See [documentation](https://github.com/makerdao/dss-vest) for general usage information.
 
-The contract needs to be given minting right in the company token contract by calling `setMintingAllowance` from an address which has the role of the Minter Admin. In that call, an allowance needs to be given which matches the maximal amount of tokens to be vested.
+The contract needs to be given a sufficient minting allowance in the company token contract by calling `increaseMintingAllowance` from an address which has the role of MintAllower.

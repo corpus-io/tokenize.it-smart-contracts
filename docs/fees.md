@@ -61,7 +61,7 @@ denominator >= 20
 
 - Each [token contract](../contracts/Token.sol) is connected to a [fee settings contract](../contracts/FeeSettings.sol).
 - When X tokens are minted, the fee is X/tokenFeeDenominator tokens. These are minted ON TOP of the X tokens requested, and are transferred to the feeCollector.
-- The fee settings contract used by token can be changed only by the owner of the current fee settings contract.
+- The fee settings contract used by token can be changed only by the owner of the current fee settings contract in collaboration with the token's DEFAULT_ADMIN_ROLE.
 
 ### Investment contracts
 

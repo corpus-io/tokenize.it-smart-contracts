@@ -6,6 +6,7 @@ pragma solidity 0.8.17;
 import "../lib/forge-std/src/Script.sol";
 import "../contracts/FeeSettings.sol";
 import "../contracts/AllowList.sol";
+import "../contracts/PersonalInviteFactory.sol";
 
 contract DeployPlatform is Script {
     function setUp() public {}
@@ -26,6 +27,13 @@ contract DeployPlatform is Script {
         console.log("Deploying AllowList contract...");
         AllowList allowList = new AllowList();
         console.log("Allowlist deployed at: ", address(allowList));
+
+        console.log("Deploying PersonalInviteFactory contract...");
+        PersonalInviteFactory personalInviteFactory = new PersonalInviteFactory();
+        console.log(
+            "PersonalInviteFactory deployed at: ",
+            address(personalInviteFactory)
+        );
 
         vm.stopBroadcast();
 
