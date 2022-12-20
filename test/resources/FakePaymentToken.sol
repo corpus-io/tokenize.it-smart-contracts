@@ -22,4 +22,8 @@ contract FakePaymentToken is ERC20Permit {
     function decimals() public view override returns (uint8) {
         return decimalPlaces;
     }
+
+    function mint(address _to, uint256 _amount) external {
+        _mint(_to, _amount);
+    }
 }
