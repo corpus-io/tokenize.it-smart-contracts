@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/Token.sol";
 import "../contracts/FeeSettings.sol";
+import "./resources/WrongFeeSettings.sol";
 
 contract tokenTest is Test {
     Token token;
@@ -318,5 +319,28 @@ contract tokenTest is Test {
         );
         token.mint(feeCollector, _amount);
         vm.stopPrank();
+    }
+
+    function testFeeSettingsUpdateRevertsWhenContractFailsERC165Check() public {
+        Fees memory fees = Fees(UINT256_MAX, UINT256_MAX, UINT256_MAX, 0);
+        FeeSettings[] memory feeSettingsArray = new FeeSettings[](3);
+        feeSettingsArray[0] = new FeeSettingsFailERC165Check0(
+            fees,
+            feeSettings.feeCollector()
+        );
+        feeSettingsArray[1] = new FeeSettingsFailERC165Check1(
+            fees,
+            feeSettings.feeCollector()
+        );
+        feeSettingsArray[2] = new FeeSettingsFailIFeeSettingsV1Check(
+            fees,
+            feeSettings.feeCollector()
+        );
+
+        vm.startPrank(feeSettings.owner());
+        for (uint i = 0; i < feeSettingsArray.length; i++) {
+            vm.expectRevert("FeeSettings must implement IFeeSettingsV1");
+            token.suggestNewFeeSettings(feeSettingsArray[i]);
+        }
     }
 }
