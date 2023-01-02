@@ -110,10 +110,16 @@ contract TokenERC2771Test is Test {
         );
     }
 
-    function mintWithERC2771(Forwarder forwarder) public {
-        uint256 tokenMintAmount = 837 * 10 ** 18;
+    function mintWithERC2771(
+        Forwarder _forwarder,
+        uint256 _tokenMintAmount
+    ) public {
+        vm.assume(
+            _tokenMintAmount <
+                UINT256_MAX - feeSettings.tokenFee(_tokenMintAmount)
+        );
 
-        setUpTokenWithForwarder(forwarder);
+        setUpTokenWithForwarder(_forwarder);
 
         /*
          * increase minting allowance
@@ -125,7 +131,7 @@ contract TokenERC2771Test is Test {
         bytes memory payload = abi.encodeWithSelector(
             token.increaseMintingAllowance.selector,
             companyAdmin,
-            tokenMintAmount
+            _tokenMintAmount
         );
 
         IForwarder.ForwardRequest memory request = IForwarder.ForwardRequest({
@@ -133,7 +139,7 @@ contract TokenERC2771Test is Test {
             to: address(token),
             value: 0,
             gas: 1000000,
-            nonce: forwarder.getNonce(companyAdmin),
+            nonce: _forwarder.getNonce(companyAdmin),
             data: payload,
             validUntil: 0
         });
@@ -146,7 +152,7 @@ contract TokenERC2771Test is Test {
                 "\x19\x01",
                 domainSeparator,
                 keccak256(
-                    forwarder._getEncoded(request, requestType, suffixData)
+                    _forwarder._getEncoded(request, requestType, suffixData)
                 )
             )
         );
@@ -171,7 +177,7 @@ contract TokenERC2771Test is Test {
 
         // 4.  execute request
         vm.prank(platformHotWallet);
-        forwarder.execute(
+        _forwarder.execute(
             request,
             domainSeparator,
             requestType,
@@ -181,7 +187,7 @@ contract TokenERC2771Test is Test {
 
         assertEq(
             token.mintingAllowance(companyAdmin),
-            tokenMintAmount,
+            _tokenMintAmount,
             "Minting allowance is not tokenMintAmount"
         );
 
@@ -193,7 +199,7 @@ contract TokenERC2771Test is Test {
         payload = abi.encodeWithSelector(
             token.mint.selector,
             investor,
-            tokenMintAmount
+            _tokenMintAmount
         );
 
         request = IForwarder.ForwardRequest({
@@ -201,7 +207,7 @@ contract TokenERC2771Test is Test {
             to: address(token),
             value: 0,
             gas: 1000000,
-            nonce: forwarder.getNonce(companyAdmin),
+            nonce: _forwarder.getNonce(companyAdmin),
             data: payload,
             validUntil: 0
         });
@@ -212,7 +218,7 @@ contract TokenERC2771Test is Test {
                 "\x19\x01",
                 domainSeparator,
                 keccak256(
-                    forwarder._getEncoded(request, requestType, suffixData)
+                    _forwarder._getEncoded(request, requestType, suffixData)
                 )
             )
         );
@@ -229,7 +235,7 @@ contract TokenERC2771Test is Test {
         // 4.  execute request
         assertEq(
             token.mintingAllowance(companyAdmin),
-            tokenMintAmount,
+            _tokenMintAmount,
             "Minting allowance is wrong"
         );
         assertEq(
@@ -245,7 +251,7 @@ contract TokenERC2771Test is Test {
 
         // send call through forwarder contract
         vm.prank(platformHotWallet);
-        forwarder.execute(
+        _forwarder.execute(
             request,
             domainSeparator,
             requestType,
@@ -255,7 +261,7 @@ contract TokenERC2771Test is Test {
 
         assertEq(
             token.balanceOf(investor),
-            tokenMintAmount,
+            _tokenMintAmount,
             "Investor received wrong token amount"
         );
         assertEq(
@@ -265,7 +271,7 @@ contract TokenERC2771Test is Test {
         );
         assertEq(
             token.balanceOf(feeCollector),
-            feeSettings.tokenFee(tokenMintAmount),
+            feeSettings.tokenFee(_tokenMintAmount),
             "FeeCollector received wrong token amount"
         );
 
@@ -273,7 +279,7 @@ contract TokenERC2771Test is Test {
             try to execute request again (must fail)
         */
         vm.expectRevert("FWD: nonce mismatch");
-        forwarder.execute(
+        _forwarder.execute(
             request,
             domainSeparator,
             requestType,
@@ -282,14 +288,15 @@ contract TokenERC2771Test is Test {
         );
     }
 
-    function testMintWithLocalForwarder() public {
-        mintWithERC2771(new Forwarder());
+    function testMintWithLocalForwarder(uint256 _tokenMintAmount) public {
+        mintWithERC2771(new Forwarder(), _tokenMintAmount);
     }
 
-    function testBuyWithMainnetGSNForwarder() public {
+    function testMintWithMainnetGSNForwarder(uint256 _tokenMintAmount) public {
         // uses deployed forwarder on mainnet with fork. https://docs-v2.opengsn.org/networks/ethereum/mainnet.html
         mintWithERC2771(
-            Forwarder(payable(0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA))
+            Forwarder(payable(0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA)),
+            _tokenMintAmount
         );
     }
 }
