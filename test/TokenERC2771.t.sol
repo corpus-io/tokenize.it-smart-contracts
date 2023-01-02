@@ -58,6 +58,9 @@ contract TokenERC2771Test is Test {
     uint256 public constant continuousFundraisingFeeDenominator = 50;
     uint256 public constant personalInviteFeeDenominator = 70;
 
+    bytes32 domainSeparator;
+    bytes32 requestType;
+
     function setUp() public {
         // calculate address
         companyAdmin = vm.addr(companyAdminPrivateKey);
@@ -80,9 +83,7 @@ contract TokenERC2771Test is Test {
         ERC2771helper = new ERC2771Helper();
     }
 
-    function mintWithERC2771(Forwarder forwarder) public {
-        uint256 tokenMintAmount = 837 * 10 ** 18;
-
+    function setUpTokenWithForwarder(Forwarder forwarder) public {
         // deploy company token
         token = new Token(
             address(forwarder),
@@ -94,41 +95,36 @@ contract TokenERC2771Test is Test {
             "TEST"
         );
 
-        // allow raise contract to mint
-        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
-
-        // todo: this, too, should be meta txs!
-        vm.prank(companyAdmin);
-        token.grantRole(roleMintAllower, companyAdmin);
-        vm.prank(companyAdmin);
-        token.increaseMintingAllowance(companyAdmin, tokenMintAmount);
-
-        // register domain and request type
-        bytes32 domainSeparator = ERC2771helper.registerDomain(
+        // register domainSeparator with forwarder
+        domainSeparator = ERC2771helper.registerDomain(
             forwarder,
             Strings.toHexString(uint256(uint160(address(token))), 20),
             "1"
         );
-        bytes32 requestType = ERC2771helper.registerRequestType(
+
+        // register request type with forwarder
+        requestType = ERC2771helper.registerRequestType(
             forwarder,
             "mint",
             "address _to,uint256 _amount"
         );
+    }
+
+    function mintWithERC2771(Forwarder forwarder) public {
+        uint256 tokenMintAmount = 837 * 10 ** 18;
+
+        setUpTokenWithForwarder(forwarder);
 
         /*
-            create data and signature for execution 
-        */
-        // // https://github.com/foundry-rs/foundry/issues/3330
-        // // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/cryptography/ECDSA.sol
-        // bytes32 digest = ECDSA.toTypedDataHash(domainSeparator, keccak256(payload));
-        // (uint8 v, bytes32 r, bytes32 s) = vm.sign(privKey, digest);
+         * increase minting allowance
+         */
+        //vm.prank(companyAdmin);
+        //token.increaseMintingAllowance(companyAdmin, tokenMintAmount);
 
-        // todo: get nonce from forwarder
-
-        // build request
+        // 1. build request
         bytes memory payload = abi.encodeWithSelector(
-            token.mint.selector,
-            investor,
+            token.increaseMintingAllowance.selector,
+            companyAdmin,
             tokenMintAmount
         );
 
@@ -144,7 +140,7 @@ contract TokenERC2771Test is Test {
 
         bytes memory suffixData = "0";
 
-        // pack and hash request
+        // 2. pack and hash request
         bytes32 digest = keccak256(
             abi.encodePacked(
                 "\x19\x01",
@@ -155,8 +151,7 @@ contract TokenERC2771Test is Test {
             )
         );
 
-        // sign request
-        //bytes memory signature
+        // 3. sign request
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
             companyAdminPrivateKey,
             digest
@@ -168,12 +163,70 @@ contract TokenERC2771Test is Test {
             "FWD: signature mismatch"
         );
 
-        // // encode buy call and sign it https://book.getfoundry.sh/cheatcodes/sign
-        // bytes memory buyCallData = abi.encodeWithSignature("buy(uint256)", tokenBuyAmount);
+        assertEq(
+            token.mintingAllowance(companyAdmin),
+            0,
+            "Minting allowance is not 0"
+        );
+
+        // 4.  execute request
+        vm.prank(platformHotWallet);
+        forwarder.execute(
+            request,
+            domainSeparator,
+            requestType,
+            suffixData,
+            signature
+        );
+
+        assertEq(
+            token.mintingAllowance(companyAdmin),
+            tokenMintAmount,
+            "Minting allowance is not tokenMintAmount"
+        );
 
         /*
-            execute request and check results
-        */
+         * mint tokens
+         */
+
+        // 1. build request
+        payload = abi.encodeWithSelector(
+            token.mint.selector,
+            investor,
+            tokenMintAmount
+        );
+
+        request = IForwarder.ForwardRequest({
+            from: companyAdmin,
+            to: address(token),
+            value: 0,
+            gas: 1000000,
+            nonce: forwarder.getNonce(companyAdmin),
+            data: payload,
+            validUntil: 0
+        });
+
+        // 2. pack and hash request
+        digest = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                domainSeparator,
+                keccak256(
+                    forwarder._getEncoded(request, requestType, suffixData)
+                )
+            )
+        );
+
+        // 3. sign request
+        (v, r, s) = vm.sign(companyAdminPrivateKey, digest);
+        signature = abi.encodePacked(r, s, v); // https://docs.openzeppelin.com/contracts/2.x/utilities
+
+        require(
+            digest.recover(signature) == request.from,
+            "FWD: signature mismatch"
+        );
+
+        // 4.  execute request
         assertEq(
             token.mintingAllowance(companyAdmin),
             tokenMintAmount,
@@ -183,6 +236,11 @@ contract TokenERC2771Test is Test {
             token.balanceOf(investor),
             0,
             "Investor has tokens before mint"
+        );
+        assertEq(
+            token.balanceOf(feeCollector),
+            0,
+            "FeeCollector has tokens before mint"
         );
 
         // send call through forwarder contract
@@ -200,18 +258,28 @@ contract TokenERC2771Test is Test {
             tokenMintAmount,
             "Investor received wrong token amount"
         );
+        assertEq(
+            token.mintingAllowance(companyAdmin),
+            0,
+            "Minting allowance is not 0 after mint"
+        );
+        assertEq(
+            token.balanceOf(feeCollector),
+            feeSettings.tokenFee(tokenMintAmount),
+            "FeeCollector received wrong token amount"
+        );
 
-        // /*
-        //     try to execute request again (must fail)
-        // */
-        // vm.expectRevert("FWD: nonce mismatch");
-        // forwarder.execute(
-        //     request,
-        //     domainSeparator,
-        //     requestType,
-        //     suffixData,
-        //     signature
-        // );
+        /*
+            try to execute request again (must fail)
+        */
+        vm.expectRevert("FWD: nonce mismatch");
+        forwarder.execute(
+            request,
+            domainSeparator,
+            requestType,
+            suffixData,
+            signature
+        );
     }
 
     function testMintWithLocalForwarder() public {
