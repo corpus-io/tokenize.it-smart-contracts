@@ -202,7 +202,7 @@ contract CompanySetUpTest is Test {
             to: address(token),
             value: 0,
             gas: 1000000,
-            nonce: forwarder.getNonce(platformHotWallet),
+            nonce: forwarder.getNonce(companyAdmin),
             data: payload,
             validUntil: block.timestamp + 1 hours // like this, the signature will expire after 1 hour. So the platform hotwallet can take some time to execute the transaction.
         });
