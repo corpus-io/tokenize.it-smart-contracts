@@ -7,7 +7,7 @@ import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific version to avoid import error: yarn add @opengsn/contracts@2.2.5
 
-contract TokenERC2771Test is Test {
+contract TokenERC2612Test is Test {
     using ECDSA for bytes32; // for verify with var.recover()
 
     AllowList allowList;
