@@ -85,22 +85,13 @@ contract TokenERC2771Test is Test {
         ERC2771helper = new ERC2771Helper();
     }
 
-    function setUpTokenWithForwarder(Forwarder forwarder) public {}
-
+    /**
+     * this test executes several EIP-2771 transactions on several contracts with the same domainSeparator
+     * and on several functions with different signatures but using the same requestTypeHash
+     */
     function testSeveralContractsOneDomainSeparator() public {
-        mintWithERC2771(new Forwarder(), 200 * 10 ** 18);
-    }
-
-    function mintWithERC2771(
-        Forwarder _forwarder,
-        uint256 _tokenMintAmount
-    ) public {
-        vm.assume(
-            _tokenMintAmount <
-                UINT256_MAX - feeSettings.tokenFee(_tokenMintAmount)
-        );
-
-        setUpTokenWithForwarder(_forwarder);
+        Forwarder _forwarder = new Forwarder();
+        uint256 _tokenMintAmount = 1000 * 10 ** 18;
 
         // deploy company token
         token = new Token(
@@ -352,155 +343,5 @@ contract TokenERC2771Test is Test {
             signature
         );
         assertEq(raise.paused(), true);
-    }
-
-    function testUpdateSettingsWithLocalForwarder(
-        uint256 _newRequirements
-    ) public {
-        updateSettingsWithERC2771(new Forwarder(), _newRequirements);
-    }
-
-    function testUpdateSettingsWithMainnetGSNForwarder(
-        uint256 _newRequirements
-    ) public {
-        // uses deployed forwarder on mainnet with fork. https://docs-v2.opengsn.org/networks/ethereum/mainnet.html
-        updateSettingsWithERC2771(
-            Forwarder(payable(0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA)),
-            _newRequirements
-        );
-    }
-
-    function updateSettingsWithERC2771(
-        Forwarder _forwarder,
-        uint256 _newRequirements
-    ) public {
-        setUpTokenWithForwarder(_forwarder);
-
-        /*
-         * set new requirements
-         */
-
-        // 1. build request
-        bytes memory payload = abi.encodeWithSelector(
-            token.setRequirements.selector,
-            _newRequirements
-        );
-
-        IForwarder.ForwardRequest memory request = IForwarder.ForwardRequest({
-            from: companyAdmin,
-            to: address(token),
-            value: 0,
-            gas: 1000000,
-            nonce: _forwarder.getNonce(companyAdmin),
-            data: payload,
-            validUntil: 0
-        });
-
-        bytes memory suffixData = "0";
-
-        // 2. pack and hash request
-        bytes32 digest = keccak256(
-            abi.encodePacked(
-                "\x19\x01",
-                domainSeparator,
-                keccak256(
-                    _forwarder._getEncoded(request, requestType, suffixData)
-                )
-            )
-        );
-
-        // 3. sign request
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
-            companyAdminPrivateKey,
-            digest
-        );
-        bytes memory signature = abi.encodePacked(r, s, v); // https://docs.openzeppelin.com/contracts/2.x/utilities
-
-        require(
-            digest.recover(signature) == request.from,
-            "FWD: signature mismatch"
-        );
-
-        assertEq(token.requirements(), 0, "Requirements allowance are not 0");
-
-        // 4.  execute request
-        vm.prank(platformHotWallet);
-        _forwarder.execute(
-            request,
-            domainSeparator,
-            requestType,
-            suffixData,
-            signature
-        );
-
-        assertEq(
-            token.requirements(),
-            _newRequirements,
-            "Requirements allowance are not _newRequirements"
-        );
-
-        /*
-         * pause token
-         */
-
-        // 1. build request
-        payload = abi.encodeWithSelector(token.pause.selector);
-
-        request = IForwarder.ForwardRequest({
-            from: companyAdmin,
-            to: address(token),
-            value: 0,
-            gas: 1000000,
-            nonce: _forwarder.getNonce(companyAdmin),
-            data: payload,
-            validUntil: 0
-        });
-
-        // 2. pack and hash request
-        digest = keccak256(
-            abi.encodePacked(
-                "\x19\x01",
-                domainSeparator,
-                keccak256(
-                    _forwarder._getEncoded(request, requestType, suffixData)
-                )
-            )
-        );
-
-        // 3. sign request
-        (v, r, s) = vm.sign(companyAdminPrivateKey, digest);
-        signature = abi.encodePacked(r, s, v); // https://docs.openzeppelin.com/contracts/2.x/utilities
-
-        require(
-            digest.recover(signature) == request.from,
-            "FWD: signature mismatch"
-        );
-
-        // 4.  execute request
-        assertEq(token.paused(), false, "Token is already paused");
-
-        // send call through forwarder contract
-        vm.prank(platformHotWallet);
-        _forwarder.execute(
-            request,
-            domainSeparator,
-            requestType,
-            suffixData,
-            signature
-        );
-
-        assertEq(token.paused(), true, "Token is not paused");
-
-        /*
-            try to execute request again (must fail)
-        */
-        vm.expectRevert("FWD: nonce mismatch");
-        _forwarder.execute(
-            request,
-            domainSeparator,
-            requestType,
-            suffixData,
-            signature
-        );
     }
 }
