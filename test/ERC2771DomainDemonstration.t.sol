@@ -87,10 +87,8 @@ contract TokenERC2771Test is Test {
 
     function setUpTokenWithForwarder(Forwarder forwarder) public {}
 
-    function testSeveralContractsOneDomainSeparator(
-        uint256 _tokenMintAmount
-    ) public {
-        mintWithERC2771(new Forwarder(), _tokenMintAmount);
+    function testSeveralContractsOneDomainSeparator() public {
+        mintWithERC2771(new Forwarder(), 200 * 10 ** 18);
     }
 
     function mintWithERC2771(
