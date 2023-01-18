@@ -9,7 +9,6 @@ import "../contracts/AllowList.sol";
 import "../contracts/PersonalInviteFactory.sol";
 import "../contracts/Token.sol";
 
-
 /*
     This script is used to check the deployed token contract.
     It is not meant to be used in production, but rather as a reference for how to interact with the deployed contracts.
