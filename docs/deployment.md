@@ -38,3 +38,8 @@ The company-related contracts are:
 - PersonalInvite.sol
 
 It will be possible to deploy those through the web app.
+
+## Forwarder
+
+If the forwarder has not been deployed yet, e.g. when working in a testing environment, it can be deployed like this:
+`forge create node_modules/@opengsn/contracts/src/forwarder/Forwarder.sol:Forwarder --private-key $PRIVATE_KEY --rpc-url $GOERLI_RPC_URL --verify --etherscan-api-key $ETHERSCAN_API_KEY`
