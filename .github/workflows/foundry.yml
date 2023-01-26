@@ -22,7 +22,7 @@ jobs:
 
       - name: Run tests
         working-directory: .
-        run: yarn test &&  yarn coverage
+        run: yarn test &&  forge coverage --no-match-test Mainnet --report lcov
       - name: Coverage
         uses: VeryGoodOpenSource/very_good_coverage@v2
         with:
