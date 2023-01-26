@@ -1,12 +1,14 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity 0.8.17;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
+
 import "./Token.sol";
 
 /*
@@ -23,7 +25,7 @@ The contract inherits from ERC2771Context in order to be usable with Gas Station
  */
 contract ContinuousFundraising is
     ERC2771Context,
-    Ownable,
+    Ownable2Step,
     Pausable,
     ReentrancyGuard
 {
@@ -62,6 +64,11 @@ contract ContinuousFundraising is
     event MaxAmountPerBuyerChanged(uint256);
     event TokenPriceAndCurrencyChanged(uint256, IERC20 indexed);
     event MaxAmountOfTokenToBeSoldChanged(uint256);
+    event TokensBought(
+        address indexed buyer,
+        uint256 tokenAmount,
+        uint256 currencyAmount
+    );
 
     /**
      * @dev Constructor that passes the trusted forwarder to the ERC2771Context constructor
@@ -83,14 +90,22 @@ contract ContinuousFundraising is
         maxAmountOfTokenToBeSold = _maxAmountOfTokenToBeSold;
         currency = _currency;
         token = _token;
-
         require(
-            _currencyReceiver != address(0),
-            "buyer can not be zero address"
+            _trustedForwarder != address(0),
+            "trustedForwarder can not be zero address"
         );
         require(
+            _currencyReceiver != address(0),
+            "currencyReceiver can not be zero address"
+        );
+        require(
+            address(_currency) != address(0),
+            "currency can not be zero address"
+        );
+        require(address(_token) != address(0), "token can not be zero address");
+        require(
             _minAmountPerBuyer <= _maxAmountPerBuyer,
-            "_minAmount needs to be smaller or equal to _maxAmount"
+            "_minAmountPerBuyer needs to be smaller or equal to _maxAmountPerBuyer"
         );
         require(_tokenPrice != 0, "_tokenPrice needs to be a non-zero amount");
         require(
@@ -106,10 +121,7 @@ contract ContinuousFundraising is
      @param _amount amount of tokens to buy, in bits (smallest subunit of token)
      @param _tokenReceiver address the tokens should be minted to
      */
-    function buy(
-        uint256 _amount,
-        address _tokenReceiver
-    ) external whenNotPaused nonReentrant returns (bool) {
+    function buy(uint256 _amount, address _tokenReceiver) external whenNotPaused nonReentrant {
         require(
             tokensSold + _amount <= maxAmountOfTokenToBeSold,
             "Not enough tokens to sell left"
@@ -118,39 +130,26 @@ contract ContinuousFundraising is
             tokensBought[_tokenReceiver] + _amount >= minAmountPerBuyer,
             "Buyer needs to buy at least minAmount"
         );
-        /**
-        @dev To avoid rounding errors, tokenprice needs to be multiple of 10**token.decimals(). This is checked for here. 
-            With:
-                _tokenAmount = a * [token_bits]
-                tokenPrice = p * [currency_bits]/[token]
-            The currency amount is calculated as: 
-                currencyAmount = _tokenAmount * tokenPrice 
-                = a * p * [currency_bits]/[token] * [token_bits]  with 1 [token] = (10**token.decimals) [token_bits]
-                = a * p * [currency_bits] / (10**token.decimals)
-         */
         require(
-            (_amount * tokenPrice) % (10 ** token.decimals()) == 0,
-            "Amount * tokenprice needs to be a multiple of 10**token.decimals()"
-        );
-        require(
-            tokensBought[_tokenReceiver] + _amount <= maxAmountPerBuyer,
+            tokensBought[_tokenReceiver()] + _amount <= maxAmountPerBuyer,
             "Total amount of bought tokens needs to be lower than or equal to maxAmount"
         );
+
         tokensSold += _amount;
         tokensBought[_tokenReceiver] += _amount;
 
-        uint256 currencyAmount = (_amount * tokenPrice) /
-            (10 ** token.decimals());
-        uint256 fee;
-        if (token.feeSettings().continuousFundraisingFeeDenominator() == 0) {
-            fee = 0;
-        } else {
-            fee =
-                currencyAmount /
-                token.feeSettings().continuousFundraisingFeeDenominator();
+        // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
+        uint256 currencyAmount = Math.ceilDiv(
+            _amount * tokenPrice,
+            10 ** token.decimals()
+        );
+
+        IFeeSettingsV1 feeSettings = token.feeSettings();
+        uint256 fee = feeSettings.continuousFundraisingFee(currencyAmount);
+        if (fee != 0) {
             currency.safeTransferFrom(
                 _msgSender(),
-                token.feeSettings().feeCollector(),
+                feeSettings.feeCollector(),
                 fee
             );
         }
@@ -161,10 +160,7 @@ contract ContinuousFundraising is
             currencyAmount - fee
         );
 
-        require(
-            token.mint(_tokenReceiver, _amount),
-            "Minting new tokens failed"
-        );
+        require(token.mint(_msgSender(), _amount), "Minting new tokens failed");
         return true;
     }
 
@@ -262,7 +258,7 @@ contract ContinuousFundraising is
     function unpause() external onlyOwner {
         require(
             block.timestamp > coolDownStart + delay,
-            "There needs to be at minumum one day to change parameters"
+            "There needs to be at minimum one day to change parameters"
         );
         _unpause();
     }

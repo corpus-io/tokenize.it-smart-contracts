@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.13;
 
 import "../../lib/forge-std/src/Test.sol";
@@ -21,5 +21,9 @@ contract FakePaymentToken is ERC20Permit {
     /// @dev price definition and deal() function rely on proper handling of decimalPlaces. Therefore we need to test if decimalPlaces other than 18 work fine, too.
     function decimals() public view override returns (uint8) {
         return decimalPlaces;
+    }
+
+    function mint(address _to, uint256 _amount) external {
+        _mint(_to, _amount);
     }
 }

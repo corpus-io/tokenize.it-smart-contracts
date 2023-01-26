@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
@@ -8,6 +8,7 @@ import "../contracts/Token.sol";
 import "../contracts/ContinuousFundraising.sol";
 import "../contracts/PersonalInvite.sol";
 import "../contracts/PersonalInviteFactory.sol";
+import "../contracts/FeeSettings.sol";
 
 /**
  * @dev These tests need a mainnet fork of the blockchain, as they access contracts deployed on mainnet. Take a look at docs/testing.md for more information.
@@ -126,7 +127,10 @@ contract MainnetCurrencies is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.setMintingAllowance(address(_raise), maxAmountOfTokenToBeSold);
+        token.increaseMintingAllowance(
+            address(_raise),
+            maxAmountOfTokenToBeSold
+        );
 
         // give the buyer funds
         //console.log("buyer's balance: ", _currency.balanceOf(buyer));
@@ -158,19 +162,26 @@ contract MainnetCurrencies is Test {
             _currency.balanceOf(receiver),
             _currencyCost -
                 _currencyCost /
-                token.feeSettings().continuousFundraisingFeeDenominator(),
+                FeeSettings(address(token.feeSettings()))
+                    .continuousFundraisingFeeDenominator(),
             "receiver should have received currency"
         );
         assertEq(
-            _currency.balanceOf(token.feeSettings().feeCollector()),
+            _currency.balanceOf(
+                FeeSettings(address(token.feeSettings())).feeCollector()
+            ),
             _currencyCost /
-                token.feeSettings().continuousFundraisingFeeDenominator(),
+                FeeSettings(address(token.feeSettings()))
+                    .continuousFundraisingFeeDenominator(),
             "fee receiver should have received currency"
         );
         assertEq(
-            token.balanceOf(token.feeSettings().feeCollector()),
+            token.balanceOf(
+                FeeSettings(address(token.feeSettings())).feeCollector()
+            ),
             amountOfTokenToBuy /
-                token.feeSettings().continuousFundraisingFeeDenominator(),
+                FeeSettings(address(token.feeSettings()))
+                    .continuousFundraisingFeeDenominator(),
             "fee receiver should have received tokens"
         );
         assertEq(
@@ -214,7 +225,7 @@ contract MainnetCurrencies is Test {
 
         // grant mint allowance to invite
         vm.prank(admin);
-        token.setMintingAllowance(expectedAddress, amountOfTokenToBuy);
+        token.increaseMintingAllowance(expectedAddress, amountOfTokenToBuy);
 
         // give the buyer funds and approve invite
         writeERC20Balance(buyer, address(_currency), currencyAmount);
@@ -267,9 +278,12 @@ contract MainnetCurrencies is Test {
             "fee receiver should have received currency"
         );
         assertEq(
-            token.balanceOf(token.feeSettings().feeCollector()),
+            token.balanceOf(
+                FeeSettings(address(token.feeSettings())).feeCollector()
+            ),
             amountOfTokenToBuy /
-                token.feeSettings().continuousFundraisingFeeDenominator(),
+                FeeSettings(address(token.feeSettings()))
+                    .continuousFundraisingFeeDenominator(),
             "fee receiver should have received tokens"
         );
         assertEq(

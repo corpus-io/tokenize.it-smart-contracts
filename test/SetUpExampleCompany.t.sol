@@ -1,9 +1,10 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/Token.sol";
 import "../contracts/ContinuousFundraising.sol";
+import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/ERC2771Helper.sol";
 import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific version to avoid import error: yarn add @opengsn/contracts@2.2.5
@@ -184,14 +185,14 @@ contract CompanySetUpTest is Test {
         // register the function with the forwarder. This is also a one-time step that will be done by the platform once for every function that is called via meta transaction.
         bytes32 requestType = ERC2771helper.registerRequestType(
             forwarder,
-            "setMintingAllowance",
+            "increaseMintingAllowance",
             "address _minter, uint256 _allowance"
         );
 
         // build the message the company admin will sign.
         // build request
         bytes memory payload = abi.encodeWithSelector(
-            token.setMintingAllowance.selector,
+            token.increaseMintingAllowance.selector,
             address(raise),
             maxAmountOfTokenToBeSold
         );
@@ -201,7 +202,7 @@ contract CompanySetUpTest is Test {
             to: address(token),
             value: 0,
             gas: 1000000,
-            nonce: forwarder.getNonce(platformHotWallet),
+            nonce: forwarder.getNonce(companyAdmin),
             data: payload,
             validUntil: block.timestamp + 1 hours // like this, the signature will expire after 1 hour. So the platform hotwallet can take some time to execute the transaction.
         });

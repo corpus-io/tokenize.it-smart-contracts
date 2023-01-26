@@ -1,12 +1,12 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 import "./AllowList.sol";
-import "./FeeSettings.sol";
+import "./interfaces/IFeeSettings.sol";
 
 /**
 @title tokenize.it Token
@@ -40,10 +40,10 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     AllowList public allowList;
 
     // Fee settings of tokenize.it
-    FeeSettings public feeSettings;
+    IFeeSettingsV1 public feeSettings;
 
     // Suggested new fee settings, which will be applied after admin approval
-    FeeSettings public suggestedFeeSettings;
+    IFeeSettingsV1 public suggestedFeeSettings;
     /**
     @notice  defines requirements to send or receive tokens for non-TRANSFERER_ROLE. If zero, everbody can transfer the token. If non-zero, then only those who have met the requirements can send or receive tokens. 
         Requirements can be defined by the REQUIREMENT_ROLE, and are validated against the allowList. They can include things like "must have a verified email address", "must have a verified phone number", "must have a verified identity", etc. 
@@ -83,8 +83,8 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
 
     event RequirementsChanged(uint newRequirements);
     event AllowListChanged(AllowList indexed newAllowList);
-    event NewFeeSettingsSuggested(FeeSettings indexed _feeSettings);
-    event FeeSettingsChanged(FeeSettings indexed newFeeSettings);
+    event NewFeeSettingsSuggested(IFeeSettingsV1 indexed _feeSettings);
+    event FeeSettingsChanged(IFeeSettingsV1 indexed newFeeSettings);
     event MintingAllowanceChanged(address indexed minter, uint256 newAllowance);
 
     /**
@@ -99,7 +99,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     */
     constructor(
         address _trustedForwarder,
-        FeeSettings _feeSettings,
+        IFeeSettingsV1 _feeSettings,
         address _admin,
         AllowList _allowList,
         uint256 _requirements,
@@ -111,7 +111,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         ERC20(_name, _symbol)
     {
         // Grant admin roles
-        _setupRole(DEFAULT_ADMIN_ROLE, _admin); // except for the Transferer role, the _admin is the roles admin for all other roles
+        _grantRole(DEFAULT_ADMIN_ROLE, _admin); // except for the Transferer role, the _admin is the roles admin for all other roles
         _setRoleAdmin(TRANSFERER_ROLE, TRANSFERERADMIN_ROLE);
 
         // grant all roles to admin for now. Can be changed later, see https://docs.openzeppelin.com/contracts/2.x/api/access#Roles
@@ -122,10 +122,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         _grantRole(PAUSER_ROLE, _admin);
 
         // set up fee collection
-        require(
-            address(_feeSettings) != address(0),
-            "FeeSettings must not be zero address"
-        );
+        _checkIfFeeSettingsImplementsInterface(_feeSettings);
         feeSettings = _feeSettings;
 
         // set up allowList
@@ -142,6 +139,10 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     function setAllowList(
         AllowList _allowList
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(
+            address(_allowList) != address(0),
+            "AllowList must not be zero address"
+        );
         allowList = _allowList;
         emit AllowListChanged(_allowList);
     }
@@ -159,15 +160,12 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
      * @dev This is a possibility to change fees without honoring the delay enforced in the feeSettings contract. Therefore, approval of the admin is required.
      * @param _feeSettings the new feeSettings contract
      */
-    function suggestNewFeeSettings(FeeSettings _feeSettings) external {
+    function suggestNewFeeSettings(IFeeSettingsV1 _feeSettings) external {
         require(
             _msgSender() == feeSettings.owner(),
             "Only fee settings owner can suggest fee settings update"
         );
-        require(
-            address(_feeSettings) != address(0),
-            "Fee settings cannot be zero address"
-        );
+        _checkIfFeeSettingsImplementsInterface(_feeSettings);
         suggestedFeeSettings = _feeSettings;
         emit NewFeeSettingsSuggested(_feeSettings);
     }
@@ -180,58 +178,67 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
      * @param _feeSettings the new feeSettings contract
      */
     function acceptNewFeeSettings(
-        FeeSettings _feeSettings
+        IFeeSettingsV1 _feeSettings
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(
-            address(suggestedFeeSettings) != address(0),
-            "Fee settings cannot be zero address"
-        );
+        // after deployment, suggestedFeeSettings is 0x0. Therefore, this check is necessary, otherwise the admin could accept 0x0 as new feeSettings.
+        // Checking that the suggestedFeeSettings is not 0x0 would work, too, but this check is used in other places, too.
+        _checkIfFeeSettingsImplementsInterface(_feeSettings);
+
         require(
             _feeSettings == suggestedFeeSettings,
             "Only suggested fee settings can be accepted"
         );
         feeSettings = suggestedFeeSettings;
-        suggestedFeeSettings = FeeSettings(address(0));
         emit FeeSettingsChanged(_feeSettings);
     }
 
     /** 
-        @notice minting contracts such as personal investment invite, vesting, crowdfunding must be granted a minting allowance through this function. 
-            Each call of setMintingAllowance will make the contract: 
-                1. forget how many tokens might have been minted by this minter before. 
-                2. set the allowance for this minter to the new value, discarding any remaining allowance that might have been left from before.
-            This feels very natural on the first call, but might be surprising on subsequent calls, so be careful. Before setting it to a non-zero value, it must be zero.
-        @dev The "forget last allowance and count of minted tokens" behavior is accepted in order to reduce the complexity of the contract as well as it's gas usage.
+        @notice minting contracts such as personal investment invite, vesting, crowdfunding must be granted a minting allowance.
+        @notice the contract does not keep track of how many tokens a minter has minted over time
         @param _minter address of the minter
-        @param _allowance maximum amount of tokens that can be minted by this minter (excluding the tokens minted as a fee)
+        @param _allowance how many tokens can be minted by this minter, in addition to their current allowance (excluding the tokens minted as a fee)
     */
-    function setMintingAllowance(
+    function increaseMintingAllowance(
         address _minter,
         uint256 _allowance
     ) external onlyRole(MINTALLOWER_ROLE) {
-        require(
-            mintingAllowance[_minter] == 0 || _allowance == 0,
-            "Set up minter can only be called if the remaining allowance is 0 or to set the allowance to 0."
-        ); // to prevent frontrunning when setting a new allowance, see https://www.adrianhetman.com/unboxing-erc20-approve-issues/
-        mintingAllowance[_minter] = _allowance;
-        emit MintingAllowanceChanged(_minter, _allowance);
+        mintingAllowance[_minter] += _allowance;
+        emit MintingAllowanceChanged(_minter, mintingAllowance[_minter]);
     }
 
-    function mint(address _to, uint256 _amount) external returns (bool) {
+    /** 
+        @dev underflow is cast to 0 in order to be able to use decreaseMintingAllowance(minter, UINT256_MAX) to reset the allowance to 0
+        @param _minter address of the minter
+        @param _allowance how many tokens should be deducted from the current minting allowance (excluding the tokens minted as a fee)
+    */
+    function decreaseMintingAllowance(
+        address _minter,
+        uint256 _allowance
+    ) external onlyRole(MINTALLOWER_ROLE) {
+        if (mintingAllowance[_minter] > _allowance) {
+            mintingAllowance[_minter] -= _allowance;
+            emit MintingAllowanceChanged(_minter, mintingAllowance[_minter]);
+        } else {
+            mintingAllowance[_minter] = 0;
+            emit MintingAllowanceChanged(_minter, 0);
+        }
+    }
+
+    function mint(address _to, uint256 _amount) external {
         require(
             mintingAllowance[_msgSender()] >= _amount,
             "MintingAllowance too low"
         );
         mintingAllowance[_msgSender()] -= _amount;
+        // this check is executed here, because later minting of the buy amount can not be differentiated from minting of the fee amount
+        _checkIfAllowedToTransact(_to);
         _mint(_to, _amount);
         // collect fees
-        if (feeSettings.tokenFeeDenominator() != 0) {
-            _mint(
-                feeSettings.feeCollector(),
-                _amount / feeSettings.tokenFeeDenominator() // result is rounded down, which is fine
-            );
+        uint256 fee = feeSettings.tokenFee(_amount);
+        if (fee != 0) {
+            // the fee collector is always allowed to receive tokens
+            _mint(feeSettings.feeCollector(), fee);
         }
-        return true;
     }
 
     function burn(
@@ -242,7 +249,10 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     }
 
     /**
-    @notice aborts transfer if the sender or receiver is neither transferer nor fulfills the requirements nor is the 0x0 address
+    @notice There are 3 types of transfers:
+        1. minting: transfers from the zero address to another address. Only minters can do this, which is checked in the mint function. The recipient must be allowed to transact.
+        2. burning: transfers from an address to the zero address. Only burners can do this, which is checked in the burn function.
+        3. transfers from one address to another. The sender and recipient must be allowed to transact.
     @dev this hook is executed before the transfer function itself 
      */
     function _beforeTokenTransfer(
@@ -252,20 +262,55 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     ) internal virtual override {
         super._beforeTokenTransfer(_from, _to, _amount);
         _requireNotPaused();
+        if (_from != address(0) && _to != address(0)) {
+            // token transfer
+            _checkIfAllowedToTransact(_from);
+            _checkIfAllowedToTransact(_to);
+        }
+        /*  if _from is 0x0, tokens are minted:
+                - receiver's properties are checked in the mint function
+                - the minter's allowance is checked in the mint function
+                - extra tokens can be minted for feeCollector in the mint function
+            if _to is 0x0, tokens are burned: 
+                - only burner is allowed to do this, which is checked in the burn function
+        */
+    }
+
+    /**
+     * @notice checks if _address is a) a transferer or b) satisfies the requirements
+     */
+    function _checkIfAllowedToTransact(address _address) internal view {
         require(
-            allowList.map(_from) & requirements == requirements ||
-                _from == address(0) ||
-                hasRole(BURNER_ROLE, _msgSender()) ||
-                hasRole(TRANSFERER_ROLE, _from),
-            "Sender is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
-        ); // address(0), because this is the _from address in case of minting new tokens
+            hasRole(TRANSFERER_ROLE, _address) ||
+                allowList.map(_address) & requirements == requirements,
+            "Sender or Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
+        );
+    }
+
+    /**
+     * @notice Make sure the address posing as FeeSettings actually implements the interfaces that are needed.
+     *          This is a sanity check to make sure that the FeeSettings contract is actually compatible with this token.
+     * @dev  This check uses EIP165, see https://eips.ethereum.org/EIPS/eip-165
+     */
+    function _checkIfFeeSettingsImplementsInterface(
+        IFeeSettingsV1 _feeSettings
+    ) internal view {
+        // step 1: needs to return true if EIP165 is supported
         require(
-            allowList.map(_to) & requirements == requirements ||
-                _to == address(0) ||
-                _to == feeSettings.feeCollector() ||
-                hasRole(TRANSFERER_ROLE, _to),
-            "Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
-        ); // address(0), because this is the _to address in case of burning tokens
+            _feeSettings.supportsInterface(0x01ffc9a7) == true,
+            "FeeSettings must implement IFeeSettingsV1"
+        );
+        // step 2: needs to return false if EIP165 is supported
+        require(
+            _feeSettings.supportsInterface(0xffffffff) == false,
+            "FeeSettings must implement IFeeSettingsV1"
+        );
+        // now we know EIP165 is supported
+        // step 3: needs to return true if IFeeSettingsV1 is supported
+        require(
+            _feeSettings.supportsInterface(type(IFeeSettingsV1).interfaceId),
+            "FeeSettings must implement IFeeSettingsV1"
+        );
     }
 
     function pause() external onlyRole(PAUSER_ROLE) {

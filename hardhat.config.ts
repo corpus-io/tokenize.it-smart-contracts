@@ -1,12 +1,11 @@
 import { HardhatUserConfig, task } from "hardhat/config";
 
-import 'dotenv/config' 
-import 'hardhat-gas-reporter'
-import '@nomiclabs/hardhat-etherscan';
-import '@typechain/hardhat';
-import '@nomiclabs/hardhat-ethers';
+import "dotenv/config";
+import "hardhat-gas-reporter";
+import "@nomiclabs/hardhat-etherscan";
+import "@typechain/hardhat";
+import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
-
 
 // require("@nomiclabs/hardhat-waffle");
 // require("hardhat-gas-reporter");
@@ -29,11 +28,11 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
- const config: HardhatUserConfig =  {
-  solidity: "0.8.9",
+const config: HardhatUserConfig = {
+  solidity: "0.8.17",
   networks: {
     localhost: {
-      url: 'http://localhost:8545'
+      url: "http://localhost:8545",
     },
     ropsten: {
       url: process.env.ROPSTEN_URL || "",
@@ -49,11 +48,11 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
     apiKey: process.env.ETHERSCAN_API_KEY,
   },
   typechain: {
-    outDir: 'types',
-    target: 'ethers-v5',
+    outDir: "types",
+    target: "ethers-v5",
     alwaysGenerateOverloads: false, // should overloads with full signatures like deposit(uint256) be generated always, even if there are no overloads?
-    externalArtifacts: ['externalArtifacts/*.json'], // optional array of glob patterns with external artifacts to process (for example external libs from node_modules)
-    dontOverrideCompile: false // defaults to false
+    externalArtifacts: ["externalArtifacts/*.json"], // optional array of glob patterns with external artifacts to process (for example external libs from node_modules)
+    dontOverrideCompile: false, // defaults to false
   },
 };
 

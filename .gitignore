@@ -16,3 +16,7 @@ node_modules/
 !.yarn/versions
 .pnp.*
 *.log
+coverage/
+temp/
+broadcast/
+.env

@@ -1,10 +1,11 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/Token.sol";
 import "../contracts/PersonalInvite.sol";
 import "../contracts/PersonalInviteFactory.sol";
+import "../contracts/FeeSettings.sol";
 
 contract PersonalInviteFactoryTest is Test {
     PersonalInviteFactory factory;
@@ -113,10 +114,10 @@ contract PersonalInviteFactoryTest is Test {
         assert(len == 0);
 
         vm.prank(admin);
-        token.setMintingAllowance(expectedAddress, amount);
+        token.increaseMintingAllowance(expectedAddress, amount);
 
         vm.prank(admin);
-        currency.setMintingAllowance(admin, amount * price);
+        currency.increaseMintingAllowance(admin, amount * price);
 
         vm.prank(admin);
         currency.mint(buyer, amount * price);

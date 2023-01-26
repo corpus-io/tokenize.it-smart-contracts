@@ -1,14 +1,14 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity 0.8.17;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 /*
     The AllowList contract is used to manage a list of addresses and attest each address certain attributes.
     Examples for possible attributes are: is KYCed, is american, is of age, etc.
     One AllowList managed by one entity (e.g. tokenize.it) can manage up to 252 different attributes, and one tier with 5 levels, and can be used by an unlimited number of other Tokens.
 */
-contract AllowList is Ownable {
+contract AllowList is Ownable2Step {
     /**
     @dev Attributes are defined as bit mask, with the bit position encoding it's meaning and the bit's value whether this attribute is attested or not. 
         Example:

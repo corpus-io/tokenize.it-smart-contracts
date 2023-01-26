@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -72,35 +72,16 @@ contract PersonalInvite {
         require(_tokenPrice != 0, "_tokenPrice can not be zero");
         require(block.timestamp <= _expiration, "Deal expired");
 
-        /**
-        @dev To avoid rounding errors, (amount * tokenPrice) needs to be multiple of 10**token.decimals(). This is checked for here. 
-            With:
-                _tokenAmount = a * [token_bits]
-                _tokenPrice = p * [currency_bits]/[token]
-            The currency amount is calculated as: 
-                currencyAmount = _tokenAmount * tokenPrice 
-                = a * p * [currency_bits]/[token] * [token_bits]  with 1 [token] = (10**token.decimals) [token_bits]
-                = a * p * [currency_bits] / (10**token.decimals)
-         */
-        require(
-            (_tokenAmount * _tokenPrice) % (10 ** _token.decimals()) == 0,
-            "Amount * tokenprice needs to be a multiple of 10**token.decimals()"
+        // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
+        uint256 currencyAmount = Math.ceilDiv(
+            _amount * _tokenPrice,
+            10 ** _token.decimals()
         );
-        uint256 currencyAmount = (_tokenAmount * _tokenPrice) /
-            (10 ** _token.decimals());
 
-        uint256 fee;
-        if (_token.feeSettings().personalInviteFeeDenominator() == 0) {
-            fee = 0;
-        } else {
-            fee =
-                currencyAmount /
-                _token.feeSettings().personalInviteFeeDenominator();
-            _currency.safeTransferFrom(
-                _currencySender,
-                _token.feeSettings().feeCollector(),
-                fee
-            );
+        IFeeSettingsV1 feeSettings = _token.feeSettings();
+        uint256 fee = feeSettings.personalInviteFee(currencyAmount);
+        if (fee != 0) {
+            _currency.safeTransferFrom(_buyer, feeSettings.feeCollector(), fee);
         }
         _currency.safeTransferFrom(
             _currencySender,

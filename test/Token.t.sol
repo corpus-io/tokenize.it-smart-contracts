@@ -1,8 +1,9 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/Token.sol";
+import "../contracts/FeeSettings.sol";
 
 contract tokenTest is Test {
     Token token;
@@ -94,10 +95,23 @@ contract tokenTest is Test {
     function testFeeSettings0() public {
         FeeSettings _noFeeSettings = FeeSettings(address(0));
         console.log("fee settings address:", address(_noFeeSettings));
-        vm.expectRevert("FeeSettings must not be zero address");
+        vm.expectRevert();
         new Token(
             trustedForwarder,
             _noFeeSettings,
+            admin,
+            allowList,
+            0x0,
+            "testToken",
+            "TEST"
+        );
+    }
+
+    function testFeeSettingsNoERC165() public {
+        vm.expectRevert();
+        new Token(
+            trustedForwarder,
+            FeeSettings(address(allowList)),
             admin,
             allowList,
             0x0,
@@ -117,10 +131,10 @@ contract tokenTest is Test {
     /**
     @notice test that addresses that are not the admin cannot perform the mint allower tasks
      */
-    function testFailAdminX(address x) public {
+    function testIsNotAdmin(address x) public {
         // test would fail (to fail) if x = admin. This has actually happened! Abort test in that case.
         vm.assume(x != admin);
-        assertTrue(token.hasRole(token.MINTALLOWER_ROLE(), x));
+        assertFalse(token.hasRole(token.DEFAULT_ADMIN_ROLE(), x));
     }
 
     function testAdmin() public {
@@ -134,7 +148,7 @@ contract tokenTest is Test {
     }
 
     function testMintAllower(address x) public {
-        vm.assume(x != admin);
+        vm.assume(x != mintAllower);
         assertFalse(token.hasRole(token.MINTALLOWER_ROLE(), x));
     }
 
@@ -153,7 +167,8 @@ contract tokenTest is Test {
     }
 
     function testFailSetRequirementsX(address X) public {
-        // this contract has not the Requirements role
+        // x is missing the Requirements role
+        vm.assume(X != requirer);
         vm.prank(X);
         token.setRequirements(3);
     }
@@ -234,31 +249,46 @@ contract tokenTest is Test {
         assertTrue(token.allowList() == newAllowList);
     }
 
+    function testUpdateAllowList0() public {
+        vm.expectRevert("AllowList must not be zero address");
+        vm.prank(admin);
+        token.setAllowList(AllowList(address(0)));
+    }
+
     function testSetUpMinter() public {
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 2);
+        token.increaseMintingAllowance(minter, 2);
         assertTrue(token.mintingAllowance(minter) == 2);
 
         vm.prank(minter);
         token.mint(pauser, 1);
         assertTrue(token.balanceOf(pauser) == 1);
         assertTrue(token.mintingAllowance(minter) == 1);
+
+        // set allowance to 0
+        vm.prank(mintAllower);
+        token.decreaseMintingAllowance(minter, UINT256_MAX);
+        assertTrue(token.mintingAllowance(minter) == 0);
     }
 
     function testMintOnce(uint256 x) public {
         vm.assume(
-            x <= UINT256_MAX - x / token.feeSettings().tokenFeeDenominator()
+            x <=
+                UINT256_MAX -
+                    x /
+                    FeeSettings(address(token.feeSettings()))
+                        .tokenFeeDenominator()
         ); // avoid overflow
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, x);
+        token.increaseMintingAllowance(minter, x);
         assertTrue(token.mintingAllowance(minter) == x);
 
         vm.prank(minter);
@@ -267,9 +297,81 @@ contract tokenTest is Test {
         assertTrue(token.mintingAllowance(minter) == 0);
     }
 
+    function testMint0() public {
+        uint x = 0;
+        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
+
+        vm.prank(admin);
+        token.grantRole(roleMintAllower, mintAllower);
+        vm.prank(mintAllower);
+        token.increaseMintingAllowance(minter, x);
+        assertTrue(token.mintingAllowance(minter) == x);
+
+        vm.prank(minter);
+        token.mint(pauser, x);
+        assertTrue(token.balanceOf(pauser) == x);
+        assertTrue(token.mintingAllowance(minter) == 0);
+    }
+
+    function testIncreaseAllowance(uint256 x, uint256 y) public {
+        vm.assume(
+            x < UINT256_MAX - y &&
+                x + y <=
+                UINT256_MAX -
+                    (x + y) /
+                    FeeSettings(address(token.feeSettings()))
+                        .tokenFeeDenominator()
+        ); // avoid overflow
+
+        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
+
+        vm.prank(admin);
+        token.grantRole(roleMintAllower, mintAllower);
+
+        vm.startPrank(mintAllower);
+        token.increaseMintingAllowance(minter, x);
+        assertTrue(token.mintingAllowance(minter) == x);
+
+        token.increaseMintingAllowance(minter, y);
+        assertTrue(token.mintingAllowance(minter) == x + y);
+        vm.stopPrank();
+
+        vm.prank(minter);
+        token.mint(pauser, y);
+        assertTrue(token.balanceOf(pauser) == y);
+        assertTrue(token.mintingAllowance(minter) == x);
+
+        vm.prank(minter);
+        token.mint(pauser, x);
+        assertTrue(token.balanceOf(pauser) == x + y);
+        assertTrue(token.mintingAllowance(minter) == 0);
+    }
+
+    function testDecreaseAllowance(uint256 x, uint256 y) public {
+        vm.assume(x > y);
+
+        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
+
+        vm.prank(admin);
+        token.grantRole(roleMintAllower, mintAllower);
+
+        vm.startPrank(mintAllower);
+        token.increaseMintingAllowance(minter, x);
+        assertTrue(token.mintingAllowance(minter) == x);
+
+        token.decreaseMintingAllowance(minter, y);
+        assertTrue(token.mintingAllowance(minter) == x - y);
+
+        // decrease works with more than the current allowance and results in 0
+        token.decreaseMintingAllowance(minter, x);
+        vm.stopPrank();
+
+        assertTrue(token.mintingAllowance(minter) == 0);
+    }
+
     function testFailMintAllowanceUsed(uint256 x) public {
         vm.prank(admin);
-        token.setMintingAllowance(minter, x);
+        token.increaseMintingAllowance(minter, x);
         assertTrue(token.mintingAllowance(minter) == x);
 
         vm.prank(minter);
@@ -289,14 +391,15 @@ contract tokenTest is Test {
             totalMintAmount <=
                 UINT256_MAX -
                     totalMintAmount /
-                    token.feeSettings().tokenFeeDenominator()
+                    FeeSettings(address(token.feeSettings()))
+                        .tokenFeeDenominator()
         ); // avoid overflow
         //vm.assume(steps < 200);
 
         steps = steps % 100; // don't be ridiculous
 
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, totalMintAmount);
+        token.increaseMintingAllowance(minter, totalMintAmount);
         assertTrue(token.mintingAllowance(minter) == totalMintAmount);
 
         // mint in steps
@@ -325,7 +428,7 @@ contract tokenTest is Test {
         vm.assume(x > 0);
 
         vm.prank(admin);
-        token.setMintingAllowance(minter, 0); // set allowance to 0
+        token.decreaseMintingAllowance(minter, token.mintingAllowance(minter)); // set allowance to 0
         assertTrue(token.mintingAllowance(minter) == 0); // check allowance is 0
 
         vm.prank(minter);
@@ -334,7 +437,11 @@ contract tokenTest is Test {
 
     function testBurnSimple(uint256 x) public {
         vm.assume(
-            x <= UINT256_MAX - x / token.feeSettings().tokenFeeDenominator()
+            x <=
+                UINT256_MAX -
+                    x /
+                    FeeSettings(address(token.feeSettings()))
+                        .tokenFeeDenominator()
         ); // avoid overflow
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
         bytes32 role = token.BURNER_ROLE();
@@ -342,31 +449,37 @@ contract tokenTest is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, x);
+        token.increaseMintingAllowance(minter, x);
         assertTrue(token.mintingAllowance(minter) == x);
 
         console.log("minting %s tokens", x);
         console.log(
             "fee demoninator: %s",
-            token.feeSettings().tokenFeeDenominator()
+            FeeSettings(address(token.feeSettings())).tokenFeeDenominator()
         );
         console.log("amount: %s", x);
 
         console.log(
             "remainder: %s",
-            x % token.feeSettings().tokenFeeDenominator()
+            x % FeeSettings(address(token.feeSettings())).tokenFeeDenominator()
         );
         console.log(
             "amount without remainder: %s",
-            x - (x % token.feeSettings().tokenFeeDenominator())
+            x -
+                (x %
+                    FeeSettings(address(token.feeSettings()))
+                        .tokenFeeDenominator())
         );
 
         console.log(
             "total tokens to mint (amount + fee): %s",
-            x + x / token.feeSettings().tokenFeeDenominator()
+            x +
+                x /
+                FeeSettings(address(token.feeSettings())).tokenFeeDenominator()
         );
 
-        uint fee = x / token.feeSettings().tokenFeeDenominator();
+        uint fee = x /
+            FeeSettings(address(token.feeSettings())).tokenFeeDenominator();
         console.log("fee: %s", fee);
         vm.prank(minter);
         token.mint(pauser, x);
@@ -387,10 +500,14 @@ contract tokenTest is Test {
      */
     function testBurnWithRequirements(uint256 x) public {
         vm.assume(
-            x <= UINT256_MAX - x / token.feeSettings().tokenFeeDenominator()
+            x <=
+                UINT256_MAX -
+                    x /
+                    FeeSettings(address(token.feeSettings()))
+                        .tokenFeeDenominator()
         ); // avoid overflow
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, x);
+        token.increaseMintingAllowance(minter, x);
         assertTrue(token.mintingAllowance(minter) == x);
 
         vm.prank(minter);
@@ -408,7 +525,7 @@ contract tokenTest is Test {
 
     function testBurn0() public {
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 0);
+        token.decreaseMintingAllowance(minter, UINT256_MAX);
         assertTrue(token.mintingAllowance(minter) == 0);
 
         vm.prank(minter);
@@ -420,6 +537,35 @@ contract tokenTest is Test {
         assertTrue(token.balanceOf(pauser) == 0);
     }
 
+    function testTransferTo0(address _address) public {
+        vm.assume(token.balanceOf(_address) == 0);
+        vm.assume(_address != address(0));
+        vm.assume(
+            _address != FeeSettings(address(token.feeSettings())).feeCollector()
+        );
+
+        uint _amount = 100;
+
+        vm.prank(mintAllower);
+        token.increaseMintingAllowance(minter, _amount);
+
+        vm.prank(minter);
+        token.mint(_address, _amount);
+        assertTrue(token.balanceOf(_address) == _amount, "balance is wrong");
+
+        vm.expectRevert("ERC20: transfer to the zero address");
+        vm.prank(_address);
+        token.transfer(address(0), _amount);
+    }
+
+    function testTransferFrom0(address _address) public {
+        uint _amount = 100;
+
+        vm.expectRevert("ERC20: transfer from the zero address");
+        vm.prank(address(0));
+        token.transfer(_address, _amount);
+    }
+
     function testFailBurn0() public {
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
         bytes32 role = token.BURNER_ROLE();
@@ -427,7 +573,7 @@ contract tokenTest is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 0);
+        token.decreaseMintingAllowance(minter, token.mintingAllowance(minter));
         assertTrue(token.mintingAllowance(minter) == 0);
 
         vm.prank(minter);
@@ -447,7 +593,7 @@ contract tokenTest is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 100);
+        token.increaseMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
         vm.prank(minter);
@@ -482,7 +628,7 @@ contract tokenTest is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 100);
+        token.increaseMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
         //testSetRequirements
@@ -527,7 +673,7 @@ contract tokenTest is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 100);
+        token.increaseMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
         //testSetRequirements
@@ -554,7 +700,7 @@ contract tokenTest is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 100);
+        token.increaseMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
         //testSetRequirements
@@ -581,7 +727,7 @@ contract tokenTest is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 100);
+        token.increaseMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
         //testSetRequirements
@@ -629,7 +775,7 @@ contract tokenTest is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 100);
+        token.increaseMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
         //testSetRequirements
@@ -692,7 +838,7 @@ contract tokenTest is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 100);
+        token.increaseMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
         //testSetRequirements
@@ -760,7 +906,7 @@ contract tokenTest is Test {
         address person2 = vm.addr(2);
 
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 100);
+        token.increaseMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
         // //testSetRequirements
@@ -786,9 +932,11 @@ contract tokenTest is Test {
         vm.prank(admin);
         allowList.set(person1, 3); // 0x0011 -> does not include required 0x1011
 
+        console.log("person1: ", person1);
+
         vm.prank(person1);
         vm.expectRevert(
-            "Sender is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
+            "Sender or Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
         );
         token.transfer(person2, 20);
         assertTrue(token.balanceOf(person2) == 20);
@@ -796,7 +944,7 @@ contract tokenTest is Test {
 
         vm.prank(person2);
         vm.expectRevert(
-            "Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
+            "Sender or Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
         );
         token.transfer(person1, 10);
         assertTrue(token.balanceOf(person2) == 20);
@@ -829,7 +977,7 @@ contract tokenTest is Test {
         address person2 = vm.addr(2);
 
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 100);
+        token.increaseMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
         // //testSetRequirements
@@ -847,9 +995,9 @@ contract tokenTest is Test {
         assertTrue(token.balanceOf(person1) == 50);
 
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 0);
+        token.decreaseMintingAllowance(minter, UINT256_MAX);
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 10);
+        token.increaseMintingAllowance(minter, 10);
         assertTrue(token.mintingAllowance(minter) == 10);
 
         vm.prank(minter);
@@ -863,7 +1011,7 @@ contract tokenTest is Test {
         address person2 = vm.addr(2);
 
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 100);
+        token.increaseMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
         // //testSetRequirements
@@ -881,7 +1029,7 @@ contract tokenTest is Test {
         assertTrue(token.balanceOf(person1) == 50);
 
         vm.prank(mintAllower);
-        token.setMintingAllowance(minter, 10);
+        token.increaseMintingAllowance(minter, 10);
         assertTrue(token.mintingAllowance(minter) == 10);
 
         vm.prank(minter);
@@ -915,93 +1063,9 @@ contract tokenTest is Test {
         assertFalse(localToken.hasRole(localToken.PAUSER_ROLE(), deployer));
     }
 
-    function testSuggestNewFeeSettingsWrongCaller(address wrongUpdater) public {
-        vm.assume(wrongUpdater != feeSettings.owner());
-        Fees memory fees = Fees(0, 0, 0, 0);
-        FeeSettings newFeeSettings = new FeeSettings(fees, pauser);
-        vm.prank(wrongUpdater);
-        vm.expectRevert(
-            "Only fee settings owner can suggest fee settings update"
-        );
-        token.suggestNewFeeSettings(newFeeSettings);
-    }
-
-    function testSuggestNewFeeSettingsFeeCollector() public {
-        Fees memory fees = Fees(0, 0, 0, 0);
-        FeeSettings newFeeSettings = new FeeSettings(fees, pauser);
-        vm.prank(feeSettings.feeCollector());
-        vm.expectRevert(
-            "Only fee settings owner can suggest fee settings update"
-        );
-        token.suggestNewFeeSettings(newFeeSettings);
-    }
-
-    function testSuggestNewFeeSettings(address newCollector) public {
-        vm.assume(newCollector != address(0));
-        Fees memory fees = Fees(0, 0, 0, 0);
-        FeeSettings newFeeSettings = new FeeSettings(fees, newCollector);
-        FeeSettings oldFeeSettings = token.feeSettings();
-        uint oldInvestmentFeeDenominator = oldFeeSettings
-            .continuousFundraisingFeeDenominator();
-        uint oldTokenFeeDenominator = oldFeeSettings.tokenFeeDenominator();
-        vm.prank(feeSettings.owner());
-        token.suggestNewFeeSettings(newFeeSettings);
-
-        // make sure old fees are still in effect
-        assertTrue(
-            address(token.feeSettings()) == address(oldFeeSettings),
-            "fee settings have changed!"
-        );
-        assertTrue(
-            token.suggestedFeeSettings() == newFeeSettings,
-            "suggested fee settings not set!"
-        );
-        assertTrue(
-            token.feeSettings().continuousFundraisingFeeDenominator() ==
-                oldInvestmentFeeDenominator,
-            "investment fee denominator changed!"
-        );
-        assertTrue(
-            token.feeSettings().tokenFeeDenominator() == oldTokenFeeDenominator,
-            "token fee denominator changed!"
-        );
-    }
-
-    function testAcceptNewFeeSettings(address newCollector) public {
-        vm.assume(newCollector != address(0));
-        Fees memory fees = Fees(0, 0, 0, 0);
-        FeeSettings newFeeSettings = new FeeSettings(fees, newCollector);
-        FeeSettings oldFeeSettings = token.feeSettings();
-        uint oldInvestmentFeeDenominator = oldFeeSettings
-            .continuousFundraisingFeeDenominator();
-        uint oldTokenFeeDenominator = oldFeeSettings.tokenFeeDenominator();
-        vm.prank(feeSettings.owner());
-        token.suggestNewFeeSettings(newFeeSettings);
-
-        // accept
+    function testAcceptFeeSettings0() public {
         vm.prank(admin);
-        token.acceptNewFeeSettings(newFeeSettings);
-        assertTrue(
-            token.feeSettings() == newFeeSettings,
-            "fee settings not changed!"
-        );
-        assertEq(
-            token.feeSettings().feeCollector(),
-            newCollector,
-            "Wrong feeCollector"
-        );
-        assertTrue(
-            address(token.suggestedFeeSettings()) == address(0),
-            "suggested fee settings not reset!"
-        );
-        assertTrue(
-            token.feeSettings().continuousFundraisingFeeDenominator() !=
-                oldInvestmentFeeDenominator,
-            "investment fee denominator changed!"
-        );
-        assertTrue(
-            token.feeSettings().tokenFeeDenominator() != oldTokenFeeDenominator,
-            "token fee denominator changed!"
-        );
+        vm.expectRevert();
+        token.acceptNewFeeSettings(FeeSettings(address(0)));
     }
 }
