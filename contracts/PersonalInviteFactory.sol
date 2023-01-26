@@ -18,10 +18,10 @@ contract PersonalInviteFactory {
      */
     function deploy(
         bytes32 _salt,
-        address _buyer,
+        address _currencyPayer,
         address _tokenReceiver,
-        address _receiver,
-        uint256 _amount,
+        address _currencyReceiver,
+        uint256 _tokenAmount,
         uint256 _tokenPrice,
         uint256 _expiration,
         IERC20 _currency,
@@ -31,10 +31,10 @@ contract PersonalInviteFactory {
             0,
             _salt,
             getBytecode(
-                _buyer,
+                _currencyPayer,
                 _tokenReceiver,
-                _receiver,
-                _amount,
+                _currencyReceiver,
+                _tokenAmount,
                 _tokenPrice,
                 _expiration,
                 _currency,

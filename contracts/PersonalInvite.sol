@@ -59,7 +59,7 @@ contract PersonalInvite {
     ) {
         require(
             _currencySender != address(0),
-            "_buyer can not be zero address"
+            "_currencySender can not be zero address"
         );
         require(
             _tokenReceiver != address(0),

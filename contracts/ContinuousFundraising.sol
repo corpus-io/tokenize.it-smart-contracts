@@ -164,6 +164,7 @@ contract ContinuousFundraising is
         );
 
         token.mint(_tokenReceiver, _amount);
+        emit TokensBought(_msgSender(), _amount, currencyAmount);
     }
 
     /**

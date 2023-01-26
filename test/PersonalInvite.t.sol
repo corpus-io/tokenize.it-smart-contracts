@@ -315,12 +315,18 @@ contract PersonalInviteTest is Test {
             "deployed contract address is not correct"
         );
 
-        console.log("buyer balance: %s", currency.balanceOf(tokenReceiver));
         console.log(
-            "receiver balance: %s",
+            "currencyPayer balance: %s",
+            currency.balanceOf(currencyPayer)
+        );
+        console.log(
+            "currencyReceiver balance: %s",
             currency.balanceOf(currencyReceiver)
         );
-        console.log("buyer token balance: %s", token.balanceOf(tokenReceiver));
+        console.log(
+            "tokenReceiver token balance: %s",
+            token.balanceOf(tokenReceiver)
+        );
         uint256 len;
         assembly {
             len := extcodesize(expectedAddress)
@@ -334,7 +340,7 @@ contract PersonalInviteTest is Test {
         assertTrue(
             currency.balanceOf(currencyReceiver) >
                 currencyReceiverBalanceBefore,
-            "receiver received no payment"
+            "currencyReceiver received no payment"
         );
 
         console.log(
@@ -346,7 +352,7 @@ contract PersonalInviteTest is Test {
 
         assertTrue(
             maxCurrencyAmount - currency.balanceOf(currencyPayer) >= 1,
-            "Buyer paid nothing"
+            "currencyPayer paid nothing"
         );
         uint totalCurrencyReceived = currency.balanceOf(currencyReceiver) +
             currency.balanceOf(
@@ -366,7 +372,7 @@ contract PersonalInviteTest is Test {
         assertEq(
             token.balanceOf(tokenReceiver),
             _tokenBuyAmount,
-            "buyer received no tokens"
+            "tokenReceiver received no tokens"
         );
     }
 
@@ -510,16 +516,12 @@ contract PersonalInviteTest is Test {
 
         assertEq(currency.balanceOf(currencyPayer), currencyAmount);
         assertEq(currency.balanceOf(currencyReceiver), 0);
+        assertEq(currency.balanceOf(tokenReceiver), 0);
         assertEq(token.balanceOf(tokenReceiver), 0);
 
         console.log(
             "feeCollector currency balance before deployment: %s",
             currency.balanceOf(token.feeSettings().feeCollector())
-        );
-
-        // make sure balances are as expected after deployment
-        uint256 feeCollectorCurrencyBalanceBefore = currency.balanceOf(
-            token.feeSettings().feeCollector()
         );
 
         address inviteAddress = factory.deploy(
@@ -574,8 +576,7 @@ contract PersonalInviteTest is Test {
 
         assertEq(
             currency.balanceOf(token.feeSettings().feeCollector()),
-            feeCollectorCurrencyBalanceBefore +
-                token.feeSettings().personalInviteFee(currencyAmount),
+            token.feeSettings().personalInviteFee(currencyAmount),
             "feeCollector currency balance is not correct"
         );
 
