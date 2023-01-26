@@ -245,10 +245,10 @@ contract PersonalInviteTest is Test {
         console.log("maxCurrencyAmount: %s", maxCurrencyAmount);
 
         vm.prank(paymentTokenProvider);
-        currency.mint(tokenReceiver, maxCurrencyAmount);
+        currency.mint(currencyPayer, maxCurrencyAmount);
         vm.stopPrank();
 
-        vm.prank(tokenReceiver);
+        vm.prank(currencyPayer);
         currency.approve(expectedAddress, maxCurrencyAmount);
 
         // make sure balances are as expected before deployment
@@ -260,13 +260,22 @@ contract PersonalInviteTest is Test {
             )
         );
 
-        assertEq(currency.balanceOf(tokenReceiver), maxCurrencyAmount);
-        assertEq(currency.balanceOf(currencyReceiver), 0);
+        assertEq(
+            currency.balanceOf(currencyPayer),
+            maxCurrencyAmount,
+            "CurrencyPayer has wrong balance"
+        );
+        assertEq(
+            currency.balanceOf(currencyReceiver),
+            0,
+            "CurrencyReceiver has wrong balance"
+        );
         assertEq(
             token.balanceOf(
                 FeeSettings(address(token.feeSettings())).feeCollector()
             ),
-            0
+            0,
+            "feeCollector token balance is not correct"
         );
         assertEq(token.balanceOf(tokenReceiver), 0);
 
@@ -318,8 +327,8 @@ contract PersonalInviteTest is Test {
         }
         console.log("Deployed contract size: %s", len);
         assertTrue(
-            currency.balanceOf(tokenReceiver) <= 1,
-            "Buyer has too much currency left"
+            currency.balanceOf(currencyPayer) <= 1,
+            "currencyPayer has too much currency left"
         );
 
         assertTrue(
@@ -336,7 +345,7 @@ contract PersonalInviteTest is Test {
         );
 
         assertTrue(
-            maxCurrencyAmount - currency.balanceOf(tokenReceiver) >= 1,
+            maxCurrencyAmount - currency.balanceOf(currencyPayer) >= 1,
             "Buyer paid nothing"
         );
         uint totalCurrencyReceived = currency.balanceOf(currencyReceiver) +
@@ -468,6 +477,8 @@ contract PersonalInviteTest is Test {
         //bytes memory creationCode = type(PersonalInvite).creationCode;
         uint256 tokenAmount = 20000000000000;
         uint256 expiration = block.timestamp + 1000;
+        uint256 tokenDecimals = token.decimals();
+        uint256 currencyAmount = (tokenAmount * price) / 10 ** tokenDecimals;
 
         address expectedAddress = factory.getAddress(
             salt,
@@ -484,18 +495,11 @@ contract PersonalInviteTest is Test {
         vm.prank(admin);
         token.increaseMintingAllowance(expectedAddress, tokenAmount);
 
-        uint256 tokenDecimals = token.decimals();
         vm.prank(paymentTokenProvider);
-        currency.transfer(
-            currencyPayer,
-            (tokenAmount * price) / 10 ** tokenDecimals
-        );
+        currency.mint(currencyPayer, currencyAmount);
 
         vm.prank(currencyPayer);
-        currency.approve(
-            expectedAddress,
-            (tokenAmount * price) / 10 ** tokenDecimals
-        );
+        currency.approve(expectedAddress, currencyAmount);
 
         // make sure balances are as expected before deployment
 
@@ -504,7 +508,6 @@ contract PersonalInviteTest is Test {
             currency.balanceOf(token.feeSettings().feeCollector())
         );
 
-        uint currencyAmount = (tokenAmount * price) / 10 ** tokenDecimals;
         assertEq(currency.balanceOf(currencyPayer), currencyAmount);
         assertEq(currency.balanceOf(currencyReceiver), 0);
         assertEq(token.balanceOf(tokenReceiver), 0);
@@ -513,6 +516,7 @@ contract PersonalInviteTest is Test {
             "feeCollector currency balance before deployment: %s",
             currency.balanceOf(token.feeSettings().feeCollector())
         );
+
         // make sure balances are as expected after deployment
         uint256 feeCollectorCurrencyBalanceBefore = currency.balanceOf(
             token.feeSettings().feeCollector()

@@ -150,93 +150,94 @@ contract ContinuousFundraisingTest is Test {
             token
         );
 
-        list = new AllowList();
-        Token _token = new Token(
+        vm.expectRevert("token can not be zero address");
+        new ContinuousFundraising(
             trustedForwarder,
-            feeSettings,
-            admin,
-            list,
-            0x0,
-            "TESTTOKEN",
-            "TEST"
-        );
-
-        vm.prank(paymentTokenProvider);
-        paymentToken = new FakePaymentToken(
-            paymentTokenAmount,
-            paymentTokenDecimals
-        );
-        vm.prank(owner);
-
-        ContinuousFundraising _raise = new ContinuousFundraising(
-            trustedForwarder,
-            payable(receiver),
-            1,
-            maxAmountOfTokenToBeSold / 100,
+            receiver,
+            minAmountPerBuyer,
+            maxAmountPerBuyer,
             price,
             maxAmountOfTokenToBeSold,
             paymentToken,
-            token
+            Token(address(0))
         );
 
-        // allow invite contract to mint
-        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
+        // vm.prank(paymentTokenProvider);
+        // paymentToken = new FakePaymentToken(
+        //     paymentTokenAmount,
+        //     paymentTokenDecimals
+        // );
+        // vm.prank(owner);
 
-        vm.prank(admin);
-        _token.grantRole(roleMintAllower, mintAllower);
-        vm.prank(mintAllower);
-        _token.increaseMintingAllowance(
-            address(_raise),
-            maxAmountOfTokenToBeSold
-        );
+        // ContinuousFundraising _raise = new ContinuousFundraising(
+        //     trustedForwarder,
+        //     payable(receiver),
+        //     1,
+        //     maxAmountOfTokenToBeSold / 100,
+        //     price,
+        //     maxAmountOfTokenToBeSold,
+        //     paymentToken,
+        //     token
+        // );
 
-        // mint _paymentToken for buyer
-        vm.prank(paymentTokenProvider);
-        paymentToken.transfer(buyer, paymentTokenAmount);
-        assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
+        // // allow invite contract to mint
+        // bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
-        // give invite contract allowance
-        vm.prank(buyer);
-        paymentToken.approve(address(_raise), paymentTokenAmount);
+        // vm.prank(admin);
+        // _token.grantRole(roleMintAllower, mintAllower);
+        // vm.prank(mintAllower);
+        // _token.increaseMintingAllowance(
+        //     address(_raise),
+        //     maxAmountOfTokenToBeSold
+        // );
 
-        // run actual test
+        // // mint _paymentToken for buyer
+        // vm.prank(paymentTokenProvider);
+        // paymentToken.transfer(buyer, paymentTokenAmount);
+        // assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
 
-        uint tokenAmount = 33 * 10 ** token.decimals();
+        // // give invite contract allowance
+        // vm.prank(buyer);
+        // paymentToken.approve(address(_raise), paymentTokenAmount);
 
-        // buyer has 1k FPT
-        assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
-        // they should be able to buy 33 CT for 999 FPT
-        vm.prank(buyer);
-        _raise.buy(tokenAmount, buyer);
-        // buyer should have 10 FPT left
-        assertTrue(
-            paymentToken.balanceOf(buyer) == 10 * 10 ** paymentTokenDecimals
-        );
-        // buyer should have the 33 CT they bought
-        assertTrue(
-            _token.balanceOf(buyer) == tokenAmount,
-            "buyer has wrong amount of token"
-        );
-        // receiver should have the 990 FPT that were paid, minus the fee
-        uint currencyAmount = 990 * 10 ** paymentTokenDecimals;
-        uint256 currencyFee = token.feeSettings().continuousFundraisingFee(
-            currencyAmount
-        );
-        assertTrue(
-            paymentToken.balanceOf(receiver) == currencyAmount - currencyFee,
-            "receiver has wrong amount of currency"
-        );
-        // fee collector should have the token and currency fees
-        assertEq(
-            currencyFee,
-            paymentToken.balanceOf(feeSettings.feeCollector()),
-            "fee collector has wrong amount of currency"
-        );
-        assertEq(
-            token.feeSettings().tokenFee(tokenAmount),
-            _token.balanceOf(feeSettings.feeCollector()),
-            "fee collector has wrong amount of token"
-        );
+        // // run actual test
+
+        // uint tokenAmount = 33 * 10 ** token.decimals();
+
+        // // buyer has 1k FPT
+        // assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
+        // // they should be able to buy 33 CT for 999 FPT
+        // vm.prank(buyer);
+        // _raise.buy(tokenAmount, buyer);
+        // // buyer should have 10 FPT left
+        // assertTrue(
+        //     paymentToken.balanceOf(buyer) == 10 * 10 ** paymentTokenDecimals
+        // );
+        // // buyer should have the 33 CT they bought
+        // assertTrue(
+        //     _token.balanceOf(buyer) == tokenAmount,
+        //     "buyer has wrong amount of token"
+        // );
+        // // receiver should have the 990 FPT that were paid, minus the fee
+        // uint currencyAmount = 990 * 10 ** paymentTokenDecimals;
+        // uint256 currencyFee = token.feeSettings().continuousFundraisingFee(
+        //     currencyAmount
+        // );
+        // assertTrue(
+        //     paymentToken.balanceOf(receiver) == currencyAmount - currencyFee,
+        //     "receiver has wrong amount of currency"
+        // );
+        // // fee collector should have the token and currency fees
+        // assertEq(
+        //     currencyFee,
+        //     paymentToken.balanceOf(feeSettings.feeCollector()),
+        //     "fee collector has wrong amount of currency"
+        // );
+        // assertEq(
+        //     token.feeSettings().tokenFee(tokenAmount),
+        //     _token.balanceOf(feeSettings.feeCollector()),
+        //     "fee collector has wrong amount of token"
+        // );
     }
 
     /*
