@@ -267,23 +267,21 @@ contract MainnetCurrencies is Test {
         assertEq(
             _currency.balanceOf(receiver),
             currencyCost -
-                currencyCost /
-                token.feeSettings().continuousFundraisingFeeDenominator(),
+                token.feeSettings().continuousFundraisingFee(currencyCost),
             "receiver should have received currency"
         );
         assertEq(
             _currency.balanceOf(token.feeSettings().feeCollector()),
-            currencyCost /
-                token.feeSettings().continuousFundraisingFeeDenominator(),
+            token.feeSettings().continuousFundraisingFee(currencyCost),
             "fee receiver should have received currency"
         );
         assertEq(
             token.balanceOf(
                 FeeSettings(address(token.feeSettings())).feeCollector()
             ),
-            amountOfTokenToBuy /
-                FeeSettings(address(token.feeSettings()))
-                    .continuousFundraisingFeeDenominator(),
+            FeeSettings(address(token.feeSettings())).tokenFee(
+                amountOfTokenToBuy
+            ),
             "fee receiver should have received tokens"
         );
         assertEq(

@@ -74,24 +74,27 @@ contract PersonalInvite {
 
         // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
         uint256 currencyAmount = Math.ceilDiv(
-            _amount * _tokenPrice,
+            _tokenAmount * _tokenPrice,
             10 ** _token.decimals()
         );
 
         IFeeSettingsV1 feeSettings = _token.feeSettings();
         uint256 fee = feeSettings.personalInviteFee(currencyAmount);
         if (fee != 0) {
-            _currency.safeTransferFrom(_buyer, feeSettings.feeCollector(), fee);
+            _currency.safeTransferFrom(
+                _currencySender,
+                feeSettings.feeCollector(),
+                fee
+            );
         }
         _currency.safeTransferFrom(
             _currencySender,
             _currencyReceiver,
             (currencyAmount - fee)
         );
-        require(
-            _token.mint(_tokenReceiver, _tokenAmount),
-            "Minting new tokens failed"
-        );
+
+        _token.mint(_tokenReceiver, _tokenAmount);
+
         emit Deal(
             _currencySender,
             _tokenReceiver,
