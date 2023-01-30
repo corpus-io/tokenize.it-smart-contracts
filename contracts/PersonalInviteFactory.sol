@@ -51,7 +51,7 @@ contract PersonalInviteFactory {
      */
     function getAddress(
         bytes32 _salt,
-        address _buyer,
+        address _currencyPayer,
         address _tokenReceiver,
         address _currencyReceiver,
         uint256 _amount,
@@ -61,7 +61,7 @@ contract PersonalInviteFactory {
         IERC20 _token
     ) external view returns (address) {
         bytes memory bytecode = getBytecode(
-            _buyer,
+            _currencyPayer,
             _tokenReceiver,
             _currencyReceiver,
             _amount,
@@ -74,7 +74,7 @@ contract PersonalInviteFactory {
     }
 
     function getBytecode(
-        address _buyer,
+        address _currencyPayer,
         address _tokenReceiver,
         address _currencyReceiver,
         uint256 _amount,
@@ -87,7 +87,7 @@ contract PersonalInviteFactory {
             abi.encodePacked(
                 type(PersonalInvite).creationCode,
                 abi.encode(
-                    _buyer,
+                    _currencyPayer,
                     _tokenReceiver,
                     _currencyReceiver,
                     _amount,
