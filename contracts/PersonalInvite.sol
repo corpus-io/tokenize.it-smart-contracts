@@ -28,9 +28,9 @@ contract PersonalInvite {
     using SafeERC20 for IERC20;
 
     event Deal(
-        address indexed buyer,
+        address indexed currencyPayer,
         address indexed tokenReceiver,
-        uint256 amount,
+        uint256 tokenAmount,
         uint256 tokenPrice,
         IERC20 currency,
         Token indexed token
@@ -38,7 +38,7 @@ contract PersonalInvite {
 
     /**
      * @notice Contains all logic, see above.
-     * @param _currencySender address holding the currency. Must have given sufficient allowance to this contract.
+     * @param _currencyPayer address holding the currency. Must have given sufficient allowance to this contract.
      * @param _tokenReceiver address receiving the tokens. Must have sufficient attributes in AllowList to be able to receive tokens.
      * @param _currencyReceiver address receiving the payment in currency.
      * @param _tokenAmount amount of tokens to be bought.
@@ -48,7 +48,7 @@ contract PersonalInvite {
      * @param _token token to be bought
      */
     constructor(
-        address _currencySender,
+        address _currencyPayer,
         address _tokenReceiver,
         address _currencyReceiver,
         uint256 _tokenAmount,
@@ -58,7 +58,7 @@ contract PersonalInvite {
         Token _token
     ) {
         require(
-            _currencySender != address(0),
+            _currencyPayer != address(0),
             "_currencySender can not be zero address"
         );
         require(
@@ -82,13 +82,13 @@ contract PersonalInvite {
         uint256 fee = feeSettings.personalInviteFee(currencyAmount);
         if (fee != 0) {
             _currency.safeTransferFrom(
-                _currencySender,
+                _currencyPayer,
                 feeSettings.feeCollector(),
                 fee
             );
         }
         _currency.safeTransferFrom(
-            _currencySender,
+            _currencyPayer,
             _currencyReceiver,
             (currencyAmount - fee)
         );
@@ -96,7 +96,7 @@ contract PersonalInvite {
         _token.mint(_tokenReceiver, _tokenAmount);
 
         emit Deal(
-            _currencySender,
+            _currencyPayer,
             _tokenReceiver,
             _tokenAmount,
             _tokenPrice,
