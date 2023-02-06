@@ -37,4 +37,12 @@ The company-related contracts are:
 - ContinuousInvestment.sol
 - PersonalInvite.sol
 
-It will be possible to deploy those through the web app.
+They are deployed through the web app.
+
+As long as automatic verification is not implemented, the contracts need to be verified manually. Doing this with foundry was not successful, possibly because they are compiled using hardhat. The ContinuousFundraising contract can be verified like this:
+
+```
+yarn hardhat verify --network goerli 0x29b659E948616815FADCD013f6BfC767da1BDe83 0x0445d09A1917196E1DC12EdB7334C70c1FfB1623 0xA1e28D1f17b7Da62d10fbFaFCA98Fa406D759ce2 10000000000000000000 50000000000000000000 1000000 100000000000000000000 0x07865c6E87B9F70255377e024ace6630C1Eaa37F 0xc1C74cbD565D16E0cCe9C5DCf7683368DE4E35e2
+```
+
+The everything behind the first address is a constructor argument.
