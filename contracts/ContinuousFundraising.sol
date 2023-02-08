@@ -119,23 +119,27 @@ contract ContinuousFundraising is
     /**
      @notice buy tokens
      @param _amount amount of tokens to buy, in bits (smallest subunit of token)
+     @param _tokenReceiver address the tokens should be minted to
      */
-    function buy(uint256 _amount) external whenNotPaused nonReentrant {
+    function buy(
+        uint256 _amount,
+        address _tokenReceiver
+    ) external whenNotPaused nonReentrant {
         require(
             tokensSold + _amount <= maxAmountOfTokenToBeSold,
             "Not enough tokens to sell left"
         );
         require(
-            tokensBought[_msgSender()] + _amount >= minAmountPerBuyer,
+            tokensBought[_tokenReceiver] + _amount >= minAmountPerBuyer,
             "Buyer needs to buy at least minAmount"
         );
         require(
-            tokensBought[_msgSender()] + _amount <= maxAmountPerBuyer,
+            tokensBought[_tokenReceiver] + _amount <= maxAmountPerBuyer,
             "Total amount of bought tokens needs to be lower than or equal to maxAmount"
         );
 
         tokensSold += _amount;
-        tokensBought[_msgSender()] += _amount;
+        tokensBought[_tokenReceiver] += _amount;
 
         // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
         uint256 currencyAmount = Math.ceilDiv(
@@ -159,8 +163,7 @@ contract ContinuousFundraising is
             currencyAmount - fee
         );
 
-        token.mint(_msgSender(), _amount);
-
+        token.mint(_tokenReceiver, _amount);
         emit TokensBought(_msgSender(), _amount, currencyAmount);
     }
 
