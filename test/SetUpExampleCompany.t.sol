@@ -64,6 +64,9 @@ contract CompanySetUpTest is Test {
         0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
     address public investor; // = 0x38d6703d37988C644D6d31551e9af6dcB762E618;
 
+    address public investorColdWallet =
+        0x5109709EcFA91a80626ff3989d68f67F5B1dD125;
+
     // DO NOT USE IN PRODUCTION! Key was generated online for testing only.
     uint256 public constant companyAdminPrivateKey =
         0x8da4ef21b864d2cc526dbdb2a120bd2874c36c9d0a1fb7f8c63d7f7a8b41de8f;
@@ -124,7 +127,7 @@ contract CompanySetUpTest is Test {
         // investor registers with the platform
         // after kyc, the platform adds the investor to the allowlist with all the properties they were able to proof
         vm.prank(platformAdmin);
-        list.set(investor, requirements); // it is possible to set more bits to true than the requirements, but not less, for the investor to be allowed to invest
+        list.set(investorColdWallet, requirements); // it is possible to set more bits to true than the requirements, but not less, for the investor to be allowed to invest
 
         // setting up AllowList and FeeSettings is one-time step. These contracts will be used by all companies.
 
@@ -357,7 +360,7 @@ contract CompanySetUpTest is Test {
         payload = abi.encodeWithSelector(
             raise.buy.selector,
             tokenBuyAmount,
-            investor
+            investorColdWallet
         );
 
         request = IForwarder.ForwardRequest({
@@ -392,7 +395,7 @@ contract CompanySetUpTest is Test {
         );
 
         // investor has no tokens before
-        assertEq(token.balanceOf(investor), 0);
+        assertEq(token.balanceOf(investorColdWallet), 0);
         // platformFeeCollector has no tokens or currency before
         assertEq(token.balanceOf(platformFeeCollector), 0);
         assertEq(paymentToken.balanceOf(platformFeeCollector), 0);
@@ -411,7 +414,7 @@ contract CompanySetUpTest is Test {
 
         // investor receives as many tokens as they paid for
         assertTrue(
-            token.balanceOf(investor) == tokenBuyAmount,
+            token.balanceOf(investorColdWallet) == tokenBuyAmount,
             "Investor has no tokens"
         );
         // platformFeeCollector receives the platform fees in token and currency
@@ -465,6 +468,7 @@ contract CompanySetUpTest is Test {
         personalInviteAddress = factory.getAddress(
             salt,
             investor,
+            investorColdWallet,
             companyAdmin,
             tokenBuyAmount,
             price,
@@ -621,7 +625,7 @@ contract CompanySetUpTest is Test {
         */
 
         // investor has no tokens before
-        assertEq(token.balanceOf(investor), 0);
+        assertEq(token.balanceOf(investorColdWallet), 0);
         // platformFeeCollector has no tokens or currency before
         assertEq(token.balanceOf(platformFeeCollector), 0);
         assertEq(paymentToken.balanceOf(platformFeeCollector), 0);
@@ -632,6 +636,7 @@ contract CompanySetUpTest is Test {
         factory.deploy(
             salt,
             investor,
+            investorColdWallet,
             companyAdmin,
             tokenBuyAmount,
             price,
@@ -642,7 +647,7 @@ contract CompanySetUpTest is Test {
 
         // investor receives as many tokens as they paid for
         assertTrue(
-            token.balanceOf(investor) == tokenBuyAmount,
+            token.balanceOf(investorColdWallet) == tokenBuyAmount,
             "Investor has no tokens"
         );
         // platformFeeCollector receives the platform fees in token and currency
