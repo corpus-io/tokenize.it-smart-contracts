@@ -52,7 +52,7 @@ contract ERC2771Helper is Test {
     /*
     helps to examine logs
     */
-    function consoleLogLogs(Vm.Log[] calldata logs) public {
+    function consoleLogLogs(Vm.Log[] calldata logs) public view {
         console.log("These events have been recorded:");
         for (uint256 i = 0; i < logs.length; i++) {
             console.log("Event ", i, ":");

@@ -159,7 +159,8 @@ contract ContinuousFundraisingTest is Test {
         // build request
         bytes memory payload = abi.encodeWithSelector(
             raise.buy.selector,
-            tokenBuyAmount
+            tokenBuyAmount,
+            buyer
         );
 
         IForwarder.ForwardRequest memory request = IForwarder.ForwardRequest({

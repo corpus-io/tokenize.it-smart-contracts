@@ -343,7 +343,11 @@ contract CompanySetUpTest is Test {
         // why does this also work if I don't update the requestType?
 
         // build request
-        payload = abi.encodeWithSelector(raise.buy.selector, tokenBuyAmount);
+        payload = abi.encodeWithSelector(
+            raise.buy.selector,
+            tokenBuyAmount,
+            investor
+        );
 
         request = IForwarder.ForwardRequest({
             from: investor,
