@@ -7,7 +7,7 @@ import "./Token.sol";
 
 /**
 @notice This contract represents the offer to buy an amount of tokens at a preset price. It is created for a specific buyer and can only be claimed once and only by that buyer.
-    All parameters of the invitation (currencySender, tokenReceiver, currencyReceiver, tokenAmount, tokenPrice, currency, token) are immutable (see description of CREATE2).
+    All parameters of the invitation (currencyPayer, tokenReceiver, currencyReceiver, tokenAmount, tokenPrice, currency, token) are immutable (see description of CREATE2).
     It is likely a company will create many PersonalInvites for specific investors to buy their one token.
     The use of CREATE2 (https://docs.openzeppelin.com/cli/2.8/deploying-with-create2) enables this invitation to be privacy preserving until it is accepted through 
     granting of an allowance to the PersonalInvite's future address and deployment of the PersonalInvite. 
@@ -15,11 +15,11 @@ import "./Token.sol";
     deterministic: it can be computed from the parameters of the invitation. This allows the company and buyer to grant allowances to the future address of this contract 
     before it is deployed.
     The process of deploying this contract is as follows:
-    1. Company and investor agree on the terms of the invitation (currencySender, tokenReceiver, currencyReceiver, tokenAmount, tokenPrice, currency, token) 
+    1. Company and investor agree on the terms of the invitation (currencyPayer, tokenReceiver, currencyReceiver, tokenAmount, tokenPrice, currency, token) 
         and a salt (used for deployment only).
     2. With the help of a deploy factory, the company computes the future address of the PersonalInvite contract.
     3. The company grants a token minting allowance of amount to the future address of the PersonalInvite contract.
-    4. The investor grants a currency allowance of amount*tokenPrice / 10**tokenDecimals to the future address of the PersonalInvite contract, using their _currencySender address.
+    4. The investor grants a currency allowance of amount*tokenPrice / 10**tokenDecimals to the future address of the PersonalInvite contract, using their currencyPayer address.
     5. Finally, company, buyer or anyone else deploys the PersonalInvite contract using the deploy factory.
     Because all of the execution logic is in the constructor, the deployment of the PersonalInvite contract is the last step. During the deployment, the newly 
     minted tokens will be transferred to the buyer and the currency will be transferred to the company's receiver address.
@@ -59,7 +59,7 @@ contract PersonalInvite {
     ) {
         require(
             _currencyPayer != address(0),
-            "_currencySender can not be zero address"
+            "_currencyPayer can not be zero address"
         );
         require(
             _tokenReceiver != address(0),
