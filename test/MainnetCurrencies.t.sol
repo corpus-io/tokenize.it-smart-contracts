@@ -44,6 +44,14 @@ contract MainnetCurrencies is Test {
     uint256 public constant minAmountPerBuyer = maxAmountOfTokenToBeSold / 200; // 0.1 token
     uint256 public constant amountOfTokenToBuy = maxAmountPerBuyer;
 
+    // some math
+    uint256 public constant price = 7 * 10 ** 18;
+    uint256 public currencyCost;
+    uint256 public currencyAmount;
+
+    // generate address of invite
+    bytes32 salt = bytes32(0);
+
     // test currencies
     IERC20 USDC = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
     IERC20 WETH = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
@@ -65,6 +73,8 @@ contract MainnetCurrencies is Test {
             "TEST"
         );
         factory = new PersonalInviteFactory();
+        currencyCost = (amountOfTokenToBuy * price) / 10 ** token.decimals();
+        currencyAmount = currencyCost * 2;
     }
 
     // function testUSDCBalance() public {
@@ -139,7 +149,7 @@ contract MainnetCurrencies is Test {
 
         // buy tokens
         vm.prank(buyer);
-        _raise.buy(maxAmountPerBuyer);
+        _raise.buy(maxAmountPerBuyer, buyer);
 
         // check buyer has tokens and receiver has _currency afterwards
         assertEq(
@@ -198,26 +208,16 @@ contract MainnetCurrencies is Test {
     }
 
     function personalInviteWithIERC20Currency(IERC20 _currency) public {
-        // some math
-        //uint _decimals = _currency.decimals(); // can't get decimals from IERC20
-        //uint _price = 7 * 10**_decimals; // 7 payment tokens per token
-        uint256 _price = 7 * 10 ** 18;
-        uint256 _currencyCost = (amountOfTokenToBuy * _price) /
-            10 ** token.decimals();
-        uint256 _currencyAmount = _currencyCost * 2;
-
-        // generate address of invite
-        bytes32 salt = bytes32(0);
-
         //bytes memory creationCode = type(PersonalInvite).creationCode;
         uint256 expiration = block.timestamp + 1000;
 
         address expectedAddress = factory.getAddress(
             salt,
-            payable(buyer),
-            payable(receiver),
+            buyer,
+            buyer,
+            receiver,
             amountOfTokenToBuy,
-            _price,
+            price,
             expiration,
             _currency,
             token
@@ -228,12 +228,12 @@ contract MainnetCurrencies is Test {
         token.increaseMintingAllowance(expectedAddress, amountOfTokenToBuy);
 
         // give the buyer funds and approve invite
-        writeERC20Balance(buyer, address(_currency), _currencyAmount);
+        writeERC20Balance(buyer, address(_currency), currencyAmount);
         vm.prank(buyer);
-        _currency.approve(address(expectedAddress), _currencyCost);
+        _currency.approve(address(expectedAddress), currencyCost);
 
         // make sure balances are as expected before deployment
-        assertEq(_currency.balanceOf(buyer), _currencyAmount);
+        assertEq(_currency.balanceOf(buyer), currencyAmount);
         assertEq(_currency.balanceOf(receiver), 0);
         assertEq(token.balanceOf(buyer), 0);
         assertEq(token.balanceOf(receiver), 0);
@@ -241,10 +241,11 @@ contract MainnetCurrencies is Test {
         // deploy invite
         address inviteAddress = factory.deploy(
             salt,
-            payable(buyer),
-            payable(receiver),
+            buyer,
+            buyer,
+            receiver,
             amountOfTokenToBuy,
-            _price,
+            price,
             expiration,
             _currency,
             token
@@ -265,33 +266,27 @@ contract MainnetCurrencies is Test {
         assertEq(token.balanceOf(receiver), 0, "receiver has no tokens");
         assertEq(
             _currency.balanceOf(receiver),
-            _currencyCost -
-                _currencyCost /
-                FeeSettings(address(token.feeSettings()))
-                    .continuousFundraisingFeeDenominator(),
+            currencyCost -
+                token.feeSettings().continuousFundraisingFee(currencyCost),
             "receiver should have received currency"
         );
         assertEq(
-            _currency.balanceOf(
-                FeeSettings(address(token.feeSettings())).feeCollector()
-            ),
-            _currencyCost /
-                FeeSettings(address(token.feeSettings()))
-                    .continuousFundraisingFeeDenominator(),
+            _currency.balanceOf(token.feeSettings().feeCollector()),
+            token.feeSettings().continuousFundraisingFee(currencyCost),
             "fee receiver should have received currency"
         );
         assertEq(
             token.balanceOf(
                 FeeSettings(address(token.feeSettings())).feeCollector()
             ),
-            amountOfTokenToBuy /
-                FeeSettings(address(token.feeSettings()))
-                    .continuousFundraisingFeeDenominator(),
+            FeeSettings(address(token.feeSettings())).tokenFee(
+                amountOfTokenToBuy
+            ),
             "fee receiver should have received tokens"
         );
         assertEq(
             _currency.balanceOf(buyer),
-            _currencyAmount - _currencyCost,
+            currencyAmount - currencyCost,
             "buyer should have paid currency"
         );
 

@@ -354,7 +354,11 @@ contract CompanySetUpTest is Test {
         */
 
         // build request
-        payload = abi.encodeWithSelector(raise.buy.selector, tokenBuyAmount);
+        payload = abi.encodeWithSelector(
+            raise.buy.selector,
+            tokenBuyAmount,
+            investor
+        );
 
         request = IForwarder.ForwardRequest({
             from: investor,
