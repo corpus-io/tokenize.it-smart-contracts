@@ -18,9 +18,10 @@ contract PersonalInviteFactory {
      */
     function deploy(
         bytes32 _salt,
-        address _buyer,
-        address _receiver,
-        uint256 _amount,
+        address _currencyPayer,
+        address _tokenReceiver,
+        address _currencyReceiver,
+        uint256 _tokenAmount,
         uint256 _tokenPrice,
         uint256 _expiration,
         IERC20 _currency,
@@ -30,9 +31,10 @@ contract PersonalInviteFactory {
             0,
             _salt,
             getBytecode(
-                _buyer,
-                _receiver,
-                _amount,
+                _currencyPayer,
+                _tokenReceiver,
+                _currencyReceiver,
+                _tokenAmount,
                 _tokenPrice,
                 _expiration,
                 _currency,
@@ -49,8 +51,9 @@ contract PersonalInviteFactory {
      */
     function getAddress(
         bytes32 _salt,
-        address _buyer,
-        address _receiver,
+        address _currencyPayer,
+        address _tokenReceiver,
+        address _currencyReceiver,
         uint256 _amount,
         uint256 _tokenPrice,
         uint256 _expiration,
@@ -58,8 +61,9 @@ contract PersonalInviteFactory {
         IERC20 _token
     ) external view returns (address) {
         bytes memory bytecode = getBytecode(
-            _buyer,
-            _receiver,
+            _currencyPayer,
+            _tokenReceiver,
+            _currencyReceiver,
             _amount,
             _tokenPrice,
             _expiration,
@@ -70,8 +74,9 @@ contract PersonalInviteFactory {
     }
 
     function getBytecode(
-        address _buyer,
-        address _receiver,
+        address _currencyPayer,
+        address _tokenReceiver,
+        address _currencyReceiver,
         uint256 _amount,
         uint256 _tokenPrice,
         uint256 _expiration,
@@ -82,8 +87,9 @@ contract PersonalInviteFactory {
             abi.encodePacked(
                 type(PersonalInvite).creationCode,
                 abi.encode(
-                    _buyer,
-                    _receiver,
+                    _currencyPayer,
+                    _tokenReceiver,
+                    _currencyReceiver,
                     _amount,
                     _tokenPrice,
                     _expiration,

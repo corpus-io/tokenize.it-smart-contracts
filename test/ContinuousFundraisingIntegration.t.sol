@@ -191,7 +191,7 @@ contract ContinuousFundraisingTest is Test {
         assertTrue(_paymentToken.balanceOf(investor) == _paymentTokenAmount);
         // they should be able to buy 33 CT for 999 FPT
         vm.prank(investor);
-        _raise.buy(tokenAmount);
+        _raise.buy(tokenAmount, investor);
         // buyer should have 10 FPT left
         assertTrue(
             _paymentToken.balanceOf(investor) ==
@@ -323,7 +323,7 @@ contract ContinuousFundraisingTest is Test {
             );
             // they should be able to buy 33 CT for 999 FPT
             vm.prank(investor);
-            _raise.buy(tokenAmount);
+            _raise.buy(tokenAmount, investor);
             // buyer should have 10 FPT left
             assertTrue(
                 _paymentToken.balanceOf(investor) ==
