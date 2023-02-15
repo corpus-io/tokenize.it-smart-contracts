@@ -48,6 +48,12 @@ yarn hardhat verify --network goerli 0x29b659E948616815FADCD013f6BfC767da1BDe83 
 
 The everything behind the first address is a constructor argument.
 
+For development purposes, the contracts can be deployed like this:
+
+```bash
+forge script script/DeployToken.s.sol --rpc-url $GOERLI_RPC_URL  --verify --broadcast
+```
+
 ## Forwarder
 
 If the forwarder has not been deployed yet, e.g. when working in a testing environment, it can be deployed like this:

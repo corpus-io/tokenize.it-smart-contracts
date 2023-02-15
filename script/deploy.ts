@@ -18,8 +18,24 @@ async function main() {
   
   const signers = await ethers.getSigners();
 
-// address _admin, AllowList _allowList, string memory _name, string memory _symbol
-  const token = await Token.deploy(signers[0].address, signers[1].address, 0x0, 'Token', 'COT');
+  const admin = "0x6CcD9E07b035f9E6e7f086f3EaCf940187d03A29"; // testing founder
+  const allowList = "0x274ca5f21Cdde06B6E4Fe063f5087EB6Cf3eAe55";
+  const name = "MyTasticToken";
+  const symbol = "MTT";
+  const forwarder = "0x0445d09A1917196E1DC12EdB7334C70c1FfB1623";
+  const feeSettings = "0x147addF9C8E4030F8104c713Dad2A1d76E6c85a1";
+  const requirements = 0x0;
+
+
+  const token = await Token.deploy(
+    forwarder,
+    feeSettings,
+    admin,
+    allowList,
+    requirements,
+    name,
+    symbol
+  );
 
   await token.deployed();
 
