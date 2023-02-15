@@ -242,7 +242,7 @@ contract ContinuousFundraisingTest is Test {
         uint256 buyAmount = _maxMintAmount / 100000;
         vm.prank(buyer);
         vm.expectRevert("ReentrancyGuard: reentrant call");
-        _raise.buy(buyAmount);
+        _raise.buy(buyAmount, buyer);
 
         // // tests to be run when exploit is successful
         // uint paymentTokensSpent = buyerPaymentBalanceBefore - _paymentToken.balanceOf(buyer);
@@ -276,7 +276,7 @@ contract ContinuousFundraisingTest is Test {
         );
 
         vm.prank(buyer);
-        raise.buy(tokenBuyAmount); // this test fails if 5 * 10**18 is replaced with 5 * 10**token.decimals() for this argument, even though they should be equal
+        raise.buy(tokenBuyAmount, buyer); // this test fails if 5 * 10**18 is replaced with 5 * 10**token.decimals() for this argument, even though they should be equal
         assertTrue(
             paymentToken.balanceOf(buyer) ==
                 paymentTokenBalanceBefore - costInPaymentToken
@@ -288,19 +288,19 @@ contract ContinuousFundraisingTest is Test {
         assertTrue(
             paymentToken.balanceOf(receiver) ==
                 costInPaymentToken -
-                    costInPaymentToken /
-                    localFeeSettings.continuousFundraisingFeeDenominator(),
+                    localFeeSettings.continuousFundraisingFee(
+                        costInPaymentToken
+                    ),
             "receiver has payment tokens"
         );
         assertTrue(
             paymentToken.balanceOf(token.feeSettings().feeCollector()) ==
-                costInPaymentToken /
-                    localFeeSettings.continuousFundraisingFeeDenominator(),
+                localFeeSettings.continuousFundraisingFee(costInPaymentToken),
             "fee collector has collected fee in payment tokens"
         );
         assertTrue(
             token.balanceOf(token.feeSettings().feeCollector()) ==
-                tokenBuyAmount / localFeeSettings.tokenFeeDenominator(),
+                localFeeSettings.tokenFee(tokenBuyAmount),
             "fee collector has collected fee in tokens"
         );
         assertTrue(
@@ -325,12 +325,72 @@ contract ContinuousFundraisingTest is Test {
         vm.expectRevert(
             "Total amount of bought tokens needs to be lower than or equal to maxAmount"
         );
-        raise.buy(maxAmountPerBuyer + 10 ** 18); //+ 10**token.decimals());
+        raise.buy(maxAmountPerBuyer + 10 ** 18, buyer); //+ 10**token.decimals());
         assertTrue(paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore);
         assertTrue(token.balanceOf(buyer) == 0);
         assertTrue(paymentToken.balanceOf(receiver) == 0);
         assertTrue(raise.tokensSold() == 0);
         assertTrue(raise.tokensBought(buyer) == 0);
+    }
+
+    function testBuyAndMintToDifferentAddress() public {
+        address addressWithFunds = vm.addr(1);
+        address addressForTokens = vm.addr(2);
+
+        uint256 availableBalance = paymentToken.balanceOf(buyer);
+
+        vm.prank(buyer);
+        paymentToken.transfer(addressWithFunds, availableBalance / 2);
+
+        vm.prank(addressWithFunds);
+        paymentToken.approve(address(raise), paymentTokenAmount);
+
+        // check state before
+        assertTrue(
+            paymentToken.balanceOf(addressWithFunds) == availableBalance / 2,
+            "addressWithFunds has no funds"
+        );
+        assertTrue(
+            paymentToken.balanceOf(addressForTokens) == 0,
+            "addressForTokens has funds"
+        );
+        assertTrue(
+            token.balanceOf(addressForTokens) == 0,
+            "addressForTokens has tokens before buy"
+        );
+        assertTrue(
+            token.balanceOf(addressWithFunds) == 0,
+            "addressWithFunds has tokens before buy"
+        );
+
+        // execute buy, with addressForTokens as recipient
+        vm.prank(addressWithFunds);
+        raise.buy(maxAmountOfTokenToBeSold / 2, addressForTokens);
+
+        // check state after
+        console.log(
+            "addressWithFunds balance: ",
+            paymentToken.balanceOf(addressWithFunds)
+        );
+        assertTrue(
+            paymentToken.balanceOf(addressWithFunds) <=
+                availableBalance /
+                    2 -
+                    paymentToken.balanceOf(raise.currencyReceiver()),
+            "addressWithFunds has funds after buy"
+        );
+        assertTrue(
+            paymentToken.balanceOf(addressForTokens) == 0,
+            "addressForTokens has funds after buy"
+        );
+        assertTrue(
+            token.balanceOf(addressForTokens) == maxAmountOfTokenToBeSold / 2,
+            "addressForTokens has wrong amount of tokens after buy"
+        );
+        assertTrue(
+            token.balanceOf(addressWithFunds) == 0,
+            "addressWithFunds has tokens after buy"
+        );
     }
 
     function testMultiplePeopleBuyTooMuch() public {
@@ -351,12 +411,78 @@ contract ContinuousFundraisingTest is Test {
         paymentToken.approve(address(raise), paymentTokenAmount);
 
         vm.prank(buyer);
-        raise.buy(maxAmountOfTokenToBeSold / 2);
+        raise.buy(maxAmountOfTokenToBeSold / 2, buyer);
         vm.prank(person1);
-        raise.buy(maxAmountOfTokenToBeSold / 2);
+        raise.buy(maxAmountOfTokenToBeSold / 2, person1);
         vm.prank(person2);
         vm.expectRevert("Not enough tokens to sell left");
-        raise.buy(10 ** 18);
+        raise.buy(10 ** 18, person2);
+    }
+
+    function testMultipleAddressesBuyForOneReceiver() public {
+        address person1 = vm.addr(1);
+        address person2 = vm.addr(2);
+
+        uint256 availableBalance = paymentToken.balanceOf(buyer);
+
+        vm.prank(buyer);
+        paymentToken.transfer(person1, availableBalance / 2);
+        vm.prank(buyer);
+        paymentToken.transfer(person2, 10 ** 6);
+
+        vm.prank(person1);
+        paymentToken.approve(address(raise), paymentTokenAmount);
+
+        vm.prank(person2);
+        paymentToken.approve(address(raise), paymentTokenAmount);
+
+        vm.prank(buyer);
+        raise.buy(maxAmountOfTokenToBeSold / 2, buyer);
+        vm.prank(person1);
+        vm.expectRevert(
+            "Total amount of bought tokens needs to be lower than or equal to maxAmount"
+        );
+        raise.buy(maxAmountOfTokenToBeSold / 2, buyer);
+    }
+
+    function testCorrectAccounting() public {
+        address person1 = vm.addr(1);
+        address person2 = vm.addr(2);
+
+        uint256 availableBalance = paymentToken.balanceOf(buyer);
+
+        vm.prank(buyer);
+        paymentToken.transfer(person1, availableBalance / 2);
+        vm.prank(buyer);
+        paymentToken.transfer(person2, 10 ** 6);
+
+        vm.prank(person1);
+        paymentToken.approve(address(raise), paymentTokenAmount);
+
+        vm.prank(person2);
+        paymentToken.approve(address(raise), paymentTokenAmount);
+
+        // check all entries are 0 before
+        assertTrue(raise.tokensSold() == 0);
+        assertTrue(raise.tokensBought(buyer) == 0);
+        assertTrue(raise.tokensBought(person1) == 0);
+        assertTrue(raise.tokensBought(person2) == 0);
+
+        vm.prank(buyer);
+        raise.buy(maxAmountOfTokenToBeSold / 2, buyer);
+        vm.prank(buyer);
+        raise.buy(maxAmountOfTokenToBeSold / 4, person1);
+        vm.prank(buyer);
+        raise.buy(maxAmountOfTokenToBeSold / 8, person2);
+
+        // check all entries are correct after
+        assertTrue(raise.tokensSold() == (maxAmountOfTokenToBeSold * 7) / 8);
+        assertTrue(raise.tokensBought(buyer) == maxAmountOfTokenToBeSold / 2);
+        assertTrue(raise.tokensBought(person1) == maxAmountOfTokenToBeSold / 4);
+        assertTrue(raise.tokensBought(person2) == maxAmountOfTokenToBeSold / 8);
+        assertTrue(token.balanceOf(buyer) == maxAmountOfTokenToBeSold / 2);
+        assertTrue(token.balanceOf(person1) == maxAmountOfTokenToBeSold / 4);
+        assertTrue(token.balanceOf(person2) == maxAmountOfTokenToBeSold / 8);
     }
 
     function testExceedMintingAllowance() public {
@@ -370,7 +496,7 @@ contract ContinuousFundraisingTest is Test {
 
         vm.prank(buyer);
         vm.expectRevert("MintingAllowance too low");
-        raise.buy(maxAmountPerBuyer); //+ 10**token.decimals());
+        raise.buy(maxAmountPerBuyer, buyer); //+ 10**token.decimals());
         assertTrue(token.balanceOf(buyer) == 0);
         assertTrue(paymentToken.balanceOf(receiver) == 0);
         assertTrue(raise.tokensSold() == 0);
@@ -387,7 +513,7 @@ contract ContinuousFundraisingTest is Test {
 
         vm.prank(buyer);
         vm.expectRevert("Buyer needs to buy at least minAmount");
-        raise.buy(minAmountPerBuyer / 2);
+        raise.buy(minAmountPerBuyer / 2, buyer);
         assertTrue(paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore);
         assertTrue(token.balanceOf(buyer) == 0);
         assertTrue(paymentToken.balanceOf(receiver) == 0);
@@ -402,11 +528,11 @@ contract ContinuousFundraisingTest is Test {
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
 
         vm.prank(buyer);
-        raise.buy(minAmountPerBuyer);
+        raise.buy(minAmountPerBuyer, buyer);
 
         // buy less than minAmount -> should be okay because minAmount has already been bought.
         vm.prank(buyer);
-        raise.buy(minAmountPerBuyer / 2);
+        raise.buy(minAmountPerBuyer / 2, buyer);
 
         assertTrue(
             paymentToken.balanceOf(buyer) ==
@@ -468,7 +594,7 @@ contract ContinuousFundraisingTest is Test {
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
 
         vm.prank(buyer);
-        raise.buy(tokenBuyAmount);
+        raise.buy(tokenBuyAmount, buyer);
 
         console.log("paymentTokenBalanceBefore", paymentTokenBalanceBefore);
         console.log(
@@ -523,7 +649,7 @@ contract ContinuousFundraisingTest is Test {
     */
     function testFailOverflow() public {
         vm.prank(buyer);
-        raise.buy(maxAmountPerBuyer + 1);
+        raise.buy(maxAmountPerBuyer + 1, buyer);
     }
 
     /*
@@ -531,7 +657,7 @@ contract ContinuousFundraisingTest is Test {
     */
     function testFailUnderflow() public {
         vm.prank(buyer);
-        raise.buy(minAmountPerBuyer - 1);
+        raise.buy(minAmountPerBuyer - 1, buyer);
     }
 
     /*
@@ -541,7 +667,7 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(owner);
         raise.pause();
         vm.prank(buyer);
-        raise.buy(minAmountPerBuyer);
+        raise.buy(minAmountPerBuyer, buyer);
     }
 
     /*
@@ -953,7 +1079,7 @@ contract ContinuousFundraisingTest is Test {
 
         vm.expectRevert(); //("Arithmetic over/underflow"); //("Division or modulo by 0");
         vm.prank(buyer);
-        raise.buy(_tokenBuyAmount);
+        raise.buy(_tokenBuyAmount, buyer);
     }
 
     function testRoundsUp(uint256 _tokenBuyAmount, uint256 _price) public {
@@ -1004,7 +1130,7 @@ contract ContinuousFundraisingTest is Test {
         paymentToken.increaseAllowance(address(raise), maxCurrencyAmount);
 
         vm.prank(buyer);
-        raise.buy(_tokenBuyAmount);
+        raise.buy(_tokenBuyAmount, buyer);
 
         // check that the buyer got the correct amount of tokens
         assertTrue(

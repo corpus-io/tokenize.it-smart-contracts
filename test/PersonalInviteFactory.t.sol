@@ -96,8 +96,9 @@ contract PersonalInviteFactoryTest is Test {
 
         address expectedAddress = factory.getAddress(
             salt,
-            payable(buyer),
-            payable(receiver),
+            buyer,
+            buyer,
+            receiver,
             amount,
             price,
             expiration,
@@ -125,8 +126,9 @@ contract PersonalInviteFactoryTest is Test {
 
         factory.deploy(
             salt,
-            payable(buyer),
-            payable(receiver),
+            buyer,
+            buyer,
+            receiver,
             amount,
             price,
             expiration,
