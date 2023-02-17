@@ -15,18 +15,31 @@ contract DeployPlatform is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployerAddress = vm.addr(deployerPrivateKey);
 
+        address platformColdWallet = 0x1695F52e342f3554eC8BC06621B7f5d1644cCE39;
+        address platformAdminWallet = 0x1695F52e342f3554eC8BC06621B7f5d1644cCE39;
+
         console.log("Deployer address: ", deployerAddress);
 
-        vm.broadcast(deployerPrivateKey);
+        vm.startBroadcast(deployerPrivateKey);
 
         console.log("Deploying FeeSettings contract...");
         Fees memory fees = Fees(20, 20, 20, 0);
         FeeSettings feeSettings = new FeeSettings(fees, deployerAddress);
         console.log("FeeSettings deployed at: ", address(feeSettings));
+        feeSettings.transferOwnership(platformColdWallet);
+        console.log(
+            "FeeSettings ownership transferred to: ",
+            platformColdWallet
+        );
 
         console.log("Deploying AllowList contract...");
         AllowList allowList = new AllowList();
         console.log("Allowlist deployed at: ", address(allowList));
+        allowList.transferOwnership(platformAdminWallet);
+        console.log(
+            "Allowlist ownership transferred to: ",
+            platformAdminWallet
+        );
 
         console.log("Deploying PersonalInviteFactory contract...");
         PersonalInviteFactory personalInviteFactory = new PersonalInviteFactory();
@@ -38,7 +51,7 @@ contract DeployPlatform is Script {
         vm.stopBroadcast();
 
         console.log(
-            "Don't forget to transfer ownership to another address! Currently, the deployer is the owner."
+            "Don't forget to check and finalize ownership transfer for all contracts!"
         );
     }
 }

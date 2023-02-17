@@ -14,7 +14,7 @@ Deploy these contracts like this:
 
 ```bash
 source .env
-forge script scripts/DeployPlatform.s.sol:DeployPlatform --rpc-url $GOERLI_RPC_URL --broadcast
+forge script script/DeployPlatform.s.sol:DeployPlatform --rpc-url $GOERLI_RPC_URL --verify --broadcast
 ```
 
 Note:
