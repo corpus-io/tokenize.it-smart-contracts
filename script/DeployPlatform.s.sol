@@ -24,7 +24,7 @@ contract DeployPlatform is Script {
 
         console.log("Deploying FeeSettings contract...");
         Fees memory fees = Fees(20, 20, 20, 0);
-        FeeSettings feeSettings = new FeeSettings(fees, deployerAddress);
+        FeeSettings feeSettings = new FeeSettings(fees, platformColdWallet);
         console.log("FeeSettings deployed at: ", address(feeSettings));
         feeSettings.transferOwnership(platformColdWallet);
         console.log("Started ownership transfer to: ", platformColdWallet);
