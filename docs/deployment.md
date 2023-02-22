@@ -48,6 +48,36 @@ yarn hardhat verify --network goerli 0x29b659E948616815FADCD013f6BfC767da1BDe83 
 
 Everything behind the first address is a constructor argument.
 
+Even better is to use a file for the constructor arguments. Create a file `constructorArguments.js` with the following content:
+
+```
+module.exports = [
+    "0x0445d09A1917196E1DC12EdB7334C70c1FfB1623",
+    "0xA1e28D1f17b7Da62d10fbFaFCA98Fa406D759ce2",
+    "10000000000000000000",
+    "50000000000000000000",
+    "1000000",
+    "100000000000000000000",
+    "0x07865c6E87B9F70255377e024ace6630C1Eaa37F",
+    "0x1672E16ac9CeF8f9Fc31daFB21d637a23415DEf6"
+];
+```
+
+And then verify like this:
+
+```
+npx hardhat verify --network goerli 0xC64519eC6Bd54F14323a34E122c4c798cF5AeD53 --constructor-args constructorArguments.js
+```
+
+Be careful to use the proper configuration in hardhat.config.js. Even if the optimizer is disabled, the number of runs configured has some influence on the resulting bytecode:
+
+```
+optimizer: {
+        enabled: false,
+        runs: 200,
+      },
+```
+
 For development purposes, the contracts can be deployed like this:
 
 ```bash
