@@ -27,19 +27,13 @@ contract DeployPlatform is Script {
         FeeSettings feeSettings = new FeeSettings(fees, deployerAddress);
         console.log("FeeSettings deployed at: ", address(feeSettings));
         feeSettings.transferOwnership(platformColdWallet);
-        console.log(
-            "FeeSettings ownership transferred to: ",
-            platformColdWallet
-        );
+        console.log("Started ownership transfer to: ", platformColdWallet);
 
         console.log("Deploying AllowList contract...");
         AllowList allowList = new AllowList();
         console.log("Allowlist deployed at: ", address(allowList));
         allowList.transferOwnership(platformAdminWallet);
-        console.log(
-            "Allowlist ownership transferred to: ",
-            platformAdminWallet
-        );
+        console.log("Started ownership transfer to: ", platformAdminWallet);
 
         console.log("Deploying PersonalInviteFactory contract...");
         PersonalInviteFactory personalInviteFactory = new PersonalInviteFactory();
@@ -51,7 +45,7 @@ contract DeployPlatform is Script {
         vm.stopBroadcast();
 
         console.log(
-            "Don't forget to check and finalize ownership transfer for all contracts!"
+            "Don't forget to check and finalize ownership transfers for all contracts!"
         );
     }
 }
