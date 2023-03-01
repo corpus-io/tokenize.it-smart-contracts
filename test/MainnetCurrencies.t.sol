@@ -57,6 +57,7 @@ contract MainnetCurrencies is Test {
     IERC20 WETH = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
     IERC20 WBTC = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
     IERC20 EUROC = IERC20(0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c);
+    IERC20 DAI = IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
 
     function setUp() public {
         list = new AllowList();
@@ -207,6 +208,10 @@ contract MainnetCurrencies is Test {
         continuousFundraisingWithIERC20Currency(EUROC);
     }
 
+    function testContinuousFundraisingWithMainnetDAI() public {
+        continuousFundraisingWithIERC20Currency(DAI);
+    }
+
     function personalInviteWithIERC20Currency(IERC20 _currency) public {
         //bytes memory creationCode = type(PersonalInvite).creationCode;
         uint256 expiration = block.timestamp + 1000;
@@ -308,5 +313,9 @@ contract MainnetCurrencies is Test {
 
     function testPersonalInviteWithMainnetEUROC() public {
         personalInviteWithIERC20Currency(EUROC);
+    }
+
+    function testPersonalInviteWithMainnetDAI() public {
+        personalInviteWithIERC20Currency(DAI);
     }
 }
