@@ -92,6 +92,7 @@ The currencies used for payments must conform to the ERC20 standard. This standa
 - WBTC: [0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599](https://etherscan.io/address/0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599)
 - USDC: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48](https://etherscan.io/address/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48)
 - EUROC: [0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c](https://etherscan.io/address/0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c)
+- DAI: [0x6B175474E89094C44Da98b954EedeAC495271d0F](https://etherscan.io/token/0x6b175474e89094c44da98b954eedeac495271d0f)
 
 These four implementations have been checked and tested to work well with the tokenize.it smart contracts. The use of any other currencies is HIGHLY DISCOURAGED and might lead to:
 
