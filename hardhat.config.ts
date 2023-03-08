@@ -29,7 +29,17 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
  * @type import('hardhat/config').HardhatUserConfig
  */
 const config: HardhatUserConfig = {
-  solidity: "0.8.17",
+  solidity: {
+    version: "0.8.17",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200,
+      },
+      viaIR: true,
+      outputSelection: { "*": { "*": ["storageLayout"] } },
+    },
+  },
   networks: {
     localhost: {
       url: "http://localhost:8545",
@@ -41,7 +51,8 @@ const config: HardhatUserConfig = {
     },
     goerli: {
       url: process.env.GOERLI_RPC_URL || "",
-      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+      accounts:
+        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
   },
   gasReporter: {

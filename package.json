@@ -1,5 +1,37 @@
 {
-  "name": "hardhat-project",
+  "name": "@tokenize.it/contracts",
+  "version": "4.0",
+  "description": "Tokenize.it smart contracts for company tokenization, public fundraising, private offers and employee participation",
+  "keywords": [
+    "evm",
+    "ethereum",
+    "smart contract",
+    "tokenize.it"
+  ],
+  "homepage": "https://github.com/corpus-io/tokenize.it-smart-contracts",
+  "license": "AGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/corpus-io/tokenize.it-smart-contracts/issues",
+    "email": "info@corpus.io"
+  },
+  "contributors": [
+    {
+      "name": "malteish",
+      "email": "malteish@corpus.io"
+    },
+    {
+      "name": "Christoph Jentzsch",
+      "email": "christoph@corpus.io"
+    }
+  ],
+  "files": [
+    "/contracts/**/*.sol",
+    "/artifacts/contracts/**/*.json"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/corpus-io/tokenize.it-smart-contracts.git"
+  },
   "types": "./dist/types/index.d.ts",
   "main": "./dist/types/index.js",
   "installConfig": {
