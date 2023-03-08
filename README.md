@@ -1,6 +1,6 @@
 # tokenize.it
 
-These smart contracts implement [tokenize.it](https://tokenize.it/)'s tokenized cap table management. They are released under the GNU General Public License version 3 (GPL-3.0).
+These smart contracts implement [tokenize.it](https://tokenize.it/)'s tokenized cap table management.
 
 # Getting Started
 
