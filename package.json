@@ -27,6 +27,7 @@
   "files": [
     "/contracts/**/*.sol",
     "/artifacts/contracts/**/*[!.dbg].json",
+    "/types/**/*",
     "/docs/**/*",
     "hardhat.config.ts",
     "tsconfig.json"
