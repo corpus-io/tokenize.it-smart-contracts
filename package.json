@@ -1,6 +1,6 @@
 {
   "name": "@tokenize.it/contracts",
-  "version": "4.0alpha.1",
+  "version": "4.0alpha1",
   "description": "Tokenize.it smart contracts for company tokenization, public fundraising, private offers and employee participation",
   "keywords": [
     "evm",
