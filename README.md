@@ -2,7 +2,7 @@
 
 These smart contracts implement [tokenize.it](https://tokenize.it/)'s tokenized cap table management.
 
-# Getting Started
+# Getting Started for development
 
 1. clone repository: `git clone --recurse-submodules git@github.com:corpus-ventures/tokenize.it-smart-contracts.git`
 2. enter project root folder: `cd tokenize.it-smart-contracts`
@@ -22,6 +22,10 @@ If you are missing dependencies:
 For information regarding testing, please go to [testing](docs/testing.md).
 
 For information regarding deployment, please go to [deployment](docs/deployment.md).
+
+# Getting Started for usage
+
+`yarn add @tokenizeit/contracts` or `npm install @tokenizeit/contracts`
 
 # Main Concept
 

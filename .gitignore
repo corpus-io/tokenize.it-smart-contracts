@@ -6,8 +6,7 @@ dist
 out
 node_modules/
 **/*.dbg.json
-artifacts/@*
-artifacts/build-info
+artifacts/*
 .DS_Store
 .idea/
 .yarn/*
