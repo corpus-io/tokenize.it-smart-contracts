@@ -23,9 +23,33 @@ For information regarding testing, please go to [testing](docs/testing.md).
 
 For information regarding deployment, please go to [deployment](docs/deployment.md).
 
+## Publishing to npm
+
+First test without publishing:
+
+```bash
+npm publish --access public --tag <tag name, e.g. alpha> --dry-run
+```
+
+If everything is fine, publish:
+
+```bash
+npm publish --access public --tag <tag name, e.g. alpha>
+```
+
+Sadly, yarn publish did not work for me. It appeared to have trouble with the 2FA.
+
 # Getting Started for usage
 
-`yarn add @tokenizeit/contracts` or `npm install @tokenizeit/contracts`
+```
+yarn add @tokenizeit/contracts
+```
+
+or
+
+```
+npm install @tokenizeit/contracts
+```
 
 # Main Concept
 
