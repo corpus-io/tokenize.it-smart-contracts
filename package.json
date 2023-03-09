@@ -85,7 +85,7 @@
     "@openzeppelin/contracts": "4.8.0"
   },
   "scripts": {
-    "prepack": "yarn npmignore --auto && yarn build",
+    "prepack": "yarn npmignore --auto && yarn test && yarn build ",
     "build": "yarn hardhat compile && yarn tsc --declaration",
     "test": "forge test --no-match-test Mainnet",
     "coverage": "forge coverage --report lcov && genhtml lcov.info --branch-coverage --output-directory=./coverage"

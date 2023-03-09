@@ -2,7 +2,21 @@
 
 These smart contracts implement [tokenize.it](https://tokenize.it/)'s tokenized cap table management.
 
-# Getting Started for development
+# Getting Started
+
+## ... for usage
+
+```
+yarn add @tokenizeit/contracts
+```
+
+or
+
+```
+npm install @tokenizeit/contracts
+```
+
+## ... for development
 
 1. clone repository: `git clone --recurse-submodules git@github.com:corpus-ventures/tokenize.it-smart-contracts.git`
 2. enter project root folder: `cd tokenize.it-smart-contracts`
@@ -23,7 +37,7 @@ For information regarding testing, please go to [testing](docs/testing.md).
 
 For information regarding deployment, please go to [deployment](docs/deployment.md).
 
-## Publishing to npm
+### Publishing to npm
 
 First test without publishing:
 
@@ -38,18 +52,6 @@ npm publish --access public --tag <tag name, e.g. alpha>
 ```
 
 Sadly, yarn publish did not work for me. It appeared to have trouble with the 2FA.
-
-# Getting Started for usage
-
-```
-yarn add @tokenizeit/contracts
-```
-
-or
-
-```
-npm install @tokenizeit/contracts
-```
 
 # Main Concept
 
