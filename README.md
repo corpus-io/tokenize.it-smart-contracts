@@ -33,13 +33,11 @@ If you are missing dependencies:
 - yarn: `npm install yarn`
 - foundry: [install guide](https://book.getfoundry.sh/getting-started/installation)
 
-For information regarding:
+More dev information can be found here:
 
-- testing, please go to [testing](docs/testing.md).
-- deployment, please go to [deployment](docs/deployment.md).
-- npm publishing, please go to [npm publishing](docs/npm_publishing.md).
-
-For
+- [testing](docs/testing.md).
+- [deployment](docs/deployment.md).
+- [npm publishing](docs/npm_publishing.md).
 
 # Main Concept
 
@@ -81,7 +79,7 @@ Two contracts implement [EIP-2771](https://eips.ethereum.org/EIPS/eip-2771), and
 
 The platform will maintain a hot wallet (EOA) in order to send transactions to the forwarder contract. This results in the following flow:
 
-- contract A supports EIP-2771 and uses `forwarder` as its (one and only immutable) trusted forwarder
+- contract A supports EIP-2771 and uses `forwarder` as its (one and only, immutable) trusted forwarder
 - user (investor or founder) wants to use function `a(...)` of contract `A` and uses the platform for this
 - platform (tokenize.it) prepares meta transaction payload and asks user for signature
 - user signs the payload with their own key (using metamask or similar)
@@ -131,4 +129,6 @@ The following resources are available regarding the contracts:
 - [Price format explainer](docs/price.md)
 - [Fee Collection](./docs/fees.md)
 - [Deployment](./docs/deployment.md)
+- [Testing](docs/testing.md).
+- [npm publishing](docs/npm_publishing.md).
 - Remaining questions: please get in touch at [hi@tokenize.it](mailto:hi@tokenize.it)
