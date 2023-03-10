@@ -1,4 +1,3 @@
-artifacts
 cache
 types
 lcov.info
@@ -6,6 +5,8 @@ lcov.info
 dist
 out
 node_modules/
+**/*.dbg.json
+artifacts/*
 .DS_Store
 .idea/
 .yarn/*
@@ -21,3 +22,4 @@ temp/
 broadcast/
 .env*
 !.env.example
+.npmignore

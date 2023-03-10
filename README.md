@@ -1,8 +1,22 @@
 # tokenize.it
 
-These smart contracts implement [tokenize.it](https://tokenize.it/)'s tokenized cap table management. They are released under the GNU General Public License version 3 (GPL-3.0).
+These smart contracts implement [tokenize.it](https://tokenize.it/)'s tokenized cap table management.
 
 # Getting Started
+
+## ... for usage
+
+```
+yarn add @tokenizeit/contracts
+```
+
+or
+
+```
+npm install @tokenizeit/contracts
+```
+
+## ... for development
 
 1. clone repository: `git clone --recurse-submodules git@github.com:corpus-ventures/tokenize.it-smart-contracts.git`
 2. enter project root folder: `cd tokenize.it-smart-contracts`
@@ -19,9 +33,13 @@ If you are missing dependencies:
 - yarn: `npm install yarn`
 - foundry: [install guide](https://book.getfoundry.sh/getting-started/installation)
 
-For information regarding testing, please go to [testing](docs/testing.md).
+For information regarding:
 
-For information regarding deployment, please go to [deployment](docs/deployment.md).
+- testing, please go to [testing](docs/testing.md).
+- deployment, please go to [deployment](docs/deployment.md).
+- npm publishing, please go to [npm publishing](docs/npm_publishing.md).
+
+For
 
 # Main Concept
 
@@ -53,12 +71,13 @@ In order to improve UX, though, a frontend will be offered. In order to improve 
 Two contracts implement [EIP-2771](https://eips.ethereum.org/EIPS/eip-2771), and therefore use a trusted forwarder. The forwarder will be set in the constructor and there is no way to change it after deployment. The forwarder used will be the openGSN v2 forwarder deployed on mainnet. Some information about this contract:
 
 - [Documentation and addresses](https://docs-v2.opengsn.org/networks/ethereum/mainnet.html)
+- [Code](https://github.com/opengsn/gsn/blob/v2.2.5/packages/contracts/src/forwarder/Forwarder.sol)
 - [Audit reports](https://docs-v2.opengsn.org/audits.html)
-- Was deployed 2022-04-21
-- It's address is **0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA**
-- Visit on [etherscan](https://etherscan.io/address/0xaa3e82b4c4093b4ba13cb5714382c99adbf750ca) ([see transactions here](https://etherscan.io/txsInternal?a=0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA&&m=advanced&p=1))
-- This [dashboard](https://dune.com/oren/meta-transactions-on-ethereum-over-time) lists the forwarder as second most active forwarder contract with over 2000 transactions executed
-- it is also used in our [tests](./test/ContinuousFundraisingERC2771.t.sol).
+- Deployment: **0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA**
+  - deployed 2022-04-21
+  - Visit on [etherscan](https://etherscan.io/address/0xaa3e82b4c4093b4ba13cb5714382c99adbf750ca) ([see transactions here](https://etherscan.io/txsInternal?a=0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA&&m=advanced&p=1))
+  - This [dashboard](https://dune.com/oren/meta-transactions-on-ethereum-over-time) lists the forwarder as second most active forwarder contract with over 2000 transactions executed
+  - used in our [tests](./test/ContinuousFundraisingERC2771.t.sol).
 
 The platform will maintain a hot wallet (EOA) in order to send transactions to the forwarder contract. This results in the following flow:
 

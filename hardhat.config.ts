@@ -33,9 +33,11 @@ const config: HardhatUserConfig = {
     version: "0.8.17",
     settings: {
       optimizer: {
-        enabled: false,
-        runs: 200,
+        enabled: true,
+        runs: 10000,
       },
+      // viaIR: true,
+      // outputSelection: { "*": { "*": ["storageLayout"] } },
     },
   },
   networks: {
@@ -49,7 +51,8 @@ const config: HardhatUserConfig = {
     },
     goerli: {
       url: process.env.GOERLI_RPC_URL || "",
-      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+      accounts:
+        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
   },
   gasReporter: {
