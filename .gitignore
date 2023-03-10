@@ -20,6 +20,6 @@ artifacts/*
 coverage/
 temp/
 broadcast/
-.env
+.env*
 !.env.example
 .npmignore
