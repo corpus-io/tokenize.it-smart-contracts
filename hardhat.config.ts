@@ -36,8 +36,8 @@ const config: HardhatUserConfig = {
         enabled: true,
         runs: 10000,
       },
-      viaIR: true,
-      outputSelection: { "*": { "*": ["storageLayout"] } },
+      // viaIR: true,
+      // outputSelection: { "*": { "*": ["storageLayout"] } },
     },
   },
   networks: {
