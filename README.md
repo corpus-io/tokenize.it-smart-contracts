@@ -33,25 +33,13 @@ If you are missing dependencies:
 - yarn: `npm install yarn`
 - foundry: [install guide](https://book.getfoundry.sh/getting-started/installation)
 
-For information regarding testing, please go to [testing](docs/testing.md).
+For information regarding:
 
-For information regarding deployment, please go to [deployment](docs/deployment.md).
+- testing, please go to [testing](docs/testing.md).
+- deployment, please go to [deployment](docs/deployment.md).
+- npm publishing, please go to [npm publishing](docs/npm_publishing.md).
 
-### Publishing to npm
-
-First test without publishing:
-
-```bash
-npm publish --access public --tag <tag name, e.g. alpha> --dry-run
-```
-
-If everything is fine, publish:
-
-```bash
-npm publish --access public --tag <tag name, e.g. alpha>
-```
-
-Sadly, yarn publish did not work for me. It appeared to have trouble with the 2FA.
+For
 
 # Main Concept
 
