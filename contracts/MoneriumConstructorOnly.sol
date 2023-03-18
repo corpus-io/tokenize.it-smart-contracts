@@ -11,12 +11,14 @@ This contract is inteneded to be used only once per investment per investor.
 */
 
 contract MoneriumInterfacePersonalInvite {
-    constructor(address _investment, uint256 _amount){
-        IERC20(0x3231Cb76718CDeF2155FC47b5286d82e6eDA273f).approve(address(_investment), _amount);
+    constructor(address _investment, uint256 _amount) {
+        IERC20(0x3231Cb76718CDeF2155FC47b5286d82e6eDA273f).approve(
+            address(_investment),
+            _amount
+        );
     }
 
     /* warning: In the case the investment contract does not work anymore (expired personal invites, paused fundraising, ...). All the EURe in this contract are techincally stuck.
     But since this IBAN belongs to the company, they can make a IBAN transfer back to the investor using the Monerium WebApp. Monerium will then burn the tokens belonging to this address.
     */
 }
-
