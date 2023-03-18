@@ -4,6 +4,7 @@ pragma solidity 0.8.17;
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "../contracts/PersonalInvite.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "../contracts/MoneriumI.sol";
 
 /*
 The contract is deployed by the fundraising company and is getting an IBAN by Monerium. By sending EUR to this IBAN, the investors is able to approve funds to investment contract which are added by the fundraising company.
@@ -12,7 +13,7 @@ In ces of a continuous fundraising, the investor can now call the `buy`function 
 This contract is inteneded to be used for all investments into one specific fundraising company (`owner`) by a single investor.
 */
 
-contract MoneriumInterface is Ownable2Step {
+contract MoneriumInterface is MoneriumI, Ownable2Step {
     mapping(address => bool) public map;
 
     event Set(address indexed key, bool value);

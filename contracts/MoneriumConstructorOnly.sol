@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "../contracts/MoneriumI.sol";
 
 /*
 The contract is deployed by the fundraising company and is getting an IBAN by Monerium. By sending EUR to this IBAN, the investors agrees to the investment.
@@ -10,8 +11,10 @@ In ces of a continuous fundraising, the investor can now call the `buy`function 
 This contract is inteneded to be used only once per investment per investor.
 */
 
-contract MoneriumInterfacePersonalInvite {
-    constructor(address _investment, uint256 _amount) {
+contract MoneriumInterfacePersonalInvite is MoneriumI {
+    address public investor;
+    constructor(address _investor, address _investment, uint256 _amount) {
+        investor = _investor;
         IERC20(0x3231Cb76718CDeF2155FC47b5286d82e6eDA273f).approve(
             address(_investment),
             _amount

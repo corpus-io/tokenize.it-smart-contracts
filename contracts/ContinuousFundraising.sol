@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "../contracts/MoneriumI.sol";
 
 import "./Token.sol";
 
@@ -123,7 +124,8 @@ contract ContinuousFundraising is
      */
     function buy(
         uint256 _amount,
-        address _tokenReceiver
+        address _tokenReceiver,
+        MoneriumI _moneriumAccount
     ) external whenNotPaused nonReentrant {
         require(
             tokensSold + _amount <= maxAmountOfTokenToBeSold,
@@ -138,6 +140,16 @@ contract ContinuousFundraising is
             "Total amount of bought tokens needs to be lower than or equal to maxAmount"
         );
 
+        address sender;
+
+        if (_moneriumAccount == MoneriumI(address(0x00))) {
+            sender = _msgSender();
+        } else {
+            address investor =  _moneriumAccount.investor();
+            require(_msgSender() == investor);
+            sender = investor;
+        }
+
         tokensSold += _amount;
         tokensBought[_tokenReceiver] += _amount;
 
@@ -151,20 +163,20 @@ contract ContinuousFundraising is
         uint256 fee = feeSettings.continuousFundraisingFee(currencyAmount);
         if (fee != 0) {
             currency.safeTransferFrom(
-                _msgSender(),
+                sender,
                 feeSettings.feeCollector(),
                 fee
             );
         }
 
         currency.safeTransferFrom(
-            _msgSender(),
+            sender,
             currencyReceiver,
             currencyAmount - fee
         );
 
         token.mint(_tokenReceiver, _amount);
-        emit TokensBought(_msgSender(), _amount, currencyAmount);
+        emit TokensBought(sender, _amount, currencyAmount);
     }
 
     /**
