@@ -3,5 +3,5 @@
 pragma solidity ^0.8.0;
 
 interface MoneriumI {
-    function investor() external returns(address);
+    function investor() external returns (address);
 }

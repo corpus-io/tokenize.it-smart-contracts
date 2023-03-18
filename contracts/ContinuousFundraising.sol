@@ -145,7 +145,7 @@ contract ContinuousFundraising is
         if (_moneriumAccount == MoneriumI(address(0x00))) {
             sender = _msgSender();
         } else {
-            address investor =  _moneriumAccount.investor();
+            address investor = _moneriumAccount.investor();
             require(_msgSender() == investor);
             sender = investor;
         }
@@ -162,11 +162,7 @@ contract ContinuousFundraising is
         IFeeSettingsV1 feeSettings = token.feeSettings();
         uint256 fee = feeSettings.continuousFundraisingFee(currencyAmount);
         if (fee != 0) {
-            currency.safeTransferFrom(
-                sender,
-                feeSettings.feeCollector(),
-                fee
-            );
+            currency.safeTransferFrom(sender, feeSettings.feeCollector(), fee);
         }
 
         currency.safeTransferFrom(

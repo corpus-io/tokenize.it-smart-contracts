@@ -13,6 +13,7 @@ This contract is inteneded to be used only once per investment per investor.
 
 contract MoneriumInterfacePersonalInvite is MoneriumI {
     address public investor;
+
     constructor(address _investor, address _investment, uint256 _amount) {
         investor = _investor;
         IERC20(0x3231Cb76718CDeF2155FC47b5286d82e6eDA273f).approve(
