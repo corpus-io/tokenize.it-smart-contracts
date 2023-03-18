@@ -12,8 +12,7 @@ In ces of a continuous fundraising, the investor can now call the `buy`function 
 This contract is inteneded to be used for all investments into one specific fundraising company (`owner`) by a single investor.
 */
 
-contract MoneriumInterface is Ownable2Step{
-
+contract MoneriumInterface is Ownable2Step {
     mapping(address => bool) public map;
 
     event Set(address indexed key, bool value);
@@ -21,11 +20,14 @@ contract MoneriumInterface is Ownable2Step{
     IERC20 constant EURe = IERC20(0x3231Cb76718CDeF2155FC47b5286d82e6eDA273f); // ToDO get address from ENS
     address public investor;
 
-    constructor(address _investor){
+    constructor(address _investor) {
         investor = _investor;
-     }
+    }
 
-    function addInvestmentContract(address _addr, bool _active) external onlyOwner {
+    function addInvestmentContract(
+        address _addr,
+        bool _active
+    ) external onlyOwner {
         map[_addr] = _active;
         emit Set(_addr, _active);
     }
