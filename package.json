@@ -27,7 +27,7 @@
   "files": [
     "/contracts/**/*.sol",
     "/artifacts/contracts/**/*[!.dbg].json",
-    "/types/**/*",
+    "/dist/**/*",
     "/docs/**/*",
     "hardhat.config.ts",
     "tsconfig.json"
@@ -43,7 +43,6 @@
   },
   "publishConfig": {
     "ignore": [
-      "!build/",
       "src/",
       "test/"
     ]
