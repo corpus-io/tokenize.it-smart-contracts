@@ -1,6 +1,6 @@
 {
   "name": "@tokenize.it/contracts",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "Tokenize.it smart contracts for company tokenization, public fundraising, private offers and employee participation",
   "keywords": [
     "evm",
@@ -27,7 +27,7 @@
   "files": [
     "/contracts/**/*.sol",
     "/artifacts/contracts/**/*[!.dbg].json",
-    "/types/**/*",
+    "/dist/**/*",
     "/docs/**/*",
     "hardhat.config.ts",
     "tsconfig.json"
@@ -43,7 +43,6 @@
   },
   "publishConfig": {
     "ignore": [
-      "!build/",
       "src/",
       "test/"
     ]
