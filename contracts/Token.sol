@@ -9,17 +9,17 @@ import "./AllowList.sol";
 import "./interfaces/IFeeSettings.sol";
 
 /**
-@title tokenize.it Token
-@notice This contract implements the token used to tokenize companies, which follows the ERC20 standard and adds the following features:
-    - pausing
-    - access control with dedicated roles
-    - burning (burner role can burn any token from any address)
-    - requirements for sending and receiving tokens
-    - allow list (documents which address satisfies which requirement)
-    Decimals is inherited as 18 from ERC20. This should be the standard to adhere by for all deployments of this token.
-
-    The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support and meta-transactions.
-
+ * @title tokenize.it Token
+ * @notice This contract implements the token used to tokenize companies, which follows the ERC20 standard and adds the following features:
+ *     - pausing
+ *     - access control with dedicated roles
+ *     - burning (burner role can burn any token from any address)
+ *     - requirements for sending and receiving tokens
+ *     - allow list (documents which address satisfies which requirement)
+ *     Decimals is inherited as 18 from ERC20. This should be the standard to adhere by for all deployments of this token.
+ *
+ *     The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support and meta-transactions.
+ *
  */
 contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     /// @notice The role that has the ability to define which requirements an address must satisfy to receive tokens
@@ -45,58 +45,63 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     // Suggested new fee settings, which will be applied after admin approval
     IFeeSettingsV1 public suggestedFeeSettings;
     /**
-    @notice  defines requirements to send or receive tokens for non-TRANSFERER_ROLE. If zero, everbody can transfer the token. If non-zero, then only those who have met the requirements can send or receive tokens. 
-        Requirements can be defined by the REQUIREMENT_ROLE, and are validated against the allowList. They can include things like "must have a verified email address", "must have a verified phone number", "must have a verified identity", etc. 
-        Also, tiers from 0 to four can be used.
-    @dev Requirements are defined as bit mask, with the bit position encoding it's meaning and the bit's value whether this requirement will be enforced. 
-        Example:
-        - position 0: 1 = must be KYCed (0 = no KYC required)
-        - position 1: 1 = must be american citizen (0 = american citizenship not required)
-        - position 2: 1 = must be a penguin (0 = penguin status not required)
-        These meanings are not defined within code, neither in the token contract nor the allowList. Nevertheless, the definition used by the people responsible for both contracts MUST match, 
-        or the token contract will not work as expected. E.g. if the allowList defines position 2 as "is a penguin", while the token contract uses position 2 as "is a hedgehog", then the tokens 
-        might be sold to hedgehogs, which was never the intention.
-        Here some examples of how requirements can be used in practice:
-        With requirements 0b0000000000000000000000000000000000000000000000000000000000000101, only KYCed penguins will be allowed to send or receive tokens.
-        With requirements 0b0000000000000000000000000000000000000000000000000000000000000111, only KYCed american penguins will be allowed to send or receive tokens.
-        With requirements 0b0000000000000000000000000000000000000000000000000000000000000000, even french hedgehogs will be allowed to send or receive tokens.
-
-        The highest four bits are defined as tiers as follows:
-        - 0b0000000000000000000000000000000000000000000000000000000000000000 = tier 0 is required
-        - 0b0001000000000000000000000000000000000000000000000000000000000000 = tier 1 is required
-        - 0b0010000000000000000000000000000000000000000000000000000000000000 = tier 2 is required
-        - 0b0100000000000000000000000000000000000000000000000000000000000000 = tier 3 is required
-        - 0b1000000000000000000000000000000000000000000000000000000000000000 = tier 4 is required
-        This very simple definition allows for a maximum of 5 tiers, even though 4 bits are used for encoding. By sacrificing some space it can be implemented without code changes.
-
-        Keep in mind that addresses with the TRANSFERER_ROLE do not need to satisfy any requirements to send or receive tokens.
-    */
+     * @notice  defines requirements to send or receive tokens for non-TRANSFERER_ROLE. If zero, everbody can transfer the token. If non-zero, then only those who have met the requirements can send or receive tokens.
+     *     Requirements can be defined by the REQUIREMENT_ROLE, and are validated against the allowList. They can include things like "must have a verified email address", "must have a verified phone number", "must have a verified identity", etc.
+     *     Also, tiers from 0 to four can be used.
+     * @dev Requirements are defined as bit mask, with the bit position encoding it's meaning and the bit's value whether this requirement will be enforced.
+     *     Example:
+     *     - position 0: 1 = must be KYCed (0 = no KYC required)
+     *     - position 1: 1 = must be american citizen (0 = american citizenship not required)
+     *     - position 2: 1 = must be a penguin (0 = penguin status not required)
+     *     These meanings are not defined within code, neither in the token contract nor the allowList. Nevertheless, the definition used by the people responsible for both contracts MUST match,
+     *     or the token contract will not work as expected. E.g. if the allowList defines position 2 as "is a penguin", while the token contract uses position 2 as "is a hedgehog", then the tokens
+     *     might be sold to hedgehogs, which was never the intention.
+     *     Here some examples of how requirements can be used in practice:
+     *     With requirements 0b0000000000000000000000000000000000000000000000000000000000000101, only KYCed penguins will be allowed to send or receive tokens.
+     *     With requirements 0b0000000000000000000000000000000000000000000000000000000000000111, only KYCed american penguins will be allowed to send or receive tokens.
+     *     With requirements 0b0000000000000000000000000000000000000000000000000000000000000000, even french hedgehogs will be allowed to send or receive tokens.
+     *
+     *     The highest four bits are defined as tiers as follows:
+     *     - 0b0000000000000000000000000000000000000000000000000000000000000000 = tier 0 is required
+     *     - 0b0001000000000000000000000000000000000000000000000000000000000000 = tier 1 is required
+     *     - 0b0010000000000000000000000000000000000000000000000000000000000000 = tier 2 is required
+     *     - 0b0100000000000000000000000000000000000000000000000000000000000000 = tier 3 is required
+     *     - 0b1000000000000000000000000000000000000000000000000000000000000000 = tier 4 is required
+     *
+     *     Keep in mind that addresses with the TRANSFERER_ROLE do not need to satisfy any requirements to send or receive tokens.
+     */
     uint256 public requirements;
 
     /**
-    @notice defines the maximum amount of tokens that can be minted by a specific address. If zero, no tokens can be minted.
-        Tokens paid as fees, as specified in the `feeSettings` contract, do not require an allowance.
-        Example: Fee is set to 1% and mintingAllowance is 100. When executing the `mint` function with 100 as `amount`,
-        100 tokens will be minted to the `to` address, and 1 token to the feeCollector.
-    */
+     * @notice defines the maximum amount of tokens that can be minted by a specific address. If zero, no tokens can be minted.
+     *      Tokens paid as fees, as specified in the `feeSettings` contract, do not require an allowance.
+     *      Example: Fee is set to 1% and mintingAllowance is 100. When executing the `mint` function with 100 as `amount`,
+     *      100 tokens will be minted to the `to` address, and 1 token to the feeCollector.
+     */
     mapping(address => uint256) public mintingAllowance; // used for token generating events such as vesting or new financing rounds
 
+    /// @param newRequirements The new requirements that will be enforced from now on.
     event RequirementsChanged(uint newRequirements);
+    /// @param newAllowList The AllowList contract that is in use from now on.
     event AllowListChanged(AllowList indexed newAllowList);
-    event NewFeeSettingsSuggested(IFeeSettingsV1 indexed _feeSettings);
+    /// @param suggestedFeeSettings The FeeSettings contract that has been suggested, but not yet approved by the admin.
+    event NewFeeSettingsSuggested(IFeeSettingsV1 indexed suggestedFeeSettings);
+    /// @param newFeeSettings The FeeSettings contract that is in use from now on.
     event FeeSettingsChanged(IFeeSettingsV1 indexed newFeeSettings);
+    /// @param minter The address for which the minting allowance has been changed.
+    /// @param newAllowance The new minting allowance for the address (does not include fees).
     event MintingAllowanceChanged(address indexed minter, uint256 newAllowance);
 
     /**
-    @notice Constructor for the token 
-    @param _trustedForwarder trusted forwarder for the ERC2771Context constructor - used for meta-transactions. OpenGSN v2 Forwarder should be used.
-    @param _feeSettings fee settings contract that determines the fee for minting tokens
-    @param _admin address of the admin. Admin will initially have all roles and can grant roles to other addresses.
-    @param _name name of the specific token, e.g. "MyGmbH Token"
-    @param _symbol symbol of the token, e.g. "MGT"
-    @param _allowList allowList contract that defines which addresses satisfy which requirements
-    @param _requirements requirements an address has to meet for sending or receiving tokens
-    */
+     * @notice Constructor for the token.
+     * @param _trustedForwarder trusted forwarder for the ERC2771Context constructor - used for meta-transactions. OpenGSN v2 Forwarder should be used.
+     * @param _feeSettings fee settings contract that determines the fee for minting tokens
+     * @param _admin address of the admin. Admin will initially have all roles and can grant roles to other addresses.
+     * @param _name name of the specific token, e.g. "MyGmbH Token"
+     * @param _symbol symbol of the token, e.g. "MGT"
+     * @param _allowList allowList contract that defines which addresses satisfy which requirements
+     * @param _requirements requirements an address has to meet for sending or receiving tokens
+     */
     constructor(
         address _trustedForwarder,
         IFeeSettingsV1 _feeSettings,
@@ -136,6 +141,11 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         requirements = _requirements;
     }
 
+    /**
+     * @notice Change the AllowList that defines which addresses satisfy which requirements to `_allowList`.
+     * @dev An interface check is not necessary because AllowList can not brick the token like FeeSettings could.
+     * @param _allowList new AllowList contract
+     */
     function setAllowList(
         AllowList _allowList
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -147,6 +157,10 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         emit AllowListChanged(_allowList);
     }
 
+    /**
+     * @notice Change the requirements an address has to meet for sending or receiving tokens to `_requirements`.
+     * @param _requirements requirements an address has to meet for sending or receiving tokens
+     */
     function setRequirements(
         uint256 _requirements
     ) external onlyRole(REQUIREMENT_ROLE) {
@@ -158,6 +172,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
      * @notice This function can only be used by the feeSettings owner to suggest switching to a new feeSettings contract.
      *      The new feeSettings contract will be applied immediately after admin approval.
      * @dev This is a possibility to change fees without honoring the delay enforced in the feeSettings contract. Therefore, approval of the admin is required.
+     *     The feeSettings contract can brick the token, so an interface check is necessary.
      * @param _feeSettings the new feeSettings contract
      */
     function suggestNewFeeSettings(IFeeSettingsV1 _feeSettings) external {
@@ -171,10 +186,10 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     }
 
     /**
-     * @notice This function can only be used by the admin to approve switching to the new feeSettings contract.
+     * @notice This function can only be used by the default admin to approve switching to the new feeSettings contract.
      *     The new feeSettings contract will be applied immediately.
-     * @dev Enforcing the suggested and accepted new contract to be the same is not necessary, prevents frontrunning.
-     *      Requiring not 0 prevent bricking the token.
+     * @dev Enforcing the suggested and accepted new contract to be the same is necessary to prevent frontrunning the acceptance with a new suggestion.
+     *      Checking it the address implements the interface also prevents the 0 address from being accepted.
      * @param _feeSettings the new feeSettings contract
      */
     function acceptNewFeeSettings(
@@ -192,12 +207,12 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         emit FeeSettingsChanged(_feeSettings);
     }
 
-    /** 
-        @notice minting contracts such as personal investment invite, vesting, crowdfunding must be granted a minting allowance.
-        @notice the contract does not keep track of how many tokens a minter has minted over time
-        @param _minter address of the minter
-        @param _allowance how many tokens can be minted by this minter, in addition to their current allowance (excluding the tokens minted as a fee)
-    */
+    /**
+     * @notice Increase the amount of tokens `_minter` can mint by `_allowance`. Any address can be used, e.g. of an investment contract like PersonalInvite, a vesting contract, or an EOA.
+     *      The contract does not keep track of how many tokens a minter has minted over time
+     * @param _minter address of the minter
+     * @param _allowance how many tokens can be minted by this minter, in addition to their current allowance (excluding the tokens minted as a fee)
+     */
     function increaseMintingAllowance(
         address _minter,
         uint256 _allowance
@@ -206,11 +221,12 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         emit MintingAllowanceChanged(_minter, mintingAllowance[_minter]);
     }
 
-    /** 
-        @dev underflow is cast to 0 in order to be able to use decreaseMintingAllowance(minter, UINT256_MAX) to reset the allowance to 0
-        @param _minter address of the minter
-        @param _allowance how many tokens should be deducted from the current minting allowance (excluding the tokens minted as a fee)
-    */
+    /**
+     * @notice Reduce the amount of tokens `_minter` can mint by `_allowance`.
+     * @dev Underflow is cast to 0 in order to be able to use decreaseMintingAllowance(minter, UINT256_MAX) to reset the allowance to 0.
+     * @param _minter address of the minter
+     * @param _allowance how many tokens should be deducted from the current minting allowance (excluding the tokens minted as a fee)
+     */
     function decreaseMintingAllowance(
         address _minter,
         uint256 _allowance
@@ -224,6 +240,11 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         }
     }
 
+    /**
+     * @notice Mint `_amount` tokens to `_to` and pay the fee to the fee collector
+     * @param _to address that receives the tokens
+     * @param _amount how many tokens to mint
+     */
     function mint(address _to, uint256 _amount) external {
         require(
             mintingAllowance[_msgSender()] >= _amount,
@@ -241,6 +262,11 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         }
     }
 
+    /**
+     * @notice Burn `_amount` tokens from `_from`.
+     * @param _from address that holds the tokens
+     * @param _amount how many tokens to burn
+     */
     function burn(
         address _from,
         uint256 _amount
@@ -249,11 +275,11 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     }
 
     /**
-    @notice There are 3 types of transfers:
-        1. minting: transfers from the zero address to another address. Only minters can do this, which is checked in the mint function. The recipient must be allowed to transact.
-        2. burning: transfers from an address to the zero address. Only burners can do this, which is checked in the burn function.
-        3. transfers from one address to another. The sender and recipient must be allowed to transact.
-    @dev this hook is executed before the transfer function itself 
+     * @notice There are 3 types of transfers:
+     *    1. minting: transfers from the zero address to another address. Only minters can do this, which is checked in the mint function. The recipient must be allowed to transact.
+     *    2. burning: transfers from an address to the zero address. Only burners can do this, which is checked in the burn function.
+     *    3. transfers from one address to another. The sender and recipient must be allowed to transact.
+     * @dev this hook is executed before the transfer function itself
      */
     function _beforeTokenTransfer(
         address _from,
@@ -277,7 +303,8 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     }
 
     /**
-     * @notice checks if _address is a) a transferer or b) satisfies the requirements
+     * @notice checks if `_address` is either a transferer or satisfies the requirements.
+     * @param _address address to check
      */
     function _checkIfAllowedToTransact(address _address) internal view {
         require(
@@ -288,9 +315,10 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     }
 
     /**
-     * @notice Make sure the address posing as FeeSettings actually implements the interfaces that are needed.
+     * @notice Make sure `_feeSettings` actually implements the interfaces that are needed.
      *          This is a sanity check to make sure that the FeeSettings contract is actually compatible with this token.
      * @dev  This check uses EIP165, see https://eips.ethereum.org/EIPS/eip-165
+     * @param _feeSettings address of the FeeSettings contract
      */
     function _checkIfFeeSettingsImplementsInterface(
         IFeeSettingsV1 _feeSettings
