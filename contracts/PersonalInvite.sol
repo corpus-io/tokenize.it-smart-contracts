@@ -28,7 +28,8 @@ contract PersonalInvite {
     using SafeERC20 for IERC20;
 
     /**
-     * @notice Emitted when a PersonalInvite is deployed.
+     * @notice Emitted when a PersonalInvite is deployed. `currencyPayer` paid for `tokenAmount` tokens at `tokenPrice` per token. The tokens were minted to `tokenReceiver`.
+     *    The token is deployed at `token` and the currency is `currency`.
      * @param currencyPayer address that paid the currency
      * @param tokenReceiver address that received the tokens
      * @param tokenAmount amount of tokens that were bought
