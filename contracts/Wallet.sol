@@ -46,16 +46,19 @@ contract Wallet is Ownable2Step, ERC1363Receiver {
     ) external override returns (bytes4) {
         bytes32 ibanHash = abi.decode(data, (bytes32));
         if (receiverAddress[ibanHash] == address(0)) {
-            return bytes4(0xDEADD00D); // ERC1363ReceiverNotRegistered
+            return bytes4(0xDEADD00D); // ReceiverNotRegistered
         }
         address tokenReceiver = receiverAddress[ibanHash];
         // todo: calculate amount
-        uint256 amount = 100;
+        uint256 amount = 1e15;
         // grant allowance to fundraising
         IERC20(fundraising.currency()).approve(address(fundraising), amount);
-        // todo: add try catch https://solidity-by-example.org/try-catch/
-        fundraising.buy(amount, tokenReceiver);
-        return 0x600D600D; // ERC1363ReceiverSuccess
+        // try buying tokens https://solidity-by-example.org/try-catch/
+        try fundraising.buy(amount, tokenReceiver) {
+            return 0x600D600D; // ReceiverSuccess
+        } catch {
+            return 0x0BAD0BAD; // ReceiverFailure
+        }
     }
 
     /*
@@ -66,6 +69,6 @@ contract Wallet is Ownable2Step, ERC1363Receiver {
         address to,
         uint256 amount
     ) external onlyOwner {
-        IERC20(token).safeTransferFrom(address(this), to, amount);
+        IERC20(token).safeTransfer(to, amount);
     }
 }

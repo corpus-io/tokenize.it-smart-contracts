@@ -112,4 +112,25 @@ contract BuyWithMintAndCall is Test {
         // make sure buyer has tokens after
         assertTrue(token.balanceOf(buyer) > 0);
     }
+
+    function testBuyReverts() public {
+        bytes32 buyersIbanHash = keccak256(abi.encodePacked("DE1234567890"));
+        // add buyers address to wallet
+        vm.prank(owner);
+        wallet.set(buyersIbanHash, buyer);
+
+        uint currencyMintAmount = 1;
+
+        // make sure buyer has no tokens before
+        assertTrue(token.balanceOf(buyer) == 0);
+
+        // mint currency (not enough for the buy)
+        bytes memory data = abi.encode(buyersIbanHash, 0xDEADBEEF);
+
+        vm.prank(paymentTokenProvider);
+        paymentToken.mintAndCall(address(wallet), currencyMintAmount, data);
+
+        // make sure buyer has no tokens after
+        assertTrue(token.balanceOf(buyer) == 0);
+    }
 }
