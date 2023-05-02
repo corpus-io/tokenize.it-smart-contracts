@@ -12,16 +12,16 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./Token.sol";
 
 /*
-This contract represents the offer to buy an amount of tokens at a preset price. It can be used by anyone and there is no limit to the number of times it can be used.
-The buyer can decide how many tokens to buy, but has to buy at least minAmount and can buy at most maxAmount.
-The currency the offer is denominated in is set at creation time and can be updated later.
-The contract can be paused at any time by the owner, which will prevent any new deals from being made. Then, changes to the contract can be made, like changing the currency, price or requirements.
-The contract can be unpaused after "delay", which will allow new deals to be made again.
-
-A company will create only one ContinuousFundraising contract for their token (or one for each currency if they want to accept multiple currencies).
-
-The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support
-
+ * This contract represents the offer to buy an amount of tokens at a preset price. It can be used by anyone and there is no limit to the number of times it can be used.
+ * The buyer can decide how many tokens to buy, but has to buy at least minAmount and can buy at most maxAmount.
+ * The currency the offer is denominated in is set at creation time and can be updated later.
+ * The contract can be paused at any time by the owner, which will prevent any new deals from being made. Then, changes to the contract can be made, like changing the currency, price or requirements.
+ * The contract can be unpaused after "delay", which will allow new deals to be made again.
+ *
+ * A company will create only one ContinuousFundraising contract for their token (or one for each currency if they want to accept multiple currencies).
+ *
+ * The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support
+ *
  */
 contract ContinuousFundraising is
     ERC2771Context,
@@ -37,10 +37,8 @@ contract ContinuousFundraising is
     uint256 public minAmountPerBuyer;
     /// @notice largest amount of tokens that can be minted, in bits (bit = smallest subunit of token)
     uint256 public maxAmountPerBuyer;
-    /**
-     @notice amount of bits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2*10^6 ). 
-     @dev units: [tokenPrice] = [currency_bits]/[token], so for above example: [tokenPrice] = [USDC_bits]/[TOK]
-     */
+    /// @notice The price of a token, expressed as amount of bits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2*10^6 ).
+    /// @dev units: [tokenPrice] = [currency_bits]/[token], so for above example: [tokenPrice] = [USDC_bits]/[TOK]
     uint256 public tokenPrice;
     /// @notice total amount of tokens that CAN BE minted through this contract, in bits (bit = smallest subunit of token)
     uint256 public maxAmountOfTokenToBeSold;
@@ -51,19 +49,38 @@ contract ContinuousFundraising is
     /// @notice token to be minted
     Token public token;
 
-    // delay is calculated from pause or parameter change to unpause.
+    /// @notice Minimum waiting time between pause or parameter change and unpause.
+    /// @dev delay is calculated from pause or parameter change to unpause.
     uint256 public constant delay = 1 days;
-    // timestamp of the last time the contract was paused or a parameter was changed
+    /// @notice timestamp of the last time the contract was paused or a parameter was changed
     uint256 public coolDownStart;
 
-    // keeps track of how much each buyer has bought, in order to enforce maxAmountPerBuyer
+    /// @notice This mapping keeps track of how much each buyer has bought, in order to enforce maxAmountPerBuyer
     mapping(address => uint256) public tokensBought;
 
-    event CurrencyReceiverChanged(address indexed);
-    event MinAmountPerBuyerChanged(uint256);
-    event MaxAmountPerBuyerChanged(uint256);
-    event TokenPriceAndCurrencyChanged(uint256, IERC20 indexed);
-    event MaxAmountOfTokenToBeSoldChanged(uint256);
+    /// @param newCurrencyReceiver address that receives the payment (in currency) when tokens are bought
+    event CurrencyReceiverChanged(address indexed newCurrencyReceiver);
+    /// @notice A buyer must at least own `newMinAmountPerBuyer` tokens after buying. If they already own more, they can buy smaller amounts than this, too.
+    /// @param newMinAmountPerBuyer smallest amount of tokens a buyer can buy is allowed to own after buying.
+    event MinAmountPerBuyerChanged(uint256 newMinAmountPerBuyer);
+    /// @notice A buyer can buy at most `newMaxAmountPerBuyer` tokens, from this contract, even if they split the buys into multiple transactions.
+    /// @param newMaxAmountPerBuyer largest amount of tokens a buyer can buy from this contract
+    event MaxAmountPerBuyerChanged(uint256 newMaxAmountPerBuyer);
+    /// @notice Price and currency changed.
+    /// @param newTokenPrice new price of a token, expressed as amount of bits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2*10^6 ).
+    /// @param newCurrency new currency used to pay for the token purchase
+    event TokenPriceAndCurrencyChanged(
+        uint256 newTokenPrice,
+        IERC20 indexed newCurrency
+    );
+    /// @param newMaxAmountOfTokenToBeSold new total amount of tokens that can be minted through this contract, in bits (bit = smallest subunit of token)´
+    event MaxAmountOfTokenToBeSoldChanged(uint256 newMaxAmountOfTokenToBeSold);
+    /**
+     * @notice `buyer` bought `tokenAmount` tokens for `currencyAmount` currency.
+     * @param buyer Address that bought the tokens
+     * @param tokenAmount Amount of tokens bought
+     * @param currencyAmount Amount of currency paid
+     */
     event TokensBought(
         address indexed buyer,
         uint256 tokenAmount,
@@ -117,9 +134,9 @@ contract ContinuousFundraising is
     }
 
     /**
-     @notice buy tokens
-     @param _amount amount of tokens to buy, in bits (smallest subunit of token)
-     @param _tokenReceiver address the tokens should be minted to
+     * @notice Buy `amount` tokens and mint them to `_tokenReceiver`.
+     * @param _amount amount of tokens to buy, in bits (smallest subunit of token)
+     * @param _tokenReceiver address the tokens should be minted to
      */
     function buy(
         uint256 _amount,
@@ -168,8 +185,8 @@ contract ContinuousFundraising is
     }
 
     /**
-     @notice change the currencyReceiver
-     @param _currencyReceiver new currencyReceiver
+     * @notice change the currencyReceiver to `_currencyReceiver`
+     * @param _currencyReceiver new currencyReceiver
      */
     function setCurrencyReceiver(
         address _currencyReceiver
@@ -184,8 +201,8 @@ contract ContinuousFundraising is
     }
 
     /**
-     @notice change the minAmountPerBuyer
-     @param _minAmountPerBuyer new minAmountPerBuyer
+     * @notice change the minAmountPerBuyer to `_minAmountPerBuyer`
+     * @param _minAmountPerBuyer new minAmountPerBuyer
      */
     function setMinAmountPerBuyer(
         uint256 _minAmountPerBuyer
@@ -200,8 +217,8 @@ contract ContinuousFundraising is
     }
 
     /**
-     @notice change the maxAmountPerBuyer
-     @param _maxAmountPerBuyer new maxAmountPerBuyer
+     * @notice change the maxAmountPerBuyer to `_maxAmountPerBuyer`
+     * @param _maxAmountPerBuyer new maxAmountPerBuyer
      */
     function setMaxAmountPerBuyer(
         uint256 _maxAmountPerBuyer
@@ -216,9 +233,9 @@ contract ContinuousFundraising is
     }
 
     /**
-     @notice change currency and tokenPrice
-     @param _currency new currency     
-     @param _tokenPrice new tokenPrice
+     * @notice change currency to `_currency` and tokenPrice to `_tokenPrice`
+     * @param _currency new currency
+     * @param _tokenPrice new tokenPrice
      */
     function setCurrencyAndTokenPrice(
         IERC20 _currency,
@@ -232,8 +249,8 @@ contract ContinuousFundraising is
     }
 
     /**
-     @notice change the maxAmountOfTokenToBeSold
-     @param _maxAmountOfTokenToBeSold new maxAmountOfTokenToBeSold
+     * @notice change the maxAmountOfTokenToBeSold to `_maxAmountOfTokenToBeSold`
+     * @param _maxAmountOfTokenToBeSold new maxAmountOfTokenToBeSold
      */
     function setMaxAmountOfTokenToBeSold(
         uint256 _maxAmountOfTokenToBeSold
@@ -248,7 +265,7 @@ contract ContinuousFundraising is
     }
 
     /**
-     @notice pause the contract
+     * @notice pause the contract
      */
     function pause() external onlyOwner {
         _pause();
@@ -256,7 +273,7 @@ contract ContinuousFundraising is
     }
 
     /**
-     @notice unpause the contract
+     * @notice unpause the contract
      */
     function unpause() external onlyOwner {
         require(
