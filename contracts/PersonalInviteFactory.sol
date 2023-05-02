@@ -7,14 +7,25 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/utils/Create2.sol";
 import "../contracts/PersonalInvite.sol";
 
-/*
-    One deployment of this contract can be used for deployment of any number of PersonalInvites using create2.
-*/
+/**
+ * @notice This contract deploys PersonalInvites using create2. It is used to deploy PersonalInvites with a deterministic address.
+ * @dev One deployment of this contract can be used for deployment of any number of PersonalInvites using create2.
+ */
 contract PersonalInviteFactory {
     event Deploy(address indexed addr);
 
     /**
-     * @notice Deploys a contract using create2.
+     * @notice Deploys a contract using create2. During the deployment, `_currencyPayer` pays `_currencyReceiver` for the purchase of `_tokenAmount` tokens at `_tokenPrice` per token.
+     *      The tokens are minted to `_tokenReceiver`. The token is deployed at `_token` and the currency is `_currency`.
+     * @param _salt salt used for privacy. Could be used for vanity addresses, too.
+     * @param _currencyPayer address holding the currency. Must have given sufficient allowance to this contract.
+     * @param _tokenReceiver address receiving the tokens
+     * @param _currencyReceiver address receiving the currency
+     * @param _tokenAmount amount of tokens to be minted
+     * @param _tokenPrice price of one token in currency
+     * @param _expiration timestamp after which the contract is no longer valid
+     * @param _currency address of the currency
+     * @param _token address of the token
      */
     function deploy(
         bytes32 _salt,
@@ -48,6 +59,16 @@ contract PersonalInviteFactory {
 
     /**
      * @notice Computes the address of a contract to be deployed using create2.
+     * @param _salt salt used for privacy. Could be used for vanity addresses, too.
+     * @param _currencyPayer address holding the currency. Must have given sufficient allowance to this contract.
+     * @param _tokenReceiver address receiving the tokens
+     * @param _currencyReceiver address receiving the currency
+     * @param _amount amount of tokens to be minted
+     * @param _tokenPrice price of one token in currency
+     * @param _expiration timestamp after which the contract is no longer valid
+     * @param _currency address of the currency
+     * @param _token address of the token
+     * @return address of the contract to be deployed
      */
     function getAddress(
         bytes32 _salt,
@@ -73,6 +94,10 @@ contract PersonalInviteFactory {
         return Create2.computeAddress(_salt, keccak256(bytecode));
     }
 
+    /**
+     * @dev Generates the bytecode of the contract to be deployed, using the parameters.
+     * @return bytecode of the contract to be deployed.
+     */
     function getBytecode(
         address _currencyPayer,
         address _tokenReceiver,
