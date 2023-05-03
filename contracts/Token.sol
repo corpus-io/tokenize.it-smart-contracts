@@ -189,7 +189,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
      * @notice This function can only be used by the default admin to approve switching to the new feeSettings contract.
      *     The new feeSettings contract will be applied immediately.
      * @dev Enforcing the suggested and accepted new contract to be the same is necessary to prevent frontrunning the acceptance with a new suggestion.
-     *      Checking it the address implements the interface also prevents the 0 address from being accepted.
+     *      Checking if the address implements the interface also prevents the 0 address from being accepted.
      * @param _feeSettings the new feeSettings contract
      */
     function acceptNewFeeSettings(
