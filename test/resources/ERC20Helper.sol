@@ -12,8 +12,8 @@ IERC20 constant EUROC = IERC20(0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c);
 IERC20 constant DAI = IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
 
 contract ERC20Helper is Test {
-
     using stdStorage for StdStorage;
+
     /** 
         @notice sets the balance of who to amount. This is only possible in a test environment.
         taken from here: https://mirror.xyz/brocke.eth/PnX7oAcU4LJCxcoICiaDhq_MUUu9euaM8Y5r465Rd2U
