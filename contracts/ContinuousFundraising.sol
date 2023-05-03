@@ -11,17 +11,16 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 
 import "./Token.sol";
 
-/*
- * This contract represents the offer to buy an amount of tokens at a preset price. It can be used by anyone and there is no limit to the number of times it can be used.
- * The buyer can decide how many tokens to buy, but has to buy at least minAmount and can buy at most maxAmount.
- * The currency the offer is denominated in is set at creation time and can be updated later.
- * The contract can be paused at any time by the owner, which will prevent any new deals from being made. Then, changes to the contract can be made, like changing the currency, price or requirements.
- * The contract can be unpaused after "delay", which will allow new deals to be made again.
- *
- * A company will create only one ContinuousFundraising contract for their token (or one for each currency if they want to accept multiple currencies).
- *
- * The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support
- *
+/**
+ * @title ContinuousFundraising
+ * @author malteish, cjentzsch
+ * @notice This contract represents the offer to buy an amount of tokens at a preset price. It can be used by anyone and there is no limit to the number of times it can be used.
+ *      The buyer can decide how many tokens to buy, but has to buy at least minAmount and can buy at most maxAmount.
+ *      The currency the offer is denominated in is set at creation time and can be updated later.
+ *      The contract can be paused at any time by the owner, which will prevent any new deals from being made. Then, changes to the contract can be made, like changing the currency, price or requirements.
+ *      The contract can be unpaused after "delay", which will allow new deals to be made again.
+ *      A company will create only one ContinuousFundraising contract for their token (or one for each currency if they want to accept multiple currencies).
+ * @dev The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support
  */
 contract ContinuousFundraising is
     ERC2771Context,
@@ -31,33 +30,34 @@ contract ContinuousFundraising is
 {
     using SafeERC20 for IERC20;
 
-    /// @notice address that receives the currency when tokens are bought
+    /// address that receives the currency when tokens are bought
     address public currencyReceiver;
-    /// @notice smallest amount of tokens that can be minted, in bits (bit = smallest subunit of token)
+    /// smallest amount of tokens that can be minted, in bits (bit = smallest subunit of token)
     uint256 public minAmountPerBuyer;
-    /// @notice largest amount of tokens that can be minted, in bits (bit = smallest subunit of token)
+    /// largest amount of tokens that can be minted, in bits (bit = smallest subunit of token)
     uint256 public maxAmountPerBuyer;
-    /// @notice The price of a token, expressed as amount of bits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2*10^6 ).
+    /// The price of a token, expressed as amount of bits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2*10^6 ).
     /// @dev units: [tokenPrice] = [currency_bits]/[token], so for above example: [tokenPrice] = [USDC_bits]/[TOK]
     uint256 public tokenPrice;
-    /// @notice total amount of tokens that CAN BE minted through this contract, in bits (bit = smallest subunit of token)
+    /// total amount of tokens that CAN BE minted through this contract, in bits (bit = smallest subunit of token)
     uint256 public maxAmountOfTokenToBeSold;
-    /// @notice total amount of tokens that HAVE BEEN minted through this contract, in bits (bit = smallest subunit of token)
+    /// total amount of tokens that HAVE BEEN minted through this contract, in bits (bit = smallest subunit of token)
     uint256 public tokensSold;
-    /// @notice currency used to pay for the token mint. Must be ERC20, so ether can only be used as wrapped ether (WETH)
+    /// currency used to pay for the token mint. Must be ERC20, so ether can only be used as wrapped ether (WETH)
     IERC20 public currency;
-    /// @notice token to be minted
+    /// token to be minted
     Token public token;
 
     /// @notice Minimum waiting time between pause or parameter change and unpause.
     /// @dev delay is calculated from pause or parameter change to unpause.
     uint256 public constant delay = 1 days;
-    /// @notice timestamp of the last time the contract was paused or a parameter was changed
+    /// timestamp of the last time the contract was paused or a parameter was changed
     uint256 public coolDownStart;
 
-    /// @notice This mapping keeps track of how much each buyer has bought, in order to enforce maxAmountPerBuyer
+    /// This mapping keeps track of how much each buyer has bought, in order to enforce maxAmountPerBuyer
     mapping(address => uint256) public tokensBought;
 
+    /// @notice CurrencyReceiver has been changed to `newCurrencyReceiver`
     /// @param newCurrencyReceiver address that receives the payment (in currency) when tokens are bought
     event CurrencyReceiverChanged(address indexed newCurrencyReceiver);
     /// @notice A buyer must at least own `newMinAmountPerBuyer` tokens after buying. If they already own more, they can buy smaller amounts than this, too.
@@ -88,7 +88,16 @@ contract ContinuousFundraising is
     );
 
     /**
+     * @notice Sets up the ContinuousFundraising. The contract is usable immediately after deployment, but does need a minting allowance for the token.
      * @dev Constructor that passes the trusted forwarder to the ERC2771Context constructor
+     * @param _trustedForwarder This address can execute transactions in the name of any other address
+     * @param _currencyReceiver address that receives the payment (in currency) when tokens are bought
+     * @param _minAmountPerBuyer smallest amount of tokens a buyer is allowed to buy when buying for the first time
+     * @param _maxAmountPerBuyer largest amount of tokens a buyer can buy from this contract
+     * @param _tokenPrice price of a token, expressed as amount of bits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2*10^6 ).
+     * @param _maxAmountOfTokenToBeSold total amount of tokens that can be minted through this contract
+     * @param _currency currency used to pay for the token mint. Must be ERC20, so ether can only be used as wrapped ether (WETH)
+     * @param _token token to be sold
      */
     constructor(
         address _trustedForwarder,
