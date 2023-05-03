@@ -6,6 +6,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./Token.sol";
 
 /**
+ * @title PersonalInvite
+ * @author malteish, cjentzsch
  * @notice This contract represents the offer to buy an amount of tokens at a preset price. It is created for a specific buyer and can only be claimed once and only by that buyer.
  *     All parameters of the invitation (currencyPayer, tokenReceiver, currencyReceiver, tokenAmount, tokenPrice, currency, token) are immutable (see description of CREATE2).
  *     It is likely a company will create many PersonalInvites for specific investors to buy their one token.

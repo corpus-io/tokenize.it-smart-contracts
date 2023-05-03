@@ -8,6 +8,8 @@ import "@openzeppelin/contracts/utils/Create2.sol";
 import "../contracts/PersonalInvite.sol";
 
 /**
+ * @title PersonalInviteFactory
+ * @author malteish, cjentzsch
  * @notice This contract deploys PersonalInvites using create2. It is used to deploy PersonalInvites with a deterministic address.
  * @dev One deployment of this contract can be used for deployment of any number of PersonalInvites using create2.
  */

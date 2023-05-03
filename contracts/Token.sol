@@ -10,6 +10,7 @@ import "./interfaces/IFeeSettings.sol";
 
 /**
  * @title tokenize.it Token
+ * @author malteish, cjentzsch
  * @notice This contract implements the token used to tokenize companies, which follows the ERC20 standard and adds the following features:
  *     - pausing
  *     - access control with dedicated roles
@@ -18,8 +19,7 @@ import "./interfaces/IFeeSettings.sol";
  *     - allow list (documents which address satisfies which requirement)
  *     Decimals is inherited as 18 from ERC20. This should be the standard to adhere by for all deployments of this token.
  *
- *     The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support and meta-transactions.
- *
+ * @dev The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support and meta-transactions.
  */
 contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     /// @notice The role that has the ability to define which requirements an address must satisfy to receive tokens
