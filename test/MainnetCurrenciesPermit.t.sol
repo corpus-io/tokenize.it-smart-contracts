@@ -126,7 +126,7 @@ contract MainnetCurrencies is Test {
             "allowance should be _tokenPermitAmount"
         );
 
-                assertEq(
+        assertEq(
             token.balanceOf(tokenOwner),
             _tokenPermitAmount,
             "token balance of tokenOwner should be _tokenPermitAmount"
@@ -173,6 +173,12 @@ contract MainnetCurrencies is Test {
     }
 
     function testPermitUSDC() public {
-        permitERC2612(ERC20Permit(address(USDC)), 200, 100, tokenOwnerPrivateKey, address(2));
+        permitERC2612(
+            ERC20Permit(address(USDC)),
+            200,
+            100,
+            tokenOwnerPrivateKey,
+            address(2)
+        );
     }
 }
