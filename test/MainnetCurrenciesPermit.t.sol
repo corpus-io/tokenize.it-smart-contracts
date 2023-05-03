@@ -11,7 +11,6 @@ import "../contracts/PersonalInviteFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/ERC20Helper.sol";
 
-
 /**
  * @dev These tests need a mainnet fork of the blockchain, as they access contracts deployed on mainnet. Take a look at docs/testing.md for more information.
  */
@@ -20,7 +19,6 @@ contract MainnetCurrencies is Test {
     using SafeERC20 for IERC20;
 
     ERC20Helper helper = new ERC20Helper();
-
 
     uint256 public constant tokenOwnerPrivateKey =
         0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
@@ -58,9 +56,7 @@ contract MainnetCurrencies is Test {
     bytes32 DOMAIN_SEPARATOR;
     bytes32 structHash;
 
-    function setUp() public {
-        
-    }
+    function setUp() public {}
 
     function permitERC2612(
         ERC20Permit token,
@@ -71,7 +67,11 @@ contract MainnetCurrencies is Test {
     ) public {
         vm.assume(_tokenTransferAmount <= _tokenPermitAmount);
         tokenOwner = vm.addr(_tokenOwnerPrivateKey);
-        helper.writeERC20Balance(tokenOwner, address(token), _tokenPermitAmount);
+        helper.writeERC20Balance(
+            tokenOwner,
+            address(token),
+            _tokenPermitAmount
+        );
 
         // permit spender to spend holder's tokens
         nonce = token.nonces(tokenOwner);
@@ -102,7 +102,11 @@ contract MainnetCurrencies is Test {
         );
 
         // check allowance
-        assertEq(token.allowance(tokenOwner, tokenSpender), 0, "allowance should be 0");
+        assertEq(
+            token.allowance(tokenOwner, tokenSpender),
+            0,
+            "allowance should be 0"
+        );
 
         // call permit with a wallet that is not tokenOwner
         token.permit(
@@ -116,13 +120,30 @@ contract MainnetCurrencies is Test {
         );
 
         // check allowance
-        assertEq(token.allowance(tokenOwner, tokenSpender), _tokenPermitAmount, "allowance should be _tokenPermitAmount");
+        assertEq(
+            token.allowance(tokenOwner, tokenSpender),
+            _tokenPermitAmount,
+            "allowance should be _tokenPermitAmount"
+        );
 
         // check token balance of tokenSpender
-        assertEq(token.balanceOf(tokenOwner), _tokenPermitAmount, "token balance of tokenOwner should be _tokenPermitAmount");
-        assertEq(token.balanceOf(tokenSpender), 0, "token balance of tokenSpender should be 0");
+        assertEq(
+            token.balanceOf(tokenOwner),
+            _tokenPermitAmount,
+            "token balance of tokenOwner should be _tokenPermitAmount"
+        );
+        assertEq(
+            token.balanceOf(tokenSpender),
+            0,
+            "token balance of tokenSpender should be 0"
+        );
 
-        console.log("Tranfering %s tokens from %s to %s", _tokenPermitAmount, tokenOwner, tokenSpender);
+        console.log(
+            "Tranfering %s tokens from %s to %s",
+            _tokenPermitAmount,
+            tokenOwner,
+            tokenSpender
+        );
         // spend tokens
         vm.prank(tokenSpender);
         token.transferFrom(tokenOwner, tokenSpender, _tokenTransferAmount);
@@ -133,11 +154,21 @@ contract MainnetCurrencies is Test {
             _tokenPermitAmount - _tokenTransferAmount,
             "token balance of tokenOwner should be _tokenPermitAmount - _tokenTransferAmount"
         );
-        assertEq(token.balanceOf(tokenSpender), _tokenTransferAmount, "token balance of tokenSpender should be _tokenTransferAmount");
+        assertEq(
+            token.balanceOf(tokenSpender),
+            _tokenTransferAmount,
+            "token balance of tokenSpender should be _tokenTransferAmount"
+        );
     }
 
     function testPermitEUROC() public {
-        permitERC2612(ERC20Permit(address(EUROC)), 200, 100, tokenOwnerPrivateKey, address(2));
+        permitERC2612(
+            ERC20Permit(address(EUROC)),
+            200,
+            100,
+            tokenOwnerPrivateKey,
+            address(2)
+        );
     }
 
     // still fails for some reason
