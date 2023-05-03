@@ -11,9 +11,9 @@ import "../contracts/PersonalInviteFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/ERC20Helper.sol";
 
-
 interface DaiLike {
     function PERMIT_TYPEHASH() external view returns (bytes32);
+
     function permit(
         address holder,
         address spender,
@@ -25,7 +25,6 @@ interface DaiLike {
         bytes32 s
     ) external;
 }
-
 
 /**
  * @dev These tests need a mainnet fork of the blockchain, as they access contracts deployed on mainnet. Take a look at docs/testing.md for more information.
@@ -124,7 +123,10 @@ contract MainnetCurrencies is Test {
         );
 
         // call permit as and address a that is not tokenOwner
-        assertTrue(address(this) != tokenOwner, "address(this) must not be tokenOwner");
+        assertTrue(
+            address(this) != tokenOwner,
+            "address(this) must not be tokenOwner"
+        );
         token.permit(
             tokenOwner,
             tokenSpender,
@@ -242,7 +244,10 @@ contract MainnetCurrencies is Test {
         );
 
         // call permit as and address a that is not tokenOwner
-        assertTrue(address(this) != tokenOwner, "address(this) must not be tokenOwner");
+        assertTrue(
+            address(this) != tokenOwner,
+            "address(this) must not be tokenOwner"
+        );
         DaiLike(address(token)).permit(
             tokenOwner,
             tokenSpender,
@@ -261,7 +266,7 @@ contract MainnetCurrencies is Test {
             "allowance should be UINT256_MAX"
         );
 
-                assertEq(
+        assertEq(
             token.balanceOf(tokenOwner),
             _tokenPermitAmount,
             "token balance of tokenOwner should be _tokenPermitAmount"
@@ -293,6 +298,12 @@ contract MainnetCurrencies is Test {
     }
 
     function testPermitDAI() public {
-        permitDAI(ERC20Permit(address(DAI)), 200, 100, tokenOwnerPrivateKey, address(2));
+        permitDAI(
+            ERC20Permit(address(DAI)),
+            200,
+            100,
+            tokenOwnerPrivateKey,
+            address(2)
+        );
     }
 }
