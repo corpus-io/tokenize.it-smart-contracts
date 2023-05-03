@@ -126,17 +126,18 @@ contract MainnetCurrencies is Test {
             "allowance should be _tokenPermitAmount"
         );
 
-        // check token balance of tokenSpender
-        assertEq(
+                assertEq(
             token.balanceOf(tokenOwner),
             _tokenPermitAmount,
             "token balance of tokenOwner should be _tokenPermitAmount"
         );
-        assertEq(
-            token.balanceOf(tokenSpender),
-            0,
-            "token balance of tokenSpender should be 0"
-        );
+        // store token balance of tokenSpender
+        uint tokenSpenderBalanceBefore = token.balanceOf(tokenSpender);
+        // assertEq(
+        //     token.balanceOf(tokenSpender),
+        //     0,
+        //     "token balance of tokenSpender should be 0"
+        // );
 
         console.log(
             "Tranfering %s tokens from %s to %s",
@@ -156,7 +157,7 @@ contract MainnetCurrencies is Test {
         );
         assertEq(
             token.balanceOf(tokenSpender),
-            _tokenTransferAmount,
+            _tokenTransferAmount + tokenSpenderBalanceBefore,
             "token balance of tokenSpender should be _tokenTransferAmount"
         );
     }
@@ -171,8 +172,7 @@ contract MainnetCurrencies is Test {
         );
     }
 
-    // still fails for some reason
-    // function testPermitUSDC() public {
-    //     permitERC2612(ERC20Permit(address(USDC)), 200, 100, tokenOwnerPrivateKey, address(2));
-    // }
+    function testPermitUSDC() public {
+        permitERC2612(ERC20Permit(address(USDC)), 200, 100, tokenOwnerPrivateKey, address(2));
+    }
 }
