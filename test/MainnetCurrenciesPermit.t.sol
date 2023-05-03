@@ -11,10 +11,25 @@ import "../contracts/PersonalInviteFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/ERC20Helper.sol";
 
+
+interface DaiLike {
+    function PERMIT_TYPEHASH() external view returns (bytes32);
+    function permit(
+        address holder,
+        address spender,
+        uint256 nonce,
+        uint256 expiry,
+        bool allowed,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external;
+}
+
+
 /**
  * @dev These tests need a mainnet fork of the blockchain, as they access contracts deployed on mainnet. Take a look at docs/testing.md for more information.
  */
-
 contract MainnetCurrencies is Test {
     using SafeERC20 for IERC20;
 
@@ -108,7 +123,8 @@ contract MainnetCurrencies is Test {
             "allowance should be 0"
         );
 
-        // call permit with a wallet that is not tokenOwner
+        // call permit as and address a that is not tokenOwner
+        assertTrue(address(this) != tokenOwner, "address(this) must not be tokenOwner");
         token.permit(
             tokenOwner,
             tokenSpender,
@@ -133,11 +149,6 @@ contract MainnetCurrencies is Test {
         );
         // store token balance of tokenSpender
         uint tokenSpenderBalanceBefore = token.balanceOf(tokenSpender);
-        // assertEq(
-        //     token.balanceOf(tokenSpender),
-        //     0,
-        //     "token balance of tokenSpender should be 0"
-        // );
 
         console.log(
             "Tranfering %s tokens from %s to %s",
@@ -180,5 +191,108 @@ contract MainnetCurrencies is Test {
             tokenOwnerPrivateKey,
             address(2)
         );
+    }
+
+    function permitDAI(
+        ERC20Permit token,
+        uint256 _tokenPermitAmount,
+        uint256 _tokenTransferAmount,
+        uint256 _tokenOwnerPrivateKey,
+        address tokenSpender
+    ) public {
+        vm.assume(_tokenTransferAmount <= _tokenPermitAmount);
+        tokenOwner = vm.addr(_tokenOwnerPrivateKey);
+        helper.writeERC20Balance(
+            tokenOwner,
+            address(token),
+            _tokenPermitAmount
+        );
+
+        // permit spender to spend holder's tokens
+        bool allowed = true;
+        nonce = token.nonces(tokenOwner);
+        deadline = block.timestamp + 1000;
+        DOMAIN_SEPARATOR = token.DOMAIN_SEPARATOR();
+        structHash = keccak256(
+            abi.encode(
+                DaiLike(address(token)).PERMIT_TYPEHASH(),
+                tokenOwner,
+                tokenSpender,
+                nonce,
+                deadline,
+                allowed
+            )
+        );
+
+        bytes32 hash = ECDSA.toTypedDataHash(DOMAIN_SEPARATOR, structHash);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(_tokenOwnerPrivateKey, hash);
+
+        // verify signature
+        require(
+            tokenOwner == ECDSA.recover(hash, v, r, s),
+            "invalid signature"
+        );
+
+        // check allowance
+        assertEq(
+            token.allowance(tokenOwner, tokenSpender),
+            0,
+            "allowance should be 0"
+        );
+
+        // call permit as and address a that is not tokenOwner
+        assertTrue(address(this) != tokenOwner, "address(this) must not be tokenOwner");
+        DaiLike(address(token)).permit(
+            tokenOwner,
+            tokenSpender,
+            nonce,
+            deadline,
+            true,
+            v,
+            r,
+            s
+        );
+
+        // check allowance
+        assertEq(
+            token.allowance(tokenOwner, tokenSpender),
+            UINT256_MAX,
+            "allowance should be UINT256_MAX"
+        );
+
+                assertEq(
+            token.balanceOf(tokenOwner),
+            _tokenPermitAmount,
+            "token balance of tokenOwner should be _tokenPermitAmount"
+        );
+        // store token balance of tokenSpender
+        uint tokenSpenderBalanceBefore = token.balanceOf(tokenSpender);
+
+        console.log(
+            "Tranfering %s tokens from %s to %s",
+            _tokenPermitAmount,
+            tokenOwner,
+            tokenSpender
+        );
+        // spend tokens
+        vm.prank(tokenSpender);
+        token.transferFrom(tokenOwner, tokenSpender, _tokenTransferAmount);
+
+        // check token balance of tokenSpender
+        assertEq(
+            token.balanceOf(tokenOwner),
+            _tokenPermitAmount - _tokenTransferAmount,
+            "token balance of tokenOwner should be _tokenPermitAmount - _tokenTransferAmount"
+        );
+        assertEq(
+            token.balanceOf(tokenSpender),
+            _tokenTransferAmount + tokenSpenderBalanceBefore,
+            "token balance of tokenSpender should be _tokenTransferAmount"
+        );
+    }
+
+    function testPermitDAI() public {
+        permitDAI(ERC20Permit(address(DAI)), 200, 100, tokenOwnerPrivateKey, address(2));
     }
 }
