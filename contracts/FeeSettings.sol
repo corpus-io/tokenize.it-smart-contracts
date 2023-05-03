@@ -5,29 +5,52 @@ import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import "./interfaces/IFeeSettings.sol";
 
-/*
-    This FeeSettings contract is used to manage fees paid to the tokenize.it platfom
-*/
+/**
+ * @title FeeSettings
+ * @author malteish, cjentzsch
+ * @notice The FeeSettings contract is used to manage fees paid to the tokenize.it platfom
+ */
 contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV1 {
-    /// @notice Denominator to calculate fees paid in Token.sol. UINT256_MAX means no fees.
+    /// Denominator to calculate fees paid in Token.sol. UINT256_MAX means no fees.
     uint256 public tokenFeeDenominator;
-    /// @notice Denominator to calculate fees paid in ContinuousFundraising.sol. UINT256_MAX means no fees.
+    /// Denominator to calculate fees paid in ContinuousFundraising.sol. UINT256_MAX means no fees.
     uint256 public continuousFundraisingFeeDenominator;
-    /// @notice Denominator to calculate fees paid in PersonalInvite.sol. UINT256_MAX means no fees.
+    /// Denominator to calculate fees paid in PersonalInvite.sol. UINT256_MAX means no fees.
     uint256 public personalInviteFeeDenominator;
-    /// @notice address the fees have to be paid to
+    /// address the fees have to be paid to
     address public feeCollector;
-    /// @notice new fee settings that can be activated (after a delay in case of fee increase)
+    /// new fee settings that can be activated (after a delay in case of fee increase)
     Fees public proposedFees;
 
+    /**
+     * @notice Fee denominators have been set to the following values: `tokenFeeDenominator`, `continuousFundraisingFeeDenominator`, `personalInviteFeeDenominator`
+     * @param tokenFeeDenominator Defines the fee paid in Token.sol. UINT256_MAX means no fees.
+     * @param continuousFundraisingFeeDenominator Defines the fee paid in ContinuousFundraising.sol. UINT256_MAX means no fees.
+     * @param personalInviteFeeDenominator Defines the fee paid in PersonalInvite.sol. UINT256_MAX means no fees.
+     */
     event SetFeeDenominators(
         uint256 tokenFeeDenominator,
         uint256 continuousFundraisingFeeDenominator,
         uint256 personalInviteFeeDenominator
     );
+
+    /**
+     * @notice The fee collector has been changed to `newFeeCollector`
+     * @param newFeeCollector The new fee collector
+     */
     event FeeCollectorChanged(address indexed newFeeCollector);
+
+    /**
+     * @notice A fee change has been proposed
+     * @param proposal The new fee settings that have been proposed
+     */
     event ChangeProposed(Fees proposal);
 
+    /**
+     * @notice Initializes the contract with the given fee denominators and fee collector
+     * @param _fees The initial fee denominators
+     * @param _feeCollector The initial fee collector
+     */
     constructor(Fees memory _fees, address _feeCollector) {
         checkFeeLimits(_fees);
         tokenFeeDenominator = _fees.tokenFeeDenominator;
@@ -38,10 +61,13 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV1 {
         feeCollector = _feeCollector;
     }
 
+    /**
+     * @notice Prepares a fee change. Fee increases are subject to a minimum delay of 12 weeks, while fee reductions can be executed immediately.
+     * @dev reducing fees = increasing the denominator
+     * @param _fees The new fee denominators
+     */
     function planFeeChange(Fees memory _fees) external onlyOwner {
         checkFeeLimits(_fees);
-        // Reducing fees is possible immediately. Increasing fees can only be executed after a minimum of 12 weeks.
-        // Beware: reducing fees = increasing the denominator
 
         // if at least one fee increases, enforce minimum delay
         if (
@@ -59,6 +85,9 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV1 {
         emit ChangeProposed(_fees);
     }
 
+    /**
+     * @notice Executes a fee change that has been planned before
+     */
     function executeFeeChange() external onlyOwner {
         require(
             block.timestamp >= proposedFees.time,
@@ -77,12 +106,20 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV1 {
         delete proposedFees;
     }
 
+    /**
+     * @notice Sets a new fee collector
+     * @param _feeCollector The new fee collector
+     */
     function setFeeCollector(address _feeCollector) external onlyOwner {
         require(_feeCollector != address(0), "Fee collector cannot be 0x0");
         feeCollector = _feeCollector;
         emit FeeCollectorChanged(_feeCollector);
     }
 
+    /**
+     * @notice Checks if the given fee settings are valid
+     * @param _fees The fees to check
+     */
     function checkFeeLimits(Fees memory _fees) internal pure {
         require(
             _fees.tokenFeeDenominator >= 20,
@@ -99,16 +136,18 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV1 {
     }
 
     /**
-    @notice Returns the fee for a given token amount
-    @dev will wrongly return 1 if denominator and amount are both uint256 max
+     * @notice Returns the fee for a given token amount
+     * @dev will wrongly return 1 if denominator and amount are both uint256 max
      */
     function tokenFee(uint256 _tokenAmount) external view returns (uint256) {
         return _tokenAmount / tokenFeeDenominator;
     }
 
     /**
-    @notice Returns the fee for a given currency amount
-    @dev will wrongly return 1 if denominator and amount are both uint256 max
+     * @notice Calculates the fee for a given currency amount in ContinuousFundraising.sol
+     * @dev will wrongly return 1 if denominator and amount are both uint256 max
+     * @param _currencyAmount The amount of currency to calculate the fee for
+     * @return The fee
      */
     function continuousFundraisingFee(
         uint256 _currencyAmount
@@ -116,9 +155,11 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV1 {
         return _currencyAmount / continuousFundraisingFeeDenominator;
     }
 
-    /** 
-    @notice Returns the fee for a given currency amount
-    @dev will wrongly return 1 if denominator and amount are both uint256 max
+    /**
+     * @notice Calculates the fee for a given currency amount in PersonalInvite.sol
+     * @dev will wrongly return 1 if denominator and amount are both uint256 max
+     * @param _currencyAmount The amount of currency to calculate the fee for
+     * @return The fee
      */
     function personalInviteFee(
         uint256 _currencyAmount
@@ -127,7 +168,8 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV1 {
     }
 
     /**
-     * Specify where the implementation of owner() is located
+     * @dev Specify where the implementation of owner() is located
+     * @return The owner of the contract
      */
     function owner()
         public
@@ -141,6 +183,7 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV1 {
     /**
      * @notice This contract implements the ERC165 interface in order to enable other contracts to query which interfaces this contract implements.
      * @dev See https://eips.ethereum.org/EIPS/eip-165
+     * @return `true` for supported interfaces, otherwise `false`
      */
     function supportsInterface(
         bytes4 interfaceId
