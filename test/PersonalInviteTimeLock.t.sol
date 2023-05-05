@@ -72,7 +72,7 @@ contract PersonalInviteTimeLockTest is Test {
         VestingWallet timeLock = new VestingWallet(
             tokenReceiver,
             uint64(block.timestamp + lockDuration),
-            1 // all tokens are released at once
+            0 // all tokens are released at once
         );
 
         // add time lock and token receiver to the allow list
@@ -92,7 +92,7 @@ contract PersonalInviteTimeLockTest is Test {
         assertEq(token.balanceOf(tokenReceiver), 0);
 
         // wait for the lock to expire
-        vm.warp(lockDuration + 2);
+        vm.warp(lockDuration + 1);
 
         // release tokens
         timeLock.release(address(token));
@@ -105,11 +105,27 @@ contract PersonalInviteTimeLockTest is Test {
         );
     }
 
-    function testAcceptWithDifferentTokenReceiver(uint256 rawSalt) public {
-        console.log(
-            "feeCollector currency balance: %s",
-            currency.balanceOf(token.feeSettings().feeCollector())
+    function testPersonalInviteWithTimeLock(
+        uint256 rawSalt,
+        uint64 lockDuration,
+        uint64 attemptDuration
+    ) public {
+        vm.assume(lockDuration > attemptDuration);
+        vm.assume(attemptDuration > 0);
+        vm.assume(lockDuration < type(uint64).max / 2);
+
+        // check current time is 0 -> makes math easier further down
+        uint256 startTime = block.timestamp;
+
+        // create vesting wallet as token receiver
+        VestingWallet timeLock = new VestingWallet(
+            tokenReceiver,
+            uint64(startTime + lockDuration),
+            0 // all tokens are released at once
         );
+
+        // add time lock and token receiver to the allow list
+        list.set(address(timeLock), requirements);
 
         //uint rawSalt = 0;
         bytes32 salt = bytes32(rawSalt);
@@ -123,7 +139,7 @@ contract PersonalInviteTimeLockTest is Test {
         address expectedAddress = factory.getAddress(
             salt,
             currencyPayer,
-            tokenReceiver,
+            address(timeLock),
             currencyReceiver,
             tokenAmount,
             price,
@@ -150,8 +166,8 @@ contract PersonalInviteTimeLockTest is Test {
 
         assertEq(currency.balanceOf(currencyPayer), currencyAmount);
         assertEq(currency.balanceOf(currencyReceiver), 0);
-        assertEq(currency.balanceOf(tokenReceiver), 0);
-        assertEq(token.balanceOf(tokenReceiver), 0);
+        assertEq(currency.balanceOf(address(timeLock)), 0);
+        assertEq(token.balanceOf(address(timeLock)), 0);
 
         console.log(
             "feeCollector currency balance before deployment: %s",
@@ -161,18 +177,13 @@ contract PersonalInviteTimeLockTest is Test {
         address inviteAddress = factory.deploy(
             salt,
             currencyPayer,
-            tokenReceiver,
+            address(timeLock),
             currencyReceiver,
             tokenAmount,
             price,
             expiration,
             currency,
             token
-        );
-
-        console.log(
-            "feeCollector currency balance after deployment: %s",
-            currency.balanceOf(token.feeSettings().feeCollector())
         );
 
         assertEq(
@@ -187,14 +198,10 @@ contract PersonalInviteTimeLockTest is Test {
             currency.balanceOf(currencyReceiver)
         );
         console.log(
-            "tokenReceiver token balance: %s",
-            token.balanceOf(tokenReceiver)
+            "timeLock token balance: %s",
+            token.balanceOf(address(timeLock))
         );
-        uint256 len;
-        assembly {
-            len := extcodesize(expectedAddress)
-        }
-        console.log("Deployed contract size: %s", len);
+
         assertEq(currency.balanceOf(currencyPayer), 0);
 
         assertEq(
@@ -203,22 +210,51 @@ contract PersonalInviteTimeLockTest is Test {
                 token.feeSettings().personalInviteFee(currencyAmount)
         );
 
-        console.log(
-            "feeCollector currency balance: %s",
-            currency.balanceOf(token.feeSettings().feeCollector())
-        );
-
         assertEq(
             currency.balanceOf(token.feeSettings().feeCollector()),
             token.feeSettings().personalInviteFee(currencyAmount),
             "feeCollector currency balance is not correct"
         );
 
-        assertEq(token.balanceOf(tokenReceiver), tokenAmount);
+        assertEq(token.balanceOf(address(timeLock)), tokenAmount);
 
         assertEq(
             token.balanceOf(token.feeSettings().feeCollector()),
             token.feeSettings().tokenFee(tokenAmount)
+        );
+
+        /*
+         * PersonalInvite worked properly, now test the time lock
+         */
+        // immediate release should not work
+        assertEq(
+            token.balanceOf(tokenReceiver),
+            0,
+            "investor vault should have no tokens"
+        );
+        timeLock.release(address(token));
+        assertEq(
+            token.balanceOf(tokenReceiver),
+            0,
+            "investor vault should still have no tokens"
+        );
+
+        // too early release should not work
+        vm.warp(startTime + attemptDuration);
+        timeLock.release(address(token));
+        assertEq(
+            token.balanceOf(tokenReceiver),
+            0,
+            "investor vault should still be empty"
+        );
+
+        // release should work from 1 second after lock expires
+        vm.warp(startTime + lockDuration + 2);
+        timeLock.release(address(token));
+        assertEq(
+            token.balanceOf(tokenReceiver),
+            tokenAmount,
+            "investor vault should have tokens"
         );
     }
 }
