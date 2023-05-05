@@ -92,7 +92,7 @@ contract PersonalInviteTimeLockTest is Test {
         assertEq(token.balanceOf(tokenReceiver), 0);
 
         // wait for the lock to expire
-        vm.warp(lockDuration + 1);
+        vm.warp(lockDuration + 2); // +2 to account for block time, which starts at 1 in these tests
 
         // release tokens
         timeLock.release(address(token));
