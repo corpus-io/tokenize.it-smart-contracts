@@ -15,7 +15,7 @@ async function main() {
 
   // We get the contract to deploy
   const Token = await ethers.getContractFactory("Token");
-  
+
   const signers = await ethers.getSigners();
 
   const admin = "0x6CcD9E07b035f9E6e7f086f3EaCf940187d03A29"; // testing founder
@@ -25,7 +25,6 @@ async function main() {
   const forwarder = "0x0445d09A1917196E1DC12EdB7334C70c1FfB1623";
   const feeSettings = "0x147addF9C8E4030F8104c713Dad2A1d76E6c85a1";
   const requirements = 0x0;
-
 
   const token = await Token.deploy(
     forwarder,
