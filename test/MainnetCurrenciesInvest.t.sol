@@ -9,6 +9,7 @@ import "../contracts/ContinuousFundraising.sol";
 import "../contracts/PersonalInvite.sol";
 import "../contracts/PersonalInviteFactory.sol";
 import "../contracts/FeeSettings.sol";
+import "./resources/ERC20Helper.sol";
 
 /**
  * @dev These tests need a mainnet fork of the blockchain, as they access contracts deployed on mainnet. Take a look at docs/testing.md for more information.
@@ -16,7 +17,8 @@ import "../contracts/FeeSettings.sol";
 
 contract MainnetCurrencies is Test {
     using SafeERC20 for IERC20;
-    using stdStorage for StdStorage; // for stdStorage.set()
+
+    ERC20Helper helper = new ERC20Helper();
 
     AllowList list;
     FeeSettings feeSettings;
@@ -52,12 +54,12 @@ contract MainnetCurrencies is Test {
     // generate address of invite
     bytes32 salt = bytes32(0);
 
-    // test currencies
-    IERC20 USDC = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
-    IERC20 WETH = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
-    IERC20 WBTC = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
-    IERC20 EUROC = IERC20(0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c);
-    IERC20 DAI = IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
+    // // test currencies
+    // IERC20 USDC = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
+    // IERC20 WETH = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+    // IERC20 WBTC = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
+    // IERC20 EUROC = IERC20(0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c);
+    // IERC20 DAI = IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
 
     function setUp() public {
         list = new AllowList();
@@ -78,28 +80,21 @@ contract MainnetCurrencies is Test {
         currencyAmount = currencyCost * 2;
     }
 
-    // function testUSDCBalance() public {
-    //     uint balance1 = usdc.balanceOf(buyer);
-    //     console.log("buyer's balance: ", balance1);
-    //     uint balance2 = usdc.balanceOf(address(0x55FE002aefF02F77364de339a1292923A15844B8));
-    //     console.log("circle's balance: ", balance2);
-    // }
-
     /** 
         @notice sets the balance of who to amount
         taken from here: https://mirror.xyz/brocke.eth/PnX7oAcU4LJCxcoICiaDhq_MUUu9euaM8Y5r465Rd2U
     */
-    function writeERC20Balance(
-        address who,
-        address _token,
-        uint256 amount
-    ) internal {
-        stdstore
-            .target(_token)
-            .sig(IERC20(_token).balanceOf.selector)
-            .with_key(who)
-            .checked_write(amount);
-    }
+    // function writeERC20Balance(
+    //     address who,
+    //     address _token,
+    //     uint256 amount
+    // ) internal {
+    //     stdstore
+    //         .target(_token)
+    //         .sig(IERC20(_token).balanceOf.selector)
+    //         .with_key(who)
+    //         .checked_write(amount);
+    // }
 
     function continuousFundraisingWithIERC20Currency(IERC20 _currency) public {
         // some math
@@ -135,7 +130,7 @@ contract MainnetCurrencies is Test {
 
         // give the buyer funds
         //console.log("buyer's balance: ", _currency.balanceOf(buyer));
-        writeERC20Balance(buyer, address(_currency), _currencyAmount);
+        helper.writeERC20Balance(buyer, address(_currency), _currencyAmount);
         //console.log("buyer's balance: ", _currency.balanceOf(buyer));
 
         // give raise contract a currency allowance
@@ -233,7 +228,7 @@ contract MainnetCurrencies is Test {
         token.increaseMintingAllowance(expectedAddress, amountOfTokenToBuy);
 
         // give the buyer funds and approve invite
-        writeERC20Balance(buyer, address(_currency), currencyAmount);
+        helper.writeERC20Balance(buyer, address(_currency), currencyAmount);
         vm.prank(buyer);
         _currency.approve(address(expectedAddress), currencyCost);
 
