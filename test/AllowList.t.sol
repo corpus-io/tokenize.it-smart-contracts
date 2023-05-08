@@ -46,11 +46,11 @@ contract AllowListTest is Test {
     function testSetEvent(address x, uint256 attributes) public {
         assertTrue(list.map(address(x)) == 0);
 
-        vm.expectEmit(true, true, false, false);
+        vm.expectEmit(true, true, true, true, address(list));
         emit Set(address(x), attributes);
         list.set(address(x), attributes);
 
-        vm.expectEmit(true, true, false, false);
+        vm.expectEmit(true, true, true, true, address(list));
         emit Set(address(x), 0);
         list.remove(address(x));
     }
