@@ -5,6 +5,8 @@ import "../lib/forge-std/src/Test.sol";
 import "../contracts/AllowList.sol";
 
 contract AllowListTest is Test {
+    event Set(address indexed key, uint256 value);
+
     AllowList list;
     address owner;
 
@@ -39,6 +41,18 @@ contract AllowListTest is Test {
         assertTrue(list.map(address(1)) == 0);
         list.set(address(1), 2);
         assertTrue(list.map(address(1)) == 2);
+    }
+
+    function testSetEvent(address x, uint256 attributes) public {
+        assertTrue(list.map(address(x)) == 0);
+
+        vm.expectEmit(true, true, false, false);
+        emit Set(address(x), attributes);
+        list.set(address(x), attributes);
+
+        vm.expectEmit(true, true, false, false);
+        emit Set(address(x), 0);
+        list.remove(address(x));
     }
 
     function testSetFuzzingAddress(address x) public {
