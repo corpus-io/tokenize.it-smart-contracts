@@ -9,6 +9,17 @@ import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
 
 contract ContinuousFundraisingTest is Test {
+    event CurrencyReceiverChanged(address indexed);
+    event MinAmountPerBuyerChanged(uint256);
+    event MaxAmountPerBuyerChanged(uint256);
+    event TokenPriceAndCurrencyChanged(uint256, IERC20 indexed);
+    event MaxAmountOfTokenToBeSoldChanged(uint256);
+    event TokensBought(
+        address indexed buyer,
+        uint256 tokenAmount,
+        uint256 currencyAmount
+    );
+
     ContinuousFundraising raise;
     AllowList list;
     IFeeSettingsV1 feeSettings;
@@ -243,31 +254,16 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(buyer);
         vm.expectRevert("ReentrancyGuard: reentrant call");
         _raise.buy(buyAmount, buyer);
-
-        // // tests to be run when exploit is successful
-        // uint paymentTokensSpent = buyerPaymentBalanceBefore - _paymentToken.balanceOf(buyer);
-        // console.log("buyer spent: ", buyerPaymentBalanceBefore - _paymentToken.balanceOf(buyer));
-        // console.log("buyer tokens:", _token.balanceOf(buyer));
-        // console.log("minted tokens:", _token.totalSupply());
-        // uint pricePaidForBuyerTokens = paymentTokensSpent / _token.balanceOf(buyer) * 10**_paymentTokenDecimals;
-        // uint pricePaidForAllTokens = _paymentToken.balanceOf(receiver) / _token.totalSupply() * 10**_paymentTokenDecimals;
-        // console.log("total price paid: ", pricePaidForAllTokens);
-        // console.log("price: ", _price);
-        // // minted tokens must fit payment received and price
-        // assertTrue(_token.totalSupply() == paymentTokensSpent / _price * 10**_paymentTokenDecimals);
-        // assertTrue(pricePaidForAllTokens == _price);
-
-        // // assert internal accounting is correct
-        // console.log("tokens sold:", _raise.tokensSold());
-        // // assertTrue(_raise.tokensSold() == _token.balanceOf(buyer));
-        // // assertTrue(_raise.tokensBought(buyer) == _token.balanceOf(buyer));
     }
 
-    function testBuyHappyCase() public {
-        uint256 tokenBuyAmount = 5 * 10 ** token.decimals();
-        uint256 costInPaymentToken = (tokenBuyAmount * price) / 10 ** 18;
-
-        assert(costInPaymentToken == 35 * 10 ** paymentTokenDecimals); // 35 payment tokens, manually calculated
+    function testBuyHappyCase(uint256 tokenBuyAmount) public {
+        vm.assume(tokenBuyAmount >= raise.minAmountPerBuyer());
+        vm.assume(tokenBuyAmount <= raise.maxAmountPerBuyer());
+        uint256 costInPaymentToken = Math.ceilDiv(
+            tokenBuyAmount * raise.tokenPrice(),
+            10 ** 18
+        );
+        vm.assume(costInPaymentToken <= paymentToken.balanceOf(buyer));
 
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
 
@@ -276,10 +272,13 @@ contract ContinuousFundraisingTest is Test {
         );
 
         vm.prank(buyer);
+        vm.expectEmit(true, true, true, true, address(raise));
+        emit TokensBought(buyer, tokenBuyAmount, costInPaymentToken);
         raise.buy(tokenBuyAmount, buyer); // this test fails if 5 * 10**18 is replaced with 5 * 10**token.decimals() for this argument, even though they should be equal
         assertTrue(
             paymentToken.balanceOf(buyer) ==
-                paymentTokenBalanceBefore - costInPaymentToken
+                paymentTokenBalanceBefore - costInPaymentToken,
+            "buyer has paid"
         );
         assertTrue(
             token.balanceOf(buyer) == tokenBuyAmount,
@@ -686,7 +685,9 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(owner);
         raise.pause();
         vm.prank(owner);
-        raise.setCurrencyReceiver(payable(address(buyer)));
+        vm.expectEmit(true, true, true, true, address(raise));
+        emit CurrencyReceiverChanged(address(buyer));
+        raise.setCurrencyReceiver(address(buyer));
         assertTrue(raise.currencyReceiver() == address(buyer));
 
         vm.prank(owner);
@@ -705,18 +706,18 @@ contract ContinuousFundraisingTest is Test {
     /* 
         try to update minAmountPerBuyer while paused
     */
-    function testUpdateMinAmountPerBuyerPaused() public {
+    function testUpdateMinAmountPerBuyerPaused(
+        uint256 newMinAmountPerBuyer
+    ) public {
+        vm.assume(newMinAmountPerBuyer <= raise.maxAmountPerBuyer());
         assertTrue(raise.minAmountPerBuyer() == minAmountPerBuyer);
         vm.prank(owner);
         raise.pause();
         vm.prank(owner);
-        raise.setMinAmountPerBuyer(300);
-        assertTrue(raise.minAmountPerBuyer() == 300);
-
-        console.log("minAmount: ", raise.minAmountPerBuyer());
-        console.log("maxAmount: ", raise.maxAmountPerBuyer());
-        console.log("owner: ", raise.owner());
-        console.log("_owner: ", owner);
+        vm.expectEmit(true, true, true, true, address(raise));
+        emit MinAmountPerBuyerChanged(newMinAmountPerBuyer);
+        raise.setMinAmountPerBuyer(newMinAmountPerBuyer);
+        assertTrue(raise.minAmountPerBuyer() == newMinAmountPerBuyer);
 
         uint256 _maxAmountPerBuyer = raise.maxAmountPerBuyer();
         vm.expectRevert("_minAmount needs to be smaller or equal to maxAmount");
@@ -738,13 +739,18 @@ contract ContinuousFundraisingTest is Test {
     /* 
         try to update maxAmountPerBuyer while paused
     */
-    function testUpdateMaxAmountPerBuyerPaused() public {
+    function testUpdateMaxAmountPerBuyerPaused(
+        uint256 newMaxAmountPerBuyer
+    ) public {
+        vm.assume(newMaxAmountPerBuyer >= raise.minAmountPerBuyer());
         assertTrue(raise.maxAmountPerBuyer() == maxAmountPerBuyer);
         vm.prank(owner);
         raise.pause();
         vm.prank(owner);
-        raise.setMaxAmountPerBuyer(minAmountPerBuyer);
-        assertTrue(raise.maxAmountPerBuyer() == minAmountPerBuyer);
+        vm.expectEmit(true, true, true, true, address(raise));
+        emit MaxAmountPerBuyerChanged(newMaxAmountPerBuyer);
+        raise.setMaxAmountPerBuyer(newMaxAmountPerBuyer);
+        assertTrue(raise.maxAmountPerBuyer() == newMaxAmountPerBuyer);
         uint256 _minAmountPerBuyer = raise.minAmountPerBuyer();
         vm.expectRevert("_maxAmount needs to be larger or equal to minAmount");
         vm.prank(owner);
@@ -763,7 +769,8 @@ contract ContinuousFundraisingTest is Test {
     /*
         try to update currency and price while paused
     */
-    function testUpdateCurrencyAndPricePaused() public {
+    function testUpdateCurrencyAndPricePaused(uint256 newPrice) public {
+        vm.assume(newPrice > 0);
         assertTrue(raise.tokenPrice() == price);
         assertTrue(raise.currency() == paymentToken);
 
@@ -772,8 +779,10 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(owner);
         raise.pause();
         vm.prank(owner);
-        raise.setCurrencyAndTokenPrice(newPaymentToken, 700);
-        assertTrue(raise.tokenPrice() == 700);
+        vm.expectEmit(true, true, true, true, address(raise));
+        emit TokenPriceAndCurrencyChanged(newPrice, newPaymentToken);
+        raise.setCurrencyAndTokenPrice(newPaymentToken, newPrice);
+        assertTrue(raise.tokenPrice() == newPrice);
         assertTrue(raise.currency() == newPaymentToken);
         vm.prank(owner);
         vm.expectRevert("_tokenPrice needs to be a non-zero amount");
@@ -791,15 +800,22 @@ contract ContinuousFundraisingTest is Test {
     /*
         try to update maxAmountOfTokenToBeSold while paused
     */
-    function testUpdateMaxAmountOfTokenToBeSoldPaused() public {
+    function testUpdateMaxAmountOfTokenToBeSoldPaused(
+        uint256 newMaxAmountOfTokenToBeSold
+    ) public {
+        vm.assume(newMaxAmountOfTokenToBeSold > 0);
         assertTrue(
             raise.maxAmountOfTokenToBeSold() == maxAmountOfTokenToBeSold
         );
         vm.prank(owner);
         raise.pause();
         vm.prank(owner);
-        raise.setMaxAmountOfTokenToBeSold(minAmountPerBuyer);
-        assertTrue(raise.maxAmountOfTokenToBeSold() == minAmountPerBuyer);
+        vm.expectEmit(true, true, true, true, address(raise));
+        emit MaxAmountOfTokenToBeSoldChanged(newMaxAmountOfTokenToBeSold);
+        raise.setMaxAmountOfTokenToBeSold(newMaxAmountOfTokenToBeSold);
+        assertTrue(
+            raise.maxAmountOfTokenToBeSold() == newMaxAmountOfTokenToBeSold
+        );
         vm.prank(owner);
         vm.expectRevert(
             "_maxAmountOfTokenToBeSold needs to be larger than zero"
