@@ -18,7 +18,7 @@ contract PersonalInviteFactoryTest is Test {
     Token token;
     Token currency; // todo: add different ERC20 token as currency!
 
-    uint256 MAX_INT = 115792089237316195423570985008687907853269984665640564039457584007913129639935;
+    uint256 MAX_INT = type(uint256).max;
 
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant buyer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
