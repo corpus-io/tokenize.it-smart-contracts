@@ -7,6 +7,10 @@ import "../contracts/FeeSettings.sol";
 import "./resources/WrongFeeSettings.sol";
 
 contract tokenTest is Test {
+    event AllowListChanged(AllowList indexed newAllowList);
+    event NewFeeSettingsSuggested(IFeeSettingsV1 indexed _feeSettings);
+    event FeeSettingsChanged(IFeeSettingsV1 indexed newFeeSettings);
+
     Token token;
     AllowList allowList;
     FeeSettings feeSettings;
@@ -66,6 +70,22 @@ contract tokenTest is Test {
         vm.stopPrank();
     }
 
+    function testUpdateAllowList() public {
+        AllowList newAllowList = new AllowList(); // deploy new AllowList
+        assertTrue(token.allowList() != newAllowList);
+        vm.prank(admin);
+        vm.expectEmit(true, true, true, true, address(token));
+        emit AllowListChanged(newAllowList);
+        token.setAllowList(newAllowList);
+        assertTrue(token.allowList() == newAllowList);
+    }
+
+    function testUpdateAllowList0() public {
+        vm.expectRevert("AllowList must not be zero address");
+        vm.prank(admin);
+        token.setAllowList(AllowList(address(0)));
+    }
+
     function testSuggestNewFeeSettingsWrongCaller(address wrongUpdater) public {
         vm.assume(wrongUpdater != feeSettings.owner());
         Fees memory fees = Fees(UINT256_MAX, UINT256_MAX, UINT256_MAX, 0);
@@ -101,6 +121,8 @@ contract tokenTest is Test {
         uint oldInvestmentFeeDenominator = oldFeeSettings
             .continuousFundraisingFeeDenominator();
         uint oldTokenFeeDenominator = oldFeeSettings.tokenFeeDenominator();
+        vm.expectEmit(true, true, true, true, address(token));
+        emit NewFeeSettingsSuggested(newFeeSettings);
         vm.prank(feeSettings.owner());
         token.suggestNewFeeSettings(newFeeSettings);
 
@@ -139,6 +161,8 @@ contract tokenTest is Test {
         token.suggestNewFeeSettings(newFeeSettings);
 
         // accept
+        vm.expectEmit(true, true, true, true, address(token));
+        emit FeeSettingsChanged(newFeeSettings);
         vm.prank(admin);
         token.acceptNewFeeSettings(newFeeSettings);
         assertTrue(
