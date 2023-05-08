@@ -22,12 +22,7 @@ import "./Token.sol";
  *      A company will create only one ContinuousFundraising contract for their token (or one for each currency if they want to accept multiple currencies).
  * @dev The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support
  */
-contract ContinuousFundraising is
-    ERC2771Context,
-    Ownable2Step,
-    Pausable,
-    ReentrancyGuard
-{
+contract ContinuousFundraising is ERC2771Context, Ownable2Step, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     /// address that receives the currency when tokens are bought
@@ -69,10 +64,7 @@ contract ContinuousFundraising is
     /// @notice Price and currency changed.
     /// @param newTokenPrice new price of a token, expressed as amount of bits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2*10^6 ).
     /// @param newCurrency new currency used to pay for the token purchase
-    event TokenPriceAndCurrencyChanged(
-        uint256 newTokenPrice,
-        IERC20 indexed newCurrency
-    );
+    event TokenPriceAndCurrencyChanged(uint256 newTokenPrice, IERC20 indexed newCurrency);
     /// @param newMaxAmountOfTokenToBeSold new total amount of tokens that can be minted through this contract, in bits (bit = smallest subunit of token)´
     event MaxAmountOfTokenToBeSoldChanged(uint256 newMaxAmountOfTokenToBeSold);
     /**
@@ -81,11 +73,7 @@ contract ContinuousFundraising is
      * @param tokenAmount Amount of tokens bought
      * @param currencyAmount Amount of currency paid
      */
-    event TokensBought(
-        address indexed buyer,
-        uint256 tokenAmount,
-        uint256 currencyAmount
-    );
+    event TokensBought(address indexed buyer, uint256 tokenAmount, uint256 currencyAmount);
 
     /**
      * @notice Sets up the ContinuousFundraising. The contract is usable immediately after deployment, but does need a minting allowance for the token.
@@ -116,28 +104,16 @@ contract ContinuousFundraising is
         maxAmountOfTokenToBeSold = _maxAmountOfTokenToBeSold;
         currency = _currency;
         token = _token;
-        require(
-            _trustedForwarder != address(0),
-            "trustedForwarder can not be zero address"
-        );
-        require(
-            _currencyReceiver != address(0),
-            "currencyReceiver can not be zero address"
-        );
-        require(
-            address(_currency) != address(0),
-            "currency can not be zero address"
-        );
+        require(_trustedForwarder != address(0), "trustedForwarder can not be zero address");
+        require(_currencyReceiver != address(0), "currencyReceiver can not be zero address");
+        require(address(_currency) != address(0), "currency can not be zero address");
         require(address(_token) != address(0), "token can not be zero address");
         require(
             _minAmountPerBuyer <= _maxAmountPerBuyer,
             "_minAmountPerBuyer needs to be smaller or equal to _maxAmountPerBuyer"
         );
         require(_tokenPrice != 0, "_tokenPrice needs to be a non-zero amount");
-        require(
-            _maxAmountOfTokenToBeSold != 0,
-            "_maxAmountOfTokenToBeSold needs to be larger than zero"
-        );
+        require(_maxAmountOfTokenToBeSold != 0, "_maxAmountOfTokenToBeSold needs to be larger than zero");
 
         // after creating the contract, it needs a minting allowance (in the token contract)
     }
@@ -147,18 +123,9 @@ contract ContinuousFundraising is
      * @param _amount amount of tokens to buy, in bits (smallest subunit of token)
      * @param _tokenReceiver address the tokens should be minted to
      */
-    function buy(
-        uint256 _amount,
-        address _tokenReceiver
-    ) external whenNotPaused nonReentrant {
-        require(
-            tokensSold + _amount <= maxAmountOfTokenToBeSold,
-            "Not enough tokens to sell left"
-        );
-        require(
-            tokensBought[_tokenReceiver] + _amount >= minAmountPerBuyer,
-            "Buyer needs to buy at least minAmount"
-        );
+    function buy(uint256 _amount, address _tokenReceiver) external whenNotPaused nonReentrant {
+        require(tokensSold + _amount <= maxAmountOfTokenToBeSold, "Not enough tokens to sell left");
+        require(tokensBought[_tokenReceiver] + _amount >= minAmountPerBuyer, "Buyer needs to buy at least minAmount");
         require(
             tokensBought[_tokenReceiver] + _amount <= maxAmountPerBuyer,
             "Total amount of bought tokens needs to be lower than or equal to maxAmount"
@@ -168,26 +135,15 @@ contract ContinuousFundraising is
         tokensBought[_tokenReceiver] += _amount;
 
         // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
-        uint256 currencyAmount = Math.ceilDiv(
-            _amount * tokenPrice,
-            10 ** token.decimals()
-        );
+        uint256 currencyAmount = Math.ceilDiv(_amount * tokenPrice, 10 ** token.decimals());
 
         IFeeSettingsV1 feeSettings = token.feeSettings();
         uint256 fee = feeSettings.continuousFundraisingFee(currencyAmount);
         if (fee != 0) {
-            currency.safeTransferFrom(
-                _msgSender(),
-                feeSettings.feeCollector(),
-                fee
-            );
+            currency.safeTransferFrom(_msgSender(), feeSettings.feeCollector(), fee);
         }
 
-        currency.safeTransferFrom(
-            _msgSender(),
-            currencyReceiver,
-            currencyAmount - fee
-        );
+        currency.safeTransferFrom(_msgSender(), currencyReceiver, currencyAmount - fee);
 
         token.mint(_tokenReceiver, _amount);
         emit TokensBought(_msgSender(), _amount, currencyAmount);
@@ -197,13 +153,8 @@ contract ContinuousFundraising is
      * @notice change the currencyReceiver to `_currencyReceiver`
      * @param _currencyReceiver new currencyReceiver
      */
-    function setCurrencyReceiver(
-        address _currencyReceiver
-    ) external onlyOwner whenPaused {
-        require(
-            _currencyReceiver != address(0),
-            "receiver can not be zero address"
-        );
+    function setCurrencyReceiver(address _currencyReceiver) external onlyOwner whenPaused {
+        require(_currencyReceiver != address(0), "receiver can not be zero address");
         currencyReceiver = _currencyReceiver;
         emit CurrencyReceiverChanged(_currencyReceiver);
         coolDownStart = block.timestamp;
@@ -213,13 +164,8 @@ contract ContinuousFundraising is
      * @notice change the minAmountPerBuyer to `_minAmountPerBuyer`
      * @param _minAmountPerBuyer new minAmountPerBuyer
      */
-    function setMinAmountPerBuyer(
-        uint256 _minAmountPerBuyer
-    ) external onlyOwner whenPaused {
-        require(
-            _minAmountPerBuyer <= maxAmountPerBuyer,
-            "_minAmount needs to be smaller or equal to maxAmount"
-        );
+    function setMinAmountPerBuyer(uint256 _minAmountPerBuyer) external onlyOwner whenPaused {
+        require(_minAmountPerBuyer <= maxAmountPerBuyer, "_minAmount needs to be smaller or equal to maxAmount");
         minAmountPerBuyer = _minAmountPerBuyer;
         emit MinAmountPerBuyerChanged(_minAmountPerBuyer);
         coolDownStart = block.timestamp;
@@ -229,13 +175,8 @@ contract ContinuousFundraising is
      * @notice change the maxAmountPerBuyer to `_maxAmountPerBuyer`
      * @param _maxAmountPerBuyer new maxAmountPerBuyer
      */
-    function setMaxAmountPerBuyer(
-        uint256 _maxAmountPerBuyer
-    ) external onlyOwner whenPaused {
-        require(
-            minAmountPerBuyer <= _maxAmountPerBuyer,
-            "_maxAmount needs to be larger or equal to minAmount"
-        );
+    function setMaxAmountPerBuyer(uint256 _maxAmountPerBuyer) external onlyOwner whenPaused {
+        require(minAmountPerBuyer <= _maxAmountPerBuyer, "_maxAmount needs to be larger or equal to minAmount");
         maxAmountPerBuyer = _maxAmountPerBuyer;
         emit MaxAmountPerBuyerChanged(_maxAmountPerBuyer);
         coolDownStart = block.timestamp;
@@ -246,10 +187,7 @@ contract ContinuousFundraising is
      * @param _currency new currency
      * @param _tokenPrice new tokenPrice
      */
-    function setCurrencyAndTokenPrice(
-        IERC20 _currency,
-        uint256 _tokenPrice
-    ) external onlyOwner whenPaused {
+    function setCurrencyAndTokenPrice(IERC20 _currency, uint256 _tokenPrice) external onlyOwner whenPaused {
         require(_tokenPrice != 0, "_tokenPrice needs to be a non-zero amount");
         tokenPrice = _tokenPrice;
         currency = _currency;
@@ -261,13 +199,8 @@ contract ContinuousFundraising is
      * @notice change the maxAmountOfTokenToBeSold to `_maxAmountOfTokenToBeSold`
      * @param _maxAmountOfTokenToBeSold new maxAmountOfTokenToBeSold
      */
-    function setMaxAmountOfTokenToBeSold(
-        uint256 _maxAmountOfTokenToBeSold
-    ) external onlyOwner whenPaused {
-        require(
-            _maxAmountOfTokenToBeSold != 0,
-            "_maxAmountOfTokenToBeSold needs to be larger than zero"
-        );
+    function setMaxAmountOfTokenToBeSold(uint256 _maxAmountOfTokenToBeSold) external onlyOwner whenPaused {
+        require(_maxAmountOfTokenToBeSold != 0, "_maxAmountOfTokenToBeSold needs to be larger than zero");
         maxAmountOfTokenToBeSold = _maxAmountOfTokenToBeSold;
         emit MaxAmountOfTokenToBeSoldChanged(_maxAmountOfTokenToBeSold);
         coolDownStart = block.timestamp;
@@ -285,34 +218,21 @@ contract ContinuousFundraising is
      * @notice unpause the contract
      */
     function unpause() external onlyOwner {
-        require(
-            block.timestamp > coolDownStart + delay,
-            "There needs to be at minimum one day to change parameters"
-        );
+        require(block.timestamp > coolDownStart + delay, "There needs to be at minimum one day to change parameters");
         _unpause();
     }
 
     /**
      * @dev both Ownable and ERC2771Context have a _msgSender() function, so we need to override and select which one to use.
      */
-    function _msgSender()
-        internal
-        view
-        override(Context, ERC2771Context)
-        returns (address)
-    {
+    function _msgSender() internal view override(Context, ERC2771Context) returns (address) {
         return ERC2771Context._msgSender();
     }
 
     /**
      * @dev both Ownable and ERC2771Context have a _msgData() function, so we need to override and select which one to use.
      */
-    function _msgData()
-        internal
-        view
-        override(Context, ERC2771Context)
-        returns (bytes calldata)
-    {
+    function _msgData() internal view override(Context, ERC2771Context) returns (bytes calldata) {
         return ERC2771Context._msgData();
     }
 }

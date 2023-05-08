@@ -23,21 +23,13 @@ contract MaliciousPaymentToken is ERC20 {
     /**
     @notice set which contract to exploit
      */
-    function setExploitTarget(
-        address _exploitTarget,
-        uint256 _timesToReenter,
-        uint256 _amountToReenterWith
-    ) public {
+    function setExploitTarget(address _exploitTarget, uint256 _timesToReenter, uint256 _amountToReenterWith) public {
         exploitTarget = ContinuousFundraising(_exploitTarget);
         timesToReenter = _timesToReenter;
         amountToReenterWith = _amountToReenterWith;
     }
 
-    function transferFrom(
-        address sender,
-        address recipient,
-        uint256 amount
-    ) public override returns (bool) {
+    function transferFrom(address sender, address recipient, uint256 amount) public override returns (bool) {
         if (reentrancyCount == 0) {
             // store original values
             originalSender = sender;

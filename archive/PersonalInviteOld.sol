@@ -70,15 +70,9 @@ contract PersonalInviteOld is ERC2771Context, Ownable, ReentrancyGuard {
 
         require(_buyer != address(0), "_buyer can not be zero address");
         require(_receiver != address(0), "_receiver can not be zero address");
-        require(
-            _minAmount <= _maxAmount,
-            "_minAmount needs to be smaller or equal to _maxAmount"
-        );
+        require(_minAmount <= _maxAmount, "_minAmount needs to be smaller or equal to _maxAmount");
         require(_tokenPrice != 0, "_tokenPrice can not be zero");
-        require(
-            _expiration > block.timestamp,
-            "Expiration date needs to be in the future"
-        );
+        require(_expiration > block.timestamp, "Expiration date needs to be in the future");
 
         // after creating the contract, it needs to be set up as minter
     }
@@ -88,10 +82,7 @@ contract PersonalInviteOld is ERC2771Context, Ownable, ReentrancyGuard {
     @param _tokenAmount Amount of tokens to buy, bits (bit = smallest subunit of token). [tok_bits]
      */
     function deal(uint _tokenAmount) public nonReentrant {
-        require(
-            buyer == _msgSender(),
-            "Only the personally invited buyer can take this deal"
-        );
+        require(buyer == _msgSender(), "Only the personally invited buyer can take this deal");
         require(
             minAmount <= _tokenAmount && _tokenAmount <= maxAmount,
             "Amount needs to be inbetween minAmount and maxAmount"
@@ -112,11 +103,7 @@ contract PersonalInviteOld is ERC2771Context, Ownable, ReentrancyGuard {
             (_tokenAmount * tokenPrice) % (10 ** token.decimals()) == 0,
             "Amount * tokenprice needs to be a multiple of 10**token.decimals()"
         );
-        currency.safeTransferFrom(
-            buyer,
-            receiver,
-            (_tokenAmount * tokenPrice) / (10 ** token.decimals())
-        );
+        currency.safeTransferFrom(buyer, receiver, (_tokenAmount * tokenPrice) / (10 ** token.decimals()));
         require(token.mint(buyer, _tokenAmount), "Minting new tokens failed");
 
         emit Deal(buyer, _tokenAmount, tokenPrice, currency, token);
@@ -138,24 +125,14 @@ contract PersonalInviteOld is ERC2771Context, Ownable, ReentrancyGuard {
     /**
      * @dev both Ownable and ERC2771Context have a _msgSender() function, so we need to override and select which one to use.
      */
-    function _msgSender()
-        internal
-        view
-        override(Context, ERC2771Context)
-        returns (address)
-    {
+    function _msgSender() internal view override(Context, ERC2771Context) returns (address) {
         return ERC2771Context._msgSender();
     }
 
     /**
      * @dev both Ownable and ERC2771Context have a _msgData() function, so we need to override and select which one to use.
      */
-    function _msgData()
-        internal
-        view
-        override(Context, ERC2771Context)
-        returns (bytes calldata)
-    {
+    function _msgData() internal view override(Context, ERC2771Context) returns (bytes calldata) {
         return ERC2771Context._msgData();
     }
 

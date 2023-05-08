@@ -42,15 +42,10 @@ contract DeployPlatform is Script {
 
         console.log("Deploying PersonalInviteFactory contract...");
         PersonalInviteFactory personalInviteFactory = new PersonalInviteFactory();
-        console.log(
-            "PersonalInviteFactory deployed at: ",
-            address(personalInviteFactory)
-        );
+        console.log("PersonalInviteFactory deployed at: ", address(personalInviteFactory));
 
         vm.stopBroadcast();
 
-        console.log(
-            "Don't forget to check and finalize ownership transfers for all contracts!"
-        );
+        console.log("Don't forget to check and finalize ownership transfers for all contracts!");
     }
 }
