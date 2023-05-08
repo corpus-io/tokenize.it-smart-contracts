@@ -8,14 +8,9 @@ import "../../contracts/FeeSettings.sol";
     fake currency to test the main contract with
 */
 contract FeeSettingsFailERC165Check0 is FeeSettings {
-    constructor(
-        Fees memory _fees,
-        address _feeCollector
-    ) FeeSettings(_fees, _feeCollector) {}
+    constructor(Fees memory _fees, address _feeCollector) FeeSettings(_fees, _feeCollector) {}
 
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view override returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view override returns (bool) {
         if (interfaceId == 0x01ffc9a7) {
             return false; // signal that we don't support ERC165
         }
@@ -25,14 +20,9 @@ contract FeeSettingsFailERC165Check0 is FeeSettings {
 }
 
 contract FeeSettingsFailERC165Check1 is FeeSettings {
-    constructor(
-        Fees memory _fees,
-        address _feeCollector
-    ) FeeSettings(_fees, _feeCollector) {}
+    constructor(Fees memory _fees, address _feeCollector) FeeSettings(_fees, _feeCollector) {}
 
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view override returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view override returns (bool) {
         if (interfaceId == 0x01ffc9a7) {
             return true; // signal that we support ERC165
         } else if (interfaceId == 0xffffffff) {
@@ -43,14 +33,9 @@ contract FeeSettingsFailERC165Check1 is FeeSettings {
 }
 
 contract FeeSettingsFailIFeeSettingsV1Check is FeeSettings {
-    constructor(
-        Fees memory _fees,
-        address _feeCollector
-    ) FeeSettings(_fees, _feeCollector) {}
+    constructor(Fees memory _fees, address _feeCollector) FeeSettings(_fees, _feeCollector) {}
 
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view override returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view override returns (bool) {
         if (interfaceId == 0x01ffc9a7) {
             return true; // signal that we support ERC165
         } else if (interfaceId == 0xffffffff) {

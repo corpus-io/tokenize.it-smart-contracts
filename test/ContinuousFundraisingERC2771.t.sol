@@ -32,27 +32,21 @@ contract ContinuousFundraisingTest is Test {
         uint256 validUntil;
     }
 
-    address public constant trustedForwarder =
-        0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
+    address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
-    address public constant mintAllower =
-        0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
+    address public constant mintAllower = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
     address public constant minter = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
     address public constant owner = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
-    address public constant receiver =
-        0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
-    address public constant paymentTokenProvider =
-        0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
+    address public constant receiver = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
+    address public constant paymentTokenProvider = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
     address public constant sender = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
 
     // DO NOT USE IN PRODUCTION! Key was generated online for testing only.
-    uint256 public constant buyerPrivateKey =
-        0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
+    uint256 public constant buyerPrivateKey = 0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
     address public buyer; // = 0x38d6703d37988C644D6d31551e9af6dcB762E618;
 
     uint8 public constant paymentTokenDecimals = 6;
-    uint256 public constant paymentTokenAmount =
-        1000 * 10 ** paymentTokenDecimals;
+    uint256 public constant paymentTokenAmount = 1000 * 10 ** paymentTokenDecimals;
 
     uint256 public constant price = 7 * 10 ** paymentTokenDecimals; // 7 payment tokens per token
 
@@ -68,33 +62,17 @@ contract ContinuousFundraisingTest is Test {
 
     function setUp() public {
         list = new AllowList();
-        Fees memory fees = Fees(
-            tokenFeeDenominator,
-            paymentTokenFeeDenominator,
-            paymentTokenFeeDenominator,
-            0
-        );
+        Fees memory fees = Fees(tokenFeeDenominator, paymentTokenFeeDenominator, paymentTokenFeeDenominator, 0);
         feeSettings = new FeeSettings(fees, admin);
 
-        token = new Token(
-            trustedForwarder,
-            feeSettings,
-            admin,
-            list,
-            0x0,
-            "TESTTOKEN",
-            "TEST"
-        );
+        token = new Token(trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST");
         ERC2771helper = new ERC2771Helper();
 
         buyer = vm.addr(buyerPrivateKey);
 
         // set up currency
         vm.prank(paymentTokenProvider);
-        paymentToken = new FakePaymentToken(
-            paymentTokenAmount,
-            paymentTokenDecimals
-        ); // 1000 tokens with 6 decimals
+        paymentToken = new FakePaymentToken(paymentTokenAmount, paymentTokenDecimals); // 1000 tokens with 6 decimals
         // transfer currency to buyer
         vm.prank(paymentTokenProvider);
         paymentToken.transfer(buyer, paymentTokenAmount);
@@ -123,10 +101,7 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.increaseMintingAllowance(
-            address(raise),
-            maxAmountOfTokenToBeSold
-        );
+        token.increaseMintingAllowance(address(raise), maxAmountOfTokenToBeSold);
 
         // give raise contract allowance
         vm.prank(buyer);
@@ -140,11 +115,7 @@ contract ContinuousFundraisingTest is Test {
             Strings.toHexString(uint256(uint160(address(raise))), 20),
             "1"
         );
-        bytes32 requestType = ERC2771helper.registerRequestType(
-            forwarder,
-            "buy",
-            "address buyer,uint256 amount"
-        );
+        bytes32 requestType = ERC2771helper.registerRequestType(forwarder, "buy", "address buyer,uint256 amount");
 
         /*
             create data and signature for execution 
@@ -157,11 +128,7 @@ contract ContinuousFundraisingTest is Test {
         // todo: get nonce from forwarder
 
         // build request
-        bytes memory payload = abi.encodeWithSelector(
-            raise.buy.selector,
-            tokenBuyAmount,
-            buyer
-        );
+        bytes memory payload = abi.encodeWithSelector(raise.buy.selector, tokenBuyAmount, buyer);
 
         IForwarder.ForwardRequest memory request = IForwarder.ForwardRequest({
             from: buyer,
@@ -180,9 +147,7 @@ contract ContinuousFundraisingTest is Test {
             abi.encodePacked(
                 "\x19\x01",
                 domainSeparator,
-                keccak256(
-                    forwarder._getEncoded(request, requestType, suffixData)
-                )
+                keccak256(forwarder._getEncoded(request, requestType, suffixData))
             )
         );
 
@@ -191,10 +156,7 @@ contract ContinuousFundraisingTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(buyerPrivateKey, digest);
         bytes memory signature = abi.encodePacked(r, s, v); // https://docs.openzeppelin.com/contracts/2.x/utilities
 
-        require(
-            digest.recover(signature) == request.from,
-            "FWD: signature mismatch"
-        );
+        require(digest.recover(signature) == request.from, "FWD: signature mismatch");
 
         // // encode buy call and sign it https://book.getfoundry.sh/cheatcodes/sign
         // bytes memory buyCallData = abi.encodeWithSignature("buy(uint256)", tokenBuyAmount);
@@ -218,13 +180,7 @@ contract ContinuousFundraisingTest is Test {
 
         // send call through forwarder contract
         uint256 gasBefore = gasleft();
-        forwarder.execute(
-            request,
-            domainSeparator,
-            requestType,
-            suffixData,
-            signature
-        );
+        forwarder.execute(request, domainSeparator, requestType, suffixData, signature);
         // vm.prank(buyer);
         // raise.buy(tokenBuyAmount);
         console.log("Gas used: ", gasBefore - gasleft());
@@ -232,10 +188,7 @@ contract ContinuousFundraisingTest is Test {
         // investor receives as many tokens as they paid for
         assertTrue(token.balanceOf(buyer) == tokenBuyAmount);
         // but fee collector receives additional tokens
-        assertTrue(
-            token.balanceOf(feeSettings.feeCollector()) ==
-                tokenBuyAmount / tokenFeeDenominator
-        );
+        assertTrue(token.balanceOf(feeSettings.feeCollector()) == tokenBuyAmount / tokenFeeDenominator);
 
         // receiver receives payment tokens after fee has been deducted
         assertEq(
@@ -243,10 +196,7 @@ contract ContinuousFundraisingTest is Test {
             costInPaymentToken - costInPaymentToken / paymentTokenFeeDenominator
         );
         // fee collector receives fee in payment tokens
-        assertEq(
-            paymentToken.balanceOf(feeSettings.feeCollector()),
-            costInPaymentToken / paymentTokenFeeDenominator
-        );
+        assertEq(paymentToken.balanceOf(feeSettings.feeCollector()), costInPaymentToken / paymentTokenFeeDenominator);
 
         assertEq(paymentToken.balanceOf(address(raise)), 0);
         assertEq(token.balanceOf(address(raise)), 0);
@@ -256,23 +206,14 @@ contract ContinuousFundraisingTest is Test {
         assertTrue(raise.tokensBought(buyer) == tokenBuyAmount);
         //assertTrue(vm.getNonce(buyer) == 0);
 
-        console.log(
-            "paymentToken balance of receiver after: ",
-            paymentToken.balanceOf(receiver)
-        );
+        console.log("paymentToken balance of receiver after: ", paymentToken.balanceOf(receiver));
         console.log("Token balance of buyer after: ", token.balanceOf(buyer));
 
         /*
             try to execute request again (must fail)
         */
         vm.expectRevert("FWD: nonce mismatch");
-        forwarder.execute(
-            request,
-            domainSeparator,
-            requestType,
-            suffixData,
-            signature
-        );
+        forwarder.execute(request, domainSeparator, requestType, suffixData, signature);
     }
 
     function testBuyWithLocalForwarder() public {
@@ -281,8 +222,6 @@ contract ContinuousFundraisingTest is Test {
 
     function testBuyWithMainnetGSNForwarder() public {
         // uses deployed forwarder on mainnet with fork. https://docs-v2.opengsn.org/networks/ethereum/mainnet.html
-        buyWithERC2771(
-            Forwarder(payable(0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA))
-        );
+        buyWithERC2771(Forwarder(payable(0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA)));
     }
 }

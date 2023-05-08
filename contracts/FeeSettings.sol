@@ -54,8 +54,7 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV1 {
     constructor(Fees memory _fees, address _feeCollector) {
         checkFeeLimits(_fees);
         tokenFeeDenominator = _fees.tokenFeeDenominator;
-        continuousFundraisingFeeDenominator = _fees
-            .continuousFundraisingFeeDenominator;
+        continuousFundraisingFeeDenominator = _fees.continuousFundraisingFeeDenominator;
         personalInviteFeeDenominator = _fees.personalInviteFeeDenominator;
         require(_feeCollector != address(0), "Fee collector cannot be 0x0");
         feeCollector = _feeCollector;
@@ -72,14 +71,10 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV1 {
         // if at least one fee increases, enforce minimum delay
         if (
             _fees.tokenFeeDenominator < tokenFeeDenominator ||
-            _fees.continuousFundraisingFeeDenominator <
-            continuousFundraisingFeeDenominator ||
+            _fees.continuousFundraisingFeeDenominator < continuousFundraisingFeeDenominator ||
             _fees.personalInviteFeeDenominator < personalInviteFeeDenominator
         ) {
-            require(
-                _fees.time > block.timestamp + 12 weeks,
-                "Fee change must be at least 12 weeks in the future"
-            );
+            require(_fees.time > block.timestamp + 12 weeks, "Fee change must be at least 12 weeks in the future");
         }
         proposedFees = _fees;
         emit ChangeProposed(_fees);
@@ -89,20 +84,11 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV1 {
      * @notice Executes a fee change that has been planned before
      */
     function executeFeeChange() external onlyOwner {
-        require(
-            block.timestamp >= proposedFees.time,
-            "Fee change must be executed after the change time"
-        );
+        require(block.timestamp >= proposedFees.time, "Fee change must be executed after the change time");
         tokenFeeDenominator = proposedFees.tokenFeeDenominator;
-        continuousFundraisingFeeDenominator = proposedFees
-            .continuousFundraisingFeeDenominator;
-        personalInviteFeeDenominator = proposedFees
-            .personalInviteFeeDenominator;
-        emit SetFeeDenominators(
-            tokenFeeDenominator,
-            continuousFundraisingFeeDenominator,
-            personalInviteFeeDenominator
-        );
+        continuousFundraisingFeeDenominator = proposedFees.continuousFundraisingFeeDenominator;
+        personalInviteFeeDenominator = proposedFees.personalInviteFeeDenominator;
+        emit SetFeeDenominators(tokenFeeDenominator, continuousFundraisingFeeDenominator, personalInviteFeeDenominator);
         delete proposedFees;
     }
 
@@ -121,18 +107,12 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV1 {
      * @param _fees The fees to check
      */
     function checkFeeLimits(Fees memory _fees) internal pure {
-        require(
-            _fees.tokenFeeDenominator >= 20,
-            "Fee must be equal or less 5% (denominator must be >= 20)"
-        );
+        require(_fees.tokenFeeDenominator >= 20, "Fee must be equal or less 5% (denominator must be >= 20)");
         require(
             _fees.continuousFundraisingFeeDenominator >= 20,
             "Fee must be equal or less 5% (denominator must be >= 20)"
         );
-        require(
-            _fees.personalInviteFeeDenominator >= 20,
-            "Fee must be equal or less 5% (denominator must be >= 20)"
-        );
+        require(_fees.personalInviteFeeDenominator >= 20, "Fee must be equal or less 5% (denominator must be >= 20)");
     }
 
     /**
@@ -149,9 +129,7 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV1 {
      * @param _currencyAmount The amount of currency to calculate the fee for
      * @return The fee
      */
-    function continuousFundraisingFee(
-        uint256 _currencyAmount
-    ) external view returns (uint256) {
+    function continuousFundraisingFee(uint256 _currencyAmount) external view returns (uint256) {
         return _currencyAmount / continuousFundraisingFeeDenominator;
     }
 
@@ -161,9 +139,7 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV1 {
      * @param _currencyAmount The amount of currency to calculate the fee for
      * @return The fee
      */
-    function personalInviteFee(
-        uint256 _currencyAmount
-    ) external view returns (uint256) {
+    function personalInviteFee(uint256 _currencyAmount) external view returns (uint256) {
         return _currencyAmount / personalInviteFeeDenominator;
     }
 
@@ -171,12 +147,7 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV1 {
      * @dev Specify where the implementation of owner() is located
      * @return The owner of the contract
      */
-    function owner()
-        public
-        view
-        override(Ownable, IFeeSettingsV1)
-        returns (address)
-    {
+    function owner() public view override(Ownable, IFeeSettingsV1) returns (address) {
         return Ownable.owner();
     }
 
@@ -185,9 +156,7 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV1 {
      * @dev See https://eips.ethereum.org/EIPS/eip-165
      * @return `true` for supported interfaces, otherwise `false`
      */
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view virtual override(ERC165, IFeeSettingsV1) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, IFeeSettingsV1) returns (bool) {
         return
             interfaceId == type(IFeeSettingsV1).interfaceId || // we implement IFeeSettingsV1
             ERC165.supportsInterface(interfaceId); // default implementation that enables further querying
