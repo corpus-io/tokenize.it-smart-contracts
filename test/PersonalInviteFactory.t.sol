@@ -88,8 +88,8 @@ contract PersonalInviteFactoryTest is Test {
         );
     }
 
-    function testDeployContract() public {
-        uint256 rawSalt = 0;
+    function testDeployContract(uint256 rawSalt) public {
+        //uint256 rawSalt = 0;
         bytes32 salt = bytes32(rawSalt);
 
         //bytes memory creationCode = type(PersonalInvite).creationCode;
