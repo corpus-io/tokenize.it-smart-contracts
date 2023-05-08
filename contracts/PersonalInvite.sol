@@ -69,51 +69,24 @@ contract PersonalInvite {
         IERC20 _currency,
         Token _token
     ) {
-        require(
-            _currencyPayer != address(0),
-            "_currencyPayer can not be zero address"
-        );
-        require(
-            _tokenReceiver != address(0),
-            "_tokenReceiver can not be zero address"
-        );
-        require(
-            _currencyReceiver != address(0),
-            "_currencyReceiver can not be zero address"
-        );
+        require(_currencyPayer != address(0), "_currencyPayer can not be zero address");
+        require(_tokenReceiver != address(0), "_tokenReceiver can not be zero address");
+        require(_currencyReceiver != address(0), "_currencyReceiver can not be zero address");
         require(_tokenPrice != 0, "_tokenPrice can not be zero");
         require(block.timestamp <= _expiration, "Deal expired");
 
         // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
-        uint256 currencyAmount = Math.ceilDiv(
-            _tokenAmount * _tokenPrice,
-            10 ** _token.decimals()
-        );
+        uint256 currencyAmount = Math.ceilDiv(_tokenAmount * _tokenPrice, 10 ** _token.decimals());
 
         IFeeSettingsV1 feeSettings = _token.feeSettings();
         uint256 fee = feeSettings.personalInviteFee(currencyAmount);
         if (fee != 0) {
-            _currency.safeTransferFrom(
-                _currencyPayer,
-                feeSettings.feeCollector(),
-                fee
-            );
+            _currency.safeTransferFrom(_currencyPayer, feeSettings.feeCollector(), fee);
         }
-        _currency.safeTransferFrom(
-            _currencyPayer,
-            _currencyReceiver,
-            (currencyAmount - fee)
-        );
+        _currency.safeTransferFrom(_currencyPayer, _currencyReceiver, (currencyAmount - fee));
 
         _token.mint(_tokenReceiver, _tokenAmount);
 
-        emit Deal(
-            _currencyPayer,
-            _tokenReceiver,
-            _tokenAmount,
-            _tokenPrice,
-            _currency,
-            _token
-        );
+        emit Deal(_currencyPayer, _tokenReceiver, _tokenAmount, _tokenPrice, _currency, _token);
     }
 }

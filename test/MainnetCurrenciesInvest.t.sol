@@ -28,18 +28,14 @@ contract MainnetCurrencies is Test {
 
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant buyer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
-    address public constant mintAllower =
-        0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
+    address public constant mintAllower = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
     address public constant minter = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
     address public constant owner = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
-    address public constant receiver =
-        0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
-    address public constant paymentTokenProvider =
-        0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
+    address public constant receiver = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
+    address public constant paymentTokenProvider = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
 
     // use opengsn forwarder https://etherscan.io/address/0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA
-    address public constant trustedForwarder =
-        0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA;
+    address public constant trustedForwarder = 0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA;
 
     uint256 public constant maxAmountOfTokenToBeSold = 20 * 10 ** 18; // 20 token
     uint256 public constant maxAmountPerBuyer = maxAmountOfTokenToBeSold / 2; // 10 token
@@ -66,15 +62,7 @@ contract MainnetCurrencies is Test {
         Fees memory fees = Fees(100, 100, 100, 0);
         feeSettings = new FeeSettings(fees, admin);
 
-        token = new Token(
-            trustedForwarder,
-            feeSettings,
-            admin,
-            list,
-            0x0,
-            "TESTTOKEN",
-            "TEST"
-        );
+        token = new Token(trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST");
         factory = new PersonalInviteFactory();
         currencyCost = (amountOfTokenToBuy * price) / 10 ** token.decimals();
         currencyAmount = currencyCost * 2;
@@ -101,8 +89,7 @@ contract MainnetCurrencies is Test {
         //uint _decimals = _currency.decimals(); // can't get decimals from IERC20
         //uint _price = 7 * 10**_decimals; // 7 payment tokens per token
         uint256 _price = 7 * 10 ** 18;
-        uint256 _currencyCost = (amountOfTokenToBuy * _price) /
-            10 ** token.decimals();
+        uint256 _currencyCost = (amountOfTokenToBuy * _price) / 10 ** token.decimals();
         uint256 _currencyAmount = _currencyCost * 2;
 
         // set up fundraise with _currency
@@ -123,10 +110,7 @@ contract MainnetCurrencies is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.increaseMintingAllowance(
-            address(_raise),
-            maxAmountOfTokenToBeSold
-        );
+        token.increaseMintingAllowance(address(_raise), maxAmountOfTokenToBeSold);
 
         // give the buyer funds
         //console.log("buyer's balance: ", _currency.balanceOf(buyer));
@@ -148,43 +132,26 @@ contract MainnetCurrencies is Test {
         _raise.buy(maxAmountPerBuyer, buyer);
 
         // check buyer has tokens and receiver has _currency afterwards
-        assertEq(
-            token.balanceOf(buyer),
-            amountOfTokenToBuy,
-            "buyer has tokens"
-        );
+        assertEq(token.balanceOf(buyer), amountOfTokenToBuy, "buyer has tokens");
         assertEq(token.balanceOf(receiver), 0, "receiver has no tokens");
         assertEq(
             _currency.balanceOf(receiver),
             _currencyCost -
                 _currencyCost /
-                FeeSettings(address(token.feeSettings()))
-                    .continuousFundraisingFeeDenominator(),
+                FeeSettings(address(token.feeSettings())).continuousFundraisingFeeDenominator(),
             "receiver should have received currency"
         );
         assertEq(
-            _currency.balanceOf(
-                FeeSettings(address(token.feeSettings())).feeCollector()
-            ),
-            _currencyCost /
-                FeeSettings(address(token.feeSettings()))
-                    .continuousFundraisingFeeDenominator(),
+            _currency.balanceOf(FeeSettings(address(token.feeSettings())).feeCollector()),
+            _currencyCost / FeeSettings(address(token.feeSettings())).continuousFundraisingFeeDenominator(),
             "fee receiver should have received currency"
         );
         assertEq(
-            token.balanceOf(
-                FeeSettings(address(token.feeSettings())).feeCollector()
-            ),
-            amountOfTokenToBuy /
-                FeeSettings(address(token.feeSettings()))
-                    .continuousFundraisingFeeDenominator(),
+            token.balanceOf(FeeSettings(address(token.feeSettings())).feeCollector()),
+            amountOfTokenToBuy / FeeSettings(address(token.feeSettings())).continuousFundraisingFeeDenominator(),
             "fee receiver should have received tokens"
         );
-        assertEq(
-            _currency.balanceOf(buyer),
-            _currencyAmount - _currencyCost,
-            "buyer should have paid currency"
-        );
+        assertEq(_currency.balanceOf(buyer), _currencyAmount - _currencyCost, "buyer should have paid currency");
     }
 
     function testContinuousFundraisingWithMainnetUSDC() public {
@@ -252,22 +219,13 @@ contract MainnetCurrencies is Test {
         );
 
         // check situation after deployment
-        assertEq(
-            inviteAddress,
-            expectedAddress,
-            "deployed contract address is not correct"
-        );
+        assertEq(inviteAddress, expectedAddress, "deployed contract address is not correct");
         // check buyer has tokens and receiver has _currency afterwards
-        assertEq(
-            token.balanceOf(buyer),
-            amountOfTokenToBuy,
-            "buyer has tokens"
-        );
+        assertEq(token.balanceOf(buyer), amountOfTokenToBuy, "buyer has tokens");
         assertEq(token.balanceOf(receiver), 0, "receiver has no tokens");
         assertEq(
             _currency.balanceOf(receiver),
-            currencyCost -
-                token.feeSettings().continuousFundraisingFee(currencyCost),
+            currencyCost - token.feeSettings().continuousFundraisingFee(currencyCost),
             "receiver should have received currency"
         );
         assertEq(
@@ -276,19 +234,11 @@ contract MainnetCurrencies is Test {
             "fee receiver should have received currency"
         );
         assertEq(
-            token.balanceOf(
-                FeeSettings(address(token.feeSettings())).feeCollector()
-            ),
-            FeeSettings(address(token.feeSettings())).tokenFee(
-                amountOfTokenToBuy
-            ),
+            token.balanceOf(FeeSettings(address(token.feeSettings())).feeCollector()),
+            FeeSettings(address(token.feeSettings())).tokenFee(amountOfTokenToBuy),
             "fee receiver should have received tokens"
         );
-        assertEq(
-            _currency.balanceOf(buyer),
-            currencyAmount - currencyCost,
-            "buyer should have paid currency"
-        );
+        assertEq(_currency.balanceOf(buyer), currencyAmount - currencyCost, "buyer should have paid currency");
 
         // log buyers token balance
         console.log("buyer's token balance: ", token.balanceOf(buyer));

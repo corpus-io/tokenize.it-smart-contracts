@@ -29,8 +29,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     /// @notice The role that has the ability to burn tokens from anywhere. Usage is planned for legal purposes and error recovery.
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
     /// @notice The role that has the ability to grant transfer rights to other addresses
-    bytes32 public constant TRANSFERERADMIN_ROLE =
-        keccak256("TRANSFERERADMIN_ROLE");
+    bytes32 public constant TRANSFERERADMIN_ROLE = keccak256("TRANSFERERADMIN_ROLE");
     /// @notice Addresses with this role do not need to satisfy any requirements to send or receive tokens
     bytes32 public constant TRANSFERER_ROLE = keccak256("TRANSFERER_ROLE");
     /// @notice The role that has the ability to pause the token. Transferring, burning and minting will not be possible while the contract is paused.
@@ -110,11 +109,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         uint256 _requirements,
         string memory _name,
         string memory _symbol
-    )
-        ERC2771Context(_trustedForwarder)
-        ERC20Permit(_name)
-        ERC20(_name, _symbol)
-    {
+    ) ERC2771Context(_trustedForwarder) ERC20Permit(_name) ERC20(_name, _symbol) {
         // Grant admin roles
         _grantRole(DEFAULT_ADMIN_ROLE, _admin); // except for the Transferer role, the _admin is the roles admin for all other roles
         _setRoleAdmin(TRANSFERER_ROLE, TRANSFERERADMIN_ROLE);
@@ -131,10 +126,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         feeSettings = _feeSettings;
 
         // set up allowList
-        require(
-            address(_allowList) != address(0),
-            "AllowList must not be zero address"
-        );
+        require(address(_allowList) != address(0), "AllowList must not be zero address");
         allowList = _allowList;
 
         // set requirements (can be 0 to allow everyone to send and receive tokens)
@@ -146,13 +138,8 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
      * @dev An interface check is not necessary because AllowList can not brick the token like FeeSettings could.
      * @param _allowList new AllowList contract
      */
-    function setAllowList(
-        AllowList _allowList
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(
-            address(_allowList) != address(0),
-            "AllowList must not be zero address"
-        );
+    function setAllowList(AllowList _allowList) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(address(_allowList) != address(0), "AllowList must not be zero address");
         allowList = _allowList;
         emit AllowListChanged(_allowList);
     }
@@ -161,9 +148,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
      * @notice Change the requirements an address has to meet for sending or receiving tokens to `_requirements`.
      * @param _requirements requirements an address has to meet for sending or receiving tokens
      */
-    function setRequirements(
-        uint256 _requirements
-    ) external onlyRole(REQUIREMENT_ROLE) {
+    function setRequirements(uint256 _requirements) external onlyRole(REQUIREMENT_ROLE) {
         requirements = _requirements;
         emit RequirementsChanged(_requirements);
     }
@@ -176,10 +161,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
      * @param _feeSettings the new feeSettings contract
      */
     function suggestNewFeeSettings(IFeeSettingsV1 _feeSettings) external {
-        require(
-            _msgSender() == feeSettings.owner(),
-            "Only fee settings owner can suggest fee settings update"
-        );
+        require(_msgSender() == feeSettings.owner(), "Only fee settings owner can suggest fee settings update");
         _checkIfFeeSettingsImplementsInterface(_feeSettings);
         suggestedFeeSettings = _feeSettings;
         emit NewFeeSettingsSuggested(_feeSettings);
@@ -192,17 +174,12 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
      *      Checking if the address implements the interface also prevents the 0 address from being accepted.
      * @param _feeSettings the new feeSettings contract
      */
-    function acceptNewFeeSettings(
-        IFeeSettingsV1 _feeSettings
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function acceptNewFeeSettings(IFeeSettingsV1 _feeSettings) external onlyRole(DEFAULT_ADMIN_ROLE) {
         // after deployment, suggestedFeeSettings is 0x0. Therefore, this check is necessary, otherwise the admin could accept 0x0 as new feeSettings.
         // Checking that the suggestedFeeSettings is not 0x0 would work, too, but this check is used in other places, too.
         _checkIfFeeSettingsImplementsInterface(_feeSettings);
 
-        require(
-            _feeSettings == suggestedFeeSettings,
-            "Only suggested fee settings can be accepted"
-        );
+        require(_feeSettings == suggestedFeeSettings, "Only suggested fee settings can be accepted");
         feeSettings = suggestedFeeSettings;
         emit FeeSettingsChanged(_feeSettings);
     }
@@ -213,10 +190,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
      * @param _minter address of the minter
      * @param _allowance how many tokens can be minted by this minter, in addition to their current allowance (excluding the tokens minted as a fee)
      */
-    function increaseMintingAllowance(
-        address _minter,
-        uint256 _allowance
-    ) external onlyRole(MINTALLOWER_ROLE) {
+    function increaseMintingAllowance(address _minter, uint256 _allowance) external onlyRole(MINTALLOWER_ROLE) {
         mintingAllowance[_minter] += _allowance;
         emit MintingAllowanceChanged(_minter, mintingAllowance[_minter]);
     }
@@ -227,10 +201,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
      * @param _minter address of the minter
      * @param _allowance how many tokens should be deducted from the current minting allowance (excluding the tokens minted as a fee)
      */
-    function decreaseMintingAllowance(
-        address _minter,
-        uint256 _allowance
-    ) external onlyRole(MINTALLOWER_ROLE) {
+    function decreaseMintingAllowance(address _minter, uint256 _allowance) external onlyRole(MINTALLOWER_ROLE) {
         if (mintingAllowance[_minter] > _allowance) {
             mintingAllowance[_minter] -= _allowance;
             emit MintingAllowanceChanged(_minter, mintingAllowance[_minter]);
@@ -246,10 +217,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
      * @param _amount how many tokens to mint
      */
     function mint(address _to, uint256 _amount) external {
-        require(
-            mintingAllowance[_msgSender()] >= _amount,
-            "MintingAllowance too low"
-        );
+        require(mintingAllowance[_msgSender()] >= _amount, "MintingAllowance too low");
         mintingAllowance[_msgSender()] -= _amount;
         // this check is executed here, because later minting of the buy amount can not be differentiated from minting of the fee amount
         _checkIfAllowedToTransact(_to);
@@ -267,10 +235,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
      * @param _from address that holds the tokens
      * @param _amount how many tokens to burn
      */
-    function burn(
-        address _from,
-        uint256 _amount
-    ) external onlyRole(BURNER_ROLE) {
+    function burn(address _from, uint256 _amount) external onlyRole(BURNER_ROLE) {
         _burn(_from, _amount);
     }
 
@@ -281,11 +246,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
      *    3. transfers from one address to another. The sender and recipient must be allowed to transact.
      * @dev this hook is executed before the transfer function itself
      */
-    function _beforeTokenTransfer(
-        address _from,
-        address _to,
-        uint256 _amount
-    ) internal virtual override {
+    function _beforeTokenTransfer(address _from, address _to, uint256 _amount) internal virtual override {
         super._beforeTokenTransfer(_from, _to, _amount);
         _requireNotPaused();
         if (_from != address(0) && _to != address(0)) {
@@ -308,8 +269,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
      */
     function _checkIfAllowedToTransact(address _address) internal view {
         require(
-            hasRole(TRANSFERER_ROLE, _address) ||
-                allowList.map(_address) & requirements == requirements,
+            hasRole(TRANSFERER_ROLE, _address) || allowList.map(_address) & requirements == requirements,
             "Sender or Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
         );
     }
@@ -320,19 +280,11 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
      * @dev  This check uses EIP165, see https://eips.ethereum.org/EIPS/eip-165
      * @param _feeSettings address of the FeeSettings contract
      */
-    function _checkIfFeeSettingsImplementsInterface(
-        IFeeSettingsV1 _feeSettings
-    ) internal view {
+    function _checkIfFeeSettingsImplementsInterface(IFeeSettingsV1 _feeSettings) internal view {
         // step 1: needs to return true if EIP165 is supported
-        require(
-            _feeSettings.supportsInterface(0x01ffc9a7) == true,
-            "FeeSettings must implement IFeeSettingsV1"
-        );
+        require(_feeSettings.supportsInterface(0x01ffc9a7) == true, "FeeSettings must implement IFeeSettingsV1");
         // step 2: needs to return false if EIP165 is supported
-        require(
-            _feeSettings.supportsInterface(0xffffffff) == false,
-            "FeeSettings must implement IFeeSettingsV1"
-        );
+        require(_feeSettings.supportsInterface(0xffffffff) == false, "FeeSettings must implement IFeeSettingsV1");
         // now we know EIP165 is supported
         // step 3: needs to return true if IFeeSettingsV1 is supported
         require(
@@ -352,24 +304,14 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     /**
      * @dev both ERC20Pausable and ERC2771Context have a _msgSender() function, so we need to override and select which one to use.
      */
-    function _msgSender()
-        internal
-        view
-        override(Context, ERC2771Context)
-        returns (address)
-    {
+    function _msgSender() internal view override(Context, ERC2771Context) returns (address) {
         return ERC2771Context._msgSender();
     }
 
     /**
      * @dev both ERC20Pausable and ERC2771Context have a _msgData() function, so we need to override and select which one to use.
      */
-    function _msgData()
-        internal
-        view
-        override(Context, ERC2771Context)
-        returns (bytes calldata)
-    {
+    function _msgData() internal view override(Context, ERC2771Context) returns (bytes calldata) {
         return ERC2771Context._msgData();
     }
 }

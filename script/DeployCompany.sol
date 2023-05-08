@@ -17,12 +17,8 @@ contract DeployCompany is Script {
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployerAddress = vm.addr(deployerPrivateKey);
-        AllowList allowList = AllowList(
-            0x47EE5950B9a790A292B731789a35CcCB7381667E
-        );
-        FeeSettings feeSettings = FeeSettings(
-            0x147addF9C8E4030F8104c713Dad2A1d76E6c85a1
-        );
+        AllowList allowList = AllowList(0x47EE5950B9a790A292B731789a35CcCB7381667E);
+        FeeSettings feeSettings = FeeSettings(0x147addF9C8E4030F8104c713Dad2A1d76E6c85a1);
 
         vm.startBroadcast(deployerPrivateKey);
         console.log("Deployer address: ", deployerAddress);

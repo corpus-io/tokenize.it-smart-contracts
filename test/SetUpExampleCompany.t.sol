@@ -46,35 +46,26 @@ contract CompanySetUpTest is Test {
     }
 
     // this address will be the admin of contracts controlled by the platform (AllowList, FeeSettings)
-    address public constant platformAdmin =
-        0xDFcEB49eD21aE199b33A76B726E2bea7A72127B0;
-    address public constant platformHotWallet =
-        0x5B38Da6a701c568545dCfcB03FcB875f56beddC4;
-    address public constant platformFeeCollector =
-        0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
+    address public constant platformAdmin = 0xDFcEB49eD21aE199b33A76B726E2bea7A72127B0;
+    address public constant platformHotWallet = 0x5B38Da6a701c568545dCfcB03FcB875f56beddC4;
+    address public constant platformFeeCollector = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
 
-    address public constant companyCurrencyReceiver =
-        0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
+    address public constant companyCurrencyReceiver = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
 
-    address public constant paymentTokenProvider =
-        0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
+    address public constant paymentTokenProvider = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
 
     // DO NOT USE IN PRODUCTION! Key was generated online for testing only.
-    uint256 public constant investorPrivateKey =
-        0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
+    uint256 public constant investorPrivateKey = 0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
     address public investor; // = 0x38d6703d37988C644D6d31551e9af6dcB762E618;
 
-    address public investorColdWallet =
-        0x5109709EcFA91a80626ff3989d68f67F5B1dD125;
+    address public investorColdWallet = 0x5109709EcFA91a80626ff3989d68f67F5B1dD125;
 
     // DO NOT USE IN PRODUCTION! Key was generated online for testing only.
-    uint256 public constant companyAdminPrivateKey =
-        0x8da4ef21b864d2cc526dbdb2a120bd2874c36c9d0a1fb7f8c63d7f7a8b41de8f;
+    uint256 public constant companyAdminPrivateKey = 0x8da4ef21b864d2cc526dbdb2a120bd2874c36c9d0a1fb7f8c63d7f7a8b41de8f;
     address public companyAdmin; // = 0x63FaC9201494f0bd17B9892B9fae4d52fe3BD377;
 
     uint8 public constant paymentTokenDecimals = 6;
-    uint256 public constant paymentTokenAmount =
-        1000 * 10 ** paymentTokenDecimals;
+    uint256 public constant paymentTokenAmount = 1000 * 10 ** paymentTokenDecimals;
 
     uint256 public constant price = 7 * 10 ** paymentTokenDecimals; // 7 payment tokens per token
 
@@ -108,12 +99,7 @@ contract CompanySetUpTest is Test {
         companyAdmin = vm.addr(companyAdminPrivateKey);
 
         // set up FeeSettings
-        Fees memory fees = Fees(
-            tokenFeeDenominator,
-            paymentTokenFeeDenominator,
-            paymentTokenFeeDenominator,
-            0
-        );
+        Fees memory fees = Fees(tokenFeeDenominator, paymentTokenFeeDenominator, paymentTokenFeeDenominator, 0);
         vm.prank(platformAdmin);
         feeSettings = new FeeSettings(fees, platformFeeCollector);
 
@@ -133,10 +119,7 @@ contract CompanySetUpTest is Test {
 
         // set up currency. In real life (irl) this would be a real currency, but for testing purposes we use a fake one.
         vm.prank(paymentTokenProvider);
-        paymentToken = new FakePaymentToken(
-            paymentTokenAmount,
-            paymentTokenDecimals
-        ); // 1000 tokens with 6 decimals
+        paymentToken = new FakePaymentToken(paymentTokenAmount, paymentTokenDecimals); // 1000 tokens with 6 decimals
         vm.prank(paymentTokenProvider);
         paymentToken.transfer(investor, paymentTokenAmount); // transfer currency to investor so they can buy tokens later
         assertTrue(paymentToken.balanceOf(investor) == paymentTokenAmount);
@@ -146,15 +129,7 @@ contract CompanySetUpTest is Test {
         // launch the company token. The platform deploys the contract. There is no need to transfer ownership, because the token is never controlled by the address that deployed it.
         // Instead, it is immediately controlled by the address provided in the constructor, which is the companyAdmin in this case.
         vm.prank(platformHotWallet);
-        token = new Token(
-            address(forwarder),
-            feeSettings,
-            companyAdmin,
-            list,
-            requirements,
-            name,
-            symbol
-        );
+        token = new Token(address(forwarder), feeSettings, companyAdmin, list, requirements, name, symbol);
 
         // // demonstration of the platform not being in control of the token
         // vm.prank(platformHotWallet);
@@ -186,9 +161,7 @@ contract CompanySetUpTest is Test {
         );
     }
 
-    function launchCompanyAndInvestViaContinousFundraising(
-        Forwarder forwarder
-    ) public {
+    function launchCompanyAndInvestViaContinousFundraising(Forwarder forwarder) public {
         // platform deploys the token contract for the founder
         deployToken(forwarder);
 
@@ -248,25 +221,17 @@ contract CompanySetUpTest is Test {
             abi.encodePacked(
                 "\x19\x01",
                 domainSeparator,
-                keccak256(
-                    forwarder._getEncoded(request, requestType, suffixData)
-                )
+                keccak256(forwarder._getEncoded(request, requestType, suffixData))
             )
         );
 
         // sign request. This would usually happen in the web app, which would present the companyAdmin with a request to sign the message. Metamask would come up and present the message to sign.
         // If EIP-712 is used properly, Metamask is able to show some information about the contents of the message, too.
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
-            companyAdminPrivateKey,
-            digest
-        );
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(companyAdminPrivateKey, digest);
         bytes memory signature = abi.encodePacked(r, s, v); // https://docs.openzeppelin.com/contracts/2.x/utilities
 
         // check the signature is correct
-        require(
-            digest.recover(signature) == companyAdmin,
-            "FWD: signature mismatch"
-        );
+        require(digest.recover(signature) == companyAdmin, "FWD: signature mismatch");
 
         console.log("signing address: ", request.from);
 
@@ -274,24 +239,13 @@ contract CompanySetUpTest is Test {
         assertTrue(token.mintingAllowance(address(raise)) == 0);
         // If the platform has received the signature, it can now execute the meta transaction.
         vm.prank(platformHotWallet);
-        forwarder.execute(
-            request,
-            domainSeparator,
-            requestType,
-            suffixData,
-            signature
-        );
+        forwarder.execute(request, domainSeparator, requestType, suffixData, signature);
 
         console.log("Forwarder address: ", address(forwarder));
-        console.log(
-            "allowance set to: ",
-            token.mintingAllowance(address(raise))
-        );
+        console.log("allowance set to: ", token.mintingAllowance(address(raise)));
 
         // check the raise contract has a mintingAllowance now now
-        assertTrue(
-            token.mintingAllowance(address(raise)) == maxAmountOfTokenToBeSold
-        );
+        assertTrue(token.mintingAllowance(address(raise)) == maxAmountOfTokenToBeSold);
 
         // ----------------------
         // company and fundraising campaign are set up. Now the investor can buy tokens. This requires 2 meta transactions:
@@ -304,9 +258,7 @@ contract CompanySetUpTest is Test {
         // https://soliditydeveloper.com/erc20-permit
         eip2612Data.dataStruct = keccak256(
             abi.encode(
-                keccak256(
-                    "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
-                ),
+                keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"),
                 investor,
                 address(raise),
                 costInPaymentToken,
@@ -326,30 +278,16 @@ contract CompanySetUpTest is Test {
         // sign request
         //bytes memory signature
         (v, r, s) = vm.sign(investorPrivateKey, eip2612Data.dataHash);
-        require(
-            ecrecover(eip2612Data.dataHash, v, r, s) == investor,
-            "ERC20Permit: invalid _BIG signature"
-        );
+        require(ecrecover(eip2612Data.dataHash, v, r, s) == investor, "ERC20Permit: invalid _BIG signature");
 
         // check allowance is 0 before permit
         assertTrue(paymentToken.allowance(investor, address(raise)) == 0);
 
         vm.prank(platformHotWallet);
-        paymentToken.permit(
-            investor,
-            address(raise),
-            costInPaymentToken,
-            block.timestamp + 1 hours,
-            v,
-            r,
-            s
-        );
+        paymentToken.permit(investor, address(raise), costInPaymentToken, block.timestamp + 1 hours, v, r, s);
 
         // check allowance is set after permit
-        assertTrue(
-            paymentToken.allowance(investor, address(raise)) ==
-                costInPaymentToken
-        );
+        assertTrue(paymentToken.allowance(investor, address(raise)) == costInPaymentToken);
 
         // now buy tokens using EIP-2771
         /*
@@ -357,11 +295,7 @@ contract CompanySetUpTest is Test {
         */
 
         // build request
-        payload = abi.encodeWithSelector(
-            raise.buy.selector,
-            tokenBuyAmount,
-            investorColdWallet
-        );
+        payload = abi.encodeWithSelector(raise.buy.selector, tokenBuyAmount, investorColdWallet);
 
         request = IForwarder.ForwardRequest({
             from: investor,
@@ -378,9 +312,7 @@ contract CompanySetUpTest is Test {
             abi.encodePacked(
                 "\x19\x01",
                 domainSeparator,
-                keccak256(
-                    forwarder._getEncoded(request, requestType, suffixData)
-                )
+                keccak256(forwarder._getEncoded(request, requestType, suffixData))
             )
         );
 
@@ -389,10 +321,7 @@ contract CompanySetUpTest is Test {
         (v, r, s) = vm.sign(investorPrivateKey, digest);
         signature = abi.encodePacked(r, s, v); // https://docs.openzeppelin.com/contracts/2.x/utilities
 
-        require(
-            digest.recover(signature) == investor,
-            "FWD: signature mismatch"
-        );
+        require(digest.recover(signature) == investor, "FWD: signature mismatch");
 
         // investor has no tokens before
         assertEq(token.balanceOf(investorColdWallet), 0);
@@ -404,38 +333,18 @@ contract CompanySetUpTest is Test {
 
         // once the platform has received the signature, it can now execute the meta transaction.
         vm.prank(platformHotWallet);
-        forwarder.execute(
-            request,
-            domainSeparator,
-            requestType,
-            suffixData,
-            signature
-        );
+        forwarder.execute(request, domainSeparator, requestType, suffixData, signature);
 
         // investor receives as many tokens as they paid for
-        assertTrue(
-            token.balanceOf(investorColdWallet) == tokenBuyAmount,
-            "Investor has no tokens"
-        );
+        assertTrue(token.balanceOf(investorColdWallet) == tokenBuyAmount, "Investor has no tokens");
         // platformFeeCollector receives the platform fees in token and currency
-        assertTrue(
-            token.balanceOf(platformFeeCollector) > 0,
-            "Platform fee in token not received"
-        );
-        assertTrue(
-            paymentToken.balanceOf(platformFeeCollector) > 0,
-            "Platform fee in currency not received"
-        );
+        assertTrue(token.balanceOf(platformFeeCollector) > 0, "Platform fee in token not received");
+        assertTrue(paymentToken.balanceOf(platformFeeCollector) > 0, "Platform fee in currency not received");
         // companyCurrencyReceiver receives the currency
-        assertTrue(
-            paymentToken.balanceOf(companyCurrencyReceiver) > 0,
-            "Company currency not received"
-        );
+        assertTrue(paymentToken.balanceOf(companyCurrencyReceiver) > 0, "Company currency not received");
     }
 
-    function launchCompanyAndInvestViaPersonalInvite(
-        Forwarder forwarder
-    ) public {
+    function launchCompanyAndInvestViaPersonalInvite(Forwarder forwarder) public {
         // platform deploys the token contract for the founder
         deployToken(forwarder);
 
@@ -483,9 +392,7 @@ contract CompanySetUpTest is Test {
         // https://soliditydeveloper.com/erc20-permit
         eip2612Data.dataStruct = keccak256(
             abi.encode(
-                keccak256(
-                    "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
-                ),
+                keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"),
                 investor,
                 personalInviteAddress,
                 costInPaymentToken,
@@ -505,14 +412,8 @@ contract CompanySetUpTest is Test {
         /* 
             The investor signs the transaction
         */
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
-            investorPrivateKey,
-            eip2612Data.dataHash
-        );
-        require(
-            ecrecover(eip2612Data.dataHash, v, r, s) == investor,
-            "ERC20Permit: invalid _BIG signature"
-        );
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(investorPrivateKey, eip2612Data.dataHash);
+        require(ecrecover(eip2612Data.dataHash, v, r, s) == investor, "ERC20Permit: invalid _BIG signature");
 
         /*
             Right here, the investor is done. Everything else is done by the platform and founder. This means the investor can close the web app and go back to their life!
@@ -524,26 +425,13 @@ contract CompanySetUpTest is Test {
         */
 
         // check allowance is 0 before permit
-        assertTrue(
-            paymentToken.allowance(investor, personalInviteAddress) == 0
-        );
+        assertTrue(paymentToken.allowance(investor, personalInviteAddress) == 0);
 
         vm.prank(platformHotWallet);
-        paymentToken.permit(
-            investor,
-            personalInviteAddress,
-            costInPaymentToken,
-            block.timestamp + 1 hours,
-            v,
-            r,
-            s
-        );
+        paymentToken.permit(investor, personalInviteAddress, costInPaymentToken, block.timestamp + 1 hours, v, r, s);
 
         // check allowance is set after permit
-        assertTrue(
-            paymentToken.allowance(investor, personalInviteAddress) ==
-                costInPaymentToken
-        );
+        assertTrue(paymentToken.allowance(investor, personalInviteAddress) == costInPaymentToken);
         /*
 
             Next, the founder has to grant a minting allowance to the personal invite address. This is done by signing a meta transaction and sending it to the platform.
@@ -582,10 +470,7 @@ contract CompanySetUpTest is Test {
         bytes memory signature = abi.encodePacked(r, s, v); // https://docs.openzeppelin.com/contracts/2.x/utilities
 
         // check the signature is correct
-        require(
-            digest.recover(signature) == companyAdmin,
-            "FWD: signature mismatch"
-        );
+        require(digest.recover(signature) == companyAdmin, "FWD: signature mismatch");
 
         console.log("signing address: ", request.from);
 
@@ -608,10 +493,7 @@ contract CompanySetUpTest is Test {
         delete signature;
 
         console.log("Forwarder address: ", address(forwarder));
-        console.log(
-            "allowance set to: ",
-            token.mintingAllowance(personalInviteAddress)
-        );
+        console.log("allowance set to: ", token.mintingAllowance(personalInviteAddress));
 
         // check the personal invite contract address has a mintingAllowance now
         assertTrue(
@@ -646,53 +528,29 @@ contract CompanySetUpTest is Test {
         );
 
         // investor receives as many tokens as they paid for
-        assertTrue(
-            token.balanceOf(investorColdWallet) == tokenBuyAmount,
-            "Investor has no tokens"
-        );
+        assertTrue(token.balanceOf(investorColdWallet) == tokenBuyAmount, "Investor has no tokens");
         // platformFeeCollector receives the platform fees in token and currency
-        assertTrue(
-            token.balanceOf(platformFeeCollector) > 0,
-            "Platform fee in token not received"
-        );
-        assertTrue(
-            paymentToken.balanceOf(platformFeeCollector) > 0,
-            "Platform fee in currency not received"
-        );
+        assertTrue(token.balanceOf(platformFeeCollector) > 0, "Platform fee in token not received");
+        assertTrue(paymentToken.balanceOf(platformFeeCollector) > 0, "Platform fee in currency not received");
         // companyCurrencyReceiver receives the currency
-        assertTrue(
-            paymentToken.balanceOf(companyAdmin) > 0,
-            "Company currency not received"
-        );
+        assertTrue(paymentToken.balanceOf(companyAdmin) > 0, "Company currency not received");
     }
 
-    function testlaunchCompanyAndInvestViaContinousFundraisingWithLocalForwarder()
-        public
-    {
+    function testlaunchCompanyAndInvestViaContinousFundraisingWithLocalForwarder() public {
         launchCompanyAndInvestViaContinousFundraising(new Forwarder());
     }
 
-    function testlaunchCompanyAndInvestViaContinousFundraisingWithMainnetGSNForwarder()
-        public
-    {
+    function testlaunchCompanyAndInvestViaContinousFundraisingWithMainnetGSNForwarder() public {
         // uses deployed forwarder on mainnet with fork. https://docs-v2.opengsn.org/networks/ethereum/mainnet.html
-        launchCompanyAndInvestViaContinousFundraising(
-            Forwarder(payable(0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA))
-        );
+        launchCompanyAndInvestViaContinousFundraising(Forwarder(payable(0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA)));
     }
 
-    function testlaunchCompanyAndInvestViaPersonalInviteWithLocalForwarder()
-        public
-    {
+    function testlaunchCompanyAndInvestViaPersonalInviteWithLocalForwarder() public {
         launchCompanyAndInvestViaPersonalInvite(new Forwarder());
     }
 
-    function testlaunchCompanyAndInvestViaPersonalInviteWithMainnetGSNForwarder()
-        public
-    {
+    function testlaunchCompanyAndInvestViaPersonalInviteWithMainnetGSNForwarder() public {
         // uses deployed forwarder on mainnet with fork. https://docs-v2.opengsn.org/networks/ethereum/mainnet.html
-        launchCompanyAndInvestViaPersonalInvite(
-            Forwarder(payable(0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA))
-        );
+        launchCompanyAndInvestViaPersonalInvite(Forwarder(payable(0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA)));
     }
 }
