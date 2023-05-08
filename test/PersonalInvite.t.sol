@@ -246,7 +246,6 @@ contract PersonalInviteTest is Test {
 
         vm.prank(paymentTokenProvider);
         currency.mint(currencyPayer, maxCurrencyAmount);
-        vm.stopPrank();
 
         vm.prank(currencyPayer);
         currency.approve(expectedAddress, maxCurrencyAmount);
