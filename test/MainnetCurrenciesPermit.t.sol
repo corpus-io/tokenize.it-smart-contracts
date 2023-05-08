@@ -39,12 +39,10 @@ contract MainnetCurrencies is Test {
 
     ERC20Helper helper = new ERC20Helper();
 
-    uint256 public constant tokenOwnerPrivateKey =
-        0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
+    uint256 public constant tokenOwnerPrivateKey = 0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
     address public tokenOwner = vm.addr(tokenOwnerPrivateKey); // = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
 
-    address public constant receiver =
-        0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
+    address public constant receiver = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
 
     // global variable because I am running out of local ones
     uint256 nonce;
@@ -64,11 +62,7 @@ contract MainnetCurrencies is Test {
     ) public {
         vm.assume(_tokenTransferAmount <= _tokenPermitAmount);
         tokenOwner = vm.addr(_tokenOwnerPrivateKey);
-        helper.writeERC20Balance(
-            tokenOwner,
-            address(token),
-            _tokenPermitAmount
-        );
+        helper.writeERC20Balance(tokenOwner, address(token), _tokenPermitAmount);
 
         // permit spender to spend holder's tokens
         nonce = token.nonces(tokenOwner);
@@ -78,14 +72,7 @@ contract MainnetCurrencies is Test {
         );
         DOMAIN_SEPARATOR = token.DOMAIN_SEPARATOR();
         structHash = keccak256(
-            abi.encode(
-                PERMIT_TYPE_HASH,
-                tokenOwner,
-                tokenSpender,
-                _tokenPermitAmount,
-                nonce,
-                deadline
-            )
+            abi.encode(PERMIT_TYPE_HASH, tokenOwner, tokenSpender, _tokenPermitAmount, nonce, deadline)
         );
 
         bytes32 hash = ECDSA.toTypedDataHash(DOMAIN_SEPARATOR, structHash);
@@ -93,32 +80,14 @@ contract MainnetCurrencies is Test {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(_tokenOwnerPrivateKey, hash);
 
         // verify signature
-        require(
-            tokenOwner == ECDSA.recover(hash, v, r, s),
-            "invalid signature"
-        );
+        require(tokenOwner == ECDSA.recover(hash, v, r, s), "invalid signature");
 
         // check allowance
-        assertEq(
-            token.allowance(tokenOwner, tokenSpender),
-            0,
-            "allowance should be 0"
-        );
+        assertEq(token.allowance(tokenOwner, tokenSpender), 0, "allowance should be 0");
 
         // call permit as and address a that is not tokenOwner
-        assertTrue(
-            address(this) != tokenOwner,
-            "address(this) must not be tokenOwner"
-        );
-        token.permit(
-            tokenOwner,
-            tokenSpender,
-            _tokenPermitAmount,
-            deadline,
-            v,
-            r,
-            s
-        );
+        assertTrue(address(this) != tokenOwner, "address(this) must not be tokenOwner");
+        token.permit(tokenOwner, tokenSpender, _tokenPermitAmount, deadline, v, r, s);
 
         // check allowance
         assertEq(
@@ -135,12 +104,7 @@ contract MainnetCurrencies is Test {
         // store token balance of tokenSpender
         uint tokenSpenderBalanceBefore = token.balanceOf(tokenSpender);
 
-        console.log(
-            "Tranfering %s tokens from %s to %s",
-            _tokenPermitAmount,
-            tokenOwner,
-            tokenSpender
-        );
+        console.log("Tranfering %s tokens from %s to %s", _tokenPermitAmount, tokenOwner, tokenSpender);
         // spend tokens
         vm.prank(tokenSpender);
         token.transferFrom(tokenOwner, tokenSpender, _tokenTransferAmount);
@@ -159,23 +123,11 @@ contract MainnetCurrencies is Test {
     }
 
     function testPermitMainnetEUROC() public {
-        permitERC2612(
-            ERC20Permit(address(EUROC)),
-            200,
-            123,
-            tokenOwnerPrivateKey,
-            receiver
-        );
+        permitERC2612(ERC20Permit(address(EUROC)), 200, 123, tokenOwnerPrivateKey, receiver);
     }
 
     function testPermitMainnetUSDC() public {
-        permitERC2612(
-            ERC20Permit(address(USDC)),
-            200,
-            190,
-            tokenOwnerPrivateKey,
-            receiver
-        );
+        permitERC2612(ERC20Permit(address(USDC)), 200, 190, tokenOwnerPrivateKey, receiver);
     }
 
     /**
@@ -190,11 +142,7 @@ contract MainnetCurrencies is Test {
 
         vm.assume(_tokenTransferAmount <= _tokenPermitAmount);
         tokenOwner = vm.addr(tokenOwnerPrivateKey);
-        helper.writeERC20Balance(
-            tokenOwner,
-            address(token),
-            _tokenPermitAmount
-        );
+        helper.writeERC20Balance(tokenOwner, address(token), _tokenPermitAmount);
 
         // permit spender to spend ALL OF the owner's tokens. This is the special case for DAI.
         bool allowed = true;
@@ -202,14 +150,7 @@ contract MainnetCurrencies is Test {
         deadline = block.timestamp + 1000;
         DOMAIN_SEPARATOR = token.DOMAIN_SEPARATOR();
         structHash = keccak256(
-            abi.encode(
-                DaiLike(address(token)).PERMIT_TYPEHASH(),
-                tokenOwner,
-                tokenSpender,
-                nonce,
-                deadline,
-                allowed
-            )
+            abi.encode(DaiLike(address(token)).PERMIT_TYPEHASH(), tokenOwner, tokenSpender, nonce, deadline, allowed)
         );
 
         bytes32 hash = ECDSA.toTypedDataHash(DOMAIN_SEPARATOR, structHash);
@@ -217,41 +158,18 @@ contract MainnetCurrencies is Test {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(tokenOwnerPrivateKey, hash);
 
         // verify signature
-        require(
-            tokenOwner == ECDSA.recover(hash, v, r, s),
-            "invalid signature"
-        );
+        require(tokenOwner == ECDSA.recover(hash, v, r, s), "invalid signature");
 
         // check allowance
-        assertEq(
-            token.allowance(tokenOwner, tokenSpender),
-            0,
-            "allowance should be 0"
-        );
+        assertEq(token.allowance(tokenOwner, tokenSpender), 0, "allowance should be 0");
 
         // call permit as and address a that is not tokenOwner
-        assertTrue(
-            address(this) != tokenOwner,
-            "address(this) must not be tokenOwner"
-        );
+        assertTrue(address(this) != tokenOwner, "address(this) must not be tokenOwner");
 
-        DaiLike(address(token)).permit(
-            tokenOwner,
-            tokenSpender,
-            nonce,
-            deadline,
-            true,
-            v,
-            r,
-            s
-        );
+        DaiLike(address(token)).permit(tokenOwner, tokenSpender, nonce, deadline, true, v, r, s);
 
         // check allowance
-        assertEq(
-            token.allowance(tokenOwner, tokenSpender),
-            UINT256_MAX,
-            "allowance should be UINT256_MAX"
-        );
+        assertEq(token.allowance(tokenOwner, tokenSpender), UINT256_MAX, "allowance should be UINT256_MAX");
 
         assertEq(
             token.balanceOf(tokenOwner),
@@ -261,12 +179,7 @@ contract MainnetCurrencies is Test {
         // store token balance of tokenSpender
         uint tokenSpenderBalanceBefore = token.balanceOf(tokenSpender);
 
-        console.log(
-            "Tranfering %s tokens from %s to %s",
-            _tokenPermitAmount,
-            tokenOwner,
-            tokenSpender
-        );
+        console.log("Tranfering %s tokens from %s to %s", _tokenPermitAmount, tokenOwner, tokenSpender);
         // spend tokens
         vm.prank(tokenSpender);
         token.transferFrom(tokenOwner, tokenSpender, _tokenTransferAmount);

@@ -29,27 +29,16 @@ contract CheckToken is Script {
     function run() public view {
         Token token = Token(address(TOKEN_ADDRESS));
 
-        console.log(
-            "Remember to update addresses in this script in order to check other deployments."
-        );
+        console.log("Remember to update addresses in this script in order to check other deployments.");
 
         console.log("Token name: ", token.name());
         console.log("Token symbol: ", token.symbol());
-        console.log(
-            "Token fee settings matches: ",
-            address(token.feeSettings()) == FEE_SETTINGS
-        );
+        console.log("Token fee settings matches: ", address(token.feeSettings()) == FEE_SETTINGS);
         console.log(
             "Token trusted forwarder matches: ",
             token.isTrustedForwarder(0x994257AcCF99E5995F011AB2A3025063e5367629)
         );
-        console.log(
-            "Token allow list matches: ",
-            address(token.allowList()) == ALLOW_LIST
-        );
-        console.log(
-            "Token admin matches: ",
-            token.hasRole(DEFAULT_ADMIN_ROLE, ADMIN)
-        );
+        console.log("Token allow list matches: ", address(token.allowList()) == ALLOW_LIST);
+        console.log("Token admin matches: ", token.hasRole(DEFAULT_ADMIN_ROLE, ADMIN));
     }
 }

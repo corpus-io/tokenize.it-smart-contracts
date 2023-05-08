@@ -90,15 +90,14 @@
     "coverage": "forge coverage --report lcov && genhtml lcov.info --branch-coverage --output-directory=./coverage"
   },
   "prettier": {
+    "singleQuote": true,
+    "trailingComma": "all",
     "overrides": [
       {
         "files": "*.sol",
         "options": {
-          "printWidth": 80,
-          "tabWidth": 4,
-          "useTabs": false,
           "singleQuote": false,
-          "bracketSpacing": false
+          "printWidth": 120
         }
       }
     ]

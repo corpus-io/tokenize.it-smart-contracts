@@ -17,23 +17,16 @@ contract PersonalInviteTimeLockTest is Test {
     Token token;
     FakePaymentToken currency;
 
-    uint256 MAX_INT =
-        115792089237316195423570985008687907853269984665640564039457584007913129639935;
+    uint256 MAX_INT = 115792089237316195423570985008687907853269984665640564039457584007913129639935;
 
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
-    address public constant tokenReceiver =
-        0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
-    address public constant mintAllower =
-        0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
-    address public constant currencyPayer =
-        0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
+    address public constant tokenReceiver = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
+    address public constant mintAllower = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
+    address public constant currencyPayer = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
     address public constant owner = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
-    address public constant currencyReceiver =
-        0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
-    address public constant paymentTokenProvider =
-        0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
-    address public constant trustedForwarder =
-        0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
+    address public constant currencyReceiver = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
+    address public constant paymentTokenProvider = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
+    address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
 
     uint256 public constant price = 10000000;
 
@@ -48,15 +41,7 @@ contract PersonalInviteTimeLockTest is Test {
         Fees memory fees = Fees(100, 100, 100, 0);
         feeSettings = new FeeSettings(fees, admin);
 
-        token = new Token(
-            trustedForwarder,
-            feeSettings,
-            admin,
-            list,
-            requirements,
-            "token",
-            "TOK"
-        );
+        token = new Token(trustedForwarder, feeSettings, admin, list, requirements, "token", "TOK");
         vm.prank(paymentTokenProvider);
         currency = new FakePaymentToken(0, 18);
     }
@@ -98,18 +83,10 @@ contract PersonalInviteTimeLockTest is Test {
         timeLock.release(address(token));
 
         // check that tokens were released
-        assertEq(
-            token.balanceOf(tokenReceiver),
-            tokenAmount,
-            "wrong token amount released"
-        );
+        assertEq(token.balanceOf(tokenReceiver), tokenAmount, "wrong token amount released");
     }
 
-    function testPersonalInviteWithTimeLock(
-        uint256 rawSalt,
-        uint64 lockDuration,
-        uint64 attemptDuration
-    ) public {
+    function testPersonalInviteWithTimeLock(uint256 rawSalt, uint64 lockDuration, uint64 attemptDuration) public {
         vm.assume(lockDuration > attemptDuration);
         vm.assume(attemptDuration > 0);
         vm.assume(lockDuration < type(uint64).max / 2);
@@ -159,10 +136,7 @@ contract PersonalInviteTimeLockTest is Test {
 
         // make sure balances are as expected before deployment
 
-        console.log(
-            "feeCollector currency balance: %s",
-            currency.balanceOf(token.feeSettings().feeCollector())
-        );
+        console.log("feeCollector currency balance: %s", currency.balanceOf(token.feeSettings().feeCollector()));
 
         assertEq(currency.balanceOf(currencyPayer), currencyAmount);
         assertEq(currency.balanceOf(currencyReceiver), 0);
@@ -186,28 +160,17 @@ contract PersonalInviteTimeLockTest is Test {
             token
         );
 
-        assertEq(
-            inviteAddress,
-            expectedAddress,
-            "deployed contract address is not correct"
-        );
+        assertEq(inviteAddress, expectedAddress, "deployed contract address is not correct");
 
         console.log("payer balance: %s", currency.balanceOf(currencyPayer));
-        console.log(
-            "receiver balance: %s",
-            currency.balanceOf(currencyReceiver)
-        );
-        console.log(
-            "timeLock token balance: %s",
-            token.balanceOf(address(timeLock))
-        );
+        console.log("receiver balance: %s", currency.balanceOf(currencyReceiver));
+        console.log("timeLock token balance: %s", token.balanceOf(address(timeLock)));
 
         assertEq(currency.balanceOf(currencyPayer), 0);
 
         assertEq(
             currency.balanceOf(currencyReceiver),
-            currencyAmount -
-                token.feeSettings().personalInviteFee(currencyAmount)
+            currencyAmount - token.feeSettings().personalInviteFee(currencyAmount)
         );
 
         assertEq(
@@ -218,43 +181,24 @@ contract PersonalInviteTimeLockTest is Test {
 
         assertEq(token.balanceOf(address(timeLock)), tokenAmount);
 
-        assertEq(
-            token.balanceOf(token.feeSettings().feeCollector()),
-            token.feeSettings().tokenFee(tokenAmount)
-        );
+        assertEq(token.balanceOf(token.feeSettings().feeCollector()), token.feeSettings().tokenFee(tokenAmount));
 
         /*
          * PersonalInvite worked properly, now test the time lock
          */
         // immediate release should not work
-        assertEq(
-            token.balanceOf(tokenReceiver),
-            0,
-            "investor vault should have no tokens"
-        );
+        assertEq(token.balanceOf(tokenReceiver), 0, "investor vault should have no tokens");
         timeLock.release(address(token));
-        assertEq(
-            token.balanceOf(tokenReceiver),
-            0,
-            "investor vault should still have no tokens"
-        );
+        assertEq(token.balanceOf(tokenReceiver), 0, "investor vault should still have no tokens");
 
         // too early release should not work
         vm.warp(startTime + attemptDuration);
         timeLock.release(address(token));
-        assertEq(
-            token.balanceOf(tokenReceiver),
-            0,
-            "investor vault should still be empty"
-        );
+        assertEq(token.balanceOf(tokenReceiver), 0, "investor vault should still be empty");
 
         // release should work from 1 second after lock expires
         vm.warp(startTime + lockDuration + 2);
         timeLock.release(address(token));
-        assertEq(
-            token.balanceOf(tokenReceiver),
-            tokenAmount,
-            "investor vault should have tokens"
-        );
+        assertEq(token.balanceOf(tokenReceiver), tokenAmount, "investor vault should have tokens");
     }
 }
