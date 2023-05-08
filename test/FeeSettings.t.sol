@@ -6,6 +6,14 @@ import "../contracts/Token.sol";
 import "../contracts/FeeSettings.sol";
 
 contract FeeSettingsTest is Test {
+    event SetFeeDenominators(
+        uint256 tokenFeeDenominator,
+        uint256 continuousFundraisingFeeDenominator,
+        uint256 personalInviteFeeDenominator
+    );
+    event FeeCollectorChanged(address indexed newFeeCollector);
+    event ChangeProposed(Fees proposal);
+
     FeeSettings feeSettings;
     Token token;
     Token currency;
@@ -28,7 +36,7 @@ contract FeeSettingsTest is Test {
 
     uint256 public constant price = 10000000;
 
-    function testEnforceFeeDenominatorRangeinConstructor(uint8 fee) public {
+    function testEnforceFeeDenominatorRangeInConstructor(uint8 fee) public {
         vm.assume(!feeInValidRange(fee));
         Fees memory _fees;
 
@@ -54,7 +62,7 @@ contract FeeSettingsTest is Test {
         new FeeSettings(_fees, admin);
     }
 
-    function testEnforceTokenFeeDenominatorRangeinFeeChanger(uint8 fee) public {
+    function testEnforceTokenFeeDenominatorRangeInFeeChanger(uint8 fee) public {
         vm.assume(!feeInValidRange(fee));
         Fees memory fees = Fees(100, 100, 100, 0);
         FeeSettings _feeSettings = new FeeSettings(fees, admin);
@@ -71,7 +79,7 @@ contract FeeSettingsTest is Test {
         _feeSettings.planFeeChange(feeChange);
     }
 
-    function testEnforceContinuousFundraisingFeeDenominatorRangeinFeeChanger(
+    function testEnforceContinuousFundraisingFeeDenominatorRangeInFeeChanger(
         uint8 fee
     ) public {
         vm.assume(!feeInValidRange(fee));
@@ -90,7 +98,7 @@ contract FeeSettingsTest is Test {
         _feeSettings.planFeeChange(feeChange);
     }
 
-    function testEnforcePersonalInviteFeeDenominatorRangeinFeeChanger(
+    function testEnforcePersonalInviteFeeDenominatorRangeInFeeChanger(
         uint8 fee
     ) public {
         vm.assume(!feeInValidRange(fee));
@@ -188,32 +196,38 @@ contract FeeSettingsTest is Test {
     function testExecuteFeeChangeProperly(
         uint delayAnnounced,
         uint256 tokenFee,
-        uint256 investmentFee
+        uint256 fundraisingFee,
+        uint256 personalInviteFee
     ) public {
         vm.assume(delayAnnounced > 12 weeks && delayAnnounced < 100000000000);
         vm.assume(feeInValidRange(tokenFee));
-        vm.assume(feeInValidRange(investmentFee));
+        vm.assume(feeInValidRange(fundraisingFee));
+        vm.assume(feeInValidRange(personalInviteFee));
         Fees memory fees = Fees(50, 50, 50, 0);
         vm.prank(admin);
         FeeSettings _feeSettings = new FeeSettings(fees, admin);
 
         Fees memory feeChange = Fees({
             tokenFeeDenominator: tokenFee,
-            continuousFundraisingFeeDenominator: investmentFee,
-            personalInviteFeeDenominator: 100,
+            continuousFundraisingFeeDenominator: fundraisingFee,
+            personalInviteFeeDenominator: personalInviteFee,
             time: block.timestamp + delayAnnounced
         });
         vm.prank(admin);
+        vm.expectEmit(true, true, true, true, address(_feeSettings));
+        emit ChangeProposed(feeChange);
         _feeSettings.planFeeChange(feeChange);
 
         vm.prank(admin);
         vm.warp(block.timestamp + delayAnnounced + 1);
+        vm.expectEmit(true, true, true, true, address(_feeSettings));
+        emit SetFeeDenominators(tokenFee, fundraisingFee, personalInviteFee);
         _feeSettings.executeFeeChange();
 
         assertEq(_feeSettings.tokenFeeDenominator(), tokenFee);
         assertEq(
             _feeSettings.continuousFundraisingFeeDenominator(),
-            investmentFee
+            fundraisingFee
         );
         //assertEq(_feeSettings.change, 0);
     }
@@ -359,6 +373,8 @@ contract FeeSettingsTest is Test {
         Fees memory fees = Fees(100, 100, 100, 0);
         vm.prank(admin);
         _feeSettings = new FeeSettings(fees, admin);
+        vm.expectEmit(true, true, true, true, address(_feeSettings));
+        emit FeeCollectorChanged(newCollector);
         vm.prank(admin);
         _feeSettings.setFeeCollector(newCollector);
         assertEq(_feeSettings.feeCollector(), newCollector);

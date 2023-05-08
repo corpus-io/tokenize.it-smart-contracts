@@ -9,6 +9,15 @@ import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 
 contract PersonalInviteTest is Test {
+    event Deal(
+        address indexed currencyPayer,
+        address indexed tokenReceiver,
+        uint256 tokenAmount,
+        uint256 tokenPrice,
+        IERC20 currency,
+        Token indexed token
+    );
+
     PersonalInviteFactory factory;
 
     AllowList list;
@@ -126,6 +135,8 @@ contract PersonalInviteTest is Test {
         uint256 feeCollectorCurrencyBalanceBefore = currency.balanceOf(
             FeeSettings(address(token.feeSettings())).feeCollector()
         );
+        vm.expectEmit(true, true, true, true, address(expectedAddress));
+        emit Deal(tokenReceiver, tokenReceiver, amount, price, currency, token);
 
         address inviteAddress = factory.deploy(
             salt,

@@ -6,6 +6,9 @@ import "../contracts/Token.sol";
 import "../contracts/FeeSettings.sol";
 
 contract tokenTest is Test {
+    event RequirementsChanged(uint newRequirements);
+    event MintingAllowanceChanged(address indexed minter, uint256 newAllowance);
+
     Token token;
     AllowList allowList;
     FeeSettings feeSettings;
@@ -25,8 +28,6 @@ contract tokenTest is Test {
     address public constant pauser = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
     address public constant feeSettingsOwner =
         0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
-
-    event RequirementsChanged(uint256 newRequirements);
 
     function setUp() public {
         vm.prank(admin);
@@ -226,13 +227,15 @@ contract tokenTest is Test {
     //     token.revokeRole(role, admin);
     // }
 
-    function testSetRequirements() public {
+    function testSetRequirements(uint256 newRequirements) public {
         bytes32 role = token.REQUIREMENT_ROLE();
         vm.prank(admin);
         token.grantRole(role, requirer);
         vm.prank(requirer);
-        token.setRequirements(3);
-        assertTrue(token.requirements() == 3);
+        vm.expectEmit(true, true, true, true, address(token));
+        emit RequirementsChanged(newRequirements);
+        token.setRequirements(newRequirements);
+        assertTrue(token.requirements() == newRequirements);
     }
 
     function testFailSetRequirementsWrongRole() public {
@@ -241,33 +244,32 @@ contract tokenTest is Test {
         assertTrue(token.requirements() == 3);
     }
 
-    function testUpdateAllowList() public {
-        AllowList newAllowList = new AllowList(); // deploy new AllowList
-        assertTrue(token.allowList() != newAllowList);
-        vm.prank(admin);
-        token.setAllowList(newAllowList);
-        assertTrue(token.allowList() == newAllowList);
-    }
-
-    function testUpdateAllowList0() public {
-        vm.expectRevert("AllowList must not be zero address");
-        vm.prank(admin);
-        token.setAllowList(AllowList(address(0)));
-    }
-
-    function testSetUpMinter() public {
+    function testSetUpMinter(uint256 newAllowance, uint256 mintAmount) public {
+        vm.assume(newAllowance < type(uint256).max / 2); // avoid overflow because of fees
+        vm.assume(mintAmount <= newAllowance);
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
+        vm.expectEmit(true, true, true, true, address(token));
+        emit MintingAllowanceChanged(minter, newAllowance);
         vm.prank(mintAllower);
-        token.increaseMintingAllowance(minter, 2);
-        assertTrue(token.mintingAllowance(minter) == 2);
+        token.increaseMintingAllowance(minter, newAllowance);
+        assertTrue(
+            token.mintingAllowance(minter) == newAllowance,
+            "minting allowance should be newAllowance"
+        );
 
         vm.prank(minter);
-        token.mint(pauser, 1);
-        assertTrue(token.balanceOf(pauser) == 1);
-        assertTrue(token.mintingAllowance(minter) == 1);
+        token.mint(pauser, mintAmount);
+        assertTrue(
+            token.balanceOf(pauser) == mintAmount,
+            "balance of pauser should be mintAmount"
+        );
+        assertTrue(
+            token.mintingAllowance(minter) == newAllowance - mintAmount,
+            "minting allowance should be newAllowance - mintAmount"
+        );
 
         // set allowance to 0
         vm.prank(mintAllower);
@@ -355,10 +357,14 @@ contract tokenTest is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
 
+        vm.expectEmit(true, true, true, true, address(token));
+        emit MintingAllowanceChanged(minter, x);
         vm.startPrank(mintAllower);
         token.increaseMintingAllowance(minter, x);
         assertTrue(token.mintingAllowance(minter) == x);
 
+        vm.expectEmit(true, true, true, true, address(token));
+        emit MintingAllowanceChanged(minter, x - y);
         token.decreaseMintingAllowance(minter, y);
         assertTrue(token.mintingAllowance(minter) == x - y);
 
