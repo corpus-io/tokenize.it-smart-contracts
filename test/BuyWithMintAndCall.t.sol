@@ -20,20 +20,15 @@ contract BuyWithMintAndCall is Test {
 
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant buyer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
-    address public constant mintAllower =
-        0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
+    address public constant mintAllower = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
     address public constant minter = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
     address public constant owner = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
-    address public constant receiver =
-        0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
-    address public constant paymentTokenProvider =
-        0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
-    address public constant trustedForwarder =
-        0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
+    address public constant receiver = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
+    address public constant paymentTokenProvider = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
+    address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
 
     uint8 public constant paymentTokenDecimals = 6;
-    uint256 public constant paymentTokenAmount =
-        1000 * 10 ** paymentTokenDecimals;
+    uint256 public constant paymentTokenAmount = 1000 * 10 ** paymentTokenDecimals;
 
     uint256 public constant price = 7 * 10 ** paymentTokenDecimals; // 7 payment tokens per token
 
@@ -46,15 +41,7 @@ contract BuyWithMintAndCall is Test {
         Fees memory fees = Fees(100, 100, 100, 100);
         feeSettings = new FeeSettings(fees, admin);
 
-        token = new Token(
-            trustedForwarder,
-            feeSettings,
-            admin,
-            list,
-            0x0,
-            "TESTTOKEN",
-            "TEST"
-        );
+        token = new Token(trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST");
 
         // set up currency
         vm.startPrank(paymentTokenProvider);
@@ -79,10 +66,7 @@ contract BuyWithMintAndCall is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.increaseMintingAllowance(
-            address(raise),
-            maxAmountOfTokenToBeSold
-        );
+        token.increaseMintingAllowance(address(raise), maxAmountOfTokenToBeSold);
 
         // give raise contract allowance
         vm.prank(buyer);

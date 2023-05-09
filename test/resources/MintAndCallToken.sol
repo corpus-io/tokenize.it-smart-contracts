@@ -24,17 +24,8 @@ contract MintAndCallToken is ERC20, Ownable {
         _mint(_to, _amount);
     }
 
-    function mintAndCall(
-        address _to,
-        uint256 _amount,
-        bytes memory _data
-    ) external onlyOwner {
+    function mintAndCall(address _to, uint256 _amount, bytes memory _data) external onlyOwner {
         _mint(_to, _amount);
-        ERC1363Receiver(_to).onTransferReceived(
-            msg.sender,
-            address(0),
-            _amount,
-            _data
-        );
+        ERC1363Receiver(_to).onTransferReceived(msg.sender, address(0), _amount, _data);
     }
 }

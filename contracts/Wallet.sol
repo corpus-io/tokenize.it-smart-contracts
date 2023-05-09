@@ -64,11 +64,7 @@ contract Wallet is Ownable2Step, ERC1363Receiver {
     /*
     @notice withdraws tokens to a given address
     */
-    function withdraw(
-        address token,
-        address to,
-        uint256 amount
-    ) external onlyOwner {
+    function withdraw(address token, address to, uint256 amount) external onlyOwner {
         IERC20(token).safeTransfer(to, amount);
     }
 }
