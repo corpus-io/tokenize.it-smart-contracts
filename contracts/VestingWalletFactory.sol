@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/finance/VestingWallet.sol";
 /**
  * @title VestingWalletFactory
  * @author malteish
- * @notice This contract deploys VestingWallets using create2. 
+ * @notice This contract deploys VestingWallets using create2.
  * @dev One deployment of this contract can be used for deployment of any number of VestingWallets using create2.
  */
 contract VestingWalletFactory {
@@ -32,11 +32,7 @@ contract VestingWalletFactory {
         address actualAddress = Create2.deploy(
             0,
             _salt,
-            getBytecode(
-                beneficiaryAddress,
-                startTimestamp,
-                durationSeconds
-            )
+            getBytecode(beneficiaryAddress, startTimestamp, durationSeconds)
         );
 
         emit Deploy(actualAddress);
@@ -56,11 +52,7 @@ contract VestingWalletFactory {
         uint64 startTimestamp,
         uint64 durationSeconds
     ) external view returns (address) {
-        bytes memory bytecode = getBytecode(
-            beneficiaryAddress,
-            startTimestamp,
-            durationSeconds
-        );
+        bytes memory bytecode = getBytecode(beneficiaryAddress, startTimestamp, durationSeconds);
         return Create2.computeAddress(_salt, keccak256(bytecode));
     }
 
@@ -79,11 +71,7 @@ contract VestingWalletFactory {
         return
             abi.encodePacked(
                 type(VestingWallet).creationCode,
-                abi.encode(
-                    beneficiaryAddress,
-                    startTimestamp,
-                    durationSeconds
-                )
+                abi.encode(beneficiaryAddress, startTimestamp, durationSeconds)
             );
     }
 }
