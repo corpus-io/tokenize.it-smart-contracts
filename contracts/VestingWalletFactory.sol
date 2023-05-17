@@ -17,7 +17,7 @@ contract VestingWalletFactory {
     event Deploy(address indexed addr);
 
     /**
-     * @notice Deploys a contract using create2.
+     * @notice Deploys VestingWallet contract using create2.
      * @param   _salt salt used for privacy. Could be used for vanity addresses, too.
      * @param   beneficiaryAddress address receiving the tokens
      * @param   startTimestamp timestamp of when to start releasing tokens linearly
@@ -40,8 +40,8 @@ contract VestingWalletFactory {
     }
 
     /**
-     * @notice Computes the address of a contract to be deployed using create2.
-     * @param   _salt salt used for privacy. Could be used for vanity addresses, too.
+     * @notice Computes the address of VestingWallet contract to be deployed using create2.
+     * @param   _salt salt for vanity addresses
      * @param   beneficiaryAddress address receiving the tokens
      * @param   startTimestamp timestamp of when to start releasing tokens linearly
      * @param   durationSeconds duration of the vesting period in seconds
