@@ -91,13 +91,13 @@ contract PersonalInviteTimeLockTest is Test {
 
     /**
      *
-     * @param rawSalt can be used to generate different addresses
+     * @param salt can be used to generate different addresses
      * @param releaseStartTime when to start releasing tokens
      * @param attemptTime try to release tokens after this amount of time
      * @param releaseDuration how long the releasing of tokens should take
      */
     function testPersonalInviteWithTimeLock(
-        uint256 rawSalt,
+        bytes32 salt,
         uint64 releaseStartTime,
         uint64 releaseDuration,
         uint64 attemptTime
@@ -123,9 +123,6 @@ contract PersonalInviteTimeLockTest is Test {
 
         // add time lock and token receiver to the allow list
         list.set(expectedTimeLockAddress, requirements);
-
-        //uint rawSalt = 0;
-        bytes32 salt = bytes32(rawSalt);
 
         //bytes memory creationCode = type(PersonalInvite).creationCode;
         uint256 tokenAmount = 20000000000000;
