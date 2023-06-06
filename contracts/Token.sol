@@ -269,7 +269,9 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
      */
     function _checkIfAllowedToTransact(address _address) internal view {
         require(
-            hasRole(TRANSFERER_ROLE, _address) || allowList.map(_address) & requirements == requirements,
+            requirements == 0 ||
+                hasRole(TRANSFERER_ROLE, _address) ||
+                allowList.map(_address) & requirements == requirements,
             "Sender or Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
         );
     }
