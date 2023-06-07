@@ -34,4 +34,4 @@ jobs:
         run: forge snapshot --no-match-test Mainnet
       - name: Run mainnet tests
         working-directory: .
-        run: forge test --match-test Mainnet --fork-url {{ secrets.MAINNET_RPC_URL }}
+        run: forge test --match-test Mainnet --fork-url ${{ secrets.MAINNET_RPC_URL }}
