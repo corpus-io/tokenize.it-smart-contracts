@@ -20,15 +20,18 @@ jobs:
         with:
           version: nightly
 
-      - name: Run tests
+      - name: Run local tests
         working-directory: .
         run: yarn test &&  forge coverage --no-match-test Mainnet --report lcov
       - name: Coverage
         uses: VeryGoodOpenSource/very_good_coverage@v2
         with:
-          path: "./lcov.info"
+          path: './lcov.info'
           min_coverage: 95
-          exclude: "test/* test/resources/* archive/* script/*"
+          exclude: 'test/* test/resources/* archive/* script/*'
       - name: Run snapshot
         working-directory: .
         run: forge snapshot --no-match-test Mainnet
+      - name: Run mainnet tests
+        working-directory: .
+        run: forge test --match-test Mainnet --fork-url {{ secrets.MAINNET_RPC_URL }}
