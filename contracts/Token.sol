@@ -217,8 +217,10 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
      * @param _amount how many tokens to mint
      */
     function mint(address _to, uint256 _amount) external {
-        require(mintingAllowance[_msgSender()] >= _amount, "MintingAllowance too low");
-        mintingAllowance[_msgSender()] -= _amount;
+        if (!hasRole(MINTALLOWER_ROLE, _msgSender())) {
+            require(mintingAllowance[_msgSender()] >= _amount, "MintingAllowance too low");
+            mintingAllowance[_msgSender()] -= _amount;
+        }
         // this check is executed here, because later minting of the buy amount can not be differentiated from minting of the fee amount
         _checkIfAllowedToTransact(_to);
         _mint(_to, _amount);
