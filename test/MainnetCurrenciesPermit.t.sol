@@ -126,16 +126,13 @@ contract MainnetCurrencies is Test {
     function testDebugTrouble() public {
         ERC20Permit token = ERC20Permit(0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c);
 
-        uint256 _tokenPermitAmount = 1800000000;
-        uint256 _tokenTransferAmount = 100;
+        uint256 tokenPermitAmount = 1800000000;
         uint8 v = 27;
         bytes32 r = 0x6a563919a587bda53a1482d716bae140eae93bc19e458c9af99c903a83d566d8;
         bytes32 s = 0x4de5f3efd908d130d97c62042bb7d9f322a93ee405fede7a016b8511d3abdbb9;
 
-        vm.assume(_tokenTransferAmount <= _tokenPermitAmount);
         tokenOwner = 0xe8ef87DB07d9FD0544Ff1ECDa896f14208E4e207;
         address tokenSpender = 0x625F73836E72Da0b0819a0dD1427CF925592bcFd;
-        helper.writeERC20Balance(tokenOwner, address(token), _tokenPermitAmount);
 
         // permit spender to spend holder's tokens
         nonce = 0; //token.nonces(tokenOwner);
@@ -144,86 +141,56 @@ contract MainnetCurrencies is Test {
         PERMIT_TYPE_HASH = keccak256(
             "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
         );
+
+        console.log("PERMIT_TYPE_HASH:");
+        console.logBytes32(PERMIT_TYPE_HASH);
+
         DOMAIN_SEPARATOR = token.DOMAIN_SEPARATOR();
+        console.log("DOMAIN_SEPARATOR:");
+        console.logBytes32(DOMAIN_SEPARATOR);
+        console.log("keccak256(abi.encode(DOMAIN_SEPARATOR)):");
+        console.logBytes32(keccak256(abi.encode(DOMAIN_SEPARATOR)));
         structHash = keccak256(
-            abi.encode(PERMIT_TYPE_HASH, tokenOwner, tokenSpender, _tokenPermitAmount, deadline, nonce)
+            abi.encode(PERMIT_TYPE_HASH, tokenOwner, tokenSpender, tokenPermitAmount, deadline, nonce)
         );
 
+        console.log("structHash:");
+        console.logBytes32(structHash);
+
         bytes32 hash = ECDSA.toTypedDataHash(DOMAIN_SEPARATOR, structHash);
+        console.log("hash:");
+        console.logBytes32(hash);
 
-        bool found = false;
-        uint offset = 0;
-        while (!found && offset < 10000) {
-            uint256 localDeadline = deadline - offset; // switch this between + and - to find the deadline
-            structHash = keccak256(
-                abi.encode(PERMIT_TYPE_HASH, tokenOwner, tokenSpender, _tokenPermitAmount, localDeadline, nonce)
-            );
+        if (tokenOwner == ECDSA.recover(hash, v, r, s)) {
+            console.log("matches");
+        } else console.log("does not match");
 
-            hash = ECDSA.toTypedDataHash(DOMAIN_SEPARATOR, structHash);
+        // bool found = false;
+        // uint offset = 0;
+        // while (!found && offset < 1) {
+        //     uint256 localDeadline = deadline - offset; // switch this between + and - to find the deadline
+        //     structHash = keccak256(
+        //         abi.encode(PERMIT_TYPE_HASH, tokenOwner, tokenSpender, tokenPermitAmount, localDeadline, nonce)
+        //     );
 
-            if (tokenOwner == ECDSA.recover(hash, v, r, s)) {
-                found = true;
-                deadline = localDeadline;
-                console.log("found deadline: ", deadline);
-            }
+        //     hash = ECDSA.toTypedDataHash(DOMAIN_SEPARATOR, structHash);
 
-            console.log("deadline: %d, address: %s", localDeadline, ECDSA.recover(hash, v, r, s));
+        //     if (tokenOwner == ECDSA.recover(hash, v, r, s)) {
+        //         found = true;
+        //         deadline = localDeadline;
+        //         console.log("found deadline: ", deadline);
+        //     }
 
-            offset += 1;
-        }
+        //     //console.log("deadline: %d, address: %s", localDeadline, ECDSA.recover(hash, v, r, s));
 
-        if (found) {
-            console.log("found deadline: ", deadline);
-        } else {
-            console.log("not found");
-        }
+        //     offset += 1;
+        // }
 
-        // //(uint8 v, bytes32 r, bytes32 s) = vm.sign(_tokenOwnerPrivateKey, hash);
-
-        // console.log("signer: ", ECDSA.recover(hash, v, r, s));
-        // console.log("tokenOwner: ", tokenOwner);
-
-        // // verify signature
-        // require(tokenOwner == ECDSA.recover(hash, v, r, s), "invalid signature");
-
-        // // check allowance
-        // assertEq(token.allowance(tokenOwner, tokenSpender), 0, "allowance should be 0");
-
-        // // call permit as and address a that is not tokenOwner
-        // assertTrue(address(this) != tokenOwner, "address(this) must not be tokenOwner");
-        // token.permit(tokenOwner, tokenSpender, _tokenPermitAmount, deadline, v, r, s);
-
-        // // check allowance
-        // assertEq(
-        //     token.allowance(tokenOwner, tokenSpender),
-        //     _tokenPermitAmount,
-        //     "allowance should be _tokenPermitAmount"
-        // );
-
-        // assertEq(
-        //     token.balanceOf(tokenOwner),
-        //     _tokenPermitAmount,
-        //     "token balance of tokenOwner should be _tokenPermitAmount"
-        // );
-        // // store token balance of tokenSpender
-        // uint tokenSpenderBalanceBefore = token.balanceOf(tokenSpender);
-
-        // console.log("Tranfering %s tokens from %s to %s", _tokenPermitAmount, tokenOwner, tokenSpender);
-        // // spend tokens
-        // vm.prank(tokenSpender);
-        // token.transferFrom(tokenOwner, tokenSpender, _tokenTransferAmount);
-
-        // // check token balance of tokenSpender
-        // assertEq(
-        //     token.balanceOf(tokenOwner),
-        //     _tokenPermitAmount - _tokenTransferAmount,
-        //     "token balance of tokenOwner should be _tokenPermitAmount - _tokenTransferAmount"
-        // );
-        // assertEq(
-        //     token.balanceOf(tokenSpender),
-        //     _tokenTransferAmount + tokenSpenderBalanceBefore,
-        //     "token balance of tokenSpender should be _tokenTransferAmount"
-        // );
+        // if (found) {
+        //     console.log("found deadline: ", deadline);
+        // } else {
+        //     console.log("not found");
+        // }
     }
 
     function testPermitMainnetEUROC() public {
