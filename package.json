@@ -81,7 +81,7 @@
   },
   "dependencies": {
     "@opengsn/contracts": "2.2.5",
-    "@openzeppelin/contracts": "4.8.0"
+    "@openzeppelin/contracts": "4.9.1"
   },
   "scripts": {
     "prepack": "yarn npmignore --auto && yarn test && yarn build ",
