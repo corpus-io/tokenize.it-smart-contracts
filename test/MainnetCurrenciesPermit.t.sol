@@ -127,35 +127,30 @@ contract MainnetCurrencies is Test {
         /*
             data for mainnet
         */
-        // ERC20Permit token = ERC20Permit(0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c);
-
-        // uint256 tokenPermitAmount = 1800000000;
-        // uint8 v = 27;
-        // bytes32 r = 0x6a563919a587bda53a1482d716bae140eae93bc19e458c9af99c903a83d566d8;
-        // bytes32 s = 0x4de5f3efd908d130d97c62042bb7d9f322a93ee405fede7a016b8511d3abdbb9;
-
-        // tokenOwner = 0xe8ef87DB07d9FD0544Ff1ECDa896f14208E4e207;
-        // address tokenSpender = 0x625F73836E72Da0b0819a0dD1427CF925592bcFd;
-
-        // // permit spender to spend holder's tokens
-        // nonce = 0; //token.nonces(tokenOwner);
-        // deadline = 1687392000; //1687392000;
+        ERC20Permit token = ERC20Permit(0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c);
+        uint256 tokenPermitAmount = 1800000000;
+        uint8 v = 27;
+        bytes32 r = 0x6a563919a587bda53a1482d716bae140eae93bc19e458c9af99c903a83d566d8;
+        bytes32 s = 0x4de5f3efd908d130d97c62042bb7d9f322a93ee405fede7a016b8511d3abdbb9;
+        tokenOwner = 0xe8ef87DB07d9FD0544Ff1ECDa896f14208E4e207;
+        address tokenSpender = 0x625F73836E72Da0b0819a0dD1427CF925592bcFd;
+        nonce = 0; //token.nonces(tokenOwner);
+        deadline = 1687392000; //1687392000;
+        DOMAIN_SEPARATOR = 0x99f188f447f0c6eaf68589359cd2ead8c2faaaaee984ab926fdb734d0040073b; // wrong separator on mainnet
 
         /*
             data for goerli
         */
-
-        ERC20Permit token = ERC20Permit(0xA683d909e996052955500DDc45CA13E25c76e286);
-        tokenOwner = 0xe8ef87DB07d9FD0544Ff1ECDa896f14208E4e207;
-        address tokenSpender = 0x0D4bE5bBE1e481576c0483BF355684CF5DF10b57;
-        uint256 tokenPermitAmount = 2000000;
-        uint8 v = 28;
-        bytes32 r = 0x8cbd86cbff62452aab8f05ad5affacb43cb910e03904466627fb58a23f44601e;
-        bytes32 s = 0x176899a64446d974f1c7c7495de14069597500ffb4284d22cb9734b0c3b81cc1;
-
-        // permit spender to spend holder's tokens
-        nonce = 0; //token.nonces(tokenOwner);
-        deadline = 1687478400; //1687392000;
+        // ERC20Permit token = ERC20Permit(0xA683d909e996052955500DDc45CA13E25c76e286);
+        // tokenOwner = 0xe8ef87DB07d9FD0544Ff1ECDa896f14208E4e207;
+        // address tokenSpender = 0x0D4bE5bBE1e481576c0483BF355684CF5DF10b57;
+        // uint256 tokenPermitAmount = 2000000;
+        // uint8 v = 28;
+        // bytes32 r = 0x8cbd86cbff62452aab8f05ad5affacb43cb910e03904466627fb58a23f44601e;
+        // bytes32 s = 0x176899a64446d974f1c7c7495de14069597500ffb4284d22cb9734b0c3b81cc1;
+        // nonce = 0; //token.nonces(tokenOwner);
+        // deadline = 1687478400; //1687392000;
+        // DOMAIN_SEPARATOR = token.DOMAIN_SEPARATOR();
 
         PERMIT_TYPE_HASH = keccak256(
             "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
@@ -164,7 +159,6 @@ contract MainnetCurrencies is Test {
         console.log("PERMIT_TYPE_HASH:");
         console.logBytes32(PERMIT_TYPE_HASH);
 
-        DOMAIN_SEPARATOR = token.DOMAIN_SEPARATOR();
         console.log("DOMAIN_SEPARATOR:");
         console.logBytes32(DOMAIN_SEPARATOR);
         console.log("keccak256(abi.encode(DOMAIN_SEPARATOR)):");
