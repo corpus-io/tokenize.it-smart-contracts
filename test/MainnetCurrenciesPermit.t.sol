@@ -138,6 +138,20 @@ contract MainnetCurrencies is Test {
         deadline = 1687392000; //1687392000;
         DOMAIN_SEPARATOR = 0x99f188f447f0c6eaf68589359cd2ead8c2faaaaee984ab926fdb734d0040073b; // wrong separator on mainnet
 
+        console.log("Domain separator tests");
+        bytes32 domainSeparator = keccak256(
+            abi.encode(
+                // keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
+                0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f,
+                keccak256(bytes("SSS Coin")),
+                keccak256(bytes("2")),
+                1,
+                address(token)
+            )
+        );
+        console.log("domainSeparator:");
+        console.logBytes32(domainSeparator);
+
         /*
             data for goerli
         */
@@ -151,6 +165,20 @@ contract MainnetCurrencies is Test {
         // nonce = 0; //token.nonces(tokenOwner);
         // deadline = 1687478400; //1687392000;
         // DOMAIN_SEPARATOR = token.DOMAIN_SEPARATOR();
+
+        // console.log("Domain separator tests");
+        // bytes32 domainSeparator = keccak256(
+        //     abi.encode(
+        //         // keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
+        //         0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f,
+        //         keccak256(bytes("Euro Coin")),
+        //         keccak256(bytes("2")),
+        //         5,
+        //         address(token)
+        //     )
+        // );
+        // console.log("domainSeparator:");
+        // console.logBytes32(domainSeparator);
 
         PERMIT_TYPE_HASH = keccak256(
             "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
@@ -179,33 +207,6 @@ contract MainnetCurrencies is Test {
         if (tokenOwner == ECDSA.recover(hash, v, r, s)) {
             console.log("matches");
         } else console.log("does not match");
-
-        // bool found = false;
-        // uint offset = 0;
-        // while (!found && offset < 1) {
-        //     uint256 localDeadline = deadline - offset; // switch this between + and - to find the deadline
-        //     structHash = keccak256(
-        //         abi.encode(PERMIT_TYPE_HASH, tokenOwner, tokenSpender, tokenPermitAmount, localDeadline, nonce)
-        //     );
-
-        //     hash = ECDSA.toTypedDataHash(DOMAIN_SEPARATOR, structHash);
-
-        //     if (tokenOwner == ECDSA.recover(hash, v, r, s)) {
-        //         found = true;
-        //         deadline = localDeadline;
-        //         console.log("found deadline: ", deadline);
-        //     }
-
-        //     //console.log("deadline: %d, address: %s", localDeadline, ECDSA.recover(hash, v, r, s));
-
-        //     offset += 1;
-        // }
-
-        // if (found) {
-        //     console.log("found deadline: ", deadline);
-        // } else {
-        //     console.log("not found");
-        // }
     }
 
     function testPermitMainnetEUROC() public {
