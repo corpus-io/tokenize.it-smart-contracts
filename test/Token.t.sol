@@ -257,6 +257,20 @@ contract tokenTest is Test {
         assertTrue(token.mintingAllowance(minter) == 0);
     }
 
+    function testMintAllowerDoesNotNeedAllowance(uint256 x) public {
+        vm.assume(x <= UINT256_MAX - x / FeeSettings(address(token.feeSettings())).tokenFeeDenominator()); // avoid overflow
+        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
+
+        vm.prank(admin);
+        token.grantRole(roleMintAllower, mintAllower);
+        assertTrue(token.mintingAllowance(mintAllower) == 0);
+
+        vm.prank(mintAllower);
+        token.mint(pauser, x);
+        assertTrue(token.balanceOf(pauser) == x);
+        assertTrue(token.mintingAllowance(minter) == 0);
+    }
+
     function testIncreaseAllowance(uint256 x, uint256 y) public {
         vm.assume(
             x < UINT256_MAX - y &&
