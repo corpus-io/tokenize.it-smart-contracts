@@ -80,7 +80,7 @@ contract PersonalInviteTimeLockTest is Test {
         assertEq(token.balanceOf(tokenReceiver), 0);
 
         // wait for the lock to expire
-        vm.warp(lockDuration + 2); // +2 to account for block time, which starts at 1 in these tests
+        vm.warp(block.timestamp + lockDuration + 2); // +2 to account for block time, which starts at 1 in these tests
 
         // release tokens
         timeLock.release(address(token));
@@ -104,13 +104,15 @@ contract PersonalInviteTimeLockTest is Test {
     ) public {
         vm.assume(releaseStartTime > attemptTime);
         vm.assume(releaseDuration < 20 * 365 * 24 * 60 * 60); // 20 years
-        vm.assume(type(uint64).max - releaseDuration - 1 > releaseStartTime);
+        vm.assume(type(uint64).max - releaseDuration - 1 - block.timestamp > releaseStartTime);
         vm.assume(attemptTime < releaseStartTime + releaseDuration);
         vm.assume(attemptTime > 1);
         vm.assume(releaseStartTime > 1);
 
-        // check current time is 0 -> makes math easier further down
-        uint256 testStartTime = block.timestamp;
+        // reference all times to current time. Important for when testing with mainnet forks.
+        uint64 testStartTime = uint64(block.timestamp);
+        attemptTime += testStartTime;
+        releaseStartTime += testStartTime;
         assertTrue(testStartTime < releaseStartTime, "testStartTime >= releaseStartTime");
 
         // get future vestingWallet address.
