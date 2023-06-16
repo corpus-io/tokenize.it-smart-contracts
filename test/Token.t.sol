@@ -30,7 +30,6 @@ contract tokenTest is Test {
         Fees memory fees = Fees(100, 100, 100, 0);
         feeSettings = new FeeSettings(fees, admin);
         token = new Token(trustedForwarder, feeSettings, admin, allowList, 0x0, "testToken", "TEST");
-        console.log(msg.sender);
 
         // set up roles
         vm.startPrank(admin);
@@ -174,12 +173,6 @@ contract tokenTest is Test {
         token.grantRole(role, pauser);
         assertTrue(token.hasRole(role, pauser));
     }
-
-    // function testFailRemoveLastDefaultAdmin() public {
-    //     bytes32 role = token.DEFAULT_ADMIN_ROLE();
-    //     vm.prank(admin);
-    //     token.revokeRole(role, admin);
-    // }
 
     function testSetRequirements(uint256 newRequirements) public {
         bytes32 role = token.REQUIREMENT_ROLE();
@@ -823,6 +816,51 @@ contract tokenTest is Test {
         vm.prank(pauser);
         token.transfer(burner, 20);
         assertTrue(token.balanceOf(burner) == 40);
+    }
+
+    function testTransferWith0Requirements() public {
+        uint256 mintAmount = 200;
+        uint256 transferAmount = 82;
+        address receiver = address(0x123);
+        vm.assume(mintAmount >= transferAmount);
+        vm.assume(mintAmount < type(uint256).max / 2); // avoid overflow due to fees
+        vm.assume(receiver != address(0));
+        vm.assume(receiver != pauser);
+
+        // create tokens
+        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
+
+        vm.prank(admin);
+        token.grantRole(roleMintAllower, mintAllower);
+        vm.prank(mintAllower);
+        token.increaseMintingAllowance(minter, mintAmount);
+        assertTrue(token.mintingAllowance(minter) == mintAmount);
+
+        // set requirements to 0
+        bytes32 role = token.REQUIREMENT_ROLE();
+        vm.prank(admin);
+        token.grantRole(role, requirer);
+        vm.prank(requirer);
+        token.setRequirements(0);
+        assertTrue(token.requirements() == 0);
+
+        // mint some tokens
+        vm.prank(minter);
+        token.mint(pauser, mintAmount);
+
+        assertTrue(token.balanceOf(pauser) == mintAmount);
+
+        // transfer token
+        vm.prank(pauser);
+        uint256 gasAfter = gasleft();
+        uint256 gasBefore = gasleft();
+        token.transfer(receiver, transferAmount);
+        gasAfter = gasleft();
+
+        console.log("gas used: ", gasBefore - gasAfter);
+
+        assertTrue(token.balanceOf(pauser) == mintAmount - transferAmount);
+        assertTrue(token.balanceOf(receiver) == transferAmount);
     }
 
     function testLoseAndGainRequirements() public {
