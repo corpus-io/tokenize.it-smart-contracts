@@ -4,19 +4,20 @@ pragma solidity ^0.8.13;
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/Token.sol";
 import "../contracts/PersonalInvite.sol";
-import "../contracts/PersonalInviteFactory.sol";
+import "../contracts/PersonalInviteCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
+import "./resources/FakePaymentToken.sol";
 
-contract PersonalInviteFactoryTest is Test {
+contract PersonalInviteCloneFactoryyTest is Test {
     event Deploy(address indexed addr);
 
-    PersonalInviteFactory factory;
+    PersonalInviteCloneFactory factory;
 
     AllowList list;
     FeeSettings feeSettings;
 
     Token token;
-    Token currency; // todo: add different ERC20 token as currency!
+    FakePaymentToken currency; // todo: add different ERC20 token as currency!
 
     uint256 MAX_INT = type(uint256).max;
 
@@ -58,34 +59,40 @@ contract PersonalInviteFactoryTest is Test {
     // }
 
     function setUp() public {
-        factory = new PersonalInviteFactory();
         list = new AllowList();
         Fees memory fees = Fees(100, 100, 100, 0);
         feeSettings = new FeeSettings(fees, admin);
 
         token = new Token(trustedForwarder, feeSettings, admin, list, 0x0, "token", "TOK");
-        currency = new Token(trustedForwarder, feeSettings, admin, list, 0x0, "currency", "CUR");
+        vm.prank(paymentTokenProvider);
+        currency = new FakePaymentToken(0, 18);
+        // address dummyInvestor = address(0x42);
+        // uint256 dummyAmount = 1;
+        // vm.prank(paymentTokenProvider);
+        // currency.mint(buyer, 1e20);
+        // vm.prank(dummyInvestor);
+        // currency.approve(expectedAddress, 1e20);
+        // need to deploy a personalInvite first
+        PersonalInviteCloneable inviteImplementation = new PersonalInviteCloneable();
+        // dummyInvestor,
+        // dummyInvestor,
+        // dummyInvestor,
+        // 1,
+        // 1,
+        // 1e28,
+        // currency,
+        // token
+
+        factory = new PersonalInviteCloneFactory(address(inviteImplementation));
     }
 
     function testDeployContract() public {
-        uint256 rawSalt = 0;
-        bytes32 salt = bytes32(rawSalt);
-
-        //bytes memory creationCode = type(PersonalInvite).creationCode;
         uint256 amount = 20000000000000;
         uint256 expiration = block.timestamp + 1000;
 
-        address expectedAddress = factory.getAddress(
-            salt,
-            buyer,
-            buyer,
-            receiver,
-            amount,
-            price,
-            expiration,
-            currency,
-            token
-        );
+        bytes32 hash = keccak256(abi.encodePacked(buyer, buyer, receiver, amount, price, expiration, currency, token));
+
+        address expectedAddress = factory.predictCloneAddress(hash);
 
         // make sure no contract lives here yet
         uint256 len;
@@ -97,19 +104,16 @@ contract PersonalInviteFactoryTest is Test {
         vm.prank(admin);
         token.increaseMintingAllowance(expectedAddress, amount);
 
-        vm.prank(admin);
-        currency.increaseMintingAllowance(admin, amount * price);
+        uint256 totalPrice = 1e20; //Math.ceilDiv(amount * price, 10 ** token.decimals());
 
-        vm.prank(admin);
-        currency.mint(buyer, amount * price);
+        vm.prank(paymentTokenProvider);
+        currency.mint(buyer, totalPrice);
+
         vm.prank(buyer);
-        currency.approve(expectedAddress, amount * price);
-
-        vm.expectEmit(true, true, true, true, address(factory));
-        emit Deploy(expectedAddress);
+        currency.approve(expectedAddress, totalPrice);
 
         uint256 gasBefore = gasleft();
-        factory.deploy(salt, buyer, buyer, receiver, amount, price, expiration, currency, token);
+        factory.createPersonalInvite(hash, buyer, buyer, receiver, amount, price, expiration, currency, token);
         uint256 gasAfter = gasleft();
         console.log("gas used: %s", gasBefore - gasAfter);
 
