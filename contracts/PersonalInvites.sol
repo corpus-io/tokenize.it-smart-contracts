@@ -3,90 +3,112 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 import "./Token.sol";
 
-/**
- * @title PersonalInvite
- * @author malteish, cjentzsch
- * @notice This contract represents the offer to buy an amount of tokens at a preset price. It is created for a specific buyer and can only be claimed once and only by that buyer.
- *     All parameters of the invitation (currencyPayer, tokenReceiver, currencyReceiver, tokenAmount, tokenPrice, currency, token) are immutable (see description of CREATE2).
- *     It is likely a company will create many PersonalInvites for specific investors to buy their one token.
- *     The use of CREATE2 (https://docs.openzeppelin.com/cli/2.8/deploying-with-create2) enables this invitation to be privacy preserving until it is accepted through
- *     granting of an allowance to the PersonalInvite's future address and deployment of the PersonalInvite.
- * @dev This contract is deployed using CREATE2 (https://docs.openzeppelin.com/cli/2.8/deploying-with-create2), using a deploy factory. That makes the future address of this contract
- *     deterministic: it can be computed from the parameters of the invitation. This allows the company and buyer to grant allowances to the future address of this contract
- *     before it is deployed.
- *     The process of deploying this contract is as follows:
- *     1. Company and investor agree on the terms of the invitation (currencyPayer, tokenReceiver, currencyReceiver, tokenAmount, tokenPrice, currency, token)
- *         and a salt (used for deployment only).
- *     2. With the help of a deploy factory, the company computes the future address of the PersonalInvite contract.
- *     3. The company grants a token minting allowance of amount to the future address of the PersonalInvite contract.
- *     4. The investor grants a currency allowance of amount*tokenPrice / 10**tokenDecimals to the future address of the PersonalInvite contract, using their currencyPayer address.
- *     5. Finally, company, buyer or anyone else deploys the PersonalInvite contract using the deploy factory.
- *     Because all of the execution logic is in the constructor, the deployment of the PersonalInvite contract is the last step. During the deployment, the newly
- *     minted tokens will be transferred to the buyer and the currency will be transferred to the company's receiver address.
- */
-contract PersonalInvites {
+contract PersonalInvites is ERC2771Context {
     using SafeERC20 for IERC20;
 
-    /**
-     * @notice Emitted when a PersonalInvite is deployed. `currencyPayer` paid for `tokenAmount` tokens at `tokenPrice` per token. The tokens were minted to `tokenReceiver`.
-     *    The token is deployed at `token` and the currency is `currency`.
-     * @param currencyPayer address that paid the currency
-     * @param tokenReceiver address that received the tokens
-     * @param tokenAmount amount of tokens that were bought
-     * @param tokenPrice price company and investor agreed on
-     * @param currency currency used for payment
-     * @param token contract of the token that was bought
-     */
+    Token public immutable token;
+
+    struct investmentOffer {
+        address currencyPayer;
+        address tokenReceiver;
+        uint256 tokenAmount;
+        uint256 tokenPrice;
+        uint256 expiration;
+        IERC20 currency;
+    }
+
+    mapping(uint256 => investmentOffer) public commitments;
+
+    uint256 public nextId = 0;
+
+    // todo: do we want to be more dynamic with currencyReceiver?
+    address public currencyReceiver;
+
     event Deal(
         address indexed currencyPayer,
         address indexed tokenReceiver,
         uint256 tokenAmount,
         uint256 tokenPrice,
         IERC20 currency,
-        Token indexed token
+        uint256 commitmentId
     );
 
-    /**
-     * @notice Contains all logic, see above.
-     * @param _currencyPayer address holding the currency. Must have given sufficient allowance to this contract.
-     * @param _tokenReceiver address receiving the tokens. Must have sufficient attributes in AllowList to be able to receive tokens.
-     * @param _currencyReceiver address receiving the payment in currency.
-     * @param _tokenAmount amount of tokens to be bought.
-     * @param _tokenPrice price company and investor agreed on, see docs/price.md.
-     * @param _expiration timestamp after which the invitation is no longer valid.
-     * @param _currency currency used for payment
-     * @param _token token to be bought
-     */
-    function deal(
-        address _currencyPayer,
-        address _tokenReceiver,
+    constructor(
+        address _token,
         address _currencyReceiver,
+        address _trustedForwarder
+    ) ERC2771Context(_trustedForwarder) {
+        token = Token(_token);
+        currencyReceiver = _currencyReceiver;
+    }
+
+    // todo: add a function to cancel a commitment
+    // todo: add function to reject a commitment
+    // todo: add function to update currencyReceiver
+
+    function offer(
+        address _tokenReceiver,
         uint256 _tokenAmount,
         uint256 _tokenPrice,
         uint256 _expiration,
-        IERC20 _currency,
-        Token _token
-    ) public {
-        require(_currencyPayer != address(0), "_currencyPayer can not be zero address");
+        IERC20 _currency
+    ) public returns (uint256) {
         require(_tokenReceiver != address(0), "_tokenReceiver can not be zero address");
-        require(_currencyReceiver != address(0), "_currencyReceiver can not be zero address");
         require(_tokenPrice != 0, "_tokenPrice can not be zero");
         require(block.timestamp <= _expiration, "Deal expired");
 
-        // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
-        uint256 currencyAmount = Math.ceilDiv(_tokenAmount * _tokenPrice, 10 ** _token.decimals());
+        /* 
+            commitments can only be made by the payer of the currency. Otherwise, an attacker
+            could create commitments that use the allowances of other users.
+        */
+        commitments[nextId] = investmentOffer(
+            _msgSender(),
+            _tokenReceiver,
+            _tokenAmount,
+            _tokenPrice,
+            _expiration,
+            _currency
+        );
 
-        IFeeSettingsV1 feeSettings = _token.feeSettings();
+        // todo: decide on where to safeguard currencies! List of acceptable currencies?
+
+        nextId++;
+
+        // todo: emit event with commitment id
+        return nextId - 1;
+    }
+
+    function accept(uint256 _commitmentId) public {
+        // _msgSender() must be a token admin. Todo: add role InviteClaimer or similar.
+        require(token.hasRole(token.DEFAULT_ADMIN_ROLE(), _msgSender()), "Caller is not a token admin");
+
+        investmentOffer memory commitment = commitments[_commitmentId];
+        require(block.timestamp <= commitment.expiration, "Deal expired");
+
+        // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
+        uint256 currencyAmount = Math.ceilDiv(commitment.tokenAmount * commitment.tokenPrice, 10 ** token.decimals());
+
+        IFeeSettingsV1 feeSettings = token.feeSettings();
         uint256 fee = feeSettings.personalInviteFee(currencyAmount);
         if (fee != 0) {
-            _currency.safeTransferFrom(_currencyPayer, feeSettings.feeCollector(), fee);
+            commitment.currency.safeTransferFrom(commitment.currencyPayer, feeSettings.feeCollector(), fee);
         }
-        _currency.safeTransferFrom(_currencyPayer, _currencyReceiver, (currencyAmount - fee));
+        commitment.currency.safeTransferFrom(commitment.currencyPayer, currencyReceiver, (currencyAmount - fee));
 
-        _token.mint(_tokenReceiver, _tokenAmount);
+        token.mint(commitment.tokenReceiver, commitment.tokenAmount);
 
-        emit Deal(_currencyPayer, _tokenReceiver, _tokenAmount, _tokenPrice, _currency, _token);
+        commitments[_commitmentId] = investmentOffer(address(0), address(0), 0, 0, 0, IERC20(address(0)));
+
+        emit Deal(
+            commitment.currencyPayer,
+            commitment.tokenReceiver,
+            commitment.tokenAmount,
+            commitment.tokenPrice,
+            commitment.currency,
+            _commitmentId
+        );
     }
 }
