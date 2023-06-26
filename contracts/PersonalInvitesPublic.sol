@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 import "./Token.sol";
 
-contract PersonalInvites is ERC2771Context {
+contract PersonalInvitesPublic is ERC2771Context {
     using SafeERC20 for IERC20;
 
     Token public immutable token;

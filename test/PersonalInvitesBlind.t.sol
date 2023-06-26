@@ -4,12 +4,12 @@ pragma solidity ^0.8.13;
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/Token.sol";
 import "../contracts/PersonalInvite.sol";
-import "../contracts/PersonalInvites.sol";
+import "../contracts/PersonalInvitesBlind.sol";
 import "../contracts/PersonalInviteFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 
-contract PersonalInvitesTest is Test {
+contract PersonalInvitesBlindTest is Test {
     event Deal(
         address indexed currencyPayer,
         address indexed tokenReceiver,
@@ -26,7 +26,7 @@ contract PersonalInvitesTest is Test {
     Token token;
     FakePaymentToken currency;
 
-    PersonalInvites personalInvites;
+    PersonalInvitesBlind personalInvites;
 
     uint256 MAX_INT = type(uint256).max;
 
@@ -53,7 +53,7 @@ contract PersonalInvitesTest is Test {
 
         token = new Token(trustedForwarder, feeSettings, admin, list, requirements, "token", "TOK");
 
-        personalInvites = new PersonalInvites(address(token), currencyReceiver, trustedForwarder);
+        personalInvites = new PersonalInvitesBlind(address(token), currencyReceiver, trustedForwarder);
 
         vm.prank(paymentTokenProvider);
         currency = new FakePaymentToken(0, 18);
@@ -98,9 +98,9 @@ contract PersonalInvitesTest is Test {
          */
         vm.startPrank(currencyPayer);
         // step 1: commit to investment
+        bytes32 bch = keccak256(abi.encodePacked(currencyPayer, tokenReceiver, amount, price, expiration, currency));
         uint256 gasBefore = gasleft();
-
-        uint256 id = personalInvites.offer(tokenReceiver, amount, price, expiration, currency);
+        personalInvites.offer(bch);
         uint256 gasAfter = gasleft();
         uint256 gasOffer = gasBefore - gasAfter;
         console.log("gas for offer: %s", gasOffer);
@@ -122,7 +122,7 @@ contract PersonalInvitesTest is Test {
         gasBefore = gasleft();
         // step 2: accept investment
 
-        personalInvites.accept(id);
+        personalInvites.accept(bch, tokenReceiver, amount, price, expiration, currency);
         gasAfter = gasleft();
         uint256 gasAccept = gasBefore - gasAfter;
         console.log("gas accept: %s", gasAccept);
