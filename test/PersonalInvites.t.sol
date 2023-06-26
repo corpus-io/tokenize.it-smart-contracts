@@ -4,11 +4,12 @@ pragma solidity ^0.8.13;
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/Token.sol";
 import "../contracts/PersonalInvite.sol";
+import "../contracts/PersonalInvites.sol";
 import "../contracts/PersonalInviteFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 
-contract PersonalInviteTest is Test {
+contract PersonalInvitesTest is Test {
     event Deal(
         address indexed currencyPayer,
         address indexed tokenReceiver,
@@ -54,30 +55,17 @@ contract PersonalInviteTest is Test {
         currency = new FakePaymentToken(0, 18);
     }
 
-    function testAcceptDeal(uint256 rawSalt) public {
+    function testPersonalInvites() public {
         console.log(
             "feeCollector currency balance: %s",
             currency.balanceOf(FeeSettings(address(token.feeSettings())).feeCollector())
         );
 
-        //uint rawSalt = 0;
-        bytes32 salt = bytes32(rawSalt);
-
         //bytes memory creationCode = type(PersonalInvite).creationCode;
         uint256 amount = 20000000000000;
         uint256 expiration = block.timestamp + 1000;
 
-        address expectedAddress = factory.getAddress(
-            salt,
-            tokenReceiver,
-            tokenReceiver,
-            currencyReceiver,
-            amount,
-            price,
-            expiration,
-            currency,
-            token
-        );
+        address personalInvite2 = address(new PersonalInvites());
 
         uint256 tokenDecimals = token.decimals();
 
@@ -86,10 +74,10 @@ contract PersonalInviteTest is Test {
         vm.stopPrank();
 
         vm.prank(admin);
-        token.increaseMintingAllowance(expectedAddress, amount);
+        token.increaseMintingAllowance(personalInvite2, amount);
 
         vm.prank(tokenReceiver);
-        currency.approve(expectedAddress, (amount * price) / 10 ** tokenDecimals);
+        currency.approve(personalInvite2, (amount * price) / 10 ** tokenDecimals);
 
         // make sure balances are as expected before deployment
 
@@ -111,11 +99,11 @@ contract PersonalInviteTest is Test {
         uint256 feeCollectorCurrencyBalanceBefore = currency.balanceOf(
             FeeSettings(address(token.feeSettings())).feeCollector()
         );
-        vm.expectEmit(true, true, true, true, address(expectedAddress));
+        vm.expectEmit(true, true, true, true, address(personalInvite2));
         emit Deal(tokenReceiver, tokenReceiver, amount, price, currency, token);
 
-        address inviteAddress = factory.deploy(
-            salt,
+        uint256 gasBefore = gasleft();
+        PersonalInvites(personalInvite2).deal(
             tokenReceiver,
             tokenReceiver,
             currencyReceiver,
@@ -125,22 +113,17 @@ contract PersonalInviteTest is Test {
             currency,
             token
         );
+        uint256 gasAfter = gasleft();
+        console.log("gas used: %s", gasBefore - gasAfter);
 
         console.log(
             "feeCollector currency balance after deployment: %s",
             currency.balanceOf(FeeSettings(address(token.feeSettings())).feeCollector())
         );
 
-        assertEq(inviteAddress, expectedAddress, "deployed contract address is not correct");
-
         console.log("buyer balance: %s", currency.balanceOf(tokenReceiver));
         console.log("receiver balance: %s", currency.balanceOf(currencyReceiver));
         console.log("buyer token balance: %s", token.balanceOf(tokenReceiver));
-        uint256 len;
-        assembly {
-            len := extcodesize(expectedAddress)
-        }
-        console.log("Deployed contract size: %s", len);
         assertEq(currency.balanceOf(tokenReceiver), 0);
 
         assertEq(
