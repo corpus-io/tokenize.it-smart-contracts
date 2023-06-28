@@ -732,19 +732,32 @@ contract ContinuousFundraisingTest is Test {
     /*
         try to unpause too soon after setMaxAmountOfTokenToBeSold
     */
-    function testFailUnpauseTooSoonAfterSetMaxAmountOfTokenToBeSold() public {
-        uint256 time = block.timestamp;
-        vm.warp(time);
+    function testUnpauseTooSoonAfterSetMaxAmountOfTokenToBeSold(
+        uint128 startTime,
+        uint32 changeDelay,
+        uint32 attemptUnpauseDelay
+    ) public {
+        uint256 unpauseDelay = raise.delay();
+        vm.assume(startTime < type(uint128).max / 2);
+        vm.assume(startTime > 0);
+        vm.assume(changeDelay > 0);
+        vm.assume(attemptUnpauseDelay > 0);
+        vm.assume(attemptUnpauseDelay < unpauseDelay + changeDelay);
+
+        vm.warp(startTime);
         vm.prank(owner);
         raise.pause();
-        assertTrue(raise.paused());
-        assertTrue(raise.coolDownStart() == time);
-        vm.warp(time + 2 hours);
+        assertTrue(raise.paused(), "raise should be paused");
+        assertTrue(raise.coolDownStart() == startTime, "coolDownStart should be startTime");
+        vm.warp(startTime + changeDelay);
         vm.prank(owner);
         raise.setMaxAmountOfTokenToBeSold(700);
-        assertTrue(raise.coolDownStart() == time + 2 hours);
-        vm.warp(time + raise.delay() + 1 seconds);
+        assertTrue(raise.coolDownStart() == startTime + changeDelay, "coolDownStart should be startTime + changeDelay");
+        vm.warp(startTime + attemptUnpauseDelay);
         vm.prank(owner);
+        console.log("current time: ", block.timestamp);
+        console.log("unpause at: ", startTime + changeDelay + unpauseDelay);
+        vm.expectRevert("There needs to be at minimum one day to change parameters");
         raise.unpause(); // must fail because of the parameter update
     }
 
@@ -770,18 +783,34 @@ contract ContinuousFundraisingTest is Test {
     /*
         try to unpause too soon after setCurrencyReceiver
     */
-    function testFailUnpauseTooSoonAfterSetCurrencyReceiver() public {
+    function testUnpauseTooSoonAfterSetCurrencyReceiver() public {
         uint256 time = block.timestamp;
         vm.warp(time);
         vm.prank(owner);
         raise.pause();
+
         assertTrue(raise.paused());
         assertTrue(raise.coolDownStart() == time);
-        vm.warp(time + 2 hours);
+
+        // problem: using yul, this warp changes the contents of the "time" variable
+        console.log("stored time 1: ", time);
+        uint256 warpTo = 2 hours + time;
+        //vm.warp(time + 2 hours);
+        vm.warp(warpTo);
+        console.log("stored time 2: ", time);
+
+        console.log("cooldown start at: ", raise.coolDownStart());
         vm.prank(owner);
         raise.setCurrencyReceiver(payable(address(buyer)));
         assertTrue(raise.coolDownStart() == time + 2 hours);
-        vm.warp(time + raise.delay() + 1 hours);
+        console.log("cooldown start: ", raise.coolDownStart());
+        console.log("delay: ", raise.delay());
+        console.log("24 hours: ", 24 hours);
+        console.log("cooldown end: ", raise.coolDownStart() + raise.delay());
+        //uint256 timeshift = 24 hours;
+        vm.warp(26 hours + 1);
+        console.log("current time: ", block.timestamp);
+        vm.expectRevert("There needs to be at minimum one day to change parameters");
         vm.prank(owner);
         raise.unpause(); // must fail because of the parameter update
     }
