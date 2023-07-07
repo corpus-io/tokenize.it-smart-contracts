@@ -4,7 +4,6 @@ fuzz-runs = 10_000
 [profile.default]
 via-ir = true # Enable the IR-based optimizer (yul)
 optimizer = true
-optimizer_runs = 10_000
 bytecode_hash = "none" # prevents compiler from attaching bytecode hash to contract metadata
 
 [profile.fastDev]
