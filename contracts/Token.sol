@@ -21,7 +21,7 @@ import "./interfaces/IFeeSettings.sol";
  *
  * @dev The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support and meta-transactions.
  */
-contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
+contract Token is ERC2771Context, ERC20, Pausable, AccessControl {
     /// @notice The role that has the ability to define which requirements an address must satisfy to receive tokens
     bytes32 public constant REQUIREMENT_ROLE = keccak256("REQUIREMENT_ROLE");
     /// @notice The role that has the ability to grant minting allowances
@@ -109,7 +109,7 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
         uint256 _requirements,
         string memory _name,
         string memory _symbol
-    ) ERC2771Context(_trustedForwarder) ERC20Permit(_name) ERC20(_name, _symbol) {
+    ) ERC2771Context(_trustedForwarder) ERC20(_name, _symbol) {
         // Grant admin roles
         _grantRole(DEFAULT_ADMIN_ROLE, _admin); // except for the Transferer role, the _admin is the roles admin for all other roles
         _setRoleAdmin(TRANSFERER_ROLE, TRANSFERERADMIN_ROLE);
