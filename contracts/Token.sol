@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+
 import "./AllowList.sol";
 import "./interfaces/IFeeSettings.sol";
 
@@ -21,7 +23,7 @@ import "./interfaces/IFeeSettings.sol";
  *
  * @dev The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support and meta-transactions.
  */
-contract Token is ERC2771Context, ERC20, Pausable, AccessControl {
+contract Token is ERC2771Context, ERC20, Pausable, AccessControl, Initializable {
     /// @notice The role that has the ability to define which requirements an address must satisfy to receive tokens
     bytes32 public constant REQUIREMENT_ROLE = keccak256("REQUIREMENT_ROLE");
     /// @notice The role that has the ability to grant minting allowances
@@ -110,6 +112,17 @@ contract Token is ERC2771Context, ERC20, Pausable, AccessControl {
         string memory _name,
         string memory _symbol
     ) ERC2771Context(_trustedForwarder) ERC20(_name, _symbol) {
+        initialize(_feeSettings, _admin, _allowList, _requirements, _name, _symbol);
+    }
+
+    function initialize(
+        IFeeSettingsV1 _feeSettings,
+        address _admin,
+        AllowList _allowList,
+        uint256 _requirements,
+        string memory _name,
+        string memory _symbol
+    ) public initializer {
         // Grant admin roles
         _grantRole(DEFAULT_ADMIN_ROLE, _admin); // except for the Transferer role, the _admin is the roles admin for all other roles
         _setRoleAdmin(TRANSFERER_ROLE, TRANSFERERADMIN_ROLE);
@@ -131,6 +144,54 @@ contract Token is ERC2771Context, ERC20, Pausable, AccessControl {
 
         // set requirements (can be 0 to allow everyone to send and receive tokens)
         requirements = _requirements;
+
+        // force-initialize the private variables name and symbol inherited from ERC20 using inline assembly
+        // solhint-disable-next-line no-inline-assembly
+        storeString(3, _name);
+        storeString(4, _symbol);
+    }
+
+    /**
+     * Taken from https://ethereum.stackexchange.com/questions/126269/how-to-store-and-retrieve-string-which-is-more-than-32-bytesor-could-be-less-th
+     */
+    function storeString(uint256 _lengthSlot, string memory _newContent) private {
+        // revert on empty string because the assembly seems not to handle it correctly
+        require(bytes(_newContent).length > 0, "String must not be empty");
+        bytes32 _dataSlot = keccak256(abi.encodePacked(_lengthSlot));
+
+        assembly {
+            let stringLength := mload(_newContent)
+
+            switch gt(stringLength, 0x1F)
+            // If string length <= 31 we store a short array
+            // length storage variable layout :
+            // bytes 0 - 31 : string data
+            // byte 32 : length * 2
+            // data storage variable is UNUSED in this case
+            case 0x00 {
+                sstore(_lengthSlot, or(mload(add(_newContent, 0x20)), mul(stringLength, 2)))
+            }
+            // If string length > 31 we store a long array
+            // length storage variable layout :
+            // bytes 0 - 32 : length * 2 + 1
+            // data storage layout :
+            // bytes 0 - 32 : string data
+            // If more than 32 bytes are required for the string we write them
+            // to the slot(s) following the slot of the data storage variable
+            case 0x01 {
+                // Store length * 2 + 1 at slot length
+                sstore(_lengthSlot, add(mul(stringLength, 2), 1))
+
+                // Then store the string content by blocks of 32 bytes
+                for {
+                    let i := 0
+                } lt(mul(i, 0x20), stringLength) {
+                    i := add(i, 0x01)
+                } {
+                    sstore(add(_dataSlot, i), mload(add(_newContent, mul(add(i, 1), 0x20))))
+                }
+            }
+        }
     }
 
     /**
