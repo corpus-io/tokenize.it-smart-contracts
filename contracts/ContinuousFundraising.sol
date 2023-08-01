@@ -121,13 +121,6 @@ contract ContinuousFundraising is ERC2771Context, Ownable2Step, Pausable, Reentr
         IERC20 _currency,
         Token _token
     ) public initializer {
-        currencyReceiver = _currencyReceiver;
-        minAmountPerBuyer = _minAmountPerBuyer;
-        maxAmountPerBuyer = _maxAmountPerBuyer;
-        tokenPrice = _tokenPrice;
-        maxAmountOfTokenToBeSold = _maxAmountOfTokenToBeSold;
-        currency = _currency;
-        token = _token;
         require(_currencyReceiver != address(0), "currencyReceiver can not be zero address");
         require(address(_currency) != address(0), "currency can not be zero address");
         require(address(_token) != address(0), "token can not be zero address");
@@ -137,9 +130,16 @@ contract ContinuousFundraising is ERC2771Context, Ownable2Step, Pausable, Reentr
         );
         require(_tokenPrice != 0, "_tokenPrice needs to be a non-zero amount");
         require(_maxAmountOfTokenToBeSold != 0, "_maxAmountOfTokenToBeSold needs to be larger than zero");
-
+        currencyReceiver = _currencyReceiver;
+        minAmountPerBuyer = _minAmountPerBuyer;
+        maxAmountPerBuyer = _maxAmountPerBuyer;
+        tokenPrice = _tokenPrice;
+        maxAmountOfTokenToBeSold = _maxAmountOfTokenToBeSold;
+        currency = _currency;
+        token = _token;
         // Initialize owner by writing the private variable `_owner` of the Ownable contract using assembly.
         // This will re-write the storage slot if the contract is created through the constructor, which is acceptable.
+        require(_owner != address(0), "owner can not be zero address");
         assembly {
             sstore(0, _owner)
         }

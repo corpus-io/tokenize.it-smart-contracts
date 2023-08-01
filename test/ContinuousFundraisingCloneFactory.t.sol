@@ -124,23 +124,136 @@ contract ContinuousFundraisingCloneFactoryTest is Test {
         assertTrue(clone.isTrustedForwarder(trustedForwarder), "trustedForwarder is wrong");
     }
 
-    // function testEmptyStringReverts(
-    //     bytes32 salt,
-    //     string memory someString,
-    //     address _admin,
-    //     address _allowList,
-    //     uint256 _requirements
-    // ) public {
-    //     vm.assume(_admin != address(0));
-    //     vm.assume(_allowList != address(0));
-    //     vm.assume(bytes(someString).length > 0);
+    function testAddress0Revert(
+        bytes32 _salt,
+        address _owner,
+        address _currencyReceiver,
+        uint256 _minAmountPerBuyer,
+        uint256 _maxAmountPerBuyer,
+        uint256 _tokenPrice,
+        uint256 _maxAmountOfTokenToBeSold,
+        address _currency,
+        address _token
+    ) public {
+        vm.assume(_owner != address(0));
+        vm.assume(_currencyReceiver != address(0));
+        vm.assume(_minAmountPerBuyer < _maxAmountPerBuyer);
+        vm.assume(_tokenPrice > 0);
+        vm.assume(_maxAmountOfTokenToBeSold > _minAmountPerBuyer);
+        vm.assume(_maxAmountOfTokenToBeSold > 0);
+        vm.assume(_currency != address(0));
+        vm.assume(_token != address(0));
 
-    //     FeeSettings _feeSettings = new FeeSettings(Fees(100, 100, 100, 0), feeSettingsAndAllowListOwner);
+        vm.expectRevert("owner can not be zero address");
+        cloneFactory.createContinuousFundraisingClone(
+            _salt,
+            address(0),
+            _currencyReceiver,
+            _minAmountPerBuyer,
+            _maxAmountPerBuyer,
+            _tokenPrice,
+            _maxAmountOfTokenToBeSold,
+            IERC20(_currency),
+            Token(_token)
+        );
 
-    //     vm.expectRevert("String must not be empty");
-    //     cloneFactory.createTokenClone(salt, _feeSettings, _admin, AllowList(_allowList), _requirements, "", someString);
+        vm.expectRevert("currencyReceiver can not be zero address");
+        cloneFactory.createContinuousFundraisingClone(
+            _salt,
+            _owner,
+            address(0),
+            _minAmountPerBuyer,
+            _maxAmountPerBuyer,
+            _tokenPrice,
+            _maxAmountOfTokenToBeSold,
+            IERC20(_currency),
+            Token(_token)
+        );
 
-    //     vm.expectRevert("String must not be empty");
-    //     cloneFactory.createTokenClone(salt, _feeSettings, _admin, AllowList(_allowList), _requirements, someString, "");
-    // }
+        vm.expectRevert("currency can not be zero address");
+        cloneFactory.createContinuousFundraisingClone(
+            _salt,
+            _owner,
+            _currencyReceiver,
+            _minAmountPerBuyer,
+            _maxAmountPerBuyer,
+            _tokenPrice,
+            _maxAmountOfTokenToBeSold,
+            IERC20(address(0)),
+            Token(_token)
+        );
+
+        vm.expectRevert("token can not be zero address");
+        cloneFactory.createContinuousFundraisingClone(
+            _salt,
+            _owner,
+            _currencyReceiver,
+            _minAmountPerBuyer,
+            _maxAmountPerBuyer,
+            _tokenPrice,
+            _maxAmountOfTokenToBeSold,
+            IERC20(_currency),
+            Token(address(0))
+        );
+    }
+
+    function testWrongNumbersRevert(
+        bytes32 _salt,
+        address _owner,
+        address _currencyReceiver,
+        uint256 _minAmountPerBuyer,
+        uint256 _maxAmountPerBuyer,
+        uint256 _tokenPrice,
+        uint256 _maxAmountOfTokenToBeSold,
+        address _currency,
+        address _token
+    ) public {
+        vm.assume(_owner != address(0));
+        vm.assume(_currencyReceiver != address(0));
+        vm.assume(_minAmountPerBuyer < _maxAmountPerBuyer);
+        vm.assume(_tokenPrice > 0);
+        vm.assume(_maxAmountOfTokenToBeSold > _minAmountPerBuyer);
+        vm.assume(_maxAmountOfTokenToBeSold > 0);
+        vm.assume(_currency != address(0));
+        vm.assume(_token != address(0));
+
+        vm.expectRevert("_minAmountPerBuyer needs to be smaller or equal to _maxAmountPerBuyer");
+        cloneFactory.createContinuousFundraisingClone(
+            _salt,
+            _owner,
+            _currencyReceiver,
+            _minAmountPerBuyer + 1,
+            _minAmountPerBuyer,
+            _tokenPrice,
+            _maxAmountOfTokenToBeSold,
+            IERC20(_currency),
+            Token(_token)
+        );
+
+        vm.expectRevert("_tokenPrice needs to be a non-zero amount");
+        cloneFactory.createContinuousFundraisingClone(
+            _salt,
+            _owner,
+            _currencyReceiver,
+            _minAmountPerBuyer,
+            _maxAmountPerBuyer,
+            0,
+            _maxAmountOfTokenToBeSold,
+            IERC20(_currency),
+            Token(_token)
+        );
+
+        vm.expectRevert("_maxAmountOfTokenToBeSold needs to be larger than zero");
+        cloneFactory.createContinuousFundraisingClone(
+            _salt,
+            _owner,
+            _currencyReceiver,
+            _minAmountPerBuyer,
+            _maxAmountPerBuyer,
+            _tokenPrice,
+            0,
+            IERC20(_currency),
+            Token(_token)
+        );
+    }
 }
