@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import "./Token.sol";
 
@@ -22,7 +23,7 @@ import "./Token.sol";
  *      A company will create only one ContinuousFundraising contract for their token (or one for each currency if they want to accept multiple currencies).
  * @dev The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support
  */
-contract ContinuousFundraising is ERC2771Context, Ownable2Step, Pausable, ReentrancyGuard {
+contract ContinuousFundraising is ERC2771Context, Ownable2Step, Pausable, ReentrancyGuard, Initializable {
     using SafeERC20 for IERC20;
 
     /// address that receives the currency when tokens are bought
@@ -97,6 +98,27 @@ contract ContinuousFundraising is ERC2771Context, Ownable2Step, Pausable, Reentr
         IERC20 _currency,
         Token _token
     ) ERC2771Context(_trustedForwarder) {
+        require(_trustedForwarder != address(0), "trustedForwarder can not be zero address");
+        initialize(
+            _currencyReceiver,
+            _minAmountPerBuyer,
+            _maxAmountPerBuyer,
+            _tokenPrice,
+            _maxAmountOfTokenToBeSold,
+            _currency,
+            _token
+        );
+    }
+
+    function initialize(
+        address _currencyReceiver,
+        uint256 _minAmountPerBuyer,
+        uint256 _maxAmountPerBuyer,
+        uint256 _tokenPrice,
+        uint256 _maxAmountOfTokenToBeSold,
+        IERC20 _currency,
+        Token _token
+    ) public initializer {
         currencyReceiver = _currencyReceiver;
         minAmountPerBuyer = _minAmountPerBuyer;
         maxAmountPerBuyer = _maxAmountPerBuyer;
@@ -104,7 +126,6 @@ contract ContinuousFundraising is ERC2771Context, Ownable2Step, Pausable, Reentr
         maxAmountOfTokenToBeSold = _maxAmountOfTokenToBeSold;
         currency = _currency;
         token = _token;
-        require(_trustedForwarder != address(0), "trustedForwarder can not be zero address");
         require(_currencyReceiver != address(0), "currencyReceiver can not be zero address");
         require(address(_currency) != address(0), "currency can not be zero address");
         require(address(_token) != address(0), "token can not be zero address");
