@@ -100,6 +100,7 @@ contract ContinuousFundraising is ERC2771Context, Ownable2Step, Pausable, Reentr
     ) ERC2771Context(_trustedForwarder) {
         require(_trustedForwarder != address(0), "trustedForwarder can not be zero address");
         initialize(
+            _msgSender(),
             _currencyReceiver,
             _minAmountPerBuyer,
             _maxAmountPerBuyer,
@@ -111,6 +112,7 @@ contract ContinuousFundraising is ERC2771Context, Ownable2Step, Pausable, Reentr
     }
 
     function initialize(
+        address _owner,
         address _currencyReceiver,
         uint256 _minAmountPerBuyer,
         uint256 _maxAmountPerBuyer,
@@ -135,6 +137,12 @@ contract ContinuousFundraising is ERC2771Context, Ownable2Step, Pausable, Reentr
         );
         require(_tokenPrice != 0, "_tokenPrice needs to be a non-zero amount");
         require(_maxAmountOfTokenToBeSold != 0, "_maxAmountOfTokenToBeSold needs to be larger than zero");
+
+        // Initialize owner by writing the private variable `_owner` of the Ownable contract using assembly.
+        // This will re-write the storage slot if the contract is created through the constructor, which is acceptable.
+        assembly {
+            sstore(0, _owner)
+        }
 
         // after creating the contract, it needs a minting allowance (in the token contract)
     }

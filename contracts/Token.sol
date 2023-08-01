@@ -147,14 +147,14 @@ contract Token is ERC2771Context, ERC20, Pausable, AccessControl, Initializable 
 
         // force-initialize the private variables name and symbol inherited from ERC20 using inline assembly
         // solhint-disable-next-line no-inline-assembly
-        storeString(3, _name);
-        storeString(4, _symbol);
+        _storeString(3, _name);
+        _storeString(4, _symbol);
     }
 
     /**
      * Taken from https://ethereum.stackexchange.com/questions/126269/how-to-store-and-retrieve-string-which-is-more-than-32-bytesor-could-be-less-th
      */
-    function storeString(uint256 _lengthSlot, string memory _newContent) private {
+    function _storeString(uint256 _lengthSlot, string memory _newContent) private {
         // revert on empty string because the assembly seems not to handle it correctly
         require(bytes(_newContent).length > 0, "String must not be empty");
         bytes32 _dataSlot = keccak256(abi.encodePacked(_lengthSlot));

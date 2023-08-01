@@ -11,6 +11,7 @@ contract ContinuousFundraisingCloneFactory is CloneFactory {
 
     function createContinuousFundraisingClone(
         bytes32 salt,
+        address _owner,
         address _currencyReceiver,
         uint256 _minAmountPerBuyer,
         uint256 _maxAmountPerBuyer,
@@ -21,6 +22,7 @@ contract ContinuousFundraisingCloneFactory is CloneFactory {
     ) external returns (address) {
         address clone = Clones.cloneDeterministic(implementation, salt);
         ContinuousFundraising(clone).initialize(
+            _owner,
             _currencyReceiver,
             _minAmountPerBuyer,
             _maxAmountPerBuyer,

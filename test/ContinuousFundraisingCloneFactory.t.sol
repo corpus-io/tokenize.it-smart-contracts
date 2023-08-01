@@ -65,6 +65,7 @@ contract ContinuousFundraisingCloneFactoryTest is Test {
         address actual = cloneFactory.createContinuousFundraisingClone(
             salt,
             admin,
+            admin,
             222,
             333,
             444,
@@ -76,7 +77,8 @@ contract ContinuousFundraisingCloneFactoryTest is Test {
     }
 
     function testInitialization(
-        bytes32 salt,
+        bytes32 _salt,
+        address _owner,
         address _currencyReceiver,
         uint256 _minAmountPerBuyer,
         uint256 _maxAmountPerBuyer,
@@ -85,6 +87,7 @@ contract ContinuousFundraisingCloneFactoryTest is Test {
         address _currency,
         address _token
     ) public {
+        vm.assume(_owner != address(0));
         vm.assume(_currencyReceiver != address(0));
         vm.assume(_minAmountPerBuyer < _maxAmountPerBuyer);
         vm.assume(_tokenPrice > 0);
@@ -95,7 +98,8 @@ contract ContinuousFundraisingCloneFactoryTest is Test {
 
         ContinuousFundraising clone = ContinuousFundraising(
             cloneFactory.createContinuousFundraisingClone(
-                salt,
+                _salt,
+                _owner,
                 _currencyReceiver,
                 _minAmountPerBuyer,
                 _maxAmountPerBuyer,
@@ -107,6 +111,7 @@ contract ContinuousFundraisingCloneFactoryTest is Test {
         );
 
         // ensure that the clone is initialized correctly
+        assertEq(clone.owner(), _owner, "owner not set");
         assertEq(clone.currencyReceiver(), _currencyReceiver, "currencyReceiver not set");
         assertEq(clone.minAmountPerBuyer(), _minAmountPerBuyer, "minAmountPerBuyer not set");
         assertEq(clone.maxAmountPerBuyer(), _maxAmountPerBuyer, "maxAmountPerBuyer not set");
@@ -117,10 +122,6 @@ contract ContinuousFundraisingCloneFactoryTest is Test {
 
         // check that the clone uses the same trustedForwarder as the implementation
         assertTrue(clone.isTrustedForwarder(trustedForwarder), "trustedForwarder is wrong");
-
-        console.log("owner: %s", clone.owner());
-
-        assertTrue(false);
     }
 
     // function testEmptyStringReverts(
