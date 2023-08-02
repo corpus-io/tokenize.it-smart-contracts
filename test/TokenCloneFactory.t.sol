@@ -73,12 +73,23 @@ contract tokenTest is Test {
             factory.createTokenClone(salt, _feeSettings, _admin, AllowList(_allowList), _requirements, name, symbol)
         );
 
+        // test constructor arguments are used
         assertEq(clone.name(), name, "name not set");
         assertEq(clone.symbol(), symbol, "symbol not set");
         assertTrue(clone.hasRole(clone.DEFAULT_ADMIN_ROLE(), _admin), "admin not set");
         assertEq(address(clone.allowList()), _allowList, "allowList not set");
         assertEq(clone.requirements(), _requirements, "requirements not set");
         assertEq(address(clone.feeSettings()), address(_feeSettings), "feeSettings not set");
+
+        // check trustedForwarder is set
+        assertTrue(clone.isTrustedForwarder(trustedForwarder), "trustedForwarder not set");
+
+        // test roles are assigned
+        assertTrue(clone.hasRole(clone.REQUIREMENT_ROLE(), _admin), "requirer not set");
+        assertTrue(clone.hasRole(clone.MINTALLOWER_ROLE(), _admin), "mintAllower not set");
+        assertTrue(clone.hasRole(clone.BURNER_ROLE(), _admin), "burner not set");
+        assertTrue(clone.hasRole(clone.TRANSFERERADMIN_ROLE(), _admin), "transfererAdmin not set");
+        assertTrue(clone.hasRole(clone.PAUSER_ROLE(), _admin), "pauser not set");
     }
 
     function testEmptyStringReverts(
@@ -99,5 +110,37 @@ contract tokenTest is Test {
 
         vm.expectRevert("String must not be empty");
         factory.createTokenClone(salt, _feeSettings, _admin, AllowList(_allowList), _requirements, someString, "");
+    }
+
+    /*
+        pausing and unpausing
+    */
+    function testPausing(address _admin, address rando) public {
+        vm.assume(admin != address(0));
+        vm.assume(rando != address(0));
+        vm.assume(rando != admin);
+
+        FeeSettings _feeSettings = new FeeSettings(Fees(100, 100, 100, 0), feeSettingsAndAllowListOwner);
+
+        Token _token = Token(
+            factory.createTokenClone(0, _feeSettings, _admin, AllowList(address(3)), 0, "TestToken", "TST")
+        );
+
+        vm.prank(rando);
+        vm.expectRevert();
+        _token.pause();
+
+        vm.prank(rando);
+        vm.expectRevert();
+        _token.unpause();
+
+        assertFalse(_token.paused());
+        vm.prank(_admin);
+        _token.pause();
+        assertTrue(_token.paused());
+
+        vm.prank(_admin);
+        _token.unpause();
+        assertFalse(_token.paused());
     }
 }

@@ -145,7 +145,7 @@ contract ContinuousFundraisingCloneFactoryTest is Test {
         vm.assume(_currency != address(0));
         vm.assume(_token != address(0));
 
-        vm.expectRevert("admin can not be zero address");
+        vm.expectRevert("owner can not be zero address");
         cloneFactory.createContinuousFundraisingClone(
             _salt,
             address(0),
