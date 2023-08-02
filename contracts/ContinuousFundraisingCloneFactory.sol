@@ -20,7 +20,6 @@ contract ContinuousFundraisingCloneFactory is CloneFactory {
         IERC20 _currency,
         Token _token
     ) external returns (address) {
-        require(_owner != address(0), "owner can not be zero address");
         address clone = Clones.cloneDeterministic(implementation, salt);
         ContinuousFundraising(clone).initialize(
             _owner,
