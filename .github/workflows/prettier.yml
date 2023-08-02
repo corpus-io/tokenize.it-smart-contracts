@@ -19,6 +19,10 @@ jobs:
           # Make sure the actual branch is checked out when running on pull requests
           ref: ${{ github.head_ref }}
 
+      - name: Install
+        working-directory: .
+        run: yarn install
+
       - name: Prettify solidity code
         uses: creyD/prettier_action@v4.3
         with:
