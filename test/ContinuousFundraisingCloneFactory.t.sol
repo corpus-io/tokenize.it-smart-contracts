@@ -5,6 +5,7 @@ import "../lib/forge-std/src/Test.sol";
 import "../contracts/ContinuousFundraisingCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
+import "./resources/MaliciousPaymentToken.sol";
 
 contract ContinuousFundraisingCloneFactoryTest is Test {
     ContinuousFundraising continuousFundraisingImplementation;
@@ -22,17 +23,17 @@ contract ContinuousFundraisingCloneFactoryTest is Test {
     address public constant transfererAdmin = 0x5109709EcFA91a80626ff3989d68f67F5B1dD125;
     address public constant transferer = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
     address public constant pauser = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
-    address public constant feeSettingsAndAllowListOwner = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
+    address public constant feeSettingsAndAllowListadmin = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
 
     uint256 requirements = 0;
 
     event RequirementsChanged(uint256 newRequirements);
 
     function setUp() public {
-        vm.startPrank(feeSettingsAndAllowListOwner);
+        vm.startPrank(feeSettingsAndAllowListadmin);
         allowList = new AllowList();
         Fees memory fees = Fees(100, 100, 100, 0);
-        feeSettings = new FeeSettings(fees, feeSettingsAndAllowListOwner);
+        feeSettings = new FeeSettings(fees, feeSettingsAndAllowListadmin);
         fakePaymentToken = new FakePaymentToken(100000, 18);
         vm.stopPrank();
 
@@ -78,7 +79,7 @@ contract ContinuousFundraisingCloneFactoryTest is Test {
 
     function testInitialization(
         bytes32 _salt,
-        address _owner,
+        address _admin,
         address _currencyReceiver,
         uint256 _minAmountPerBuyer,
         uint256 _maxAmountPerBuyer,
@@ -87,7 +88,7 @@ contract ContinuousFundraisingCloneFactoryTest is Test {
         address _currency,
         address _token
     ) public {
-        vm.assume(_owner != address(0));
+        vm.assume(_admin != address(0));
         vm.assume(_currencyReceiver != address(0));
         vm.assume(_minAmountPerBuyer < _maxAmountPerBuyer);
         vm.assume(_tokenPrice > 0);
@@ -99,7 +100,7 @@ contract ContinuousFundraisingCloneFactoryTest is Test {
         ContinuousFundraising clone = ContinuousFundraising(
             cloneFactory.createContinuousFundraisingClone(
                 _salt,
-                _owner,
+                _admin,
                 _currencyReceiver,
                 _minAmountPerBuyer,
                 _maxAmountPerBuyer,
@@ -111,7 +112,7 @@ contract ContinuousFundraisingCloneFactoryTest is Test {
         );
 
         // ensure that the clone is initialized correctly
-        assertEq(clone.owner(), _owner, "owner not set");
+        assertEq(clone.owner(), _admin, "admin not set");
         assertEq(clone.currencyReceiver(), _currencyReceiver, "currencyReceiver not set");
         assertEq(clone.minAmountPerBuyer(), _minAmountPerBuyer, "minAmountPerBuyer not set");
         assertEq(clone.maxAmountPerBuyer(), _maxAmountPerBuyer, "maxAmountPerBuyer not set");
@@ -126,7 +127,7 @@ contract ContinuousFundraisingCloneFactoryTest is Test {
 
     function testAddress0Revert(
         bytes32 _salt,
-        address _owner,
+        address _admin,
         address _currencyReceiver,
         uint256 _minAmountPerBuyer,
         uint256 _maxAmountPerBuyer,
@@ -135,7 +136,7 @@ contract ContinuousFundraisingCloneFactoryTest is Test {
         address _currency,
         address _token
     ) public {
-        vm.assume(_owner != address(0));
+        vm.assume(_admin != address(0));
         vm.assume(_currencyReceiver != address(0));
         vm.assume(_minAmountPerBuyer < _maxAmountPerBuyer);
         vm.assume(_tokenPrice > 0);
@@ -144,7 +145,7 @@ contract ContinuousFundraisingCloneFactoryTest is Test {
         vm.assume(_currency != address(0));
         vm.assume(_token != address(0));
 
-        vm.expectRevert("owner can not be zero address");
+        vm.expectRevert("admin can not be zero address");
         cloneFactory.createContinuousFundraisingClone(
             _salt,
             address(0),
@@ -160,7 +161,7 @@ contract ContinuousFundraisingCloneFactoryTest is Test {
         vm.expectRevert("currencyReceiver can not be zero address");
         cloneFactory.createContinuousFundraisingClone(
             _salt,
-            _owner,
+            _admin,
             address(0),
             _minAmountPerBuyer,
             _maxAmountPerBuyer,
@@ -173,7 +174,7 @@ contract ContinuousFundraisingCloneFactoryTest is Test {
         vm.expectRevert("currency can not be zero address");
         cloneFactory.createContinuousFundraisingClone(
             _salt,
-            _owner,
+            _admin,
             _currencyReceiver,
             _minAmountPerBuyer,
             _maxAmountPerBuyer,
@@ -186,7 +187,7 @@ contract ContinuousFundraisingCloneFactoryTest is Test {
         vm.expectRevert("token can not be zero address");
         cloneFactory.createContinuousFundraisingClone(
             _salt,
-            _owner,
+            _admin,
             _currencyReceiver,
             _minAmountPerBuyer,
             _maxAmountPerBuyer,
@@ -199,7 +200,7 @@ contract ContinuousFundraisingCloneFactoryTest is Test {
 
     function testWrongNumbersRevert(
         bytes32 _salt,
-        address _owner,
+        address _admin,
         address _currencyReceiver,
         uint256 _minAmountPerBuyer,
         uint256 _maxAmountPerBuyer,
@@ -208,7 +209,7 @@ contract ContinuousFundraisingCloneFactoryTest is Test {
         address _currency,
         address _token
     ) public {
-        vm.assume(_owner != address(0));
+        vm.assume(_admin != address(0));
         vm.assume(_currencyReceiver != address(0));
         vm.assume(_minAmountPerBuyer < _maxAmountPerBuyer);
         vm.assume(_tokenPrice > 0);
@@ -220,7 +221,7 @@ contract ContinuousFundraisingCloneFactoryTest is Test {
         vm.expectRevert("_minAmountPerBuyer needs to be smaller or equal to _maxAmountPerBuyer");
         cloneFactory.createContinuousFundraisingClone(
             _salt,
-            _owner,
+            _admin,
             _currencyReceiver,
             _minAmountPerBuyer + 1,
             _minAmountPerBuyer,
@@ -233,7 +234,7 @@ contract ContinuousFundraisingCloneFactoryTest is Test {
         vm.expectRevert("_tokenPrice needs to be a non-zero amount");
         cloneFactory.createContinuousFundraisingClone(
             _salt,
-            _owner,
+            _admin,
             _currencyReceiver,
             _minAmountPerBuyer,
             _maxAmountPerBuyer,
@@ -246,7 +247,7 @@ contract ContinuousFundraisingCloneFactoryTest is Test {
         vm.expectRevert("_maxAmountOfTokenToBeSold needs to be larger than zero");
         cloneFactory.createContinuousFundraisingClone(
             _salt,
-            _owner,
+            _admin,
             _currencyReceiver,
             _minAmountPerBuyer,
             _maxAmountPerBuyer,
@@ -255,5 +256,119 @@ contract ContinuousFundraisingCloneFactoryTest is Test {
             IERC20(_currency),
             Token(_token)
         );
+    }
+
+    /*
+    set up with MaliciousPaymentToken which tries to reenter the buy function
+    */
+    function testCloneIsProtectedFromReentrancy() public {
+        MaliciousPaymentToken _paymentToken;
+        uint8 _paymentTokenDecimals = 18;
+        address buyer = pauser;
+
+        /*
+        _paymentToken: 1 FPT = 10**_paymentTokenDecimals FPTbits (bit = smallest subunit of token)
+        Token: 1 CT = 10**18 CTbits
+        price definition: 30FPT buy 1CT, but must be expressed in FPTbits/CT
+        price = 30 * 10**_paymentTokenDecimals
+        */
+
+        uint256 _price = 7 * 10 ** _paymentTokenDecimals;
+        uint256 _maxMintAmount = 1000 * 10 ** 18; // 2**256 - 1; // need maximum possible value because we are using a fake token with variable decimals
+        uint256 _paymentTokenAmount = 100000 * 10 ** _paymentTokenDecimals;
+
+        AllowList list = new AllowList();
+        Token _token = new Token(trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST");
+
+        _paymentToken = new MaliciousPaymentToken(_paymentTokenAmount);
+
+        vm.prank(admin);
+        ContinuousFundraising _raise = ContinuousFundraising(
+            cloneFactory.createContinuousFundraisingClone(
+                0,
+                admin,
+                admin,
+                1,
+                _maxMintAmount / 100,
+                _price,
+                _maxMintAmount,
+                _paymentToken,
+                _token
+            )
+        );
+
+        // allow invite contract to mint
+        bytes32 roleMintAllower = _token.MINTALLOWER_ROLE();
+
+        vm.prank(admin);
+        _token.grantRole(roleMintAllower, mintAllower);
+        vm.startPrank(mintAllower);
+        _token.increaseMintingAllowance(address(_raise), _maxMintAmount - _token.mintingAllowance(address(_raise)));
+        vm.stopPrank();
+
+        // mint _paymentToken for buyer
+
+        _paymentToken.transfer(buyer, _paymentTokenAmount);
+        assertTrue(_paymentToken.balanceOf(buyer) == _paymentTokenAmount);
+
+        // set exploitTarget
+        _paymentToken.setExploitTarget(address(_raise), 3, _maxMintAmount / 200000);
+
+        // give invite contract allowance
+        vm.prank(buyer);
+        _paymentToken.approve(address(_raise), _paymentTokenAmount);
+
+        // store some state
+        //uint buyerPaymentBalanceBefore = _paymentToken.balanceOf(buyer);
+
+        // run actual test
+        assertTrue(_paymentToken.balanceOf(buyer) == _paymentTokenAmount);
+        uint256 buyAmount = _maxMintAmount / 100000;
+        vm.prank(buyer);
+        vm.expectRevert("ReentrancyGuard: reentrant call");
+        _raise.buy(buyAmount, buyer);
+    }
+
+    /*
+        pausing and unpausing
+    */
+    function testPausing(address rando) public {
+        vm.assume(rando != address(0));
+        vm.assume(rando != admin);
+        ContinuousFundraising _raise = ContinuousFundraising(
+            cloneFactory.createContinuousFundraisingClone(
+                0,
+                admin,
+                admin,
+                1,
+                1000,
+                100,
+                1000,
+                IERC20(address(5)),
+                Token(address(7))
+            )
+        );
+
+        vm.prank(rando);
+        vm.expectRevert("Ownable: caller is not the owner");
+        _raise.pause();
+
+        vm.prank(rando);
+        vm.expectRevert("Ownable: caller is not the owner");
+        _raise.unpause();
+
+        assertFalse(_raise.paused());
+        vm.prank(admin);
+        _raise.pause();
+        assertTrue(_raise.paused());
+
+        vm.expectRevert("There needs to be at minimum one day to change parameters");
+        vm.prank(admin);
+        _raise.unpause();
+
+        vm.warp(block.timestamp + 1 days + 1);
+        vm.prank(admin);
+        _raise.unpause();
+        assertFalse(_raise.paused());
     }
 }

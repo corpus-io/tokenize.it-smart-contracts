@@ -6,7 +6,6 @@ import "../contracts/Token.sol";
 import "../contracts/ContinuousFundraising.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
-import "./resources/MaliciousPaymentToken.sol";
 
 contract ContinuousFundraisingTest is Test {
     ContinuousFundraising raise;
