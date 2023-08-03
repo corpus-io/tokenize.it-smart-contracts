@@ -6,8 +6,9 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+
+import "./EIP712Cloneable.sol";
 
 /**
  * @dev Implementation of the ERC20 Permit extension allowing approvals to be made via signatures, as defined in
@@ -19,7 +20,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
  *
  * _Available since v3.4._
  */
-abstract contract ERC20PermitCloneable is ERC20, IERC20Permit, EIP712 {
+abstract contract ERC20PermitCloneable is ERC20, IERC20Permit, EIP712Cloneable {
     using Counters for Counters.Counter;
 
     mapping(address => Counters.Counter) private _nonces;
@@ -41,7 +42,7 @@ abstract contract ERC20PermitCloneable is ERC20, IERC20Permit, EIP712 {
      *
      * It's a good idea to use the same `name` that is defined as the ERC20 token name.
      */
-    constructor(string memory name) EIP712(name, "1") {}
+    constructor(string memory name) EIP712Cloneable(name, "1") {}
 
     /**
      * @dev See {IERC20Permit-permit}.
