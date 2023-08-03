@@ -264,7 +264,8 @@ contract ContinuousFundraisingCloneFactoryTest is Test {
     function testCloneIsProtectedFromReentrancy() public {
         MaliciousPaymentToken _paymentToken;
         uint8 _paymentTokenDecimals = 18;
-        address buyer = pauser;
+
+        // pauser address is used as attacker here
 
         /*
         _paymentToken: 1 FPT = 10**_paymentTokenDecimals FPTbits (bit = smallest subunit of token)
@@ -273,7 +274,6 @@ contract ContinuousFundraisingCloneFactoryTest is Test {
         price = 30 * 10**_paymentTokenDecimals
         */
 
-        uint256 _price = 7 * 10 ** _paymentTokenDecimals;
         uint256 _maxMintAmount = 1000 * 10 ** 18; // 2**256 - 1; // need maximum possible value because we are using a fake token with variable decimals
         uint256 _paymentTokenAmount = 100000 * 10 ** _paymentTokenDecimals;
 
@@ -290,7 +290,7 @@ contract ContinuousFundraisingCloneFactoryTest is Test {
                 admin,
                 1,
                 _maxMintAmount / 100,
-                _price,
+                7 * 10 ** _paymentTokenDecimals,
                 _maxMintAmount,
                 _paymentToken,
                 _token
@@ -308,25 +308,25 @@ contract ContinuousFundraisingCloneFactoryTest is Test {
 
         // mint _paymentToken for buyer
 
-        _paymentToken.transfer(buyer, _paymentTokenAmount);
-        assertTrue(_paymentToken.balanceOf(buyer) == _paymentTokenAmount);
+        _paymentToken.transfer(pauser, _paymentTokenAmount);
+        assertTrue(_paymentToken.balanceOf(pauser) == _paymentTokenAmount);
 
         // set exploitTarget
         _paymentToken.setExploitTarget(address(_raise), 3, _maxMintAmount / 200000);
 
         // give invite contract allowance
-        vm.prank(buyer);
+        vm.prank(pauser);
         _paymentToken.approve(address(_raise), _paymentTokenAmount);
 
         // store some state
         //uint buyerPaymentBalanceBefore = _paymentToken.balanceOf(buyer);
 
         // run actual test
-        assertTrue(_paymentToken.balanceOf(buyer) == _paymentTokenAmount);
+        assertTrue(_paymentToken.balanceOf(pauser) == _paymentTokenAmount);
         uint256 buyAmount = _maxMintAmount / 100000;
-        vm.prank(buyer);
+        vm.prank(pauser);
         vm.expectRevert("ReentrancyGuard: reentrant call");
-        _raise.buy(buyAmount, buyer);
+        _raise.buy(buyAmount, pauser);
     }
 
     /*
