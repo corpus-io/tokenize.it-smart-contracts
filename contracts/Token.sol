@@ -2,7 +2,7 @@
 pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
@@ -23,7 +23,7 @@ import "./interfaces/IFeeSettings.sol";
  *
  * @dev The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support and meta-transactions.
  */
-contract Token is ERC2771Context, ERC20, Pausable, AccessControl, Initializable {
+contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl, Initializable {
     /// @notice The role that has the ability to define which requirements an address must satisfy to receive tokens
     bytes32 public constant REQUIREMENT_ROLE = keccak256("REQUIREMENT_ROLE");
     /// @notice The role that has the ability to grant minting allowances
@@ -111,7 +111,7 @@ contract Token is ERC2771Context, ERC20, Pausable, AccessControl, Initializable 
         uint256 _requirements,
         string memory _name,
         string memory _symbol
-    ) ERC2771Context(_trustedForwarder) ERC20(_name, _symbol) {
+    ) ERC2771Context(_trustedForwarder) ERC20(_name, _symbol) ERC20Permit(_name) {
         initialize(_feeSettings, _admin, _allowList, _requirements, _name, _symbol);
     }
 
