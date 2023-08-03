@@ -362,6 +362,11 @@ contract ContinuousFundraisingCloneFactoryTest is Test {
         _raise.pause();
         assertTrue(_raise.paused());
 
+        // can't buy when paused
+        vm.prank(rando);
+        vm.expectRevert("Pausable: paused");
+        _raise.buy(1, rando);
+
         vm.expectRevert("There needs to be at minimum one day to change parameters");
         vm.prank(admin);
         _raise.unpause();
@@ -370,5 +375,41 @@ contract ContinuousFundraisingCloneFactoryTest is Test {
         vm.prank(admin);
         _raise.unpause();
         assertFalse(_raise.paused());
+    }
+
+    /*
+        transferring ownership
+    */
+    function testTransferringOwnership(address rando) public {
+        vm.assume(rando != address(0));
+        vm.assume(rando != admin);
+        ContinuousFundraising _raise = ContinuousFundraising(
+            cloneFactory.createContinuousFundraisingClone(
+                0,
+                admin,
+                admin,
+                1,
+                1000,
+                100,
+                1000,
+                IERC20(address(5)),
+                Token(address(7))
+            )
+        );
+        vm.assume(rando != address(_raise));
+
+        vm.prank(rando);
+        vm.expectRevert("Ownable: caller is not the owner");
+        _raise.transferOwnership(rando);
+
+        vm.prank(admin);
+        _raise.transferOwnership(rando);
+        assertTrue(_raise.pendingOwner() == rando);
+
+        vm.prank(rando);
+        _raise.acceptOwnership();
+
+        assertTrue(_raise.pendingOwner() == address(0));
+        assertTrue(_raise.owner() == rando);
     }
 }

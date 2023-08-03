@@ -116,9 +116,9 @@ contract tokenTest is Test {
         pausing and unpausing
     */
     function testPausing(address _admin, address rando) public {
-        vm.assume(admin != address(0));
+        vm.assume(_admin != address(0));
         vm.assume(rando != address(0));
-        vm.assume(rando != admin);
+        vm.assume(rando != _admin);
 
         FeeSettings _feeSettings = new FeeSettings(Fees(100, 100, 100, 0), feeSettingsAndAllowListOwner);
 
@@ -139,8 +139,47 @@ contract tokenTest is Test {
         _token.pause();
         assertTrue(_token.paused());
 
+        // can't transfer when paused
+        vm.prank(rando);
+        vm.expectRevert("Pausable: paused");
+        _token.transfer(_admin, 1);
+
         vm.prank(_admin);
         _token.unpause();
         assertFalse(_token.paused());
+    }
+
+    /*
+        granting role
+    */
+    function testGrantRole(address newPauser) public {
+        vm.assume(newPauser != address(0));
+        vm.assume(newPauser != admin);
+
+        FeeSettings _feeSettings = new FeeSettings(Fees(100, 100, 100, 0), feeSettingsAndAllowListOwner);
+
+        Token _token = Token(
+            factory.createTokenClone(0, _feeSettings, admin, AllowList(address(3)), 0, "TestToken", "TST")
+        );
+
+        bytes32 pauserRole = _token.PAUSER_ROLE();
+
+        assertFalse(_token.hasRole(pauserRole, newPauser));
+
+        vm.expectRevert();
+        vm.prank(newPauser);
+        _token.pause();
+
+        vm.prank(admin);
+        _token.grantRole(pauserRole, newPauser);
+
+        assertTrue(_token.hasRole(pauserRole, newPauser));
+
+        assertFalse(_token.paused());
+
+        vm.prank(newPauser);
+        _token.pause();
+
+        assertTrue(_token.paused());
     }
 }
