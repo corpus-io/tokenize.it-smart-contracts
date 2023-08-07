@@ -90,6 +90,24 @@ contract tokenTest is Test {
         assertTrue(clone.hasRole(clone.BURNER_ROLE(), _admin), "burner not set");
         assertTrue(clone.hasRole(clone.TRANSFERERADMIN_ROLE(), _admin), "transfererAdmin not set");
         assertTrue(clone.hasRole(clone.PAUSER_ROLE(), _admin), "pauser not set");
+
+        // test EIP712 Domain Separator is set correctly
+        string memory domainSeparatorName;
+        string memory domainSeparatorVersion;
+        uint256 domainSeparatorChainId;
+        address domainSeparatorAddress;
+
+        (, domainSeparatorName, domainSeparatorVersion, domainSeparatorChainId, domainSeparatorAddress, , ) = clone
+            .eip712Domain();
+
+        assertEq(domainSeparatorName, name, "domainSeparatorName not set");
+        assertEq(domainSeparatorVersion, "1", "domainSeparatorVersion not set");
+        assertEq(domainSeparatorChainId, block.chainid, "domainSeparatorChainId not set");
+        assertEq(domainSeparatorAddress, address(clone), "domainSeparatorAddress not set");
+
+        // test contract can not be initialized again
+        vm.expectRevert("Initializable: contract is already initialized");
+        clone.initialize(feeSettings, admin, allowList, requirements, "testToken", "TEST");
     }
 
     function testEmptyStringReverts(
