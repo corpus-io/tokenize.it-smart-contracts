@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import "./EIP712Cloneable.sol";
 
@@ -42,7 +43,11 @@ abstract contract ERC20PermitCloneable is ERC20, IERC20Permit, EIP712Cloneable {
      *
      * It's a good idea to use the same `name` that is defined as the ERC20 token name.
      */
-    constructor(string memory name) EIP712Cloneable(name, "1") {}
+    constructor(string memory name) EIP712Cloneable(name, "1") initializer {}
+
+    function initialize(string memory name) internal virtual onlyInitializing {
+        EIP712Cloneable._initialize(name, "1");
+    }
 
     /**
      * @dev See {IERC20Permit-permit}.

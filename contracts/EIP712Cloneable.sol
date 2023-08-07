@@ -6,6 +6,7 @@ pragma solidity ^0.8.8;
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/ShortStrings.sol";
 import "@openzeppelin/contracts/interfaces/IERC5267.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 /**
  * @dev https://eips.ethereum.org/EIPS/eip-712[EIP 712] is a standard for hashing and signing of typed structured data.
@@ -32,7 +33,7 @@ import "@openzeppelin/contracts/interfaces/IERC5267.sol";
  *
  * @custom:oz-upgrades-unsafe-allow state-variable-immutable state-variable-assignment
  */
-abstract contract EIP712Cloneable is IERC5267 {
+abstract contract EIP712Cloneable is IERC5267, Initializable {
     using ShortStrings for *;
 
     bytes32 private constant _TYPE_HASH =
@@ -40,15 +41,15 @@ abstract contract EIP712Cloneable is IERC5267 {
 
     // Cache the domain separator as an immutable value, but also store the chain id that it corresponds to, in order to
     // invalidate the cached domain separator if the chain id changes.
-    bytes32 private immutable _cachedDomainSeparator;
-    uint256 private immutable _cachedChainId;
-    address private immutable _cachedThis;
+    bytes32 private _cachedDomainSeparator;
+    uint256 private _cachedChainId;
+    address private _cachedThis;
 
-    bytes32 private immutable _hashedName;
-    bytes32 private immutable _hashedVersion;
+    bytes32 private _hashedName;
+    bytes32 private _hashedVersion;
 
-    ShortString private immutable _name;
-    ShortString private immutable _version;
+    ShortString private _name;
+    ShortString private _version;
     string private _nameFallback;
     string private _versionFallback;
 
@@ -64,7 +65,11 @@ abstract contract EIP712Cloneable is IERC5267 {
      * NOTE: These parameters cannot be changed except through a xref:learn::upgrading-smart-contracts.adoc[smart
      * contract upgrade].
      */
-    constructor(string memory name, string memory version) {
+    constructor(string memory name, string memory version) initializer {
+        _initialize(name, version);
+    }
+
+    function _initialize(string memory name, string memory version) internal onlyInitializing {
         _name = name.toShortStringWithFallback(_nameFallback);
         _version = version.toShortStringWithFallback(_versionFallback);
         _hashedName = keccak256(bytes(name));
