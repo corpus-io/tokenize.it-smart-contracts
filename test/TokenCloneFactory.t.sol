@@ -201,7 +201,7 @@ contract tokenTest is Test {
         assertTrue(_token.paused());
     }
 
-    function testPermit(
+    function testPermitWithClone(
         bytes32 salt,
         string memory name,
         string memory symbol,
@@ -213,6 +213,7 @@ contract tokenTest is Test {
     ) public {
         vm.assume(_relayer != address(0));
         vm.assume(_tokenSpender != address(0));
+        vm.assume(_tokenSpender != feeSettingsAndAllowListOwner);
         vm.assume(bytes(name).length > 0);
         vm.assume(bytes(symbol).length > 0);
         vm.assume(_tokenPermitAmount < (type(uint256).max / 10) * 9); // leave room for fees
@@ -227,6 +228,7 @@ contract tokenTest is Test {
 
         address tokenOwner = vm.addr(_tokenOwnerPrivateKey);
         vm.assume(tokenOwner != address(0));
+        vm.assume(tokenOwner != feeSettingsAndAllowListOwner);
         vm.assume(_tokenSpender != tokenOwner);
         vm.assume(_relayer != tokenOwner);
 
