@@ -200,4 +200,84 @@ contract tokenTest is Test {
 
         assertTrue(_token.paused());
     }
+
+    function testPermit(
+        bytes32 salt,
+        string memory name,
+        string memory symbol,
+        address _admin,
+        uint256 _tokenPermitAmount,
+        uint256 _tokenOwnerPrivateKey,
+        address _tokenSpender,
+        address _relayer
+    ) public {
+        vm.assume(_relayer != address(0));
+        vm.assume(_tokenSpender != address(0));
+        vm.assume(bytes(name).length > 0);
+        vm.assume(bytes(symbol).length > 0);
+        vm.assume(_tokenPermitAmount < (type(uint256).max / 10) * 9); // leave room for fees
+        vm.assume(
+            _tokenOwnerPrivateKey < 115792089237316195423570985008687907852837564279074904382605163141518161494337
+        );
+        vm.assume(_tokenOwnerPrivateKey > 0);
+
+        Token clone = Token(
+            factory.createTokenClone(salt, feeSettings, _admin, AllowList(allowList), requirements, name, symbol)
+        );
+
+        address tokenOwner = vm.addr(_tokenOwnerPrivateKey);
+        vm.assume(tokenOwner != address(0));
+        vm.assume(_tokenSpender != tokenOwner);
+        vm.assume(_relayer != tokenOwner);
+
+        // permit spender to spend holder's tokens
+        //uint256 nonce = clone.nonces(tokenOwner);
+        uint256 deadline = block.timestamp + 1000;
+        bytes32 permitTypehash = keccak256(
+            "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
+        );
+        bytes32 structHash = keccak256(
+            abi.encode(
+                permitTypehash,
+                tokenOwner,
+                _tokenSpender,
+                _tokenPermitAmount,
+                clone.nonces(tokenOwner),
+                block.timestamp + 1000
+            )
+        );
+
+        //bytes32 hash = ECDSA.toTypedDataHash(clone.DOMAIN_SEPARATOR(), structHash);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            _tokenOwnerPrivateKey,
+            ECDSA.toTypedDataHash(clone.DOMAIN_SEPARATOR(), structHash)
+        );
+
+        // check allowance
+        assertEq(clone.allowance(tokenOwner, _tokenSpender), 0);
+
+        // call permit with a wallet that is not tokenOwner
+        vm.prank(_relayer);
+        clone.permit(tokenOwner, _tokenSpender, _tokenPermitAmount, deadline, v, r, s);
+
+        // check allowance
+        assertEq(clone.allowance(tokenOwner, _tokenSpender), _tokenPermitAmount);
+
+        // mint tokens to tokenOwner
+        vm.prank(_admin);
+        clone.mint(tokenOwner, _tokenPermitAmount);
+
+        // check token balances before transfer
+        assertEq(clone.balanceOf(tokenOwner), _tokenPermitAmount);
+        assertEq(clone.balanceOf(_tokenSpender), 0);
+
+        // spend tokens
+        vm.prank(_tokenSpender);
+        clone.transferFrom(tokenOwner, _tokenSpender, _tokenPermitAmount);
+
+        // check token balances after transfer
+        assertEq(clone.balanceOf(tokenOwner), 0);
+        assertEq(clone.balanceOf(_tokenSpender), _tokenPermitAmount);
+    }
 }
