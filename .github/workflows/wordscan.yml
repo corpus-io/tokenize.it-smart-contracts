@@ -10,6 +10,15 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: 16.x
-      - run: test "$(grep msg.sender contracts/Token.sol contracts/ContinuousFundraising.sol |wc -l)" -eq 0 && test "$(grep msg.data contracts/Token.sol contracts/ContinuousFundraising.sol |wc -l)" -eq 0
-
       # these two contracts inherit from ERC2771Context and may not contain msg.sender or msg.data. Instead, they must use _msgSender() and _msgData()
+      - run: test "$(grep msg.sender contracts/Token.sol contracts/ContinuousFundraising.sol |wc -l)" -eq 0 && test "$(grep msg.data contracts/Token.sol contracts/ContinuousFundraising.sol |wc -l)" -eq 0
+      # EIP712Cloneable drops the 'immutable' restriction from several variables. Check that they are written to only once.
+      - run: test "$(grep '_cachedDomainSeparator\s*=[^=]'  contracts/EIP712Cloneable.sol |wc -l)" -eq 1
+      - run: test "$(grep '_cachedChainId\s*=[^=]'  contracts/EIP712Cloneable.sol |wc -l)" -eq 1
+      - run: test "$(grep '_cachedThis\s*=[^=]'  contracts/EIP712Cloneable.sol |wc -l)" -eq 1
+      - run: test "$(grep '_hashedName\s*=[^=]'  contracts/EIP712Cloneable.sol |wc -l)" -eq 1
+      - run: test "$(grep '_hashedVersion\s*=[^=]'  contracts/EIP712Cloneable.sol |wc -l)" -eq 1
+      - run: test "$(grep '_name\s*=[^=]'  contracts/EIP712Cloneable.sol |wc -l)" -eq 1
+      - run: test "$(grep '_version\s*=[^=]'  contracts/EIP712Cloneable.sol |wc -l)" -eq 1
+      - run: test "$(grep '_nameFallback\s*=[^=]'  contracts/EIP712Cloneable.sol |wc -l)" -eq 1
+      - run: test "$(grep '_versionFallback\s*=[^=]'  contracts/EIP712Cloneable.sol |wc -l)" -eq 1
