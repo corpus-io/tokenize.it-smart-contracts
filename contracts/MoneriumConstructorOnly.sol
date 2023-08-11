@@ -16,10 +16,7 @@ contract MoneriumInterfacePersonalInvite is MoneriumI {
 
     constructor(address _investor, address _investment, uint256 _amount) {
         investor = _investor;
-        IERC20(0x3231Cb76718CDeF2155FC47b5286d82e6eDA273f).approve(
-            address(_investment),
-            _amount
-        );
+        IERC20(0x3231Cb76718CDeF2155FC47b5286d82e6eDA273f).approve(address(_investment), _amount);
     }
 
     /* warning: In the case the investment contract does not work anymore (expired personal invites, paused fundraising, ...). All the EURe in this contract are techincally stuck.

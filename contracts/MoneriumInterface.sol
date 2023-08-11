@@ -25,10 +25,7 @@ contract MoneriumInterface is MoneriumI, Ownable2Step {
         investor = _investor;
     }
 
-    function addInvestmentContract(
-        address _addr,
-        bool _active
-    ) external onlyOwner {
+    function addInvestmentContract(address _addr, bool _active) external onlyOwner {
         map[_addr] = _active;
         emit Set(_addr, _active);
     }
