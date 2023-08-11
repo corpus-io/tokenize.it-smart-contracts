@@ -150,6 +150,15 @@ contract ContinuousFundraising is ERC2771Context, Ownable2Step, Pausable, Reentr
     }
 
     /**
+     * Calculate how many tokens can be bought with currencyAmount
+     * @param currencyAmount amount of currency to be used to buy tokens
+     * @return amount of tokens that can be bought with currencyAmount
+     */
+    function calculateBuyAmount(uint256 currencyAmount) external view returns (uint256) {
+        return Math.mulDiv(currencyAmount, 10 ** token.decimals(), tokenPrice, Math.Rounding.Zero); // rounding down
+    }
+
+    /**
      * @notice change the currencyReceiver to `_currencyReceiver`
      * @param _currencyReceiver new currencyReceiver
      */

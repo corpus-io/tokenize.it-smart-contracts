@@ -1102,4 +1102,59 @@ contract ContinuousFundraisingTest is Test {
         assertTrue(paymentToken.balanceOf(receiver) <= maxCurrencyAmount, "raise got wrong amount of currency");
         assertTrue(paymentToken.balanceOf(receiver) >= minCurrencyAmount, "raise got wrong amount of currency");
     }
+
+    function testCalculateTokenAmount(uint256 _currencyAmount, uint256 _price, address _buyer) public {
+        vm.assume(_price > 0);
+        vm.assume(_buyer != address(0));
+        vm.assume(_buyer != buyer);
+        vm.assume(_buyer != raise.currencyReceiver());
+        vm.assume(_buyer != token.feeSettings().feeCollector());
+        vm.assume(paymentToken.balanceOf(_buyer) == 0);
+        vm.assume(token.balanceOf(_buyer) == 0);
+
+        uint256 tokenDecimals = token.decimals();
+        vm.assume(UINT256_MAX / 10 ** tokenDecimals > _currencyAmount); // this will cause an overflow on multiplication
+
+        // set up fundraising
+        raise = new ContinuousFundraising(
+            trustedForwarder,
+            receiver,
+            0,
+            type(uint256).max,
+            _price,
+            type(uint256).max,
+            paymentToken,
+            token
+        );
+        vm.prank(mintAllower);
+        token.increaseMintingAllowance(address(raise), type(uint256).max);
+
+        uint256 tokenAmount = raise.calculateBuyAmount(_currencyAmount);
+
+        // make sure the token amount is correct by testing that buying this amount costs exactly the currency amount
+        vm.prank(paymentTokenProvider);
+        paymentToken.mint(_buyer, _currencyAmount);
+
+        vm.startPrank(_buyer);
+        paymentToken.increaseAllowance(address(raise), _currencyAmount);
+        raise.buy(tokenAmount, _buyer);
+        vm.stopPrank();
+
+        assertTrue(token.balanceOf(_buyer) == tokenAmount, "buyer does not have the correct amount of tokens");
+
+        console.log(paymentToken.balanceOf(_buyer));
+
+        uint256 remainingCurrency = paymentToken.balanceOf(_buyer);
+
+        assertEq(
+            raise.calculateBuyAmount(remainingCurrency),
+            0,
+            "buyer could still buy tokens with remaining currency"
+        );
+
+        // make sure buying 1 more token bit actually fails
+        vm.expectRevert("ERC20: insufficient allowance");
+        vm.prank(_buyer);
+        raise.buy(1, _buyer);
+    }
 }
