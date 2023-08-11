@@ -48,7 +48,7 @@ contract Wallet is Ownable2Step, ERC1363Receiver {
      * @param operator The address which called `transferAndCall` or `transferFromAndCall` function
      * @param from The address which are token transferred from
      * @param value The amount of tokens transferred
-     * @return 0x600D600D on success, 0xDEADD00D if the receiver is not registered, 0x0BAD0BAD if the buy failed
+     * @return 0x600D600D on success, 0x0BAD0BAD if the buy failed, 0xDEADD00D if the receiver is not registered
      */
     function onTransferReceived(
         address operator,
@@ -60,8 +60,7 @@ contract Wallet is Ownable2Step, ERC1363Receiver {
         if (receiverAddress[ibanHash] == address(0)) {
             return 0xDEADD00D; // ReceiverNotRegistered
         }
-        // todo: calculate amount
-        uint256 amount = 1e15;
+        uint256 amount = fundraising.calculateBuyAmount(value);
         // grant allowance to fundraising
         IERC20(fundraising.currency()).approve(address(fundraising), amount);
         // try buying tokens https://solidity-by-example.org/try-catch/

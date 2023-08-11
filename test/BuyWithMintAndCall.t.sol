@@ -52,10 +52,10 @@ contract BuyWithMintAndCall is Test {
         raise = new ContinuousFundraising(
             trustedForwarder,
             payable(receiver),
-            minAmountPerBuyer,
-            maxAmountPerBuyer,
+            0,
+            type(uint256).max,
             price,
-            maxAmountOfTokenToBeSold,
+            type(uint256).max,
             paymentToken,
             token
         );
@@ -66,7 +66,7 @@ contract BuyWithMintAndCall is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.increaseMintingAllowance(address(raise), maxAmountOfTokenToBeSold);
+        token.increaseMintingAllowance(address(raise), type(uint256).max);
 
         // give raise contract allowance
         vm.prank(buyer);
@@ -77,13 +77,14 @@ contract BuyWithMintAndCall is Test {
         wallet = new Wallet(raise);
     }
 
-    function testBuyHappyCase() public {
+    function testBuyHappyCase(uint256 currencyMintAmount) public {
+        vm.assume(UINT256_MAX / 10 ** token.decimals() > currencyMintAmount); // this will cause an overflow on multiplication
+        vm.assume(raise.calculateBuyAmount(currencyMintAmount) > 0);
+
         bytes32 buyersIbanHash = keccak256(abi.encodePacked("DE1234567890"));
         // add buyers address to wallet
         vm.prank(owner);
         wallet.set(buyersIbanHash, buyer);
-
-        uint currencyMintAmount = 1e20;
 
         // make sure buyer has no tokens before
         assertTrue(token.balanceOf(buyer) == 0);
@@ -94,7 +95,7 @@ contract BuyWithMintAndCall is Test {
         paymentToken.mintAndCall(address(wallet), currencyMintAmount, data);
 
         // make sure buyer has tokens after
-        assertTrue(token.balanceOf(buyer) > 0);
+        assertTrue(token.balanceOf(buyer) > 0, "buyer has no tokens after buy");
     }
 
     function testBuyReverts() public {
