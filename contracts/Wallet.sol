@@ -19,7 +19,7 @@ import "./ContinuousFundraising.sol";
 contract Wallet is Ownable2Step, ERC1363Receiver {
     using SafeERC20 for IERC20;
     /**
-     *@notice stores the receiving address for each IBAN hash
+     * @notice stores the receiving address for each IBAN hash
      */
     mapping(bytes32 => address) public receiverAddress;
 
@@ -33,6 +33,8 @@ contract Wallet is Ownable2Step, ERC1363Receiver {
 
     /**
      * @notice sets (or updates) the receiving address for an IBAN hash
+     * @param _ibanHash the hash of the IBAN to set the receiving address for
+     * @param _tokenReceiver the address to send the tokens to
      */
     function set(bytes32 _ibanHash, address _tokenReceiver) external onlyOwner {
         receiverAddress[_ibanHash] = _tokenReceiver;
@@ -58,11 +60,15 @@ contract Wallet is Ownable2Step, ERC1363Receiver {
     ) external override returns (bytes4) {
         bytes32 ibanHash = abi.decode(data, (bytes32));
         if (receiverAddress[ibanHash] == address(0)) {
-            return 0xDEADD00D; // ReceiverNotRegistered
+            return 0xDEADD00D; // DEAD DOOD: ReceiverNotRegistered
         }
+        IERC20 paymentCurrency = fundraising.currency();
+        // if (operator != address(paymentCurrency)) {
+        //     return 0x4B1D4B1D; // FORBID FORBID: OperatorNotPaymentCurrency
+        // }
         uint256 amount = fundraising.calculateBuyAmount(value);
         // grant allowance to fundraising
-        IERC20(fundraising.currency()).approve(address(fundraising), amount);
+        paymentCurrency.approve(address(fundraising), amount);
         // try buying tokens https://solidity-by-example.org/try-catch/
         try fundraising.buy(amount, receiverAddress[ibanHash]) {
             return 0x600D600D; // ReceiverSuccess
@@ -72,14 +78,19 @@ contract Wallet is Ownable2Step, ERC1363Receiver {
     }
 
     /**
-     *  @notice withdraws tokens to a given address
+     * @notice withdraws tokens to a given address
+     * @param token the token to withdraw
+     * @param to the address to send the tokens to
+     * @param amount the amount of tokens to send
      */
     function withdraw(address token, address to, uint256 amount) external onlyOwner {
         IERC20(token).safeTransfer(to, amount);
     }
 
     /**
-     *  @notice withdraws ETH to a given address
+     * @notice withdraws ETH to a given address
+     * @param to the address to send the ETH to
+     * @param amount the amount of ETH to send
      */
     function withdraw(address payable to, uint256 amount) external onlyOwner {
         to.transfer(amount);
