@@ -1,6 +1,6 @@
 {
   "name": "@tokenize.it/contracts",
-  "version": "4.0.1",
+  "version": "4.1.0-alpha.0",
   "description": "Tokenize.it smart contracts for company tokenization, public fundraising, private offers and employee participation",
   "keywords": [
     "evm",
@@ -81,7 +81,7 @@
   },
   "dependencies": {
     "@opengsn/contracts": "2.2.5",
-    "@openzeppelin/contracts": "4.8.3"
+    "@openzeppelin/contracts": "4.9.1"
   },
   "scripts": {
     "prepack": "yarn npmignore --auto && yarn test && yarn build ",

@@ -732,19 +732,32 @@ contract ContinuousFundraisingTest is Test {
     /*
         try to unpause too soon after setMaxAmountOfTokenToBeSold
     */
-    function testFailUnpauseTooSoonAfterSetMaxAmountOfTokenToBeSold() public {
-        uint256 time = block.timestamp;
-        vm.warp(time);
+    function testUnpauseTooSoonAfterSetMaxAmountOfTokenToBeSold(
+        uint128 startTime,
+        uint32 changeDelay,
+        uint32 attemptUnpauseDelay
+    ) public {
+        uint256 unpauseDelay = raise.delay();
+        vm.assume(startTime < type(uint128).max / 2);
+        vm.assume(startTime > 0);
+        vm.assume(changeDelay > 0);
+        vm.assume(attemptUnpauseDelay > 0);
+        vm.assume(attemptUnpauseDelay < unpauseDelay + changeDelay);
+
+        vm.warp(startTime);
         vm.prank(owner);
         raise.pause();
-        assertTrue(raise.paused());
-        assertTrue(raise.coolDownStart() == time);
-        vm.warp(time + 2 hours);
+        assertTrue(raise.paused(), "raise should be paused");
+        assertTrue(raise.coolDownStart() == startTime, "coolDownStart should be startTime");
+        vm.warp(startTime + changeDelay);
         vm.prank(owner);
         raise.setMaxAmountOfTokenToBeSold(700);
-        assertTrue(raise.coolDownStart() == time + 2 hours);
-        vm.warp(time + raise.delay() + 1 seconds);
+        assertTrue(raise.coolDownStart() == startTime + changeDelay, "coolDownStart should be startTime + changeDelay");
+        vm.warp(startTime + attemptUnpauseDelay);
         vm.prank(owner);
+        console.log("current time: ", block.timestamp);
+        console.log("unpause at: ", startTime + changeDelay + unpauseDelay);
+        vm.expectRevert("There needs to be at minimum one day to change parameters");
         raise.unpause(); // must fail because of the parameter update
     }
 
@@ -770,19 +783,34 @@ contract ContinuousFundraisingTest is Test {
     /*
         try to unpause too soon after setCurrencyReceiver
     */
-    function testFailUnpauseTooSoonAfterSetCurrencyReceiver() public {
-        uint256 time = block.timestamp;
-        vm.warp(time);
+    function testUnpauseTooSoonAfterSetCurrencyReceiver(
+        uint128 startTime,
+        uint32 changeDelay,
+        uint32 attemptUnpauseDelay,
+        address newCurrencyReceiver
+    ) public {
+        uint256 unpauseDelay = raise.delay();
+        vm.assume(startTime < type(uint128).max / 2);
+        vm.assume(startTime > 0);
+        vm.assume(changeDelay > 0);
+        vm.assume(attemptUnpauseDelay > 0);
+        vm.assume(attemptUnpauseDelay < unpauseDelay + changeDelay);
+        vm.assume(newCurrencyReceiver != address(0));
+
+        vm.warp(startTime);
         vm.prank(owner);
         raise.pause();
-        assertTrue(raise.paused());
-        assertTrue(raise.coolDownStart() == time);
-        vm.warp(time + 2 hours);
+        assertTrue(raise.paused(), "raise should be paused");
+        assertTrue(raise.coolDownStart() == startTime, "coolDownStart should be startTime");
+        vm.warp(startTime + changeDelay);
         vm.prank(owner);
-        raise.setCurrencyReceiver(payable(address(buyer)));
-        assertTrue(raise.coolDownStart() == time + 2 hours);
-        vm.warp(time + raise.delay() + 1 hours);
+        raise.setCurrencyReceiver(newCurrencyReceiver);
+        assertTrue(raise.coolDownStart() == startTime + changeDelay, "coolDownStart should be startTime + changeDelay");
+        vm.warp(startTime + attemptUnpauseDelay);
         vm.prank(owner);
+        console.log("current time: ", block.timestamp);
+        console.log("unpause at: ", startTime + changeDelay + unpauseDelay);
+        vm.expectRevert("There needs to be at minimum one day to change parameters");
         raise.unpause(); // must fail because of the parameter update
     }
 
@@ -808,19 +836,35 @@ contract ContinuousFundraisingTest is Test {
     /*
         try to unpause too soon after setMinAmountPerBuyer
     */
-    function testFailUnpauseTooSoonAfterSetMinAmountPerBuyer() public {
-        uint256 time = block.timestamp;
-        vm.warp(time);
+    function testUnpauseTooSoonAfterSetMinAmountPerBuyer(
+        uint128 startTime,
+        uint32 changeDelay,
+        uint32 attemptUnpauseDelay,
+        uint256 newMinAmountPerBuyer
+    ) public {
+        uint256 unpauseDelay = raise.delay();
+        vm.assume(startTime < type(uint128).max / 2);
+        vm.assume(startTime > 0);
+        vm.assume(changeDelay > 0);
+        vm.assume(attemptUnpauseDelay > 0);
+        vm.assume(attemptUnpauseDelay < unpauseDelay + changeDelay);
+        vm.assume(newMinAmountPerBuyer > 0);
+        vm.assume(newMinAmountPerBuyer <= raise.maxAmountPerBuyer());
+
+        vm.warp(startTime);
         vm.prank(owner);
         raise.pause();
-        assertTrue(raise.paused());
-        assertTrue(raise.coolDownStart() == time);
-        vm.warp(time + 2 hours);
+        assertTrue(raise.paused(), "raise should be paused");
+        assertTrue(raise.coolDownStart() == startTime, "coolDownStart should be startTime");
+        vm.warp(startTime + changeDelay);
         vm.prank(owner);
-        raise.setMinAmountPerBuyer(700);
-        assertTrue(raise.coolDownStart() == time + 2 hours);
-        vm.warp(time + raise.delay() + 1 hours);
+        raise.setMinAmountPerBuyer(newMinAmountPerBuyer);
+        assertTrue(raise.coolDownStart() == startTime + changeDelay, "coolDownStart should be startTime + changeDelay");
+        vm.warp(startTime + attemptUnpauseDelay);
         vm.prank(owner);
+        console.log("current time: ", block.timestamp);
+        console.log("unpause at: ", startTime + changeDelay + unpauseDelay);
+        vm.expectRevert("There needs to be at minimum one day to change parameters");
         raise.unpause(); // must fail because of the parameter update
     }
 
@@ -846,19 +890,34 @@ contract ContinuousFundraisingTest is Test {
     /*
         try to unpause too soon after setMaxAmountPerBuyer
     */
-    function testFailUnpauseTooSoonAfterSetMaxAmountPerBuyer() public {
-        uint256 time = block.timestamp;
-        vm.warp(time);
+    function testUnpauseTooSoonAfterSetMaxAmountPerBuyer(
+        uint128 startTime,
+        uint32 changeDelay,
+        uint32 attemptUnpauseDelay,
+        uint256 newMaxAmountPerBuyer
+    ) public {
+        uint256 unpauseDelay = raise.delay();
+        vm.assume(startTime < type(uint128).max / 2);
+        vm.assume(startTime > 0);
+        vm.assume(changeDelay > 0);
+        vm.assume(attemptUnpauseDelay > 0);
+        vm.assume(attemptUnpauseDelay < unpauseDelay + changeDelay);
+        vm.assume(newMaxAmountPerBuyer >= raise.minAmountPerBuyer());
+
+        vm.warp(startTime);
         vm.prank(owner);
         raise.pause();
-        assertTrue(raise.paused());
-        assertTrue(raise.coolDownStart() == time);
-        vm.warp(time + 2 hours);
+        assertTrue(raise.paused(), "raise should be paused");
+        assertTrue(raise.coolDownStart() == startTime, "coolDownStart should be startTime");
+        vm.warp(startTime + changeDelay);
         vm.prank(owner);
-        raise.setMaxAmountPerBuyer(700);
-        assertTrue(raise.coolDownStart() == time + 2 hours);
-        vm.warp(time + raise.delay() + 1 hours);
+        raise.setMaxAmountPerBuyer(newMaxAmountPerBuyer);
+        assertTrue(raise.coolDownStart() == startTime + changeDelay, "coolDownStart should be startTime + changeDelay");
+        vm.warp(startTime + attemptUnpauseDelay);
         vm.prank(owner);
+        console.log("current time: ", block.timestamp);
+        console.log("unpause at: ", startTime + changeDelay + unpauseDelay);
+        vm.expectRevert("There needs to be at minimum one day to change parameters");
         raise.unpause(); // must fail because of the parameter update
     }
 
@@ -881,22 +940,56 @@ contract ContinuousFundraisingTest is Test {
         raise.unpause();
     }
 
+    // /*
+    //     try to unpause too soon after setCurrencyAndTokenPrice
+    // */
+    // function testUnpauseTooSoonAfterSetCurrencyAndTokenPrice() public {
+    //     uint256 time = block.timestamp;
+    //     vm.warp(time);
+    //     vm.prank(owner);
+    //     raise.pause();
+    //     assertTrue(raise.paused());
+    //     assertTrue(raise.coolDownStart() == time);
+    //     vm.warp(time + 2 hours);
+    //     vm.prank(owner);
+    //     raise.setCurrencyAndTokenPrice(paymentToken, 700);
+    //     assertTrue(raise.coolDownStart() == time + 2 hours);
+    //     vm.warp(time + raise.delay() + 1 hours);
+    //     vm.prank(owner);
+    //     vm.expectRevert("There needs to be at minimum one day to change parameters");
+    //     raise.unpause(); // must fail because of the parameter update
+    // }
+
     /*
         try to unpause too soon after setCurrencyAndTokenPrice
     */
-    function testUnpauseTooSoonAfterSetCurrencyAndTokenPrice() public {
-        uint256 time = block.timestamp;
-        vm.warp(time);
+    function testUnpauseTooSoonAfterSetCurrencyAndTokenPrice(
+        uint128 startTime,
+        uint32 changeDelay,
+        uint32 attemptUnpauseDelay,
+        uint256 newTokenPrice
+    ) public {
+        uint256 unpauseDelay = raise.delay();
+        vm.assume(startTime < type(uint128).max / 2);
+        vm.assume(startTime > 0);
+        vm.assume(changeDelay > 0);
+        vm.assume(attemptUnpauseDelay > 0);
+        vm.assume(attemptUnpauseDelay < unpauseDelay + changeDelay);
+        vm.assume(newTokenPrice > 0);
+
+        vm.warp(startTime);
         vm.prank(owner);
         raise.pause();
-        assertTrue(raise.paused());
-        assertTrue(raise.coolDownStart() == time);
-        vm.warp(time + 2 hours);
+        assertTrue(raise.paused(), "raise should be paused");
+        assertTrue(raise.coolDownStart() == startTime, "coolDownStart should be startTime");
+        vm.warp(startTime + changeDelay);
         vm.prank(owner);
-        raise.setCurrencyAndTokenPrice(paymentToken, 700);
-        assertTrue(raise.coolDownStart() == time + 2 hours);
-        vm.warp(time + raise.delay() + 1 hours);
+        raise.setCurrencyAndTokenPrice(paymentToken, newTokenPrice);
+        assertTrue(raise.coolDownStart() == startTime + changeDelay, "coolDownStart should be startTime + changeDelay");
+        vm.warp(startTime + attemptUnpauseDelay);
         vm.prank(owner);
+        console.log("current time: ", block.timestamp);
+        console.log("unpause at: ", startTime + changeDelay + unpauseDelay);
         vm.expectRevert("There needs to be at minimum one day to change parameters");
         raise.unpause(); // must fail because of the parameter update
     }

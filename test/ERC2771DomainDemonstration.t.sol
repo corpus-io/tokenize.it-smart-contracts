@@ -38,7 +38,9 @@ contract TokenERC2771Test is Test {
     uint256 public constant companyAdminPrivateKey = 0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
     address public companyAdmin; // = 0x38d6703d37988C644D6d31551e9af6dcB762E618;
 
-    address public constant mintAllower = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
+    uint256 public constant minterPrivateKey = 0x1111254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff06621111;
+    address public minter;
+
     address public constant investor = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
 
     address public constant receiver = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
@@ -58,6 +60,7 @@ contract TokenERC2771Test is Test {
     function setUp() public {
         // calculate address
         companyAdmin = vm.addr(companyAdminPrivateKey);
+        minter = vm.addr(minterPrivateKey);
 
         // deploy allow list
         vm.prank(platformAdmin);
@@ -112,12 +115,12 @@ contract TokenERC2771Test is Test {
          * increase minting allowance
          */
         //vm.prank(companyAdmin);
-        //token.increaseMintingAllowance(companyAdmin, tokenMintAmount);
+        //token.increaseMintingAllowance(minter, tokenMintAmount);
 
         // 1. build request
         bytes memory payload = abi.encodeWithSelector(
             token.increaseMintingAllowance.selector,
-            companyAdmin,
+            minter,
             _tokenMintAmount
         );
 
@@ -148,13 +151,13 @@ contract TokenERC2771Test is Test {
 
         require(digest.recover(signature) == request.from, "FWD: signature mismatch");
 
-        assertEq(token.mintingAllowance(companyAdmin), 0, "Minting allowance is not 0");
+        assertEq(token.mintingAllowance(minter), 0, "Minting allowance is not 0");
 
         // 4.  execute request
         vm.prank(platformHotWallet);
         _forwarder.execute(request, domainSeparator, requestType, suffixData, signature);
 
-        assertEq(token.mintingAllowance(companyAdmin), _tokenMintAmount, "Minting allowance is not tokenMintAmount");
+        assertEq(token.mintingAllowance(minter), _tokenMintAmount, "Minting allowance is not tokenMintAmount");
 
         /*
          * mint tokens
@@ -164,11 +167,11 @@ contract TokenERC2771Test is Test {
         payload = abi.encodeWithSelector(token.mint.selector, investor, _tokenMintAmount);
 
         request = IForwarder.ForwardRequest({
-            from: companyAdmin,
+            from: minter,
             to: address(token),
             value: 0,
             gas: 1000000,
-            nonce: _forwarder.getNonce(companyAdmin),
+            nonce: _forwarder.getNonce(minter),
             data: payload,
             validUntil: 0
         });
@@ -183,13 +186,13 @@ contract TokenERC2771Test is Test {
         );
 
         // 3. sign request
-        (v, r, s) = vm.sign(companyAdminPrivateKey, digest);
+        (v, r, s) = vm.sign(minterPrivateKey, digest);
         signature = abi.encodePacked(r, s, v); // https://docs.openzeppelin.com/contracts/2.x/utilities
 
         require(digest.recover(signature) == request.from, "FWD: signature mismatch");
 
         // 4.  execute request
-        assertEq(token.mintingAllowance(companyAdmin), _tokenMintAmount, "Minting allowance is wrong");
+        assertEq(token.mintingAllowance(minter), _tokenMintAmount, "Minting allowance is wrong");
         assertEq(token.balanceOf(investor), 0, "Investor has tokens before mint");
         assertEq(token.balanceOf(feeCollector), 0, "FeeCollector has tokens before mint");
 
@@ -198,7 +201,7 @@ contract TokenERC2771Test is Test {
         _forwarder.execute(request, domainSeparator, requestType, suffixData, signature);
 
         assertEq(token.balanceOf(investor), _tokenMintAmount, "Investor received wrong token amount");
-        assertEq(token.mintingAllowance(companyAdmin), 0, "Minting allowance is not 0 after mint");
+        assertEq(token.mintingAllowance(minter), 0, "Minting allowance is not 0 after mint");
         assertEq(
             token.balanceOf(feeCollector),
             feeSettings.tokenFee(_tokenMintAmount),

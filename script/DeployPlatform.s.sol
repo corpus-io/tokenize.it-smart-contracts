@@ -7,6 +7,7 @@ import "../lib/forge-std/src/Script.sol";
 import "../contracts/FeeSettings.sol";
 import "../contracts/AllowList.sol";
 import "../contracts/PersonalInviteFactory.sol";
+import "../contracts/VestingWalletFactory.sol";
 
 contract DeployPlatform is Script {
     function setUp() public {}
@@ -43,6 +44,10 @@ contract DeployPlatform is Script {
         console.log("Deploying PersonalInviteFactory contract...");
         PersonalInviteFactory personalInviteFactory = new PersonalInviteFactory();
         console.log("PersonalInviteFactory deployed at: ", address(personalInviteFactory));
+
+        console.log("Deploying VestingWalletFactory contract...");
+        VestingWalletFactory vestingWalletFactory = new VestingWalletFactory();
+        console.log("VestingWalletFactory deployed at: ", address(vestingWalletFactory));
 
         vm.stopBroadcast();
 
