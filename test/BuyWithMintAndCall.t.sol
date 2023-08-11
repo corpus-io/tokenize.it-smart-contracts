@@ -117,7 +117,7 @@ contract BuyWithMintAndCall is Test {
         vm.startPrank(paymentTokenProvider);
         // buyer pays only half of the tokens needed to wallet
         paymentToken.mint(address(wallet), _currencyMintAmount / 2);
-        // buyer tries to buy full amount
+        // buyer tries calling onTransferReceived, but only the payment token contract is allowed to do that
         wallet.onTransferReceived(address(this), address(this), _currencyMintAmount, data);
 
         // make sure buyer has no tokens after
@@ -155,7 +155,8 @@ contract BuyWithMintAndCall is Test {
         // make sure buyer has no tokens after
         assertTrue(token.balanceOf(_buyer) == 0, "buyer has tokens after buy");
 
-        // now, the buyer's payment tokens are in wallet. The attacker uses them to buy tokens.
+        // now, the buyer's payment tokens are in wallet. The attacker tries using them to buy tokens,
+        // which fails, because only the payment token contract is allowed to call onTransferReceived.
         vm.prank(_attacker);
         wallet.onTransferReceived(address(this), address(this), _currencyMintAmount, attackerData);
 

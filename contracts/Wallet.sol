@@ -63,9 +63,9 @@ contract Wallet is Ownable2Step, ERC1363Receiver {
             return 0xDEADD00D; // DEAD DOOD: ReceiverNotRegistered
         }
         IERC20 paymentCurrency = fundraising.currency();
-        // if (operator != address(paymentCurrency)) {
-        //     return 0x4B1D4B1D; // FORBID FORBID: OperatorNotPaymentCurrency
-        // }
+        if (_msgSender() != address(paymentCurrency)) {
+            return 0x4B1D4B1D; // FORBID FORBID: OperatorNotPaymentCurrency
+        }
         uint256 amount = fundraising.calculateBuyAmount(value);
         // grant allowance to fundraising
         paymentCurrency.approve(address(fundraising), amount);
