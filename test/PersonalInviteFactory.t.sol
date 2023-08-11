@@ -8,6 +8,8 @@ import "../contracts/PersonalInviteFactory.sol";
 import "../contracts/FeeSettings.sol";
 
 contract PersonalInviteFactoryTest is Test {
+    event Deploy(address indexed addr);
+
     PersonalInviteFactory factory;
 
     AllowList list;
@@ -16,21 +18,16 @@ contract PersonalInviteFactoryTest is Test {
     Token token;
     Token currency; // todo: add different ERC20 token as currency!
 
-    uint256 MAX_INT =
-        115792089237316195423570985008687907853269984665640564039457584007913129639935;
+    uint256 MAX_INT = type(uint256).max;
 
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant buyer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
-    address public constant mintAllower =
-        0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
+    address public constant mintAllower = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
     address public constant minter = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
     address public constant owner = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
-    address public constant receiver =
-        0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
-    address public constant paymentTokenProvider =
-        0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
-    address public constant trustedForwarder =
-        0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
+    address public constant receiver = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
+    address public constant paymentTokenProvider = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
+    address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
 
     uint256 public constant price = 10000000;
 
@@ -66,28 +63,12 @@ contract PersonalInviteFactoryTest is Test {
         Fees memory fees = Fees(100, 100, 100, 0);
         feeSettings = new FeeSettings(fees, admin);
 
-        token = new Token(
-            trustedForwarder,
-            feeSettings,
-            admin,
-            list,
-            0x0,
-            "token",
-            "TOK"
-        );
-        currency = new Token(
-            trustedForwarder,
-            feeSettings,
-            admin,
-            list,
-            0x0,
-            "currency",
-            "CUR"
-        );
+        token = new Token(trustedForwarder, feeSettings, admin, list, 0x0, "token", "TOK");
+        currency = new Token(trustedForwarder, feeSettings, admin, list, 0x0, "currency", "CUR");
     }
 
-    function testDeployContract() public {
-        uint256 rawSalt = 0;
+    function testDeployContract(uint256 rawSalt) public {
+        //uint256 rawSalt = 0;
         bytes32 salt = bytes32(rawSalt);
 
         //bytes memory creationCode = type(PersonalInvite).creationCode;
@@ -124,17 +105,9 @@ contract PersonalInviteFactoryTest is Test {
         vm.prank(buyer);
         currency.approve(expectedAddress, amount * price);
 
-        factory.deploy(
-            salt,
-            buyer,
-            buyer,
-            receiver,
-            amount,
-            price,
-            expiration,
-            currency,
-            token
-        );
+        vm.expectEmit(true, true, true, true, address(factory));
+        emit Deploy(expectedAddress);
+        factory.deploy(salt, buyer, buyer, receiver, amount, price, expiration, currency, token);
 
         // make sure contract lives here now
         assembly {

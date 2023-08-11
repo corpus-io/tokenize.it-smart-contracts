@@ -17,12 +17,8 @@ contract DeployCompany is Script {
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployerAddress = vm.addr(deployerPrivateKey);
-        AllowList allowList = AllowList(
-            0x47EE5950B9a790A292B731789a35CcCB7381667E
-        );
-        FeeSettings feeSettings = FeeSettings(
-            0x147addF9C8E4030F8104c713Dad2A1d76E6c85a1
-        );
+        AllowList allowList = AllowList(0x47EE5950B9a790A292B731789a35CcCB7381667E);
+        FeeSettings feeSettings = FeeSettings(0x147addF9C8E4030F8104c713Dad2A1d76E6c85a1);
 
         vm.startBroadcast(deployerPrivateKey);
         console.log("Deployer address: ", deployerAddress);
@@ -33,7 +29,7 @@ contract DeployCompany is Script {
 
         address companyAdmin = 0x6CcD9E07b035f9E6e7f086f3EaCf940187d03A29; // testing founder
         address forwarder = 0x0445d09A1917196E1DC12EdB7334C70c1FfB1623;
-        address investor = 0x35bb2Ded62588f7fb3771658dbE699826Cd1041A;
+        // address investor = 0x35bb2Ded62588f7fb3771658dbE699826Cd1041A;
 
         // string memory name = "MyTasticToken";
         // string memory symbol = "MTT";

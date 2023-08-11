@@ -23,3 +23,5 @@ broadcast/
 .env*
 !.env.example
 .npmignore
+.VSCodeCounter/
+*.code-workspace
