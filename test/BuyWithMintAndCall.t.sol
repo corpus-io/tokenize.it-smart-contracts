@@ -77,45 +77,89 @@ contract BuyWithMintAndCall is Test {
         wallet = new Wallet(raise);
     }
 
-    function testBuyHappyCase(uint256 currencyMintAmount) public {
-        vm.assume(UINT256_MAX / 10 ** token.decimals() > currencyMintAmount); // this will cause an overflow on multiplication
-        vm.assume(raise.calculateBuyAmount(currencyMintAmount) > 0);
+    function testBuyHappyCase(uint256 _currencyMintAmount, address _buyer, string memory _iban) public {
+        vm.assume(UINT256_MAX / 10 ** token.decimals() > _currencyMintAmount); // this will cause an overflow on multiplication
+        vm.assume(raise.calculateBuyAmount(_currencyMintAmount) > 0);
+        vm.assume(_buyer != address(0));
 
-        bytes32 buyersIbanHash = keccak256(abi.encodePacked("DE1234567890"));
+        bytes32 buyersIbanHash = keccak256(abi.encodePacked(_iban));
         // add buyers address to wallet
         vm.prank(owner);
-        wallet.set(buyersIbanHash, buyer);
+        wallet.set(buyersIbanHash, _buyer);
 
         // make sure buyer has no tokens before
-        assertTrue(token.balanceOf(buyer) == 0);
+        assertTrue(token.balanceOf(_buyer) == 0);
 
         // mint currency
         bytes memory data = abi.encode(buyersIbanHash, 0xDEADBEEF);
         vm.prank(paymentTokenProvider);
-        paymentToken.mintAndCall(address(wallet), currencyMintAmount, data);
+        paymentToken.mintAndCall(address(wallet), _currencyMintAmount, data);
 
         // make sure buyer has tokens after
-        assertTrue(token.balanceOf(buyer) > 0, "buyer has no tokens after buy");
+        assertTrue(token.balanceOf(_buyer) > 0, "buyer has no tokens after buy");
     }
 
-    function testBuyReverts() public {
-        bytes32 buyersIbanHash = keccak256(abi.encodePacked("DE1234567890"));
-        // add buyers address to wallet
-        vm.prank(owner);
-        wallet.set(buyersIbanHash, buyer);
+    function testBuyRejectsIfNotPaidEnough(uint256 _currencyMintAmount, address _buyer, string memory _iban) public {
+        vm.assume(UINT256_MAX / 10 ** token.decimals() > _currencyMintAmount); // this will cause an overflow on multiplication
+        vm.assume(raise.calculateBuyAmount(_currencyMintAmount) > 0);
+        vm.assume(_buyer != address(0));
 
-        uint currencyMintAmount = 1;
+        bytes32 buyersIbanHash = keccak256(abi.encodePacked(_iban));
+        // owner adds buyer's address to wallet. For some reason, buyer's address is not added yet
+        vm.prank(owner);
+        wallet.set(buyersIbanHash, _buyer);
 
         // make sure buyer has no tokens before
-        assertTrue(token.balanceOf(buyer) == 0);
+        assertTrue(token.balanceOf(_buyer) == 0);
 
-        // mint currency (not enough for the buy)
-        bytes memory data = abi.encode(buyersIbanHash, 0xDEADBEEF);
+        bytes memory data = abi.encode(buyersIbanHash);
 
-        vm.prank(paymentTokenProvider);
-        paymentToken.mintAndCall(address(wallet), currencyMintAmount, data);
+        vm.startPrank(paymentTokenProvider);
+        // buyer pays only half of the tokens needed to wallet
+        paymentToken.mint(address(wallet), _currencyMintAmount / 2);
+        // buyer tries to buy full amount
+        wallet.onTransferReceived(address(this), address(this), _currencyMintAmount, data);
 
         // make sure buyer has no tokens after
-        assertTrue(token.balanceOf(buyer) == 0);
+        assertTrue(token.balanceOf(_buyer) == 0, "buyer has tokens after buy");
+    }
+
+    function testAttackerCanNotClaimFunds(
+        uint256 _currencyMintAmount,
+        address _buyer,
+        address _attacker,
+        string memory _buyerIban,
+        string memory _attackerIban
+    ) public {
+        vm.assume(UINT256_MAX / 10 ** token.decimals() > _currencyMintAmount); // this will cause an overflow on multiplication
+        vm.assume(raise.calculateBuyAmount(_currencyMintAmount) > 0);
+        vm.assume(_buyer != address(0));
+        vm.assume(_attacker != address(0));
+
+        bytes32 buyersIbanHash = keccak256(abi.encodePacked(_buyerIban));
+        bytes32 attackersIbanHash = keccak256(abi.encodePacked(_attackerIban));
+        // owner adds _attacker's address to wallet. For some reason, buyer's address is not added yet
+        vm.prank(owner);
+        wallet.set(attackersIbanHash, _attacker);
+
+        // make sure buyer has no tokens before
+        assertTrue(token.balanceOf(_buyer) == 0);
+
+        bytes memory buyerData = abi.encode(buyersIbanHash);
+        bytes memory attackerData = abi.encode(attackersIbanHash);
+
+        vm.prank(paymentTokenProvider);
+        // buyer tries to buy tokens, which fails silently, because buyer's iban hash has not been added to wallet
+        paymentToken.mintAndCall(address(wallet), _currencyMintAmount, buyerData);
+
+        // make sure buyer has no tokens after
+        assertTrue(token.balanceOf(_buyer) == 0, "buyer has tokens after buy");
+
+        // now, the buyer's payment tokens are in wallet. The attacker uses them to buy tokens.
+        vm.prank(_attacker);
+        wallet.onTransferReceived(address(this), address(this), _currencyMintAmount, attackerData);
+
+        // make sure attacker has no tokens after the attack. This will currently fail.
+        assertTrue(token.balanceOf(_attacker) == 0, "attacker has tokens after buy");
     }
 }
