@@ -4,6 +4,7 @@ pragma solidity 0.8.17;
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import "./interfaces/ERC1363.sol";
 import "./ContinuousFundraising.sol";
 
@@ -16,7 +17,7 @@ import "./ContinuousFundraising.sol";
  * @dev This implementation of the ERC1363Receiver interface is not fully compliant with the standard, because
  * we never revert after onTransferReceived. See function details for more information.
  */
-contract Wallet is Ownable2Step, ERC1363Receiver {
+contract Wallet is Ownable2Step, ERC1363Receiver, IERC1271 {
     using SafeERC20 for IERC20;
     /**
      * @notice stores the receiving address for each IBAN hash
@@ -94,5 +95,20 @@ contract Wallet is Ownable2Step, ERC1363Receiver {
      */
     function withdraw(address payable to, uint256 amount) external onlyOwner {
         to.transfer(amount);
+    }
+
+    /**
+     * @notice enable signing of messages in the name of the contract using the owner's private key
+     * @dev Messages signed by an owner will be valid without a deadline. However, once the contract's owner changes, all old signatures will be invalid.
+     * @param _hash the hash of the data to be signed
+     * @param _signature the signature to be checked
+     * @return 0x1626ba7e
+     */
+    function isValidSignature(bytes32 _hash, bytes memory _signature) public view override returns (bytes4) {
+        if (owner() == address(0)) {
+            // in case the ownership if the contract has been renounced, nobody should be able to sign in its name anymore
+            return bytes4(0);
+        }
+        return ECDSA.recover(_hash, _signature) == owner() ? this.isValidSignature.selector : bytes4(0);
     }
 }
