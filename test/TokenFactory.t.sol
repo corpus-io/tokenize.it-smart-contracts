@@ -31,7 +31,7 @@ contract tokenTest is Test {
         Fees memory fees = Fees(100, 100, 100, 0);
         feeSettings = new FeeSettings(fees, admin);
         token = Token(
-            tokenFactory.deploy(0x0, trustedForwarder, feeSettings, admin, allowList, 0x0, "testToken", "TEST")
+            tokenFactory.deploy(0x0, trustedForwarder, feeSettings, admin, allowList, 0x0, "SetupToken", "TEST")
         );
         console.log(msg.sender);
 
