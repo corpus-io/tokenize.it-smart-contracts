@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/Token.sol";
+import "../contracts/TokenCloneFactory.sol";
 import "../contracts/ContinuousFundraising.sol";
 import "../contracts/FeeSettings.sol";
 import "../contracts/PersonalInviteFactory.sol";
@@ -21,7 +21,8 @@ contract CompanySetUpTest is Test {
     ContinuousFundraising raise;
     AllowList list;
     FeeSettings feeSettings;
-    PersonalInviteFactory factory;
+    PersonalInviteFactory personalInviteFactory;
+    TokenCloneFactory tokenCloneFactory;
 
     Token token;
     FakePaymentToken paymentToken;
@@ -108,7 +109,7 @@ contract CompanySetUpTest is Test {
         list = new AllowList();
 
         // set up PersonalInviteFactory
-        factory = new PersonalInviteFactory();
+        personalInviteFactory = new PersonalInviteFactory();
 
         // investor registers with the platform
         // after kyc, the platform adds the investor to the allowlist with all the properties they were able to proof
@@ -126,10 +127,26 @@ contract CompanySetUpTest is Test {
     }
 
     function deployToken(Forwarder forwarder) public {
+        // this should be part of the platform setup, but since the logic contract needs to use the same forwarder as the final token contract, we do it here.
+        Token implementation = new Token(address(forwarder));
+        tokenCloneFactory = new TokenCloneFactory(address(implementation));
+
         // launch the company token. The platform deploys the contract. There is no need to transfer ownership, because the token is never controlled by the address that deployed it.
         // Instead, it is immediately controlled by the address provided in the constructor, which is the companyAdmin in this case.
-        vm.prank(platformHotWallet);
-        token = new Token(address(forwarder), feeSettings, companyAdmin, list, requirements, name, symbol);
+
+        vm.startPrank(platformHotWallet);
+        token = Token(
+            tokenCloneFactory.createTokenClone(
+                address(forwarder),
+                feeSettings,
+                companyAdmin,
+                list,
+                requirements,
+                name,
+                symbol
+            )
+        );
+        vm.stopPrank();
 
         // // demonstration of the platform not being in control of the token
         // vm.prank(platformHotWallet);
@@ -374,7 +391,7 @@ contract CompanySetUpTest is Test {
 
         salt = "random number"; // random number generated and stored by the platform for this Personal Invite
 
-        personalInviteAddress = factory.getAddress(
+        personalInviteAddress = personalInviteFactory.getAddress(
             salt,
             investor,
             investorColdWallet,
@@ -383,7 +400,7 @@ contract CompanySetUpTest is Test {
             price,
             deadline,
             paymentToken,
-            token
+            IERC20(address(token))
         );
 
         // If the investor wants to invest, they have to sign a meta transaction granting the personal invite address an sufficient allowance in paymentToken.
@@ -515,7 +532,7 @@ contract CompanySetUpTest is Test {
         assertEq(paymentToken.balanceOf(companyCurrencyReceiver), 0);
 
         vm.prank(platformHotWallet);
-        factory.deploy(
+        personalInviteFactory.deploy(
             salt,
             investor,
             investorColdWallet,
@@ -524,7 +541,7 @@ contract CompanySetUpTest is Test {
             price,
             deadline,
             paymentToken,
-            token
+            IERC20(address(token))
         );
 
         // investor receives as many tokens as they paid for
@@ -536,11 +553,11 @@ contract CompanySetUpTest is Test {
         assertTrue(paymentToken.balanceOf(companyAdmin) > 0, "Company currency not received");
     }
 
-    function testlaunchCompanyAndInvestViaContinousFundraisingWithLocalForwarder() public {
+    function testlaunchCompanyAndInvestViaContinuousFundraisingWithLocalForwarder() public {
         launchCompanyAndInvestViaContinousFundraising(new Forwarder());
     }
 
-    function testlaunchCompanyAndInvestViaContinousFundraisingWithMainnetGSNForwarder() public {
+    function testlaunchCompanyAndInvestViaContinuousFundraisingWithMainnetGSNForwarder() public {
         // uses deployed forwarder on mainnet with fork. https://docs-v2.opengsn.org/networks/ethereum/mainnet.html
         launchCompanyAndInvestViaContinousFundraising(Forwarder(payable(0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA)));
     }
