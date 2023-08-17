@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.17;
 
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol";
 import "./AllowList.sol";
 import "./interfaces/IFeeSettings.sol";
 
@@ -21,7 +21,7 @@ import "./interfaces/IFeeSettings.sol";
  *
  * @dev The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support and meta-transactions.
  */
-contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
+contract Token is ERC2771ContextUpgradeable, ERC20PermitUpgradeable, PausableUpgradeable, AccessControlUpgradeable {
     /// @notice The role that has the ability to define which requirements an address must satisfy to receive tokens
     bytes32 public constant REQUIREMENT_ROLE = keccak256("REQUIREMENT_ROLE");
     /// @notice The role that has the ability to grant minting allowances
@@ -92,8 +92,13 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     event MintingAllowanceChanged(address indexed minter, uint256 newAllowance);
 
     /**
-     * @notice Constructor for the token.
+     * @notice Constructor a token logic contract that can be used by clones. It does not initialize state variables properly, so the resulting contract will not be functional.
      * @param _trustedForwarder trusted forwarder for the ERC2771Context constructor - used for meta-transactions. OpenGSN v2 Forwarder should be used.
+     */
+    constructor(address _trustedForwarder) initializer ERC2771ContextUpgradeable(_trustedForwarder) {}
+
+    /**
+     * @notice Constructor for the token.
      * @param _feeSettings fee settings contract that determines the fee for minting tokens
      * @param _admin address of the admin. Admin will initially have all roles and can grant roles to other addresses.
      * @param _name name of the specific token, e.g. "MyGmbH Token"
@@ -101,15 +106,14 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
      * @param _allowList allowList contract that defines which addresses satisfy which requirements
      * @param _requirements requirements an address has to meet for sending or receiving tokens
      */
-    constructor(
-        address _trustedForwarder,
+    function initialize(
         IFeeSettingsV1 _feeSettings,
         address _admin,
         AllowList _allowList,
         uint256 _requirements,
         string memory _name,
         string memory _symbol
-    ) ERC2771Context(_trustedForwarder) ERC20Permit(_name) ERC20(_name, _symbol) {
+    ) public initializer {
         // Grant admin roles
         _grantRole(DEFAULT_ADMIN_ROLE, _admin); // except for the Transferer role, the _admin is the roles admin for all other roles
         _setRoleAdmin(TRANSFERER_ROLE, TRANSFERERADMIN_ROLE);
@@ -131,6 +135,9 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
 
         // set requirements (can be 0 to allow everyone to send and receive tokens)
         requirements = _requirements;
+
+        __ERC20Permit_init(_name);
+        __ERC20_init(_name, _symbol);
     }
 
     /**
@@ -308,14 +315,14 @@ contract Token is ERC2771Context, ERC20Permit, Pausable, AccessControl {
     /**
      * @dev both ERC20Pausable and ERC2771Context have a _msgSender() function, so we need to override and select which one to use.
      */
-    function _msgSender() internal view override(Context, ERC2771Context) returns (address) {
-        return ERC2771Context._msgSender();
+    function _msgSender() internal view override(ContextUpgradeable, ERC2771ContextUpgradeable) returns (address) {
+        return ERC2771ContextUpgradeable._msgSender();
     }
 
     /**
      * @dev both ERC20Pausable and ERC2771Context have a _msgData() function, so we need to override and select which one to use.
      */
-    function _msgData() internal view override(Context, ERC2771Context) returns (bytes calldata) {
-        return ERC2771Context._msgData();
+    function _msgData() internal view override(ContextUpgradeable, ERC2771ContextUpgradeable) returns (bytes calldata) {
+        return ERC2771ContextUpgradeable._msgData();
     }
 }
