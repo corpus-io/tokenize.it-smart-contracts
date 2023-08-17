@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import "../lib/forge-std/src/Test.sol";
 //import "../lib/forge-std/stdlib.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "../contracts/Token.sol";
+import "../contracts/TokenCloneFactory.sol";
 import "../contracts/ContinuousFundraising.sol";
 import "../contracts/PersonalInvite.sol";
 import "../contracts/PersonalInviteFactory.sol";
@@ -62,7 +62,12 @@ contract MainnetCurrencies is Test {
         Fees memory fees = Fees(100, 100, 100, 0);
         feeSettings = new FeeSettings(fees, admin);
 
-        token = new Token(trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST");
+        Token implementation = new Token(trustedForwarder);
+        TokenCloneFactory tokenCloneFactory = new TokenCloneFactory(address(implementation));
+        token = Token(
+            tokenCloneFactory.createTokenClone(trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST")
+        );
+
         factory = new PersonalInviteFactory();
         currencyCost = (amountOfTokenToBuy * price) / 10 ** token.decimals();
         currencyAmount = currencyCost * 2;
@@ -187,7 +192,7 @@ contract MainnetCurrencies is Test {
             price,
             expiration,
             _currency,
-            token
+            IERC20(address(token))
         );
 
         // grant mint allowance to invite
@@ -215,7 +220,7 @@ contract MainnetCurrencies is Test {
             price,
             expiration,
             _currency,
-            token
+            IERC20(address(token))
         );
 
         // check situation after deployment
