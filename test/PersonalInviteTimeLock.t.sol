@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/Token.sol";
+import "../contracts/TokenCloneFactory.sol";
 import "../contracts/PersonalInvite.sol";
 import "../contracts/PersonalInviteFactory.sol";
 import "../contracts/VestingWalletFactory.sol";
@@ -44,7 +44,12 @@ contract PersonalInviteTimeLockTest is Test {
         Fees memory fees = Fees(100, 100, 100, 0);
         feeSettings = new FeeSettings(fees, admin);
 
-        token = new Token(trustedForwarder, feeSettings, admin, list, requirements, "token", "TOK");
+        Token implementation = new Token(trustedForwarder);
+        TokenCloneFactory tokenCloneFactory = new TokenCloneFactory(address(implementation));
+        token = Token(
+            tokenCloneFactory.createTokenClone(trustedForwarder, feeSettings, admin, list, requirements, "token", "TOK")
+        );
+
         vm.prank(paymentTokenProvider);
         currency = new FakePaymentToken(0, 18);
     }
@@ -141,7 +146,7 @@ contract PersonalInviteTimeLockTest is Test {
             price,
             expiration,
             currency,
-            token
+            IERC20(address(token))
         );
 
         vm.prank(admin);
@@ -185,7 +190,7 @@ contract PersonalInviteTimeLockTest is Test {
             price,
             expiration,
             currency,
-            token
+            IERC20(address(token))
         );
 
         assertEq(inviteAddress, expectedInviteAddress, "deployed contract address is not correct");
