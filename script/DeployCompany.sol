@@ -4,6 +4,7 @@ pragma solidity 0.8.17;
 // taken from https://moveseventyeight.com/deploy-your-first-nft-contract-with-foundry#heading-prepare-a-basic-deployment-script
 
 import "../lib/forge-std/src/Script.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../contracts/FeeSettings.sol";
 import "../contracts/AllowList.sol";
 import "../contracts/PersonalInviteFactory.sol";
