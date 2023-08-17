@@ -5,7 +5,7 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/utils/Create2.sol";
-import "@openzeppelin/contracts/finance/VestingWallet.sol";
+import "./Token.sol";
 
 /**
  * @title VestingWalletFactory
@@ -18,21 +18,29 @@ contract TokenFactory {
 
     /**
      * @notice Deploys VestingWallet contract using create2.
-     * @param   _salt salt used for privacy. Could be used for vanity addresses, too.
-     * @param   beneficiaryAddress address receiving the tokens
-     * @param   startTimestamp timestamp of when to start releasing tokens linearly
-     * @param   durationSeconds duration of the vesting period in seconds
+     * @param   _trustedForwarder address of the trusted forwarder
+     * @param   _feeSettings address of the fee settings contract
+     * @param   _admin address of the admin who controls the token
+     * @param   _allowList address of the allow list contract
+     * @param   _requirements requirements an address has to fulfill to be able to send or receive tokens
+     * @param   _name name of the token
+     * @param   _symbol symbol of the token
+     * @return  address of the deployed contract.
      */
     function deploy(
         bytes32 _salt,
-        address beneficiaryAddress,
-        uint64 startTimestamp,
-        uint64 durationSeconds
+        address _trustedForwarder,
+        IFeeSettingsV1 _feeSettings,
+        address _admin,
+        AllowList _allowList,
+        uint256 _requirements,
+        string memory _name,
+        string memory _symbol
     ) external returns (address) {
         address actualAddress = Create2.deploy(
             0,
             _salt,
-            getBytecode(beneficiaryAddress, startTimestamp, durationSeconds)
+            getBytecode(_trustedForwarder, _feeSettings, _admin, _allowList, _requirements, _name, _symbol)
         );
 
         emit Deploy(actualAddress);
@@ -41,37 +49,61 @@ contract TokenFactory {
 
     /**
      * @notice Computes the address of VestingWallet contract to be deployed using create2.
-     * @param   _salt salt for vanity addresses
-     * @param   beneficiaryAddress address receiving the tokens
-     * @param   startTimestamp timestamp of when to start releasing tokens linearly
-     * @param   durationSeconds duration of the vesting period in seconds
+     * @param   _trustedForwarder address of the trusted forwarder
+     * @param   _feeSettings address of the fee settings contract
+     * @param   _admin address of the admin who controls the token
+     * @param   _allowList address of the allow list contract
+     * @param   _requirements requirements an address has to fulfill to be able to send or receive tokens
+     * @param   _name name of the token
+     * @param   _symbol symbol of the token
+     * @return  address these settings would result in
      */
     function getAddress(
         bytes32 _salt,
-        address beneficiaryAddress,
-        uint64 startTimestamp,
-        uint64 durationSeconds
+        address _trustedForwarder,
+        IFeeSettingsV1 _feeSettings,
+        address _admin,
+        AllowList _allowList,
+        uint256 _requirements,
+        string memory _name,
+        string memory _symbol
     ) external view returns (address) {
-        bytes memory bytecode = getBytecode(beneficiaryAddress, startTimestamp, durationSeconds);
+        bytes memory bytecode = getBytecode(
+            _trustedForwarder,
+            _feeSettings,
+            _admin,
+            _allowList,
+            _requirements,
+            _name,
+            _symbol
+        );
         return Create2.computeAddress(_salt, keccak256(bytecode));
     }
 
     /**
      * @dev Generates the bytecode of the contract to be deployed, using the parameters.
-     * @param   beneficiaryAddress address receiving the tokens
-     * @param   startTimestamp timestamp of when to start releasing tokens linearly
-     * @param   durationSeconds duration of the vesting period in seconds
-     * @return bytecode of the contract to be deployed.
+     * @param   _trustedForwarder address of the trusted forwarder
+     * @param   _feeSettings address of the fee settings contract
+     * @param   _admin address of the admin who controls the token
+     * @param   _allowList address of the allow list contract
+     * @param   _requirements requirements an address has to fulfill to be able to send or receive tokens
+     * @param   _name name of the token
+     * @param   _symbol symbol of the token
+     * @return  bytecode of the contract to be deployed.
      */
     function getBytecode(
-        address beneficiaryAddress,
-        uint64 startTimestamp,
-        uint64 durationSeconds
+        address _trustedForwarder,
+        IFeeSettingsV1 _feeSettings,
+        address _admin,
+        AllowList _allowList,
+        uint256 _requirements,
+        string memory _name,
+        string memory _symbol
     ) private pure returns (bytes memory) {
         return
             abi.encodePacked(
-                type(VestingWallet).creationCode,
-                abi.encode(beneficiaryAddress, startTimestamp, durationSeconds)
+                type(Token).creationCode,
+                abi.encode(_trustedForwarder, _feeSettings, _admin, _allowList, _requirements, _name, _symbol)
             );
     }
 }
