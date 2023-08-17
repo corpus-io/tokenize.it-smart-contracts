@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/Token.sol";
+import "../contracts/TokenCloneFactory.sol";
 import "../contracts/PersonalInvite.sol";
 import "../contracts/PersonalInviteFactory.sol";
 import "../contracts/FeeSettings.sol";
@@ -49,7 +49,12 @@ contract PersonalInviteTest is Test {
         Fees memory fees = Fees(100, 100, 100, 0);
         feeSettings = new FeeSettings(fees, admin);
 
-        token = new Token(trustedForwarder, feeSettings, admin, list, requirements, "token", "TOK");
+        Token implementation = new Token(trustedForwarder);
+        TokenCloneFactory tokenCloneFactory = new TokenCloneFactory(address(implementation));
+        token = Token(
+            tokenCloneFactory.createTokenClone(trustedForwarder, feeSettings, admin, list, requirements, "token", "TOK")
+        );
+
         vm.prank(paymentTokenProvider);
         currency = new FakePaymentToken(0, 18);
     }
@@ -76,7 +81,7 @@ contract PersonalInviteTest is Test {
             price,
             expiration,
             currency,
-            token
+            IERC20(address(token))
         );
 
         uint256 tokenDecimals = token.decimals();
@@ -123,7 +128,7 @@ contract PersonalInviteTest is Test {
             price,
             expiration,
             currency,
-            token
+            IERC20(address(token))
         );
 
         console.log(
@@ -189,7 +194,7 @@ contract PersonalInviteTest is Test {
             _nominalPrice,
             expiration,
             currency,
-            token
+            IERC20(address(token))
         );
 
         // set fees to 0, otherwise extra tokens are minted which causes an overflow
@@ -243,7 +248,7 @@ contract PersonalInviteTest is Test {
             _nominalPrice,
             expiration,
             currency,
-            token
+            IERC20(address(token))
         );
 
         console.log(
@@ -327,7 +332,7 @@ contract PersonalInviteTest is Test {
             _nominalPrice,
             expiration,
             currency,
-            token
+            IERC20(address(token))
         );
 
         vm.startPrank(admin);
@@ -354,7 +359,7 @@ contract PersonalInviteTest is Test {
             _nominalPrice,
             expiration,
             currency,
-            token
+            IERC20(address(token))
         );
     }
 
@@ -388,7 +393,7 @@ contract PersonalInviteTest is Test {
             price,
             expiration,
             currency,
-            token
+            IERC20(address(token))
         );
 
         vm.prank(admin);
@@ -423,7 +428,7 @@ contract PersonalInviteTest is Test {
             price,
             expiration,
             currency,
-            token
+            IERC20(address(token))
         );
 
         console.log(
