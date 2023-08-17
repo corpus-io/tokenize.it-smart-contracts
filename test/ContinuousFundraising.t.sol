@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/Token.sol";
+import "../contracts/TokenCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "../contracts/ContinuousFundraising.sol";
 import "./resources/FakePaymentToken.sol";
@@ -20,6 +20,7 @@ contract ContinuousFundraisingTest is Test {
     AllowList list;
     IFeeSettingsV1 feeSettings;
 
+    TokenCloneFactory tokenCloneFactory;
     Token token;
     FakePaymentToken paymentToken;
 
@@ -46,7 +47,12 @@ contract ContinuousFundraisingTest is Test {
         Fees memory fees = Fees(100, 100, 100, 100);
         feeSettings = new FeeSettings(fees, admin);
 
-        token = new Token(trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST");
+        // create token
+        address tokenLogicContract = address(new Token(trustedForwarder));
+        tokenCloneFactory = new TokenCloneFactory(tokenLogicContract);
+        token = Token(
+            tokenCloneFactory.createTokenClone(trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST")
+        );
 
         // set up currency
         vm.prank(paymentTokenProvider);
@@ -170,7 +176,17 @@ contract ContinuousFundraisingTest is Test {
         uint256 _paymentTokenAmount = 100000 * 10 ** _paymentTokenDecimals;
 
         list = new AllowList();
-        Token _token = new Token(trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST");
+        Token _token = Token(
+            tokenCloneFactory.createTokenClone(
+                trustedForwarder,
+                feeSettings,
+                admin,
+                list,
+                0x0,
+                "REENTRANCYTOKEN",
+                "TEST"
+            )
+        );
         vm.prank(paymentTokenProvider);
         _paymentToken = new MaliciousPaymentToken(_paymentTokenAmount);
         vm.prank(owner);
