@@ -8,16 +8,16 @@ import "@openzeppelin/contracts/utils/Create2.sol";
 import "./Token.sol";
 
 /**
- * @title VestingWalletFactory
+ * @title TokenFactory
  * @author malteish
- * @notice This contract deploys VestingWallets using create2.
- * @dev One deployment of this contract can be used for deployment of any number of VestingWallets using create2.
+ * @notice This contract deploys Tokens using create2.
+ * @dev One deployment of this contract can be used for deployment of any number of Tokens using create2.
  */
 contract TokenFactory {
     event Deploy(address indexed addr);
 
     /**
-     * @notice Deploys VestingWallet contract using create2.
+     * @notice Deploys Token contract using create2.
      * @param   _trustedForwarder address of the trusted forwarder
      * @param   _feeSettings address of the fee settings contract
      * @param   _admin address of the admin who controls the token
@@ -48,7 +48,7 @@ contract TokenFactory {
     }
 
     /**
-     * @notice Computes the address of VestingWallet contract to be deployed using create2.
+     * @notice Computes the address of Token contract to be deployed using create2.
      * @param   _trustedForwarder address of the trusted forwarder
      * @param   _feeSettings address of the fee settings contract
      * @param   _admin address of the admin who controls the token
