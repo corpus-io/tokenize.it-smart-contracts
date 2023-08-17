@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/Token.sol";
+import "../contracts/TokenCloneFactory.sol";
 import "../contracts/ContinuousFundraising.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
@@ -65,7 +65,10 @@ contract ContinuousFundraisingTest is Test {
         Fees memory fees = Fees(tokenFeeDenominator, paymentTokenFeeDenominator, paymentTokenFeeDenominator, 0);
         feeSettings = new FeeSettings(fees, admin);
 
-        token = new Token(trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST");
+        Token implementation = new Token(trustedForwarder);
+        TokenCloneFactory factory = new TokenCloneFactory(address(implementation));
+        token = Token(factory.createTokenClone(trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST"));
+
         ERC2771helper = new ERC2771Helper();
 
         buyer = vm.addr(buyerPrivateKey);
