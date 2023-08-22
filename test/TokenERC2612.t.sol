@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/Token.sol";
+import "../contracts/TokenCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific version to avoid import error: yarn add @opengsn/contracts@2.2.5
@@ -14,6 +14,8 @@ contract TokenERC2612Test is Test {
     FeeSettings feeSettings;
 
     Token token;
+    Token implementation;
+    TokenCloneFactory tokenCloneFactory;
     FakePaymentToken paymentToken;
     //Forwarder trustedForwarder;
 
@@ -74,8 +76,21 @@ contract TokenERC2612Test is Test {
         // deploy forwarder
         Forwarder forwarder = new Forwarder();
 
+        implementation = new Token(address(forwarder));
+        tokenCloneFactory = new TokenCloneFactory(address(implementation));
+
         // deploy company token
-        token = new Token(address(forwarder), feeSettings, companyAdmin, allowList, 0x0, "TESTTOKEN", "TEST");
+        token = Token(
+            tokenCloneFactory.createTokenClone(
+                address(forwarder),
+                feeSettings,
+                companyAdmin,
+                allowList,
+                0x0,
+                "TESTTOKEN",
+                "TEST"
+            )
+        );
 
         // mint tokens for holder
         vm.startPrank(companyAdmin);
