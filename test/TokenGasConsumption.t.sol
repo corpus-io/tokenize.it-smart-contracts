@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/Token.sol";
+import "../contracts/TokenCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 
 contract tokenTest is Test {
@@ -38,7 +38,20 @@ contract tokenTest is Test {
 
         vm.stopPrank();
 
-        token = new Token(trustedForwarder, feeSettings, admin, allowList, requirements, "testToken", "TEST");
+        Token implementation = new Token(trustedForwarder);
+        TokenCloneFactory tokenCloneFactory = new TokenCloneFactory(address(implementation));
+
+        token = Token(
+            tokenCloneFactory.createTokenClone(
+                trustedForwarder,
+                feeSettings,
+                admin,
+                allowList,
+                requirements,
+                "testToken",
+                "TEST"
+            )
+        );
         console.log(msg.sender);
 
         // set up roles
