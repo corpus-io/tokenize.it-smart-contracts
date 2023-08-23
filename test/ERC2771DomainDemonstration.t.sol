@@ -93,6 +93,7 @@ contract TokenERC2771Test is Test {
         TokenCloneFactory factory = new TokenCloneFactory(address(implementation));
         token = Token(
             factory.createTokenClone(
+                0,
                 address(_forwarder),
                 feeSettings,
                 companyAdmin,

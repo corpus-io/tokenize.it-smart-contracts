@@ -40,10 +40,10 @@ contract PersonalInviteFactoryTest is Test {
         Token implementation = new Token(trustedForwarder);
         TokenCloneFactory tokenCloneFactory = new TokenCloneFactory(address(implementation));
         token = Token(
-            tokenCloneFactory.createTokenClone(trustedForwarder, feeSettings, admin, list, 0x0, "token", "TOK")
+            tokenCloneFactory.createTokenClone(0, trustedForwarder, feeSettings, admin, list, 0x0, "token", "TOK")
         );
         currency = Token(
-            tokenCloneFactory.createTokenClone(trustedForwarder, feeSettings, admin, list, 0x0, "currency", "CUR")
+            tokenCloneFactory.createTokenClone(0, trustedForwarder, feeSettings, admin, list, 0x0, "currency", "CUR")
         );
     }
 

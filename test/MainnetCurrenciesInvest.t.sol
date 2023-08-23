@@ -65,7 +65,7 @@ contract MainnetCurrencies is Test {
         Token implementation = new Token(trustedForwarder);
         TokenCloneFactory tokenCloneFactory = new TokenCloneFactory(address(implementation));
         token = Token(
-            tokenCloneFactory.createTokenClone(trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST")
+            tokenCloneFactory.createTokenClone(0, trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST")
         );
 
         factory = new PersonalInviteFactory();

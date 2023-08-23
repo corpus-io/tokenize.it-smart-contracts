@@ -10,6 +10,7 @@ contract TokenCloneFactory is CloneFactory {
     constructor(address _implementation) CloneFactory(_implementation) {}
 
     function createTokenClone(
+        bytes32 _rawSalt,
         address _trustedForwarder,
         IFeeSettingsV1 _feeSettings,
         address _admin,
@@ -19,7 +20,16 @@ contract TokenCloneFactory is CloneFactory {
         string memory _symbol
     ) external returns (address) {
         bytes32 salt = keccak256(
-            abi.encodePacked(_trustedForwarder, _feeSettings, _admin, _allowList, _requirements, _name, _symbol)
+            abi.encodePacked(
+                _rawSalt,
+                _trustedForwarder,
+                _feeSettings,
+                _admin,
+                _allowList,
+                _requirements,
+                _name,
+                _symbol
+            )
         );
         address clone = Clones.cloneDeterministic(implementation, salt);
         Token cloneToken = Token(clone);
@@ -30,6 +40,7 @@ contract TokenCloneFactory is CloneFactory {
     }
 
     function predictCloneAddress(
+        bytes32 _rawSalt,
         address _trustedForwarder,
         IFeeSettingsV1 _feeSettings,
         address _admin,
@@ -39,7 +50,16 @@ contract TokenCloneFactory is CloneFactory {
         string memory _symbol
     ) external view returns (address) {
         bytes32 salt = keccak256(
-            abi.encodePacked(_trustedForwarder, _feeSettings, _admin, _allowList, _requirements, _name, _symbol)
+            abi.encodePacked(
+                _rawSalt,
+                _trustedForwarder,
+                _feeSettings,
+                _admin,
+                _allowList,
+                _requirements,
+                _name,
+                _symbol
+            )
         );
         return Clones.predictDeterministicAddress(implementation, salt);
     }

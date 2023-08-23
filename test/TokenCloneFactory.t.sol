@@ -41,6 +41,7 @@ contract tokenTest is Test {
     }
 
     function testAddressPrediction(
+        bytes32 _salt,
         address _admin,
         AllowList _allowList,
         uint256 _requirements,
@@ -52,10 +53,11 @@ contract tokenTest is Test {
         vm.assume(address(_allowList) != address(0));
 
         bytes32 salt = keccak256(
-            abi.encodePacked(trustedForwarder, feeSettings, _admin, _allowList, _requirements, _name, _symbol)
+            abi.encodePacked(_salt, trustedForwarder, feeSettings, _admin, _allowList, _requirements, _name, _symbol)
         );
         address expected1 = factory.predictCloneAddress(salt);
         address expected2 = factory.predictCloneAddress(
+            _salt,
             trustedForwarder,
             feeSettings,
             _admin,
@@ -67,6 +69,7 @@ contract tokenTest is Test {
         assertEq(expected1, expected2, "address prediction with salt and params not equal");
 
         address actual = factory.createTokenClone(
+            _salt,
             trustedForwarder,
             feeSettings,
             _admin,
@@ -76,6 +79,42 @@ contract tokenTest is Test {
             _symbol
         );
         assertEq(expected1, actual, "address prediction failed");
+    }
+
+    function testSecondDeploymentFails(
+        bytes32 _salt,
+        address _admin,
+        AllowList _allowList,
+        uint256 _requirements,
+        string memory _name,
+        string memory _symbol
+    ) public {
+        vm.assume(trustedForwarder != address(0));
+        vm.assume(_admin != address(0));
+        vm.assume(address(_allowList) != address(0));
+
+        address clone = factory.createTokenClone(
+            _salt,
+            trustedForwarder,
+            feeSettings,
+            _admin,
+            _allowList,
+            _requirements,
+            _name,
+            _symbol
+        );
+
+        vm.expectRevert("create2 failed");
+        factory.createTokenClone(
+            _salt,
+            trustedForwarder,
+            feeSettings,
+            _admin,
+            _allowList,
+            _requirements,
+            _name,
+            _symbol
+        );
     }
 
     function testInitialization(
@@ -97,6 +136,7 @@ contract tokenTest is Test {
 
         Token clone = Token(
             factory.createTokenClone(
+                0,
                 trustedForwarder,
                 _feeSettings,
                 _admin,
@@ -156,6 +196,7 @@ contract tokenTest is Test {
 
         Token _token = Token(
             factory.createTokenClone(
+                0,
                 trustedForwarder,
                 _feeSettings,
                 _admin,
@@ -200,6 +241,7 @@ contract tokenTest is Test {
 
         Token _token = Token(
             factory.createTokenClone(
+                0,
                 trustedForwarder,
                 _feeSettings,
                 admin,
@@ -253,6 +295,7 @@ contract tokenTest is Test {
 
         Token clone = Token(
             factory.createTokenClone(
+                0,
                 trustedForwarder,
                 feeSettings,
                 _admin,

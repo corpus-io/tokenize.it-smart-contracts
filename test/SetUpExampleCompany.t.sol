@@ -137,6 +137,7 @@ contract CompanySetUpTest is Test {
         vm.startPrank(platformHotWallet);
         token = Token(
             tokenCloneFactory.createTokenClone(
+                0,
                 address(forwarder),
                 feeSettings,
                 companyAdmin,
