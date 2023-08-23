@@ -104,7 +104,7 @@ contract tokenTest is Test {
             _symbol
         );
 
-        vm.expectRevert("create2 failed");
+        vm.expectRevert("ERC1167: create2 failed");
         factory.createTokenClone(
             _salt,
             trustedForwarder,
