@@ -93,7 +93,7 @@ contract tokenTest is Test {
         vm.assume(_admin != address(0));
         vm.assume(address(_allowList) != address(0));
 
-        address clone = factory.createTokenClone(
+        factory.createTokenClone(
             _salt,
             trustedForwarder,
             feeSettings,
