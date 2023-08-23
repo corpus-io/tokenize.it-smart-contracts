@@ -82,6 +82,7 @@ contract TokenERC2612Test is Test {
         // deploy company token
         token = Token(
             tokenCloneFactory.createTokenClone(
+                0,
                 address(forwarder),
                 feeSettings,
                 companyAdmin,

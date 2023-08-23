@@ -34,6 +34,7 @@ contract tokenTest is Test {
         feeSettings = new FeeSettings(fees, admin);
         token = Token(
             tokenCloneFactory.createTokenClone(
+                0,
                 trustedForwarder,
                 feeSettings,
                 admin,
@@ -74,7 +75,7 @@ contract tokenTest is Test {
     function testAllowList0() public {
         AllowList _noList = AllowList(address(0));
         vm.expectRevert("AllowList must not be zero address");
-        tokenCloneFactory.createTokenClone(trustedForwarder, feeSettings, admin, _noList, 0x0, "testToken", "TEST");
+        tokenCloneFactory.createTokenClone(0, trustedForwarder, feeSettings, admin, _noList, 0x0, "testToken", "TEST");
     }
 
     function testFeeSettings0() public {
@@ -82,6 +83,7 @@ contract tokenTest is Test {
         console.log("fee settings address:", address(_noFeeSettings));
         vm.expectRevert();
         tokenCloneFactory.createTokenClone(
+            0,
             trustedForwarder,
             _noFeeSettings,
             admin,
@@ -95,6 +97,7 @@ contract tokenTest is Test {
     function testFeeSettingsNoERC165() public {
         vm.expectRevert();
         tokenCloneFactory.createTokenClone(
+            0,
             trustedForwarder,
             FeeSettings(address(allowList)),
             admin,
@@ -1032,6 +1035,7 @@ contract tokenTest is Test {
     function testDeployerDoesNotGetRole() public {
         Token localToken = Token(
             tokenCloneFactory.createTokenClone(
+                0,
                 trustedForwarder,
                 feeSettings,
                 admin,

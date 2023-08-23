@@ -43,7 +43,7 @@ contract ContinuousFundraisingTest is Test {
         feeSettings = new FeeSettings(fees, platformAdmin);
         vm.prank(platformAdmin);
         token = Token(
-            factory.createTokenClone(trustedForwarder, feeSettings, companyOwner, list, 0x0, "TESTTOKEN", "TEST")
+            factory.createTokenClone(0, trustedForwarder, feeSettings, companyOwner, list, 0x0, "TESTTOKEN", "TEST")
         );
 
         // set up currency
@@ -119,7 +119,7 @@ contract ContinuousFundraisingTest is Test {
 
         list = new AllowList();
         Token _token = Token(
-            factory.createTokenClone(trustedForwarder, feeSettings, companyOwner, list, 0x0, "FEETESTTOKEN", "TEST")
+            factory.createTokenClone(0, trustedForwarder, feeSettings, companyOwner, list, 0x0, "FEETESTTOKEN", "TEST")
         );
 
         vm.prank(paymentTokenProvider);
@@ -223,6 +223,7 @@ contract ContinuousFundraisingTest is Test {
             list = new AllowList();
             Token _token = Token(
                 factory.createTokenClone(
+                    0,
                     trustedForwarder,
                     feeSettings,
                     companyOwner,

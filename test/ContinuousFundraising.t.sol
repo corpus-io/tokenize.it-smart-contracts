@@ -51,7 +51,7 @@ contract ContinuousFundraisingTest is Test {
         address tokenLogicContract = address(new Token(trustedForwarder));
         tokenCloneFactory = new TokenCloneFactory(tokenLogicContract);
         token = Token(
-            tokenCloneFactory.createTokenClone(trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST")
+            tokenCloneFactory.createTokenClone(0, trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST")
         );
 
         // set up currency
@@ -178,6 +178,7 @@ contract ContinuousFundraisingTest is Test {
         list = new AllowList();
         Token _token = Token(
             tokenCloneFactory.createTokenClone(
+                0,
                 trustedForwarder,
                 feeSettings,
                 admin,

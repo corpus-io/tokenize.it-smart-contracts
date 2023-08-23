@@ -37,6 +37,7 @@ contract tokenTest is Test {
         TokenCloneFactory tokenCloneFactory = new TokenCloneFactory(address(implementation));
         token = Token(
             tokenCloneFactory.createTokenClone(
+                0,
                 trustedForwarder,
                 feeSettings,
                 admin,

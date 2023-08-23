@@ -67,7 +67,9 @@ contract ContinuousFundraisingTest is Test {
 
         Token implementation = new Token(trustedForwarder);
         TokenCloneFactory factory = new TokenCloneFactory(address(implementation));
-        token = Token(factory.createTokenClone(trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST"));
+        token = Token(
+            factory.createTokenClone(0, trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST")
+        );
 
         ERC2771helper = new ERC2771Helper();
 
