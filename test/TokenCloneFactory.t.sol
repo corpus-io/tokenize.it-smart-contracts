@@ -313,8 +313,9 @@ contract tokenTest is Test {
         assertEq(clone.balanceOf(_tokenSpender), 0);
 
         // spend tokens
-        vm.prank(_tokenSpender);
+        vm.startPrank(_tokenSpender);
         clone.transferFrom(tokenOwner, _tokenSpender, _tokenPermitAmount);
+        vm.stopPrank();
 
         // check token balances after transfer
         assertEq(clone.balanceOf(tokenOwner), 0);
