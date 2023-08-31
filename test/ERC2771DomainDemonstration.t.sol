@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/Token.sol";
+import "../contracts/TokenCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/ERC2771Helper.sol";
@@ -89,7 +89,20 @@ contract TokenERC2771Test is Test {
         uint256 _tokenMintAmount = 1000 * 10 ** 18;
 
         // deploy company token
-        token = new Token(address(_forwarder), feeSettings, companyAdmin, allowList, 0x0, "TESTTOKEN", "TEST");
+        Token implementation = new Token(address(_forwarder));
+        TokenCloneFactory factory = new TokenCloneFactory(address(implementation));
+        token = Token(
+            factory.createTokenClone(
+                0,
+                address(_forwarder),
+                feeSettings,
+                companyAdmin,
+                allowList,
+                0x0,
+                "TESTTOKEN",
+                "TEST"
+            )
+        );
 
         // deploy fundraising
         paymentToken = new FakePaymentToken(6 * 10 ** 18, 18);

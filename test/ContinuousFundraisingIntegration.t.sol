@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/Token.sol";
+import "../contracts/TokenCloneFactory.sol";
 import "../contracts/ContinuousFundraising.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
@@ -13,6 +13,8 @@ contract ContinuousFundraisingTest is Test {
     AllowList list;
     FeeSettings feeSettings;
 
+    Token implementation = new Token(trustedForwarder);
+    TokenCloneFactory factory = new TokenCloneFactory(address(implementation));
     Token token;
     FakePaymentToken paymentToken;
 
@@ -40,7 +42,9 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(platformAdmin);
         feeSettings = new FeeSettings(fees, platformAdmin);
         vm.prank(platformAdmin);
-        token = new Token(trustedForwarder, feeSettings, companyOwner, list, 0x0, "TESTTOKEN", "TEST");
+        token = Token(
+            factory.createTokenClone(0, trustedForwarder, feeSettings, companyOwner, list, 0x0, "TESTTOKEN", "TEST")
+        );
 
         // set up currency
         vm.prank(paymentTokenProvider);
@@ -114,7 +118,10 @@ contract ContinuousFundraisingTest is Test {
         uint256 _paymentTokenAmount = 1000 * 10 ** _paymentTokenDecimals;
 
         list = new AllowList();
-        Token _token = new Token(trustedForwarder, feeSettings, platformAdmin, list, 0x0, "TESTTOKEN", "TEST");
+        Token _token = Token(
+            factory.createTokenClone(0, trustedForwarder, feeSettings, companyOwner, list, 0x0, "FEETESTTOKEN", "TEST")
+        );
+
         vm.prank(paymentTokenProvider);
         _paymentToken = new FakePaymentToken(_paymentTokenAmount, _paymentTokenDecimals);
         vm.prank(companyOwner);
@@ -133,7 +140,7 @@ contract ContinuousFundraisingTest is Test {
         // allow invite contract to mint
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
-        vm.prank(platformAdmin);
+        vm.prank(companyOwner);
         _token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
         _token.increaseMintingAllowance(address(_raise), _maxMintAmount);
@@ -214,7 +221,19 @@ contract ContinuousFundraisingTest is Test {
             uint256 _paymentTokenAmount = 1000 * 10 ** _paymentTokenDecimals;
 
             list = new AllowList();
-            Token _token = new Token(trustedForwarder, feeSettings, platformAdmin, list, 0x0, "TESTTOKEN", "TEST");
+            Token _token = Token(
+                factory.createTokenClone(
+                    0,
+                    trustedForwarder,
+                    feeSettings,
+                    companyOwner,
+                    list,
+                    0x0,
+                    "DECIMALSTESTTOKEN",
+                    "TEST"
+                )
+            );
+
             vm.prank(paymentTokenProvider);
             _paymentToken = new FakePaymentToken(_paymentTokenAmount, _paymentTokenDecimals);
             vm.prank(companyOwner);
@@ -232,7 +251,7 @@ contract ContinuousFundraisingTest is Test {
             // allow invite contract to mint
             bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
-            vm.prank(platformAdmin);
+            vm.prank(companyOwner);
             _token.grantRole(roleMintAllower, mintAllower);
             vm.prank(mintAllower);
             _token.increaseMintingAllowance(address(_raise), _maxMintAmount);

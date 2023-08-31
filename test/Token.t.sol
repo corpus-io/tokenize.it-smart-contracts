@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/Token.sol";
+import "../contracts/TokenCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 
 contract tokenTest is Test {
@@ -10,6 +10,9 @@ contract tokenTest is Test {
     event MintingAllowanceChanged(address indexed minter, uint256 newAllowance);
 
     Token token;
+    Token implementation = new Token(trustedForwarder);
+    TokenCloneFactory tokenCloneFactory = new TokenCloneFactory(address(implementation));
+
     AllowList allowList;
     FeeSettings feeSettings;
     address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
@@ -29,7 +32,18 @@ contract tokenTest is Test {
         vm.prank(feeSettingsOwner);
         Fees memory fees = Fees(100, 100, 100, 0);
         feeSettings = new FeeSettings(fees, admin);
-        token = new Token(trustedForwarder, feeSettings, admin, allowList, 0x0, "testToken", "TEST");
+        token = Token(
+            tokenCloneFactory.createTokenClone(
+                0,
+                trustedForwarder,
+                feeSettings,
+                admin,
+                allowList,
+                0x0,
+                "testToken",
+                "TEST"
+            )
+        );
 
         // set up roles
         vm.startPrank(admin);
@@ -61,19 +75,37 @@ contract tokenTest is Test {
     function testAllowList0() public {
         AllowList _noList = AllowList(address(0));
         vm.expectRevert("AllowList must not be zero address");
-        new Token(trustedForwarder, feeSettings, admin, _noList, 0x0, "testToken", "TEST");
+        tokenCloneFactory.createTokenClone(0, trustedForwarder, feeSettings, admin, _noList, 0x0, "testToken", "TEST");
     }
 
     function testFeeSettings0() public {
         FeeSettings _noFeeSettings = FeeSettings(address(0));
         console.log("fee settings address:", address(_noFeeSettings));
         vm.expectRevert();
-        new Token(trustedForwarder, _noFeeSettings, admin, allowList, 0x0, "testToken", "TEST");
+        tokenCloneFactory.createTokenClone(
+            0,
+            trustedForwarder,
+            _noFeeSettings,
+            admin,
+            allowList,
+            0x0,
+            "testToken",
+            "TEST"
+        );
     }
 
     function testFeeSettingsNoERC165() public {
         vm.expectRevert();
-        new Token(trustedForwarder, FeeSettings(address(allowList)), admin, allowList, 0x0, "testToken", "TEST");
+        tokenCloneFactory.createTokenClone(
+            0,
+            trustedForwarder,
+            FeeSettings(address(allowList)),
+            admin,
+            allowList,
+            0x0,
+            "testToken",
+            "TEST"
+        );
     }
 
     function testFailAdmin() public {
@@ -1001,7 +1033,18 @@ contract tokenTest is Test {
     }
 
     function testDeployerDoesNotGetRole() public {
-        Token localToken = new Token(trustedForwarder, feeSettings, admin, allowList, 0x0, "testToken", "TEST");
+        Token localToken = Token(
+            tokenCloneFactory.createTokenClone(
+                0,
+                trustedForwarder,
+                feeSettings,
+                admin,
+                allowList,
+                0x0,
+                "testTokenRole",
+                "TEST"
+            )
+        );
         address deployer = msg.sender;
         assertFalse(localToken.hasRole(localToken.REQUIREMENT_ROLE(), deployer));
         assertFalse(localToken.hasRole(localToken.MINTALLOWER_ROLE(), deployer));

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/Token.sol";
+import "../contracts/TokenCloneFactory.sol";
 import "../contracts/PersonalInvite.sol";
 import "../contracts/PersonalInviteFactory.sol";
 import "../contracts/FeeSettings.sol";
@@ -31,40 +31,20 @@ contract PersonalInviteFactoryTest is Test {
 
     uint256 public constant price = 10000000;
 
-    // function calcAddress(bytes memory bytecode, uint salt, address sender) public pure returns (address) {
-    //     bytes32 saltBytes = bytes32(salt);
-    //     bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), sender, saltBytes, keccak256(bytecode)));
-    //     return address(uint160(uint256(hash)));
-    // }
-
-    // function testCalcAddressWithExample() public view {
-    //     // example taken from https://docs.ethers.io/v5/api/utils/address/#utils-getCreate2Address
-    //     address sender = 0x8ba1f109551bD432803012645Ac136ddd64DBA72;
-    //     uint salt = 0x7c5ea36004851c764c44143b1dcb59679b11c9a68e5f41497f6cf3d480715331;
-    //     string memory hexString = "0x6394198df16000526103ff60206004601c335afa6040516060f3";
-    //     bytes memory bytecode = bytes(hexString);
-
-    //     address actual = calcAddress(bytecode, salt, sender);
-    //     address expected = 0x533ae9d683B10C02EbDb05471642F85230071FC3;
-
-    //     console.log("bytecode: %s", string(bytecode));
-
-    //     console.log("actual: %s", actual);
-    //     console.log("expected: %s", expected);
-    //     //assertEq(actual, expected);
-
-    //     // TODO: figure out why this fails
-
-    // }
-
     function setUp() public {
         factory = new PersonalInviteFactory();
         list = new AllowList();
         Fees memory fees = Fees(100, 100, 100, 0);
         feeSettings = new FeeSettings(fees, admin);
 
-        token = new Token(trustedForwarder, feeSettings, admin, list, 0x0, "token", "TOK");
-        currency = new Token(trustedForwarder, feeSettings, admin, list, 0x0, "currency", "CUR");
+        Token implementation = new Token(trustedForwarder);
+        TokenCloneFactory tokenCloneFactory = new TokenCloneFactory(address(implementation));
+        token = Token(
+            tokenCloneFactory.createTokenClone(0, trustedForwarder, feeSettings, admin, list, 0x0, "token", "TOK")
+        );
+        currency = Token(
+            tokenCloneFactory.createTokenClone(0, trustedForwarder, feeSettings, admin, list, 0x0, "currency", "CUR")
+        );
     }
 
     function testDeployContract(uint256 rawSalt) public {
@@ -83,8 +63,8 @@ contract PersonalInviteFactoryTest is Test {
             amount,
             price,
             expiration,
-            currency,
-            token
+            IERC20(address(currency)),
+            IERC20(address(token))
         );
 
         // make sure no contract lives here yet
@@ -107,7 +87,17 @@ contract PersonalInviteFactoryTest is Test {
 
         vm.expectEmit(true, true, true, true, address(factory));
         emit Deploy(expectedAddress);
-        factory.deploy(salt, buyer, buyer, receiver, amount, price, expiration, currency, token);
+        factory.deploy(
+            salt,
+            buyer,
+            buyer,
+            receiver,
+            amount,
+            price,
+            expiration,
+            IERC20(address(currency)),
+            IERC20(address(token))
+        );
 
         // make sure contract lives here now
         assembly {
