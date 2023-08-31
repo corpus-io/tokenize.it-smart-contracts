@@ -41,7 +41,24 @@ The company-related contracts are:
 
 They are deployed through the web app.
 
-As long as automatic verification is not implemented, the contracts need to be verified manually. Doing this with foundry was not successful, possibly because they are compiled using hardhat. The ContinuousFundraising contract can be verified like this:
+For development purposes, the contracts can be deployed like this:
+
+```bash
+forge script script/DeployToken.s.sol --rpc-url $GOERLI_RPC_URL  --verify --broadcast
+```
+
+## Forwarder
+
+If the forwarder has not been deployed yet, e.g. when working in a testing environment, it can be deployed like this:
+`forge create node_modules/@opengsn/contracts/src/forwarder/Forwarder.sol:Forwarder --private-key $PRIVATE_KEY --rpc-url $GOERLI_RPC_URL --verify --etherscan-api-key $ETHERSCAN_API_KEY`
+
+## Contract Verification
+
+As long as automatic verification is not implemented, the contracts need to be verified manually. This can be done using hardhat or foundry. Sometimes one or the other works better.
+
+### hardhat
+
+The ContinuousFundraising contract can be verified like this:
 
 ```
 yarn hardhat verify --network goerli 0x29b659E948616815FADCD013f6BfC767da1BDe83 0x0445d09A1917196E1DC12EdB7334C70c1FfB1623 0xA1e28D1f17b7Da62d10fbFaFCA98Fa406D759ce2 10000000000000000000 50000000000000000000 1000000 100000000000000000000 0x07865c6E87B9F70255377e024ace6630C1Eaa37F 0xc1C74cbD565D16E0cCe9C5DCf7683368DE4E35e2
@@ -79,13 +96,18 @@ optimizer: {
       },
 ```
 
-For development purposes, the contracts can be deployed like this:
+### foundry
 
-```bash
-forge script script/DeployToken.s.sol --rpc-url $GOERLI_RPC_URL  --verify --broadcast
+Example for token verification:
+
+```
+forge verify-contract 0x458A75E83c50080279e8d8e870cF0d0F4B48C01b --constructor-args-path verificationArguments/foundry/Token --chain goerli Token
 ```
 
-## Forwarder
+Provide the constructor arguments separated by whitespace in a file like this:
 
-If the forwarder has not been deployed yet, e.g. when working in a testing environment, it can be deployed like this:
-`forge create node_modules/@opengsn/contracts/src/forwarder/Forwarder.sol:Forwarder --private-key $PRIVATE_KEY --rpc-url $GOERLI_RPC_URL --verify --etherscan-api-key $ETHERSCAN_API_KEY`
+```
+0x0445d09A1917196E1DC12EdB7334C70c1FfB1623 0x387aD1Aa745C70829b651B3F2D3E7852Df961C93 0x2Db0DD9394f851baefD1FA3334c6B188A0C0548D 0x274ca5f21Cdde06B6E4Fe063f5087EB6Cf3eAe55 0 'Max Mustermann Token' 'MAXMT'
+```
+
+More info can be found [here](https://book.getfoundry.sh/reference/forge/forge-verify-contract).
