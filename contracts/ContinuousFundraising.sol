@@ -81,9 +81,18 @@ contract ContinuousFundraising is
     event TokensBought(address indexed buyer, uint256 tokenAmount, uint256 currencyAmount);
 
     /**
+     * This constructor creates a logic contract that is used to clone new fundraising contracts.
+     * It has no owner, and can not be used directly.
+     * @param _trustedForwarder This address can execute transactions in the name of any other address
+     */
+    constructor(address _trustedForwarder) ERC2771ContextUpgradeable(_trustedForwarder) {
+        _disableInitializers();
+    }
+
+    /**
      * @notice Sets up the ContinuousFundraising. The contract is usable immediately after deployment, but does need a minting allowance for the token.
      * @dev Constructor that passes the trusted forwarder to the ERC2771Context constructor
-     * @param _trustedForwarder This address can execute transactions in the name of any other address
+     * @param _owner Owner of the contract
      * @param _currencyReceiver address that receives the payment (in currency) when tokens are bought
      * @param _minAmountPerBuyer smallest amount of tokens a buyer is allowed to buy when buying for the first time
      * @param _maxAmountPerBuyer largest amount of tokens a buyer can buy from this contract
@@ -92,8 +101,8 @@ contract ContinuousFundraising is
      * @param _currency currency used to pay for the token mint. Must be ERC20, so ether can only be used as wrapped ether (WETH)
      * @param _token token to be sold
      */
-    constructor(
-        address _trustedForwarder,
+    function initialize(
+        address _owner,
         address _currencyReceiver,
         uint256 _minAmountPerBuyer,
         uint256 _maxAmountPerBuyer,
@@ -101,7 +110,11 @@ contract ContinuousFundraising is
         uint256 _maxAmountOfTokenToBeSold,
         IERC20 _currency,
         Token _token
-    ) ERC2771ContextUpgradeable(_trustedForwarder) {
+    ) external initializer {
+        require(_owner != address(0), "owner can not be zero address");
+        __Ownable2Step_init(); // sets msgSender() as owner
+        _transferOwnership(_owner); // sets owner as owner
+
         currencyReceiver = _currencyReceiver;
         minAmountPerBuyer = _minAmountPerBuyer;
         maxAmountPerBuyer = _maxAmountPerBuyer;
@@ -109,7 +122,6 @@ contract ContinuousFundraising is
         maxAmountOfTokenToBeSold = _maxAmountOfTokenToBeSold;
         currency = _currency;
         token = _token;
-        require(_trustedForwarder != address(0), "trustedForwarder can not be zero address");
         require(_currencyReceiver != address(0), "currencyReceiver can not be zero address");
         require(address(_currency) != address(0), "currency can not be zero address");
         require(address(_token) != address(0), "token can not be zero address");
