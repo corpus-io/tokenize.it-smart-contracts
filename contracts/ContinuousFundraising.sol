@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.17;
 
-import "@openzeppelin/contracts/access/Ownable2Step.sol";
+import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
 import "./Token.sol";
@@ -22,7 +22,12 @@ import "./Token.sol";
  *      A company will create only one ContinuousFundraising contract for their token (or one for each currency if they want to accept multiple currencies).
  * @dev The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support
  */
-contract ContinuousFundraising is ERC2771Context, Ownable2Step, Pausable, ReentrancyGuard {
+contract ContinuousFundraising is
+    ERC2771ContextUpgradeable,
+    Ownable2StepUpgradeable,
+    PausableUpgradeable,
+    ReentrancyGuardUpgradeable
+{
     using SafeERC20 for IERC20;
 
     /// address that receives the currency when tokens are bought
@@ -96,7 +101,7 @@ contract ContinuousFundraising is ERC2771Context, Ownable2Step, Pausable, Reentr
         uint256 _maxAmountOfTokenToBeSold,
         IERC20 _currency,
         Token _token
-    ) ERC2771Context(_trustedForwarder) {
+    ) ERC2771ContextUpgradeable(_trustedForwarder) {
         currencyReceiver = _currencyReceiver;
         minAmountPerBuyer = _minAmountPerBuyer;
         maxAmountPerBuyer = _maxAmountPerBuyer;
@@ -225,14 +230,14 @@ contract ContinuousFundraising is ERC2771Context, Ownable2Step, Pausable, Reentr
     /**
      * @dev both Ownable and ERC2771Context have a _msgSender() function, so we need to override and select which one to use.
      */
-    function _msgSender() internal view override(Context, ERC2771Context) returns (address) {
-        return ERC2771Context._msgSender();
+    function _msgSender() internal view override(ContextUpgradeable, ERC2771ContextUpgradeable) returns (address) {
+        return ERC2771ContextUpgradeable._msgSender();
     }
 
     /**
      * @dev both Ownable and ERC2771Context have a _msgData() function, so we need to override and select which one to use.
      */
-    function _msgData() internal view override(Context, ERC2771Context) returns (bytes calldata) {
-        return ERC2771Context._msgData();
+    function _msgData() internal view override(ContextUpgradeable, ERC2771ContextUpgradeable) returns (bytes calldata) {
+        return ERC2771ContextUpgradeable._msgData();
     }
 }
