@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/interfaces/IERC1271.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./interfaces/ERC1363.sol";
 import "./ContinuousFundraising.sol";
 
@@ -19,6 +20,7 @@ import "./ContinuousFundraising.sol";
  */
 contract Wallet is Ownable2Step, ERC1363Receiver, IERC1271 {
     using SafeERC20 for IERC20;
+
     /**
      * @notice stores the receiving address for each IBAN hash
      */

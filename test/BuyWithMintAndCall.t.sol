@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/Token.sol";
+import "../contracts/TokenCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "../contracts/ContinuousFundraising.sol";
 import "./resources/MintAndCallToken.sol";
@@ -41,8 +41,13 @@ contract BuyWithMintAndCall is Test {
         Fees memory fees = Fees(100, 100, 100, 100);
         feeSettings = new FeeSettings(fees, admin);
 
-        token = new Token(trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST");
-
+        // token = new Token(trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST");
+        // Token token;
+        Token implementation = new Token(trustedForwarder);
+        TokenCloneFactory tokenCloneFactory = new TokenCloneFactory(address(implementation));
+        token = Token(
+            tokenCloneFactory.createTokenClone(0, trustedForwarder, feeSettings, admin, list, 0x0, "testToken", "TEST")
+        );
         // set up currency
         vm.startPrank(paymentTokenProvider);
         paymentToken = new MintAndCallToken(paymentTokenDecimals);
@@ -135,15 +140,20 @@ contract BuyWithMintAndCall is Test {
         vm.assume(raise.calculateBuyAmount(_currencyMintAmount) > 0);
         vm.assume(_buyer != address(0));
         vm.assume(_attacker != address(0));
+        vm.assume(_attacker != owner);
+        vm.assume(_attacker != _buyer);
+        vm.assume(_attacker != address(paymentToken));
 
         bytes32 buyersIbanHash = keccak256(abi.encodePacked(_buyerIban));
         bytes32 attackersIbanHash = keccak256(abi.encodePacked(_attackerIban));
+        vm.assume(buyersIbanHash != attackersIbanHash);
         // owner adds _attacker's address to wallet. For some reason, buyer's address is not added yet
         vm.prank(owner);
         wallet.set(attackersIbanHash, _attacker);
 
         // make sure buyer has no tokens before
-        assertTrue(token.balanceOf(_buyer) == 0);
+        assertTrue(token.balanceOf(_buyer) == 0, "buyer has tokens before buy");
+        assertTrue(token.balanceOf(_attacker) == 0, "attacker has tokens before buy");
 
         bytes memory buyerData = abi.encode(buyersIbanHash);
         bytes memory attackerData = abi.encode(attackersIbanHash);
