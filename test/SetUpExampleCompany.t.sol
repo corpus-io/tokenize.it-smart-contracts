@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/TokenCloneFactory.sol";
-import "../contracts/ContinuousFundraising.sol";
+import "../contracts/ContinuousFundraisingCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "../contracts/PersonalInviteFactory.sol";
 import "./resources/FakePaymentToken.sol";
@@ -18,12 +18,12 @@ import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific versi
 contract CompanySetUpTest is Test {
     using ECDSA for bytes32; // for verify with var.recover()
 
+    ContinuousFundraisingCloneFactory fundraisingFactory;
     ContinuousFundraising raise;
     AllowList list;
     FeeSettings feeSettings;
     PersonalInviteFactory personalInviteFactory;
-    TokenCloneFactory tokenCloneFactory;
-
+    TokenCloneFactory tokenFactory;
     Token token;
     FakePaymentToken paymentToken;
     ERC2771Helper ERC2771helper;
@@ -129,14 +129,14 @@ contract CompanySetUpTest is Test {
     function deployToken(Forwarder forwarder) public {
         // this should be part of the platform setup, but since the logic contract needs to use the same forwarder as the final token contract, we do it here.
         Token implementation = new Token(address(forwarder));
-        tokenCloneFactory = new TokenCloneFactory(address(implementation));
+        tokenFactory = new TokenCloneFactory(address(implementation));
 
         // launch the company token. The platform deploys the contract. There is no need to transfer ownership, because the token is never controlled by the address that deployed it.
         // Instead, it is immediately controlled by the address provided in the constructor, which is the companyAdmin in this case.
 
         vm.startPrank(platformHotWallet);
         token = Token(
-            tokenCloneFactory.createTokenClone(
+            tokenFactory.createTokenClone(
                 0,
                 address(forwarder),
                 feeSettings,
@@ -148,11 +148,6 @@ contract CompanySetUpTest is Test {
             )
         );
         vm.stopPrank();
-
-        // // demonstration of the platform not being in control of the token
-        // vm.prank(platformHotWallet);
-        // vm.expectRevert();
-        // token.pause(); // the platformHotWallet can not pause the token because it does not have the neccessary roles!
     }
 
     /*
@@ -183,9 +178,8 @@ contract CompanySetUpTest is Test {
         // platform deploys the token contract for the founder
         deployToken(forwarder);
 
-        registerDomainAndRequestType(forwarder);
-
         // register domain and request type with the forwarder
+        registerDomainAndRequestType(forwarder);
 
         // just some calculations
         tokenBuyAmount = 5 * 10 ** token.decimals();
@@ -194,20 +188,24 @@ contract CompanySetUpTest is Test {
         // after setting up their company, the company admin might want to launch a fundraising campaign. They choose all settings in the web, but the contract
         // will be deployed by the platform.
         vm.prank(platformHotWallet);
-        raise = new ContinuousFundraising(
-            address(forwarder),
-            payable(companyCurrencyReceiver),
-            minAmountPerBuyer,
-            maxAmountPerBuyer,
-            price,
-            maxAmountOfTokenToBeSold,
-            paymentToken,
-            token
+        fundraisingFactory = new ContinuousFundraisingCloneFactory(
+            address(new ContinuousFundraising(address(forwarder)))
         );
 
-        // right after deployment, ownership of the fundraising contract is transferred to the company admin.
-        vm.prank(platformHotWallet);
-        raise.transferOwnership(companyAdmin);
+        raise = ContinuousFundraising(
+            fundraisingFactory.createContinuousFundraisingClone(
+                0,
+                address(forwarder),
+                companyAdmin,
+                companyCurrencyReceiver,
+                minAmountPerBuyer,
+                maxAmountPerBuyer,
+                price,
+                maxAmountOfTokenToBeSold,
+                paymentToken,
+                token
+            )
+        );
 
         // the company admin can now enable the fundraising campaign by granting it a token minting allowance.
         // Because the company admin does not hold eth, they will use a meta transaction to call the function.
