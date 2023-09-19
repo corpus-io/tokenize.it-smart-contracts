@@ -1167,4 +1167,14 @@ contract ContinuousFundraisingTest is Test {
         assertTrue(paymentToken.balanceOf(receiver) <= maxCurrencyAmount, "raise got wrong amount of currency");
         assertTrue(paymentToken.balanceOf(receiver) >= minCurrencyAmount, "raise got wrong amount of currency");
     }
+
+    function testTransferOwnership(address newOwner) public {
+        vm.prank(owner);
+        raise.transferOwnership(newOwner);
+        assertTrue(raise.owner() == owner);
+
+        vm.prank(newOwner);
+        raise.acceptOwnership();
+        assertTrue(raise.owner() == newOwner);
+    }
 }
