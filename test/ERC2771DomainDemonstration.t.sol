@@ -13,9 +13,11 @@ import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific versi
 contract TokenERC2771Test is Test {
     using ECDSA for bytes32; // for verify with var.recover()
 
+    Forwarder forwarder = new Forwarder();
+
     AllowList allowList;
     FeeSettings feeSettings;
-
+    TokenCloneFactory factory;
     Token token;
     FakePaymentToken paymentToken;
     //Forwarder trustedForwarder;
@@ -76,6 +78,9 @@ contract TokenERC2771Test is Test {
         vm.prank(platformAdmin);
         feeSettings = new FeeSettings(fees, feeCollector);
 
+        Token implementation = new Token(address(forwarder));
+        factory = new TokenCloneFactory(address(implementation));
+
         // deploy helper functions (only for testing with foundry)
         ERC2771helper = new ERC2771Helper();
     }
@@ -85,16 +90,13 @@ contract TokenERC2771Test is Test {
      * and on several functions with different signatures but using the same requestTypeHash
      */
     function testSeveralContractsOneDomainSeparator() public {
-        Forwarder _forwarder = new Forwarder();
         uint256 _tokenMintAmount = 1000 * 10 ** 18;
 
         // deploy company token
-        Token implementation = new Token(address(_forwarder));
-        TokenCloneFactory factory = new TokenCloneFactory(address(implementation));
         token = Token(
             factory.createTokenClone(
                 0,
-                address(_forwarder),
+                address(forwarder),
                 feeSettings,
                 companyAdmin,
                 allowList,
@@ -107,7 +109,7 @@ contract TokenERC2771Test is Test {
         // deploy fundraising
         paymentToken = new FakePaymentToken(6 * 10 ** 18, 18);
         ContinuousFundraisingCloneFactory fundraisingFactory = new ContinuousFundraisingCloneFactory(
-            address(new ContinuousFundraising(address(_forwarder)))
+            address(new ContinuousFundraising(address(forwarder)))
         );
         ContinuousFundraising raise = ContinuousFundraising(
             fundraisingFactory.createContinuousFundraisingClone(
@@ -125,10 +127,10 @@ contract TokenERC2771Test is Test {
         );
 
         // register domainSeparator with forwarder
-        domainSeparator = ERC2771helper.registerDomain(_forwarder, "some_string", "some_version_string");
+        domainSeparator = ERC2771helper.registerDomain(forwarder, "some_string", "some_version_string");
 
         // register request type with forwarder
-        requestType = ERC2771helper.registerRequestType(_forwarder, "some_function_name", "no_real_parameters");
+        requestType = ERC2771helper.registerRequestType(forwarder, "some_function_name", "no_real_parameters");
 
         /*
          * increase minting allowance
@@ -148,7 +150,7 @@ contract TokenERC2771Test is Test {
             to: address(token),
             value: 0,
             gas: 1000000,
-            nonce: _forwarder.getNonce(companyAdmin),
+            nonce: forwarder.getNonce(companyAdmin),
             data: payload,
             validUntil: 0
         });
@@ -160,7 +162,7 @@ contract TokenERC2771Test is Test {
             abi.encodePacked(
                 "\x19\x01",
                 domainSeparator,
-                keccak256(_forwarder._getEncoded(request, requestType, suffixData))
+                keccak256(forwarder._getEncoded(request, requestType, suffixData))
             )
         );
 
@@ -174,7 +176,7 @@ contract TokenERC2771Test is Test {
 
         // 4.  execute request
         vm.prank(platformHotWallet);
-        _forwarder.execute(request, domainSeparator, requestType, suffixData, signature);
+        forwarder.execute(request, domainSeparator, requestType, suffixData, signature);
 
         assertEq(token.mintingAllowance(minter), _tokenMintAmount, "Minting allowance is not tokenMintAmount");
 
@@ -190,7 +192,7 @@ contract TokenERC2771Test is Test {
             to: address(token),
             value: 0,
             gas: 1000000,
-            nonce: _forwarder.getNonce(minter),
+            nonce: forwarder.getNonce(minter),
             data: payload,
             validUntil: 0
         });
@@ -200,7 +202,7 @@ contract TokenERC2771Test is Test {
             abi.encodePacked(
                 "\x19\x01",
                 domainSeparator,
-                keccak256(_forwarder._getEncoded(request, requestType, suffixData))
+                keccak256(forwarder._getEncoded(request, requestType, suffixData))
             )
         );
 
@@ -217,7 +219,7 @@ contract TokenERC2771Test is Test {
 
         // send call through forwarder contract
         vm.prank(platformHotWallet);
-        _forwarder.execute(request, domainSeparator, requestType, suffixData, signature);
+        forwarder.execute(request, domainSeparator, requestType, suffixData, signature);
 
         assertEq(token.balanceOf(investor), _tokenMintAmount, "Investor received wrong token amount");
         assertEq(token.mintingAllowance(minter), 0, "Minting allowance is not 0 after mint");
@@ -239,7 +241,7 @@ contract TokenERC2771Test is Test {
             to: address(raise),
             value: 0,
             gas: 1000000,
-            nonce: _forwarder.getNonce(companyAdmin),
+            nonce: forwarder.getNonce(companyAdmin),
             data: payload,
             validUntil: 0
         });
@@ -251,7 +253,7 @@ contract TokenERC2771Test is Test {
             abi.encodePacked(
                 "\x19\x01",
                 domainSeparator,
-                keccak256(_forwarder._getEncoded(request, requestType, suffixData))
+                keccak256(forwarder._getEncoded(request, requestType, suffixData))
             )
         );
 
@@ -271,7 +273,7 @@ contract TokenERC2771Test is Test {
         assertEq(raise.paused(), false);
 
         // send call through forwarder contract
-        _forwarder.execute(request, domainSeparator, requestType, suffixData, signature);
+        forwarder.execute(request, domainSeparator, requestType, suffixData, signature);
         assertEq(raise.paused(), true);
     }
 }

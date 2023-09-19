@@ -115,8 +115,6 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(platformAdmin);
         feeSettings.executeFeeChange();
 
-        FakePaymentToken _paymentToken;
-
         uint8 _paymentTokenDecimals = 6;
         // uint8 _maxDecimals = 25;
         // for (
@@ -151,7 +149,7 @@ contract ContinuousFundraisingTest is Test {
         );
 
         vm.prank(paymentTokenProvider);
-        _paymentToken = new FakePaymentToken(_paymentTokenAmount, _paymentTokenDecimals);
+        paymentToken = new FakePaymentToken(_paymentTokenAmount, _paymentTokenDecimals);
         vm.prank(companyOwner);
 
         ContinuousFundraising _raise = ContinuousFundraising(
@@ -164,7 +162,7 @@ contract ContinuousFundraisingTest is Test {
                 _maxMintAmount / 100,
                 _price,
                 _maxMintAmount,
-                _paymentToken,
+                paymentToken,
                 _token
             )
         );
@@ -179,24 +177,24 @@ contract ContinuousFundraisingTest is Test {
 
         // mint _paymentToken for buyer
         vm.prank(paymentTokenProvider);
-        _paymentToken.transfer(investor, _paymentTokenAmount);
-        assertTrue(_paymentToken.balanceOf(investor) == _paymentTokenAmount);
+        paymentToken.transfer(investor, _paymentTokenAmount);
+        assertTrue(paymentToken.balanceOf(investor) == _paymentTokenAmount);
 
         // give invite contract allowance
         vm.prank(investor);
-        _paymentToken.approve(address(_raise), _paymentTokenAmount);
+        paymentToken.approve(address(_raise), _paymentTokenAmount);
 
         // run actual test
 
         uint tokenAmount = 33 * 10 ** token.decimals();
 
         // buyer has 1k FPT
-        assertTrue(_paymentToken.balanceOf(investor) == _paymentTokenAmount);
+        assertTrue(paymentToken.balanceOf(investor) == _paymentTokenAmount);
         // they should be able to buy 33 CT for 999 FPT
         vm.prank(investor);
         _raise.buy(tokenAmount, investor);
         // buyer should have 10 FPT left
-        assertTrue(_paymentToken.balanceOf(investor) == 10 * 10 ** _paymentTokenDecimals);
+        assertTrue(paymentToken.balanceOf(investor) == 10 * 10 ** _paymentTokenDecimals);
         // buyer should have the 33 CT they bought
         assertTrue(_token.balanceOf(investor) == tokenAmount, "buyer has wrong amount of token");
         // receiver should have the 990 FPT that were paid, minus the fee
@@ -205,13 +203,13 @@ contract ContinuousFundraisingTest is Test {
         uint256 currencyFee = currencyAmount /
             FeeSettings(address(token.feeSettings())).continuousFundraisingFeeDenominator();
         assertTrue(
-            _paymentToken.balanceOf(receiver) == currencyAmount - currencyFee,
+            paymentToken.balanceOf(receiver) == currencyAmount - currencyFee,
             "receiver has wrong amount of currency"
         );
         // fee collector should have the token and currency fees
         assertEq(
             currencyFee,
-            _paymentToken.balanceOf(feeSettings.feeCollector()),
+            paymentToken.balanceOf(feeSettings.feeCollector()),
             "fee collector has wrong amount of currency"
         );
         assertEq(
@@ -237,7 +235,7 @@ contract ContinuousFundraisingTest is Test {
     */
     function testVaryDecimals() public {
         uint8 _maxDecimals = 25;
-        FakePaymentToken _paymentToken;
+        //FakePaymentToken paymentToken;
 
         for (uint8 _paymentTokenDecimals = 1; _paymentTokenDecimals < _maxDecimals; _paymentTokenDecimals++) {
             //uint8 _paymentTokenDecimals = 10;
@@ -267,7 +265,7 @@ contract ContinuousFundraisingTest is Test {
             );
 
             vm.prank(paymentTokenProvider);
-            _paymentToken = new FakePaymentToken(_paymentTokenAmount, _paymentTokenDecimals);
+            paymentToken = new FakePaymentToken(_paymentTokenAmount, _paymentTokenDecimals);
             vm.prank(companyOwner);
 
             ContinuousFundraising _raise = ContinuousFundraising(
@@ -280,7 +278,7 @@ contract ContinuousFundraisingTest is Test {
                     _maxMintAmount / 100,
                     _price,
                     _maxMintAmount,
-                    _paymentToken,
+                    paymentToken,
                     _token
                 )
             );
@@ -294,24 +292,24 @@ contract ContinuousFundraisingTest is Test {
 
             // mint _paymentToken for buyer
             vm.prank(paymentTokenProvider);
-            _paymentToken.transfer(investor, _paymentTokenAmount);
-            assertTrue(_paymentToken.balanceOf(investor) == _paymentTokenAmount);
+            paymentToken.transfer(investor, _paymentTokenAmount);
+            assertTrue(paymentToken.balanceOf(investor) == _paymentTokenAmount);
 
             // give invite contract allowance
             vm.prank(investor);
-            _paymentToken.approve(address(_raise), _paymentTokenAmount);
+            paymentToken.approve(address(_raise), _paymentTokenAmount);
 
             // run actual test
 
             uint tokenAmount = 33 * 10 ** token.decimals();
 
             // buyer has 1k FPT
-            assertTrue(_paymentToken.balanceOf(investor) == _paymentTokenAmount);
+            assertTrue(paymentToken.balanceOf(investor) == _paymentTokenAmount);
             // they should be able to buy 33 CT for 999 FPT
             vm.prank(investor);
             _raise.buy(tokenAmount, investor);
             // buyer should have 10 FPT left
-            assertTrue(_paymentToken.balanceOf(investor) == 10 * 10 ** _paymentTokenDecimals);
+            assertTrue(paymentToken.balanceOf(investor) == 10 * 10 ** _paymentTokenDecimals);
             // buyer should have the 33 CT they bought
             assertTrue(_token.balanceOf(investor) == tokenAmount, "buyer has wrong amount of token");
             // receiver should have the 990 FPT that were paid, minus the fee
@@ -319,13 +317,13 @@ contract ContinuousFundraisingTest is Test {
             uint256 currencyFee = currencyAmount /
                 FeeSettings(address(token.feeSettings())).continuousFundraisingFeeDenominator();
             assertTrue(
-                _paymentToken.balanceOf(receiver) == currencyAmount - currencyFee,
+                paymentToken.balanceOf(receiver) == currencyAmount - currencyFee,
                 "receiver has wrong amount of currency"
             );
             // fee collector should have the token and currency fees
             assertEq(
                 currencyFee,
-                _paymentToken.balanceOf(feeSettings.feeCollector()),
+                paymentToken.balanceOf(feeSettings.feeCollector()),
                 "fee collector has wrong amount of currency"
             );
             assertEq(

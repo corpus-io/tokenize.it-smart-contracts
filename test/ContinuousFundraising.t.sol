@@ -25,6 +25,8 @@ contract ContinuousFundraisingTest is Test {
     Token token;
     FakePaymentToken paymentToken;
 
+    MaliciousPaymentToken maliciousPaymentToken;
+
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant buyer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
     address public constant mintAllower = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
@@ -196,7 +198,6 @@ contract ContinuousFundraisingTest is Test {
     set up with MaliciousPaymentToken which tries to reenter the buy function
     */
     function testReentrancy() public {
-        MaliciousPaymentToken _paymentToken;
         uint8 _paymentTokenDecimals = 18;
 
         /*
@@ -224,7 +225,7 @@ contract ContinuousFundraisingTest is Test {
             )
         );
         vm.prank(paymentTokenProvider);
-        _paymentToken = new MaliciousPaymentToken(_paymentTokenAmount);
+        maliciousPaymentToken = new MaliciousPaymentToken(_paymentTokenAmount);
         vm.prank(owner);
 
         ContinuousFundraising _raise = ContinuousFundraising(
@@ -237,7 +238,7 @@ contract ContinuousFundraisingTest is Test {
                 _maxMintAmount / 100,
                 _price,
                 _maxMintAmount,
-                _paymentToken,
+                maliciousPaymentToken,
                 _token
             )
         );
@@ -253,21 +254,21 @@ contract ContinuousFundraisingTest is Test {
 
         // mint _paymentToken for buyer
         vm.prank(paymentTokenProvider);
-        _paymentToken.transfer(buyer, _paymentTokenAmount);
-        assertTrue(_paymentToken.balanceOf(buyer) == _paymentTokenAmount);
+        maliciousPaymentToken.transfer(buyer, _paymentTokenAmount);
+        assertTrue(maliciousPaymentToken.balanceOf(buyer) == _paymentTokenAmount);
 
         // set exploitTarget
-        _paymentToken.setExploitTarget(address(_raise), 3, _maxMintAmount / 200000);
+        maliciousPaymentToken.setExploitTarget(address(_raise), 3, _maxMintAmount / 200000);
 
         // give invite contract allowance
         vm.prank(buyer);
-        _paymentToken.approve(address(_raise), _paymentTokenAmount);
+        maliciousPaymentToken.approve(address(_raise), _paymentTokenAmount);
 
         // store some state
         //uint buyerPaymentBalanceBefore = _paymentToken.balanceOf(buyer);
 
         // run actual test
-        assertTrue(_paymentToken.balanceOf(buyer) == _paymentTokenAmount);
+        assertTrue(maliciousPaymentToken.balanceOf(buyer) == _paymentTokenAmount);
         uint256 buyAmount = _maxMintAmount / 100000;
         vm.prank(buyer);
         vm.expectRevert("ReentrancyGuard: reentrant call");
