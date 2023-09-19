@@ -48,23 +48,23 @@ contract DeployCompany is Script {
         //     symbol
         // );
 
-        Token token = Token(0x6BC442F04C727a19Cc0AF14ec9b2acD3e12651F3);
-        console.log("Token at: ", address(token));
+        // Token token = Token(0x6BC442F04C727a19Cc0AF14ec9b2acD3e12651F3);
+        // console.log("Token at: ", address(token));
 
-        ContinuousFundraising fundraising = new ContinuousFundraising(
-            forwarder,
-            companyAdmin,
-            0,
-            1000 * 10 ** 18,
-            3 * 10 ** 6,
-            100000 * 10 ** 18,
-            usdc,
-            token
-        );
+        // ContinuousFundraising fundraising = new ContinuousFundraising(
+        //     forwarder,
+        //     companyAdmin,
+        //     0,
+        //     1000 * 10 ** 18,
+        //     3 * 10 ** 6,
+        //     100000 * 10 ** 18,
+        //     usdc,
+        //     token
+        // );
 
-        console.log("Fundraising deployed at: ", address(fundraising));
-        fundraising.transferOwnership(companyAdmin);
-        console.log("Fundraising ownership transferred to: ", companyAdmin);
+        // console.log("Fundraising deployed at: ", address(fundraising));
+        // fundraising.transferOwnership(companyAdmin);
+        // console.log("Fundraising ownership transferred to: ", companyAdmin);
 
         // // manual deployment of personal invite for verification
         // //  calculate personal invite address
