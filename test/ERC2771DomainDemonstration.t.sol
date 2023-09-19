@@ -114,7 +114,7 @@ contract TokenERC2771Test is Test {
         ContinuousFundraising raise = ContinuousFundraising(
             fundraisingFactory.createContinuousFundraisingClone(
                 0,
-                trustedForwarder,
+                address(forwarder),
                 companyAdmin,
                 receiver,
                 1000 * 10 ** 18,
