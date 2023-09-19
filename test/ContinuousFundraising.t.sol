@@ -96,6 +96,35 @@ contract ContinuousFundraisingTest is Test {
         paymentToken.approve(address(raise), paymentTokenAmount);
     }
 
+    function testLogicContractCreation(address forwarder) public {
+        vm.assume(forwarder != address(0));
+        ContinuousFundraising _logic = new ContinuousFundraising(forwarder);
+
+        console.log("address of logic contract: ", address(_logic));
+
+        // try to initialize
+        vm.expectRevert("Initializable: contract is already initialized");
+        _logic.initialize(
+            address(this),
+            payable(receiver),
+            minAmountPerBuyer,
+            maxAmountPerBuyer,
+            price,
+            maxAmountOfTokenToBeSold,
+            paymentToken,
+            token
+        );
+
+        // owner and all settings are 0
+        assertTrue(_logic.owner() == address(0), "owner is not 0");
+        assertTrue(_logic.currencyReceiver() == address(0));
+        assertTrue(_logic.minAmountPerBuyer() == 0);
+        assertTrue(_logic.maxAmountPerBuyer() == 0);
+        assertTrue(_logic.tokenPrice() == 0);
+        assertTrue(address(_logic.currency()) == address(0));
+        assertTrue(address(_logic.token()) == address(0));
+    }
+
     function testConstructorHappyCase() public {
         ContinuousFundraising _raise = ContinuousFundraising(
             factory.createContinuousFundraisingClone(
