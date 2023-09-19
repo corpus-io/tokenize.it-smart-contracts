@@ -30,26 +30,53 @@ task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
  */
 const config: HardhatUserConfig = {
   solidity: {
-    version: '0.8.17',
-    settings: {
-      // optimizer: {
-      //   enabled: true,
-      //   runs: 10000,
-      // },
-      metadata: {
-        bytecodeHash: 'none',
-      },
-      viaIR: true,
-      optimizer: {
-        enabled: true,
-        details: {
-          yulDetails: {
-            //optimizerSteps: 'u', // recommended by hh, but yields longer bytecode
+    compilers: [
+      {
+        version: '0.8.17',
+        settings: {
+          // optimizer: {
+          //   enabled: true,
+          //   runs: 10000,
+          // },
+          metadata: {
+            bytecodeHash: 'none',
           },
+          viaIR: true,
+          optimizer: {
+            enabled: true,
+            details: {
+              yulDetails: {
+                //optimizerSteps: 'u', // recommended by hh, but yields longer bytecode
+              },
+            },
+          },
+          // outputSelection: { "*": { "*": ["storageLayout"] } },
         },
       },
-      // outputSelection: { "*": { "*": ["storageLayout"] } },
-    },
+      {
+        // this is the version for monerium only
+        version: '0.8.11',
+        settings: {
+          // optimizer: {
+          //   enabled: true,
+          //   runs: 10000,
+          // },
+          metadata: {
+            bytecodeHash: 'none',
+          },
+          viaIR: true,
+          optimizer: {
+            enabled: true,
+            details: {
+              yulDetails: {
+                //optimizerSteps: 'u', // recommended by hh, but yields longer bytecode
+              },
+            },
+          },
+          // outputSelection: { "*": { "*": ["storageLayout"] } },
+        },
+      },
+    ],
   },
   networks: {
     localhost: {
