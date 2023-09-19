@@ -72,10 +72,6 @@ contract ContinuousFundraisingTest is Test {
             tokenFactory.createTokenClone(0, trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST")
         );
 
-        fundraisingFactory = new ContinuousFundraisingCloneFactory(
-            address(new ContinuousFundraising(trustedForwarder))
-        );
-
         ERC2771helper = new ERC2771Helper();
 
         buyer = vm.addr(buyerPrivateKey);
@@ -94,10 +90,14 @@ contract ContinuousFundraisingTest is Test {
 
     function buyWithERC2771(Forwarder forwarder) public {
         vm.prank(owner);
+        fundraisingFactory = new ContinuousFundraisingCloneFactory(
+            address(new ContinuousFundraising(address(forwarder)))
+        );
+
         raise = ContinuousFundraising(
             fundraisingFactory.createContinuousFundraisingClone(
                 0,
-                trustedForwarder,
+                address(forwarder),
                 address(this),
                 payable(receiver),
                 minAmountPerBuyer,
