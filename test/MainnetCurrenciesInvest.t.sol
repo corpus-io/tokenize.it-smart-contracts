@@ -5,7 +5,7 @@ import "../lib/forge-std/src/Test.sol";
 //import "../lib/forge-std/stdlib.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../contracts/TokenCloneFactory.sol";
-import "../contracts/ContinuousFundraising.sol";
+import "../contracts/ContinuousFundraisingCloneFactory.sol";
 import "../contracts/PersonalInvite.sol";
 import "../contracts/PersonalInviteFactory.sol";
 import "../contracts/FeeSettings.sol";
@@ -24,7 +24,9 @@ contract MainnetCurrencies is Test {
     FeeSettings feeSettings;
 
     Token token;
-    PersonalInviteFactory factory;
+    PersonalInviteFactory inviteFactory;
+
+    ContinuousFundraisingCloneFactory fundraisingFactory;
 
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant buyer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
@@ -68,7 +70,11 @@ contract MainnetCurrencies is Test {
             tokenCloneFactory.createTokenClone(0, trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST")
         );
 
-        factory = new PersonalInviteFactory();
+        fundraisingFactory = new ContinuousFundraisingCloneFactory(
+            address(new ContinuousFundraising(trustedForwarder))
+        );
+
+        inviteFactory = new PersonalInviteFactory();
         currencyCost = (amountOfTokenToBuy * price) / 10 ** token.decimals();
         currencyAmount = currencyCost * 2;
     }
@@ -98,16 +104,19 @@ contract MainnetCurrencies is Test {
         uint256 _currencyAmount = _currencyCost * 2;
 
         // set up fundraise with _currency
-        vm.prank(owner);
-        ContinuousFundraising _raise = new ContinuousFundraising(
-            trustedForwarder,
-            payable(receiver),
-            minAmountPerBuyer,
-            maxAmountPerBuyer,
-            _price,
-            maxAmountOfTokenToBeSold,
-            _currency,
-            token
+        ContinuousFundraising _raise = ContinuousFundraising(
+            fundraisingFactory.createContinuousFundraisingClone(
+                0,
+                trustedForwarder,
+                owner,
+                payable(receiver),
+                minAmountPerBuyer,
+                maxAmountPerBuyer,
+                _price,
+                maxAmountOfTokenToBeSold,
+                _currency,
+                token
+            )
         );
 
         // allow raise contract to mint
@@ -183,7 +192,7 @@ contract MainnetCurrencies is Test {
         //bytes memory creationCode = type(PersonalInvite).creationCode;
         uint256 expiration = block.timestamp + 1000;
 
-        address expectedAddress = factory.getAddress(
+        address expectedAddress = inviteFactory.getAddress(
             salt,
             buyer,
             buyer,
@@ -211,7 +220,7 @@ contract MainnetCurrencies is Test {
         assertEq(token.balanceOf(receiver), 0);
 
         // deploy invite
-        address inviteAddress = factory.deploy(
+        address inviteAddress = inviteFactory.deploy(
             salt,
             buyer,
             buyer,
