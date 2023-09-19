@@ -6,7 +6,7 @@ import "../contracts/TokenCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/ERC2771Helper.sol";
-import "../contracts/ContinuousFundraising.sol";
+import "../contracts/ContinuousFundraisingCloneFactory.sol";
 
 import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific version to avoid import error: yarn add @opengsn/contracts@2.2.5
 
@@ -106,16 +106,22 @@ contract TokenERC2771Test is Test {
 
         // deploy fundraising
         paymentToken = new FakePaymentToken(6 * 10 ** 18, 18);
-        vm.prank(companyAdmin);
-        ContinuousFundraising raise = new ContinuousFundraising(
-            address(_forwarder),
-            payable(receiver),
-            1000 * 10 ** 18,
-            2000 * 10 ** 18,
-            688,
-            10 * 1000 * 10 ** 18,
-            paymentToken,
-            token
+        ContinuousFundraisingCloneFactory fundraisingFactory = new ContinuousFundraisingCloneFactory(
+            address(new ContinuousFundraising(address(_forwarder)))
+        );
+        ContinuousFundraising raise = ContinuousFundraising(
+            fundraisingFactory.createContinuousFundraisingClone(
+                0,
+                trustedForwarder,
+                companyAdmin,
+                receiver,
+                1000 * 10 ** 18,
+                2000 * 10 ** 18,
+                688,
+                10 * 1000 * 10 ** 18,
+                paymentToken,
+                token
+            )
         );
 
         // register domainSeparator with forwarder
