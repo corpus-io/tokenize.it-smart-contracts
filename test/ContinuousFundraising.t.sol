@@ -72,7 +72,7 @@ contract ContinuousFundraisingTest is Test {
             factory.createContinuousFundraisingClone(
                 0,
                 trustedForwarder,
-                address(this),
+                owner,
                 payable(receiver),
                 minAmountPerBuyer,
                 maxAmountPerBuyer,
@@ -121,7 +121,7 @@ contract ContinuousFundraisingTest is Test {
     }
 
     function testConstructorWithAddress0() public {
-        vm.expectRevert("trustedForwarder can not be zero address");
+        vm.expectRevert("ContinuousFundraisingCloneFactory: Unexpected trustedForwarder");
         ContinuousFundraising(
             factory.createContinuousFundraisingClone(
                 0,
@@ -137,7 +137,7 @@ contract ContinuousFundraisingTest is Test {
             )
         );
 
-        vm.expectRevert("todo: update error message");
+        vm.expectRevert("owner can not be zero address");
         factory.createContinuousFundraisingClone(
             0,
             trustedForwarder,
@@ -182,7 +182,7 @@ contract ContinuousFundraisingTest is Test {
         vm.expectRevert("token can not be zero address");
         factory.createContinuousFundraisingClone(
             0,
-            address(0),
+            trustedForwarder,
             address(this),
             payable(receiver),
             minAmountPerBuyer,

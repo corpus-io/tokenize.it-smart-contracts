@@ -39,7 +39,7 @@ contract ContinuousFundraisingCloneFactory is CloneFactory {
         ContinuousFundraising continuousFundraising = ContinuousFundraising(clone);
         require(
             continuousFundraising.isTrustedForwarder(_trustedForwarder),
-            "TokenCloneFactory: Unexpected trustedForwarder"
+            "ContinuousFundraisingCloneFactory: Unexpected trustedForwarder"
         );
         continuousFundraising.initialize(
             _owner,
