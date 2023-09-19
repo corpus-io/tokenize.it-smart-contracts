@@ -96,9 +96,8 @@ contract ContinuousFundraisingTest is Test {
         paymentToken.approve(address(raise), paymentTokenAmount);
     }
 
-    function testLogicContractCreation(address forwarder) public {
-        vm.assume(forwarder != address(0));
-        ContinuousFundraising _logic = new ContinuousFundraising(forwarder);
+    function testLogicContractCreation() public {
+        ContinuousFundraising _logic = new ContinuousFundraising(address(1));
 
         console.log("address of logic contract: ", address(_logic));
 
