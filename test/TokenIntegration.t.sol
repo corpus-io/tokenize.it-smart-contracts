@@ -312,12 +312,12 @@ contract tokenTest is Test {
         FeeSettings[] memory feeSettingsArray = new FeeSettings[](3);
         feeSettingsArray[0] = new FeeSettingsFailERC165Check0(fees, feeSettings.feeCollector());
         feeSettingsArray[1] = new FeeSettingsFailERC165Check1(fees, feeSettings.feeCollector());
-        feeSettingsArray[2] = new FeeSettingsFailIFeeSettingsV1Check(fees, feeSettings.feeCollector());
+        feeSettingsArray[2] = new FeeSettingsFailIFeeSettingsV2Check(fees, feeSettings.feeCollector());
 
         vm.startPrank(feeSettings.owner());
         // cycle through the fake contracts and make sure each one triggers a revert
         for (uint i = 0; i < feeSettingsArray.length; i++) {
-            vm.expectRevert("FeeSettings must implement IFeeSettingsV1");
+            vm.expectRevert("FeeSettings must implement IFeeSettingsV2");
             token.suggestNewFeeSettings(feeSettingsArray[i]);
         }
         vm.stopPrank();

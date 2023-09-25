@@ -6,7 +6,7 @@ import "../contracts/TokenCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/ERC2771Helper.sol";
 
-contract tokenTest is Test {
+contract tokenCloneFactoryTest is Test {
     using ECDSA for bytes32;
 
     Token implementation;
@@ -53,6 +53,11 @@ contract tokenTest is Test {
         string memory _name,
         string memory _symbol
     ) public {
+        console.log("IFeeSettingsV2 interface id: ");
+        console.logBytes4(type(IFeeSettingsV2).interfaceId);
+
+        console.log("Supports interface: ", feeSettings.supportsInterface(type(IFeeSettingsV2).interfaceId));
+
         vm.assume(trustedForwarder != address(0));
         vm.assume(_admin != address(0));
         vm.assume(address(_allowList) != address(0));

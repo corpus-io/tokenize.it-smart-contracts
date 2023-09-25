@@ -169,8 +169,6 @@ contract PersonalInviteTimeLockTest is Test {
 
         // make sure balances are as expected before deployment
 
-        console.log("feeCollector currency balance: %s", currency.balanceOf(token.feeSettings().feeCollector()));
-
         assertEq(currency.balanceOf(currencyPayer), currencyAmount, "currencyPayer wrong balance before deployment");
         assertEq(currency.balanceOf(currencyReceiver), 0, "currencyReceiver wrong balance before deployment");
         assertEq(currency.balanceOf(expectedTimeLockAddress), 0, "timeLock wrong currency balance before deployment");
@@ -178,7 +176,7 @@ contract PersonalInviteTimeLockTest is Test {
 
         console.log(
             "feeCollector currency balance before deployment: %s",
-            currency.balanceOf(token.feeSettings().feeCollector())
+            currency.balanceOf(token.feeSettings().personalInviteFeeCollector())
         );
 
         // create vesting wallet as token receiver
@@ -217,7 +215,7 @@ contract PersonalInviteTimeLockTest is Test {
         );
 
         assertEq(
-            currency.balanceOf(token.feeSettings().feeCollector()),
+            currency.balanceOf(token.feeSettings().personalInviteFeeCollector()),
             token.feeSettings().personalInviteFee(currencyAmount),
             "feeCollector currency balance is not correct"
         );
@@ -225,7 +223,7 @@ contract PersonalInviteTimeLockTest is Test {
         assertEq(token.balanceOf(address(timeLock)), tokenAmount, "timeLock wrong token balance after deployment");
 
         assertEq(
-            token.balanceOf(token.feeSettings().feeCollector()),
+            token.balanceOf(token.feeSettings().personalInviteFeeCollector()),
             token.feeSettings().tokenFee(tokenAmount),
             "feeCollector token balance is not correct"
         );

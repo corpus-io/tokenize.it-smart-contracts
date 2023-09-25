@@ -202,7 +202,8 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
         bytes4 interfaceId
     ) public view virtual override(ERC165, IFeeSettingsV1, IFeeSettingsV2) returns (bool) {
         return
-            interfaceId == type(IFeeSettingsV1).interfaceId || // we implement IFeeSettingsV1
+            interfaceId == type(IFeeSettingsV1).interfaceId || // we implement IFeeSettingsV1 for backwards compatibility
+            interfaceId == type(IFeeSettingsV2).interfaceId || // we implement IFeeSettingsV2
             ERC165.supportsInterface(interfaceId); // default implementation that enables further querying
     }
 

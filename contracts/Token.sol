@@ -39,10 +39,10 @@ contract Token is ERC2771ContextUpgradeable, ERC20PermitUpgradeable, PausableUpg
     AllowList public allowList;
 
     // Fee settings of tokenize.it
-    IFeeSettingsV1 public feeSettings;
+    IFeeSettingsV2 public feeSettings;
 
     // Suggested new fee settings, which will be applied after admin approval
-    IFeeSettingsV1 public suggestedFeeSettings;
+    IFeeSettingsV2 public suggestedFeeSettings;
     /**
      * @notice  defines requirements to send or receive tokens for non-TRANSFERER_ROLE. If zero, everbody can transfer the token. If non-zero, then only those who have met the requirements can send or receive tokens.
      *     Requirements can be defined by the REQUIREMENT_ROLE, and are validated against the allowList. They can include things like "must have a verified email address", "must have a verified phone number", "must have a verified identity", etc.
@@ -84,9 +84,9 @@ contract Token is ERC2771ContextUpgradeable, ERC20PermitUpgradeable, PausableUpg
     /// @param newAllowList The AllowList contract that is in use from now on.
     event AllowListChanged(AllowList indexed newAllowList);
     /// @param suggestedFeeSettings The FeeSettings contract that has been suggested, but not yet approved by the admin.
-    event NewFeeSettingsSuggested(IFeeSettingsV1 indexed suggestedFeeSettings);
+    event NewFeeSettingsSuggested(IFeeSettingsV2 indexed suggestedFeeSettings);
     /// @param newFeeSettings The FeeSettings contract that is in use from now on.
-    event FeeSettingsChanged(IFeeSettingsV1 indexed newFeeSettings);
+    event FeeSettingsChanged(IFeeSettingsV2 indexed newFeeSettings);
     /// @param minter The address for which the minting allowance has been changed.
     /// @param newAllowance The new minting allowance for the address (does not include fees).
     event MintingAllowanceChanged(address indexed minter, uint256 newAllowance);
@@ -107,7 +107,7 @@ contract Token is ERC2771ContextUpgradeable, ERC20PermitUpgradeable, PausableUpg
      * @param _requirements requirements an address has to meet for sending or receiving tokens
      */
     function initialize(
-        IFeeSettingsV1 _feeSettings,
+        IFeeSettingsV2 _feeSettings,
         address _admin,
         AllowList _allowList,
         uint256 _requirements,
@@ -167,7 +167,7 @@ contract Token is ERC2771ContextUpgradeable, ERC20PermitUpgradeable, PausableUpg
      *     The feeSettings contract can brick the token, so an interface check is necessary.
      * @param _feeSettings the new feeSettings contract
      */
-    function suggestNewFeeSettings(IFeeSettingsV1 _feeSettings) external {
+    function suggestNewFeeSettings(IFeeSettingsV2 _feeSettings) external {
         require(_msgSender() == feeSettings.owner(), "Only fee settings owner can suggest fee settings update");
         _checkIfFeeSettingsImplementsInterface(_feeSettings);
         suggestedFeeSettings = _feeSettings;
@@ -181,7 +181,7 @@ contract Token is ERC2771ContextUpgradeable, ERC20PermitUpgradeable, PausableUpg
      *      Checking if the address implements the interface also prevents the 0 address from being accepted.
      * @param _feeSettings the new feeSettings contract
      */
-    function acceptNewFeeSettings(IFeeSettingsV1 _feeSettings) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function acceptNewFeeSettings(IFeeSettingsV2 _feeSettings) external onlyRole(DEFAULT_ADMIN_ROLE) {
         // after deployment, suggestedFeeSettings is 0x0. Therefore, this check is necessary, otherwise the admin could accept 0x0 as new feeSettings.
         // Checking that the suggestedFeeSettings is not 0x0 would work, too, but this check is used in other places, too.
         _checkIfFeeSettingsImplementsInterface(_feeSettings);
@@ -235,7 +235,7 @@ contract Token is ERC2771ContextUpgradeable, ERC20PermitUpgradeable, PausableUpg
         uint256 fee = feeSettings.tokenFee(_amount);
         if (fee != 0) {
             // the fee collector is always allowed to receive tokens
-            _mint(feeSettings.feeCollector(), fee);
+            _mint(feeSettings.tokenFeeCollector(), fee);
         }
     }
 
@@ -291,16 +291,16 @@ contract Token is ERC2771ContextUpgradeable, ERC20PermitUpgradeable, PausableUpg
      * @dev  This check uses EIP165, see https://eips.ethereum.org/EIPS/eip-165
      * @param _feeSettings address of the FeeSettings contract
      */
-    function _checkIfFeeSettingsImplementsInterface(IFeeSettingsV1 _feeSettings) internal view {
+    function _checkIfFeeSettingsImplementsInterface(IFeeSettingsV2 _feeSettings) internal view {
         // step 1: needs to return true if EIP165 is supported
-        require(_feeSettings.supportsInterface(0x01ffc9a7) == true, "FeeSettings must implement IFeeSettingsV1");
+        require(_feeSettings.supportsInterface(0x01ffc9a7) == true, "FeeSettings must implement IFeeSettingsV2");
         // step 2: needs to return false if EIP165 is supported
-        require(_feeSettings.supportsInterface(0xffffffff) == false, "FeeSettings must implement IFeeSettingsV1");
+        require(_feeSettings.supportsInterface(0xffffffff) == false, "FeeSettings must implement IFeeSettingsV2");
         // now we know EIP165 is supported
-        // step 3: needs to return true if IFeeSettingsV1 is supported
+        // step 3: needs to return true if IFeeSettingsV2 is supported
         require(
-            _feeSettings.supportsInterface(type(IFeeSettingsV1).interfaceId),
-            "FeeSettings must implement IFeeSettingsV1"
+            _feeSettings.supportsInterface(type(IFeeSettingsV2).interfaceId),
+            "FeeSettings must implement IFeeSettingsV2"
         );
     }
 

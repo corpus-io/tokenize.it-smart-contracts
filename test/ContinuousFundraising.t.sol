@@ -18,7 +18,7 @@ contract ContinuousFundraisingTest is Test {
 
     ContinuousFundraising raise;
     AllowList list;
-    IFeeSettingsV1 feeSettings;
+    IFeeSettingsV2 feeSettings;
 
     TokenCloneFactory tokenCloneFactory;
     Token token;
@@ -257,12 +257,13 @@ contract ContinuousFundraisingTest is Test {
             "receiver has payment tokens"
         );
         assertTrue(
-            paymentToken.balanceOf(token.feeSettings().feeCollector()) ==
+            paymentToken.balanceOf(token.feeSettings().continuousFundraisingFeeCollector()) ==
                 localFeeSettings.continuousFundraisingFee(costInPaymentToken),
             "fee collector has collected fee in payment tokens"
         );
         assertTrue(
-            token.balanceOf(token.feeSettings().feeCollector()) == localFeeSettings.tokenFee(tokenBuyAmount),
+            token.balanceOf(token.feeSettings().continuousFundraisingFeeCollector()) ==
+                localFeeSettings.tokenFee(tokenBuyAmount),
             "fee collector has collected fee in tokens"
         );
         assertTrue(raise.tokensSold() == tokenBuyAmount, "raise has sold tokens");
@@ -478,7 +479,7 @@ contract ContinuousFundraisingTest is Test {
             "receiver received payment tokens"
         );
         assertEq(
-            token.balanceOf(token.feeSettings().feeCollector()),
+            token.balanceOf(token.feeSettings().continuousFundraisingFeeCollector()),
             tokenFee,
             "fee collector has collected fee in tokens"
         );

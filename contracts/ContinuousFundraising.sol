@@ -137,10 +137,10 @@ contract ContinuousFundraising is ERC2771Context, Ownable2Step, Pausable, Reentr
         // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
         uint256 currencyAmount = Math.ceilDiv(_amount * tokenPrice, 10 ** token.decimals());
 
-        IFeeSettingsV1 feeSettings = token.feeSettings();
+        IFeeSettingsV2 feeSettings = token.feeSettings();
         uint256 fee = feeSettings.continuousFundraisingFee(currencyAmount);
         if (fee != 0) {
-            currency.safeTransferFrom(_msgSender(), feeSettings.feeCollector(), fee);
+            currency.safeTransferFrom(_msgSender(), feeSettings.continuousFundraisingFeeCollector(), fee);
         }
 
         currency.safeTransferFrom(_msgSender(), currencyReceiver, currencyAmount - fee);

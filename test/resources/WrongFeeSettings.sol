@@ -38,7 +38,7 @@ contract FeeSettingsFailERC165Check1 is FeeSettings {
     }
 }
 
-contract FeeSettingsFailIFeeSettingsV1Check is FeeSettings {
+contract FeeSettingsFailIFeeSettingsV2Check is FeeSettings {
     constructor(
         Fees memory _fees,
         address _feeCollector
@@ -49,7 +49,7 @@ contract FeeSettingsFailIFeeSettingsV1Check is FeeSettings {
             return true; // signal that we support ERC165
         } else if (interfaceId == 0xffffffff) {
             return false; // signal that we support ERC165
-        } else if (interfaceId == type(IFeeSettingsV1).interfaceId) {
+        } else if (interfaceId == type(IFeeSettingsV2).interfaceId) {
             return false; // signal that we don't support IFeeSettingsV1
         }
         return FeeSettings.supportsInterface(interfaceId);

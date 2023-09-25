@@ -12,7 +12,7 @@ contract TokenCloneFactory is CloneFactory {
     function createTokenClone(
         bytes32 _rawSalt,
         address _trustedForwarder,
-        IFeeSettingsV1 _feeSettings,
+        IFeeSettingsV2 _feeSettings,
         address _admin,
         AllowList _allowList,
         uint256 _requirements,
