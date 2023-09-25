@@ -17,6 +17,24 @@ interface IFeeSettingsV1 {
     function supportsInterface(bytes4) external view returns (bool); //because we inherit from ERC165
 }
 
+interface IFeeSettingsV2 {
+    function tokenFee(uint256) external view returns (uint256);
+
+    function tokenFeeCollector() external view returns (address);
+
+    function continuousFundraisingFee(uint256) external view returns (uint256);
+
+    function continuousFundraisingFeeCollector() external view returns (address);
+
+    function personalInviteFee(uint256) external view returns (uint256);
+
+    function personalInviteFeeCollector() external view returns (address);
+
+    function owner() external view returns (address);
+
+    function supportsInterface(bytes4) external view returns (bool); //because we inherit from ERC165
+}
+
 struct Fees {
     uint256 tokenFeeDenominator;
     uint256 continuousFundraisingFeeDenominator;
