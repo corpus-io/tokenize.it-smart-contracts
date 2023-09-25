@@ -32,7 +32,12 @@ contract tokenTest is Test {
         vm.startPrank(feeSettingsAndAllowListOwner);
         allowList = new AllowList();
         Fees memory fees = Fees(100, 100, 100, 0);
-        feeSettings = new FeeSettings(fees, feeSettingsAndAllowListOwner);
+        feeSettings = new FeeSettings(
+            fees,
+            feeSettingsAndAllowListOwner,
+            feeSettingsAndAllowListOwner,
+            feeSettingsAndAllowListOwner
+        );
         vm.stopPrank();
 
         implementation = new Token(trustedForwarder);
@@ -132,7 +137,12 @@ contract tokenTest is Test {
         console.log("name: %s", name);
         console.log("symbol: %s", symbol);
 
-        FeeSettings _feeSettings = new FeeSettings(Fees(100, 100, 100, 0), feeSettingsAndAllowListOwner);
+        FeeSettings _feeSettings = new FeeSettings(
+            Fees(100, 100, 100, 0),
+            feeSettingsAndAllowListOwner,
+            feeSettingsAndAllowListOwner,
+            feeSettingsAndAllowListOwner
+        );
 
         Token clone = Token(
             factory.createTokenClone(
@@ -192,7 +202,12 @@ contract tokenTest is Test {
         vm.assume(rando != address(0));
         vm.assume(rando != _admin);
 
-        FeeSettings _feeSettings = new FeeSettings(Fees(100, 100, 100, 0), feeSettingsAndAllowListOwner);
+        FeeSettings _feeSettings = new FeeSettings(
+            Fees(100, 100, 100, 0),
+            feeSettingsAndAllowListOwner,
+            feeSettingsAndAllowListOwner,
+            feeSettingsAndAllowListOwner
+        );
 
         Token _token = Token(
             factory.createTokenClone(
@@ -237,7 +252,12 @@ contract tokenTest is Test {
         vm.assume(newPauser != address(0));
         vm.assume(newPauser != admin);
 
-        FeeSettings _feeSettings = new FeeSettings(Fees(100, 100, 100, 0), feeSettingsAndAllowListOwner);
+        FeeSettings _feeSettings = new FeeSettings(
+            Fees(100, 100, 100, 0),
+            feeSettingsAndAllowListOwner,
+            feeSettingsAndAllowListOwner,
+            feeSettingsAndAllowListOwner
+        );
 
         Token _token = Token(
             factory.createTokenClone(

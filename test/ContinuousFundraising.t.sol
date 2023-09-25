@@ -45,7 +45,7 @@ contract ContinuousFundraisingTest is Test {
     function setUp() public {
         list = new AllowList();
         Fees memory fees = Fees(100, 100, 100, 100);
-        feeSettings = new FeeSettings(fees, admin);
+        feeSettings = new FeeSettings(fees, admin, admin, admin);
 
         // create token
         address tokenLogicContract = address(new Token(trustedForwarder));

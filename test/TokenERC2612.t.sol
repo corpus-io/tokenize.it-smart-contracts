@@ -71,7 +71,7 @@ contract TokenERC2612Test is Test {
             0
         );
         vm.prank(platformAdmin);
-        feeSettings = new FeeSettings(fees, feeCollector);
+        feeSettings = new FeeSettings(fees, feeCollector, feeCollector, feeCollector);
 
         // deploy forwarder
         Forwarder forwarder = new Forwarder();

@@ -63,7 +63,7 @@ contract ContinuousFundraisingTest is Test {
     function setUp() public {
         list = new AllowList();
         Fees memory fees = Fees(tokenFeeDenominator, paymentTokenFeeDenominator, paymentTokenFeeDenominator, 0);
-        feeSettings = new FeeSettings(fees, admin);
+        feeSettings = new FeeSettings(fees, admin, admin, admin);
 
         Token implementation = new Token(trustedForwarder);
         TokenCloneFactory factory = new TokenCloneFactory(address(implementation));

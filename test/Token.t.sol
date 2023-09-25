@@ -31,7 +31,7 @@ contract tokenTest is Test {
         allowList = new AllowList();
         vm.prank(feeSettingsOwner);
         Fees memory fees = Fees(100, 100, 100, 0);
-        feeSettings = new FeeSettings(fees, admin);
+        feeSettings = new FeeSettings(fees, admin, admin, admin);
         token = Token(
             tokenCloneFactory.createTokenClone(
                 0,

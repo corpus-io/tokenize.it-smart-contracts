@@ -32,7 +32,7 @@ contract tokenTest is Test {
         allowList = new AllowList();
         vm.prank(feeSettingsOwner);
         Fees memory fees = Fees(100, 100, 100, 0);
-        feeSettings = new FeeSettings(fees, admin);
+        feeSettings = new FeeSettings(fees, admin, admin, admin);
         Token implementation = new Token(trustedForwarder);
         TokenCloneFactory tokenCloneFactory = new TokenCloneFactory(address(implementation));
         token = Token(
@@ -88,7 +88,7 @@ contract tokenTest is Test {
     function testSuggestNewFeeSettingsWrongCaller(address wrongUpdater) public {
         vm.assume(wrongUpdater != feeSettings.owner());
         Fees memory fees = Fees(UINT256_MAX, UINT256_MAX, UINT256_MAX, 0);
-        FeeSettings newFeeSettings = new FeeSettings(fees, pauser);
+        FeeSettings newFeeSettings = new FeeSettings(fees, pauser, pauser, pauser);
         vm.prank(wrongUpdater);
         vm.expectRevert("Only fee settings owner can suggest fee settings update");
         token.suggestNewFeeSettings(newFeeSettings);
@@ -96,7 +96,7 @@ contract tokenTest is Test {
 
     function testSuggestNewFeeSettingsFeeCollector() public {
         Fees memory fees = Fees(UINT256_MAX, UINT256_MAX, UINT256_MAX, 0);
-        FeeSettings newFeeSettings = new FeeSettings(fees, pauser);
+        FeeSettings newFeeSettings = new FeeSettings(fees, pauser, pauser, pauser);
         vm.prank(feeSettings.feeCollector());
         vm.expectRevert("Only fee settings owner can suggest fee settings update");
         token.suggestNewFeeSettings(newFeeSettings);
@@ -111,7 +111,7 @@ contract tokenTest is Test {
     function testSuggestNewFeeSettings(address newCollector) public {
         vm.assume(newCollector != address(0));
         Fees memory fees = Fees(UINT256_MAX, UINT256_MAX, UINT256_MAX, 0);
-        FeeSettings newFeeSettings = new FeeSettings(fees, newCollector);
+        FeeSettings newFeeSettings = new FeeSettings(fees, newCollector, newCollector, newCollector);
         FeeSettings oldFeeSettings = FeeSettings(address(token.feeSettings()));
         uint oldInvestmentFeeDenominator = oldFeeSettings.continuousFundraisingFeeDenominator();
         uint oldTokenFeeDenominator = oldFeeSettings.tokenFeeDenominator();
@@ -140,7 +140,7 @@ contract tokenTest is Test {
     function testAcceptNewFeeSettings(address newCollector) public {
         vm.assume(newCollector != address(0));
         Fees memory fees = Fees(UINT256_MAX, UINT256_MAX, UINT256_MAX, 0);
-        FeeSettings newFeeSettings = new FeeSettings(fees, newCollector);
+        FeeSettings newFeeSettings = new FeeSettings(fees, newCollector, newCollector, newCollector);
         FeeSettings oldFeeSettings = FeeSettings(address(token.feeSettings()));
         uint oldInvestmentFeeDenominator = oldFeeSettings.continuousFundraisingFeeDenominator();
         uint oldTokenFeeDenominator = oldFeeSettings.tokenFeeDenominator();
@@ -168,7 +168,12 @@ contract tokenTest is Test {
     function testAcceptFeeCollectorInsteadOfFeeSettings(address newFeeSettingsPretendAddress) public {
         vm.assume(newFeeSettingsPretendAddress != address(0));
         Fees memory fees = Fees(UINT256_MAX, UINT256_MAX, UINT256_MAX, 0);
-        FeeSettings newFeeSettings = new FeeSettings(fees, newFeeSettingsPretendAddress);
+        FeeSettings newFeeSettings = new FeeSettings(
+            fees,
+            newFeeSettingsPretendAddress,
+            newFeeSettingsPretendAddress,
+            newFeeSettingsPretendAddress
+        );
         vm.assume(newFeeSettingsPretendAddress != address(newFeeSettings));
 
         vm.prank(feeSettings.owner());
@@ -183,8 +188,18 @@ contract tokenTest is Test {
 
     function testAcceptWrongFeeSettings() public {
         Fees memory fees = Fees(UINT256_MAX, UINT256_MAX, UINT256_MAX, 0);
-        FeeSettings realNewFeeSettings = new FeeSettings(fees, feeSettings.feeCollector());
-        FeeSettings fakeNewFeeSettings = new FeeSettings(fees, feeSettings.feeCollector());
+        FeeSettings realNewFeeSettings = new FeeSettings(
+            fees,
+            feeSettings.feeCollector(),
+            feeSettings.feeCollector(),
+            feeSettings.feeCollector()
+        );
+        FeeSettings fakeNewFeeSettings = new FeeSettings(
+            fees,
+            feeSettings.feeCollector(),
+            feeSettings.feeCollector(),
+            feeSettings.feeCollector()
+        );
 
         assertTrue(
             address(fakeNewFeeSettings) != address(realNewFeeSettings),

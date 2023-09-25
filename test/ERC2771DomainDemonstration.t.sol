@@ -74,7 +74,7 @@ contract TokenERC2771Test is Test {
             0
         );
         vm.prank(platformAdmin);
-        feeSettings = new FeeSettings(fees, feeCollector);
+        feeSettings = new FeeSettings(fees, feeCollector, feeCollector, feeCollector);
 
         // deploy helper functions (only for testing with foundry)
         ERC2771helper = new ERC2771Helper();

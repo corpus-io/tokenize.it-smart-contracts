@@ -47,7 +47,7 @@ contract PersonalInviteTest is Test {
         list.set(tokenReceiver, requirements);
 
         Fees memory fees = Fees(100, 100, 100, 0);
-        feeSettings = new FeeSettings(fees, admin);
+        feeSettings = new FeeSettings(fees, admin, admin, admin);
 
         Token implementation = new Token(trustedForwarder);
         TokenCloneFactory tokenCloneFactory = new TokenCloneFactory(address(implementation));
