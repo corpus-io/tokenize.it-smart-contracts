@@ -11,7 +11,7 @@ import "./interfaces/IFeeSettings.sol";
  * @notice The FeeSettings contract is used to manage fees paid to the tokenize.it platfom
  */
 contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
-    uint128 constant MAX_FEE_DENOMINATOR = 20;
+    uint128 public constant MAX_FEE_DENOMINATOR = 20;
 
     /// Denominator to calculate fees paid in Token.sol. UINT256_MAX means no fees.
     uint256 public tokenFeeDenominator;
@@ -47,7 +47,11 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      * @notice The fee collector has been changed to `newFeeCollector`
      * @param newFeeCollector The new fee collector
      */
-    event FeeCollectorChanged(address indexed newFeeCollector);
+    event FeeCollectorsChanged(
+        address indexed newFeeCollector,
+        address indexed newContinuousFundraisingFeeCollector,
+        address indexed newPersonalInviteFeeCollector
+    );
 
     /**
      * @notice A fee change has been proposed
@@ -74,6 +78,10 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
         personalInviteFeeDenominator = _fees.personalInviteFeeDenominator;
         require(_tokenFeeCollector != address(0), "Fee collector cannot be 0x0");
         tokenFeeCollector = _tokenFeeCollector;
+        require(_continuousFundraisingFeeCollector != address(0), "Fee collector cannot be 0x0");
+        continuousFundraisingFeeCollector = _continuousFundraisingFeeCollector;
+        require(_personalInviteFeeCollector != address(0), "Fee collector cannot be 0x0");
+        personalInviteFeeCollector = _personalInviteFeeCollector;
     }
 
     /**
@@ -110,12 +118,20 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
 
     /**
      * @notice Sets a new fee collector
-     * @param _feeCollector The new fee collector
+     * @param _tokenFeeCollector The new fee collector
      */
-    function setFeeCollector(address _feeCollector) external onlyOwner {
-        require(_feeCollector != address(0), "Fee collector cannot be 0x0");
-        tokenFeeCollector = _feeCollector;
-        emit FeeCollectorChanged(_feeCollector);
+    function setFeeCollectors(
+        address _tokenFeeCollector,
+        address _continuousFundraisingFeeCollector,
+        address _personalOfferFeeCollector
+    ) external onlyOwner {
+        require(_tokenFeeCollector != address(0), "Fee collector cannot be 0x0");
+        tokenFeeCollector = _tokenFeeCollector;
+        require(_continuousFundraisingFeeCollector != address(0), "Fee collector cannot be 0x0");
+        continuousFundraisingFeeCollector = _continuousFundraisingFeeCollector;
+        require(_personalOfferFeeCollector != address(0), "Fee collector cannot be 0x0");
+        personalInviteFeeCollector = _personalOfferFeeCollector;
+        emit FeeCollectorsChanged(_tokenFeeCollector, _continuousFundraisingFeeCollector, _personalOfferFeeCollector);
     }
 
     /**
@@ -123,12 +139,18 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      * @param _fees The fees to check
      */
     function checkFeeLimits(Fees memory _fees) internal pure {
-        require(_fees.tokenFeeDenominator >= 20, "Fee must be equal or less 5% (denominator must be >= 20)");
         require(
-            _fees.continuousFundraisingFeeDenominator >= 20,
+            _fees.tokenFeeDenominator >= MAX_FEE_DENOMINATOR,
             "Fee must be equal or less 5% (denominator must be >= 20)"
         );
-        require(_fees.personalInviteFeeDenominator >= 20, "Fee must be equal or less 5% (denominator must be >= 20)");
+        require(
+            _fees.continuousFundraisingFeeDenominator >= MAX_FEE_DENOMINATOR,
+            "Fee must be equal or less 5% (denominator must be >= 20)"
+        );
+        require(
+            _fees.personalInviteFeeDenominator >= MAX_FEE_DENOMINATOR,
+            "Fee must be equal or less 5% (denominator must be >= 20)"
+        );
     }
 
     /**
