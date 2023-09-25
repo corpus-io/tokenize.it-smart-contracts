@@ -463,8 +463,21 @@ contract FeeSettingsTest is Test {
         );
     }
 
+    function testIFeeSettingsV2IsAvailable() public {
+        FeeSettings _feeSettings;
+        Fees memory fees = Fees(100, 100, 100, 0);
+        _feeSettings = new FeeSettings(fees, admin, admin, admin);
+
+        assertEq(
+            _feeSettings.supportsInterface(type(IFeeSettingsV2).interfaceId),
+            true,
+            "IFeeSettingsV1 not supported"
+        );
+    }
+
     function testNonsenseInterfacesAreNotAvailable(bytes4 _nonsenseInterface) public {
         vm.assume(_nonsenseInterface != type(IFeeSettingsV1).interfaceId);
+        vm.assume(_nonsenseInterface != type(IFeeSettingsV2).interfaceId);
         vm.assume(_nonsenseInterface != 0x01ffc9a7);
         FeeSettings _feeSettings;
         Fees memory fees = Fees(100, 100, 100, 0);
