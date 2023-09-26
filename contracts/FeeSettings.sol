@@ -11,7 +11,9 @@ import "./interfaces/IFeeSettings.sol";
  * @notice The FeeSettings contract is used to manage fees paid to the tokenize.it platfom
  */
 contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
-    uint128 public constant MAX_FEE_DENOMINATOR = 20;
+    uint128 public constant MIN_TOKEN_FEE_DENOMINATOR = 20;
+    uint128 public constant MIN_CONTINUOUS_FUNDRAISING_FEE_DENOMINATOR = 10;
+    uint128 public constant MIN_PERSONAL_INVITE_FEE_DENOMINATOR = 20;
 
     /// Denominator to calculate fees paid in Token.sol. UINT256_MAX means no fees.
     uint256 public tokenFeeDenominator;
@@ -140,15 +142,15 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      */
     function checkFeeLimits(Fees memory _fees) internal pure {
         require(
-            _fees.tokenFeeDenominator >= MAX_FEE_DENOMINATOR,
+            _fees.tokenFeeDenominator >= MIN_TOKEN_FEE_DENOMINATOR,
             "Fee must be equal or less 5% (denominator must be >= 20)"
         );
         require(
-            _fees.continuousFundraisingFeeDenominator >= MAX_FEE_DENOMINATOR,
-            "Fee must be equal or less 5% (denominator must be >= 20)"
+            _fees.continuousFundraisingFeeDenominator >= MIN_CONTINUOUS_FUNDRAISING_FEE_DENOMINATOR,
+            "ContinuousFundraising fee must be equal or less 10% (denominator must be >= 10)"
         );
         require(
-            _fees.personalInviteFeeDenominator >= MAX_FEE_DENOMINATOR,
+            _fees.personalInviteFeeDenominator >= MIN_PERSONAL_INVITE_FEE_DENOMINATOR,
             "Fee must be equal or less 5% (denominator must be >= 20)"
         );
     }
