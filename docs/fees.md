@@ -29,19 +29,40 @@ Investor buys X tokens for Y USDC through the ContinuousFundraising contract.
 
 ### Fee limits
 
-Maximum fee is 5%, minimum fee is 0.
+The minimum fee is 0.
+
+Maximum fees are:
+
+- 5% of tokens minted
+- 5% of currency paid when using PersonalInvite
+- 10% of currency paid when using ContinuousFundraising
+
+## Fee collectors
+
+The three fee types can be collected by different addresses, the fee collectors. The fee collectors are set by tokenize.it and can be changed by tokenize.it.
+
+### Splitting fees
+
+In case the fees collected must be split between multiple parties, one or more fee collector addresses can be set to one or more [PaymentSplitter](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.9/contracts/finance/PaymentSplitter.sol) contracts. This contract will then receive the fees and send each beneficiary their share. The payout can be triggered by anyone.
+
+There is a limitation we are very unlikely to ever experience: if `totalAmountOfTokensReceived * highestShareNumber` overflows, the contract will not release these funds anymore. As we are using it for fees, which are just a small fraction of the total amount of tokens or currency, we should not see this happening in practice. Choosing the number of shares as low as possible is recommended to be even safer. See `testLockingFunds` in [the PaymentSplitter tests](./test/PaymentSplitter.t.sol) for a demonstration of this limitation.
+
+The PaymentSplitter contract will be removed in Openzeppelin contracts 5.0, but an updated version should be introduced in a later version. Until then, the 4.9.x version can be used. See [this PR](https://github.com/OpenZeppelin/openzeppelin-contracts/pull/4276).
 
 ## Implementation
 
 ### Fee settings
 
-Tokenize.it will deploy and manage at least one [fee settings contract](../contracts/FeeSettings.sol). This contract implements the IFeeSettingsV1 interface and thus can be queried for:
+Tokenize.it will deploy and manage at least one [fee settings contract](../contracts/FeeSettings.sol). This contract implements the IFeeSettingsV2 interface and thus can be queried for:
 
 - fee calculation:
   - `tokenFee(uint256 tokenBuyAmount)`
   - `continuousFundraisingFee(uint256 paymentAmount)`
   - `personalInviteFee(uint256 paymentAmount)`
-- feeCollector address
+- feeCollector addresses
+  - `tokenFeeCollector()`
+  - `continuousFundraisingFeeCollector()`
+  - `personalInviteFeeCollector()`
 
 These values can be changed by tokenize.it. Fee changes are subject to a delay of at least 12 weeks.
 
@@ -49,12 +70,6 @@ All fees are calculated as follows:
 
 ```solidity
 fee = amount / feeDenominator
-```
-
-Taking into account the [limits](#fee-limits), the following is enforced for all denominators:
-
-```solidity
-denominator >= 20
 ```
 
 ### Token contracts
