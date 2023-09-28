@@ -149,6 +149,10 @@ contract ContinuousFundraising is ERC2771Context, Ownable2Step, Pausable, Reentr
         emit TokensBought(_msgSender(), _amount, currencyAmount);
     }
 
+    function getTotalPrice(uint256 _amount) external view returns (uint256) {
+        return Math.ceilDiv(_amount * tokenPrice, 10 ** token.decimals());
+    }
+
     /**
      * @notice change the currencyReceiver to `_currencyReceiver`
      * @param _currencyReceiver new currencyReceiver
