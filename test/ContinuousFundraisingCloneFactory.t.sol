@@ -34,7 +34,12 @@ contract tokenTest is Test {
         vm.startPrank(feeSettingsAndAllowListOwner);
         allowList = new AllowList();
         Fees memory fees = Fees(100, 100, 100, 0);
-        feeSettings = new FeeSettings(fees, feeSettingsAndAllowListOwner);
+        feeSettings = new FeeSettings(
+            fees,
+            feeSettingsAndAllowListOwner,
+            feeSettingsAndAllowListOwner,
+            feeSettingsAndAllowListOwner
+        );
         vm.stopPrank();
 
         Token tokenImplementation = new Token(trustedForwarder);

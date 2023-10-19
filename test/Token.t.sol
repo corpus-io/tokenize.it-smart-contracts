@@ -80,7 +80,7 @@ contract tokenTest is Test {
 
         // try to initialize
         vm.expectRevert("Initializable: contract is already initialized");
-        _logic.initialize(IFeeSettingsV1(address(2)), address(3), AllowList(address(4)), 3, "testToken", "TEST");
+        _logic.initialize(IFeeSettingsV2(address(2)), address(3), AllowList(address(4)), 3, "testToken", "TEST");
 
         // all settings are 0
         assertTrue(address(_logic.feeSettings()) == address(0));
