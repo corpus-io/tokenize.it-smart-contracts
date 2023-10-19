@@ -256,6 +256,10 @@ contract Token is
         _burn(_from, _amount);
     }
 
+    function createSnapshot() external onlyRole(DEFAULT_ADMIN_ROLE) returns (uint256) {
+        return _snapshot();
+    }
+
     /**
      * @notice There are 3 types of transfers:
      *    1. minting: transfers from the zero address to another address. Only minters can do this, which is checked in the mint function. The recipient must be allowed to transact.
