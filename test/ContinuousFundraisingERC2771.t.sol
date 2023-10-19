@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/TokenCloneFactory.sol";
-import "../contracts/ContinuousFundraising.sol";
+import "../contracts/ContinuousFundraisingCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/ERC2771Helper.sol";
@@ -12,6 +12,7 @@ import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific versi
 contract ContinuousFundraisingTest is Test {
     using ECDSA for bytes32; // for verify with var.recover()
 
+    ContinuousFundraisingCloneFactory fundraisingFactory;
     ContinuousFundraising raise;
     AllowList list;
     FeeSettings feeSettings;
@@ -66,9 +67,9 @@ contract ContinuousFundraisingTest is Test {
         feeSettings = new FeeSettings(fees, admin);
 
         Token implementation = new Token(trustedForwarder);
-        TokenCloneFactory factory = new TokenCloneFactory(address(implementation));
+        TokenCloneFactory tokenFactory = new TokenCloneFactory(address(implementation));
         token = Token(
-            factory.createTokenClone(0, trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST")
+            tokenFactory.createTokenClone(0, trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST")
         );
 
         ERC2771helper = new ERC2771Helper();
@@ -89,15 +90,23 @@ contract ContinuousFundraisingTest is Test {
 
     function buyWithERC2771(Forwarder forwarder) public {
         vm.prank(owner);
-        raise = new ContinuousFundraising(
-            address(forwarder),
-            payable(receiver),
-            minAmountPerBuyer,
-            maxAmountPerBuyer,
-            price,
-            maxAmountOfTokenToBeSold,
-            paymentToken,
-            token
+        fundraisingFactory = new ContinuousFundraisingCloneFactory(
+            address(new ContinuousFundraising(address(forwarder)))
+        );
+
+        raise = ContinuousFundraising(
+            fundraisingFactory.createContinuousFundraisingClone(
+                0,
+                address(forwarder),
+                address(this),
+                payable(receiver),
+                minAmountPerBuyer,
+                maxAmountPerBuyer,
+                price,
+                maxAmountOfTokenToBeSold,
+                paymentToken,
+                token
+            )
         );
 
         // allow raise contract to mint

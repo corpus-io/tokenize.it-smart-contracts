@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/TokenCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract tokenTest is Test {
     event RequirementsChanged(uint newRequirements);
@@ -70,6 +71,26 @@ contract tokenTest is Test {
         assertTrue(token.allowList() == allowList);
         assertTrue(keccak256(bytes(token.name())) == keccak256(bytes("testToken")));
         assertTrue(keccak256(bytes(token.symbol())) == keccak256(bytes("TEST")));
+    }
+
+    function testLogicContractCreation() public {
+        Token _logic = new Token(address(1));
+
+        console.log("address of logic contract: ", address(_logic));
+
+        // try to initialize
+        vm.expectRevert("Initializable: contract is already initialized");
+        _logic.initialize(IFeeSettingsV1(address(2)), address(3), AllowList(address(4)), 3, "testToken", "TEST");
+
+        // all settings are 0
+        assertTrue(address(_logic.feeSettings()) == address(0));
+        assertTrue(address(_logic.allowList()) == address(0));
+        assertTrue(_logic.requirements() == 0);
+        assertTrue(keccak256(abi.encodePacked(_logic.name())) == keccak256(bytes("")));
+        assertTrue(keccak256(abi.encodePacked(_logic.symbol())) == keccak256(bytes("")));
+
+        // we are not the admin
+        assertFalse(_logic.hasRole(_logic.DEFAULT_ADMIN_ROLE(), address(this)));
     }
 
     function testAllowList0() public {

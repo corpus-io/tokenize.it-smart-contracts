@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/TokenCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
-import "../contracts/ContinuousFundraising.sol";
+import "../contracts/ContinuousFundraisingCloneFactory.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
 
@@ -16,6 +16,7 @@ contract ContinuousFundraisingTest is Test {
     event MaxAmountOfTokenToBeSoldChanged(uint256);
     event TokensBought(address indexed buyer, uint256 tokenAmount, uint256 currencyAmount);
 
+    ContinuousFundraisingCloneFactory factory;
     ContinuousFundraising raise;
     AllowList list;
     IFeeSettingsV1 feeSettings;
@@ -23,6 +24,8 @@ contract ContinuousFundraisingTest is Test {
     TokenCloneFactory tokenCloneFactory;
     Token token;
     FakePaymentToken paymentToken;
+
+    MaliciousPaymentToken maliciousPaymentToken;
 
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant buyer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
@@ -63,15 +66,21 @@ contract ContinuousFundraisingTest is Test {
         assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
 
         vm.prank(owner);
-        raise = new ContinuousFundraising(
-            trustedForwarder,
-            payable(receiver),
-            minAmountPerBuyer,
-            maxAmountPerBuyer,
-            price,
-            maxAmountOfTokenToBeSold,
-            paymentToken,
-            token
+        factory = new ContinuousFundraisingCloneFactory(address(new ContinuousFundraising(trustedForwarder)));
+
+        raise = ContinuousFundraising(
+            factory.createContinuousFundraisingClone(
+                0,
+                trustedForwarder,
+                owner,
+                payable(receiver),
+                minAmountPerBuyer,
+                maxAmountPerBuyer,
+                price,
+                maxAmountOfTokenToBeSold,
+                paymentToken,
+                token
+            )
         );
 
         // allow raise contract to mint
@@ -87,9 +96,15 @@ contract ContinuousFundraisingTest is Test {
         paymentToken.approve(address(raise), paymentTokenAmount);
     }
 
-    function testConstructorHappyCase() public {
-        ContinuousFundraising _raise = new ContinuousFundraising(
-            trustedForwarder,
+    function testLogicContractCreation() public {
+        ContinuousFundraising _logic = new ContinuousFundraising(address(1));
+
+        console.log("address of logic contract: ", address(_logic));
+
+        // try to initialize
+        vm.expectRevert("Initializable: contract is already initialized");
+        _logic.initialize(
+            address(this),
             payable(receiver),
             minAmountPerBuyer,
             maxAmountPerBuyer,
@@ -97,6 +112,32 @@ contract ContinuousFundraisingTest is Test {
             maxAmountOfTokenToBeSold,
             paymentToken,
             token
+        );
+
+        // owner and all settings are 0
+        assertTrue(_logic.owner() == address(0), "owner is not 0");
+        assertTrue(_logic.currencyReceiver() == address(0));
+        assertTrue(_logic.minAmountPerBuyer() == 0);
+        assertTrue(_logic.maxAmountPerBuyer() == 0);
+        assertTrue(_logic.tokenPrice() == 0);
+        assertTrue(address(_logic.currency()) == address(0));
+        assertTrue(address(_logic.token()) == address(0));
+    }
+
+    function testConstructorHappyCase() public {
+        ContinuousFundraising _raise = ContinuousFundraising(
+            factory.createContinuousFundraisingClone(
+                0,
+                trustedForwarder,
+                address(this),
+                payable(receiver),
+                minAmountPerBuyer,
+                maxAmountPerBuyer,
+                price,
+                maxAmountOfTokenToBeSold,
+                paymentToken,
+                token
+            )
         );
         assertTrue(_raise.owner() == address(this));
         assertTrue(_raise.currencyReceiver() == receiver);
@@ -108,8 +149,26 @@ contract ContinuousFundraisingTest is Test {
     }
 
     function testConstructorWithAddress0() public {
-        vm.expectRevert("trustedForwarder can not be zero address");
-        new ContinuousFundraising(
+        vm.expectRevert("ContinuousFundraisingCloneFactory: Unexpected trustedForwarder");
+        ContinuousFundraising(
+            factory.createContinuousFundraisingClone(
+                0,
+                address(0),
+                address(this),
+                payable(receiver),
+                minAmountPerBuyer,
+                maxAmountPerBuyer,
+                price,
+                maxAmountOfTokenToBeSold,
+                paymentToken,
+                token
+            )
+        );
+
+        vm.expectRevert("owner can not be zero address");
+        factory.createContinuousFundraisingClone(
+            0,
+            trustedForwarder,
             address(0),
             receiver,
             minAmountPerBuyer,
@@ -121,8 +180,10 @@ contract ContinuousFundraisingTest is Test {
         );
 
         vm.expectRevert("currencyReceiver can not be zero address");
-        new ContinuousFundraising(
+        factory.createContinuousFundraisingClone(
+            0,
             trustedForwarder,
+            address(this),
             address(0),
             minAmountPerBuyer,
             maxAmountPerBuyer,
@@ -133,9 +194,11 @@ contract ContinuousFundraisingTest is Test {
         );
 
         vm.expectRevert("currency can not be zero address");
-        new ContinuousFundraising(
+        factory.createContinuousFundraisingClone(
+            0,
             trustedForwarder,
-            receiver,
+            address(this),
+            payable(receiver),
             minAmountPerBuyer,
             maxAmountPerBuyer,
             price,
@@ -145,9 +208,11 @@ contract ContinuousFundraisingTest is Test {
         );
 
         vm.expectRevert("token can not be zero address");
-        new ContinuousFundraising(
+        factory.createContinuousFundraisingClone(
+            0,
             trustedForwarder,
-            receiver,
+            address(this),
+            payable(receiver),
             minAmountPerBuyer,
             maxAmountPerBuyer,
             price,
@@ -161,7 +226,6 @@ contract ContinuousFundraisingTest is Test {
     set up with MaliciousPaymentToken which tries to reenter the buy function
     */
     function testReentrancy() public {
-        MaliciousPaymentToken _paymentToken;
         uint8 _paymentTokenDecimals = 18;
 
         /*
@@ -189,18 +253,22 @@ contract ContinuousFundraisingTest is Test {
             )
         );
         vm.prank(paymentTokenProvider);
-        _paymentToken = new MaliciousPaymentToken(_paymentTokenAmount);
+        maliciousPaymentToken = new MaliciousPaymentToken(_paymentTokenAmount);
         vm.prank(owner);
 
-        ContinuousFundraising _raise = new ContinuousFundraising(
-            trustedForwarder,
-            payable(receiver),
-            1,
-            _maxMintAmount / 100,
-            _price,
-            _maxMintAmount,
-            _paymentToken,
-            _token
+        ContinuousFundraising _raise = ContinuousFundraising(
+            factory.createContinuousFundraisingClone(
+                0,
+                trustedForwarder,
+                address(this),
+                payable(receiver),
+                1,
+                _maxMintAmount / 100,
+                _price,
+                _maxMintAmount,
+                maliciousPaymentToken,
+                _token
+            )
         );
 
         // allow invite contract to mint
@@ -214,21 +282,21 @@ contract ContinuousFundraisingTest is Test {
 
         // mint _paymentToken for buyer
         vm.prank(paymentTokenProvider);
-        _paymentToken.transfer(buyer, _paymentTokenAmount);
-        assertTrue(_paymentToken.balanceOf(buyer) == _paymentTokenAmount);
+        maliciousPaymentToken.transfer(buyer, _paymentTokenAmount);
+        assertTrue(maliciousPaymentToken.balanceOf(buyer) == _paymentTokenAmount);
 
         // set exploitTarget
-        _paymentToken.setExploitTarget(address(_raise), 3, _maxMintAmount / 200000);
+        maliciousPaymentToken.setExploitTarget(address(_raise), 3, _maxMintAmount / 200000);
 
         // give invite contract allowance
         vm.prank(buyer);
-        _paymentToken.approve(address(_raise), _paymentTokenAmount);
+        maliciousPaymentToken.approve(address(_raise), _paymentTokenAmount);
 
         // store some state
         //uint buyerPaymentBalanceBefore = _paymentToken.balanceOf(buyer);
 
         // run actual test
-        assertTrue(_paymentToken.balanceOf(buyer) == _paymentTokenAmount);
+        assertTrue(maliciousPaymentToken.balanceOf(buyer) == _paymentTokenAmount);
         uint256 buyAmount = _maxMintAmount / 100000;
         vm.prank(buyer);
         vm.expectRevert("ReentrancyGuard: reentrant call");
@@ -1045,15 +1113,19 @@ contract ContinuousFundraisingTest is Test {
 
         // create the raise contract
         vm.prank(owner);
-        raise = new ContinuousFundraising(
-            trustedForwarder,
-            payable(receiver),
-            0,
-            UINT256_MAX,
-            _price,
-            UINT256_MAX,
-            paymentToken,
-            token
+        raise = ContinuousFundraising(
+            factory.createContinuousFundraisingClone(
+                0,
+                trustedForwarder,
+                address(this),
+                payable(receiver),
+                0,
+                UINT256_MAX,
+                _price,
+                UINT256_MAX,
+                paymentToken,
+                token
+            )
         );
 
         // grant allowances
@@ -1088,15 +1160,19 @@ contract ContinuousFundraisingTest is Test {
 
         // create the raise contract
         vm.prank(owner);
-        raise = new ContinuousFundraising(
-            trustedForwarder,
-            payable(receiver),
-            _tokenBuyAmount,
-            _tokenBuyAmount,
-            _price,
-            _tokenBuyAmount,
-            paymentToken,
-            token
+        raise = ContinuousFundraising(
+            factory.createContinuousFundraisingClone(
+                0,
+                trustedForwarder,
+                address(this),
+                payable(receiver),
+                _tokenBuyAmount,
+                _tokenBuyAmount,
+                _price,
+                _tokenBuyAmount,
+                paymentToken,
+                token
+            )
         );
 
         // set fees to 0, otherwise extra currency is minted which causes an overflow
@@ -1118,5 +1194,15 @@ contract ContinuousFundraisingTest is Test {
         // check that the raise got the correct amount of currency
         assertTrue(paymentToken.balanceOf(receiver) <= maxCurrencyAmount, "raise got wrong amount of currency");
         assertTrue(paymentToken.balanceOf(receiver) >= minCurrencyAmount, "raise got wrong amount of currency");
+    }
+
+    function testTransferOwnership(address newOwner) public {
+        vm.prank(owner);
+        raise.transferOwnership(newOwner);
+        assertTrue(raise.owner() == owner);
+
+        vm.prank(newOwner);
+        raise.acceptOwnership();
+        assertTrue(raise.owner() == newOwner);
     }
 }

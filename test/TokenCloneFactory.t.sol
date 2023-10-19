@@ -211,14 +211,14 @@ contract tokenTest is Test {
         vm.expectRevert();
         _token.pause();
 
-        vm.prank(rando);
-        vm.expectRevert();
-        _token.unpause();
-
         assertFalse(_token.paused());
         vm.prank(_admin);
         _token.pause();
         assertTrue(_token.paused());
+
+        vm.prank(rando);
+        vm.expectRevert();
+        _token.unpause();
 
         // can't transfer when paused
         vm.prank(rando);

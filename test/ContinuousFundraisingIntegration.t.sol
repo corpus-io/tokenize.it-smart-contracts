@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/TokenCloneFactory.sol";
-import "../contracts/ContinuousFundraising.sol";
+import "../contracts/ContinuousFundraisingCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
@@ -14,9 +14,10 @@ contract ContinuousFundraisingTest is Test {
     FeeSettings feeSettings;
 
     Token implementation = new Token(trustedForwarder);
-    TokenCloneFactory factory = new TokenCloneFactory(address(implementation));
+    TokenCloneFactory tokenFactory = new TokenCloneFactory(address(implementation));
     Token token;
     FakePaymentToken paymentToken;
+    ContinuousFundraisingCloneFactory fundraisingFactory;
 
     address public constant platformAdmin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant investor = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
@@ -43,7 +44,16 @@ contract ContinuousFundraisingTest is Test {
         feeSettings = new FeeSettings(fees, platformAdmin);
         vm.prank(platformAdmin);
         token = Token(
-            factory.createTokenClone(0, trustedForwarder, feeSettings, companyOwner, list, 0x0, "TESTTOKEN", "TEST")
+            tokenFactory.createTokenClone(
+                0,
+                trustedForwarder,
+                feeSettings,
+                companyOwner,
+                list,
+                0x0,
+                "TESTTOKEN",
+                "TEST"
+            )
         );
 
         // set up currency
@@ -55,15 +65,24 @@ contract ContinuousFundraisingTest is Test {
         assertTrue(paymentToken.balanceOf(investor) == paymentTokenAmount);
 
         vm.prank(companyOwner);
-        raise = new ContinuousFundraising(
-            trustedForwarder,
-            payable(receiver),
-            minAmountPerBuyer,
-            maxAmountPerBuyer,
-            price,
-            maxAmountOfTokenToBeSold,
-            paymentToken,
-            token
+
+        fundraisingFactory = new ContinuousFundraisingCloneFactory(
+            address(new ContinuousFundraising(trustedForwarder))
+        );
+
+        raise = ContinuousFundraising(
+            fundraisingFactory.createContinuousFundraisingClone(
+                0,
+                trustedForwarder,
+                address(this),
+                payable(receiver),
+                minAmountPerBuyer,
+                maxAmountPerBuyer,
+                price,
+                maxAmountOfTokenToBeSold,
+                paymentToken,
+                token
+            )
         );
 
         // allow raise contract to mint
@@ -96,8 +115,6 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(platformAdmin);
         feeSettings.executeFeeChange();
 
-        FakePaymentToken _paymentToken;
-
         uint8 _paymentTokenDecimals = 6;
         // uint8 _maxDecimals = 25;
         // for (
@@ -119,22 +136,35 @@ contract ContinuousFundraisingTest is Test {
 
         list = new AllowList();
         Token _token = Token(
-            factory.createTokenClone(0, trustedForwarder, feeSettings, companyOwner, list, 0x0, "FEETESTTOKEN", "TEST")
+            tokenFactory.createTokenClone(
+                0,
+                trustedForwarder,
+                feeSettings,
+                companyOwner,
+                list,
+                0x0,
+                "FEETESTTOKEN",
+                "TEST"
+            )
         );
 
         vm.prank(paymentTokenProvider);
-        _paymentToken = new FakePaymentToken(_paymentTokenAmount, _paymentTokenDecimals);
+        paymentToken = new FakePaymentToken(_paymentTokenAmount, _paymentTokenDecimals);
         vm.prank(companyOwner);
 
-        ContinuousFundraising _raise = new ContinuousFundraising(
-            trustedForwarder,
-            payable(receiver),
-            1,
-            _maxMintAmount / 100,
-            _price,
-            _maxMintAmount,
-            _paymentToken,
-            _token
+        ContinuousFundraising _raise = ContinuousFundraising(
+            fundraisingFactory.createContinuousFundraisingClone(
+                0,
+                trustedForwarder,
+                address(this),
+                payable(receiver),
+                1,
+                _maxMintAmount / 100,
+                _price,
+                _maxMintAmount,
+                paymentToken,
+                _token
+            )
         );
 
         // allow invite contract to mint
@@ -147,24 +177,24 @@ contract ContinuousFundraisingTest is Test {
 
         // mint _paymentToken for buyer
         vm.prank(paymentTokenProvider);
-        _paymentToken.transfer(investor, _paymentTokenAmount);
-        assertTrue(_paymentToken.balanceOf(investor) == _paymentTokenAmount);
+        paymentToken.transfer(investor, _paymentTokenAmount);
+        assertTrue(paymentToken.balanceOf(investor) == _paymentTokenAmount);
 
         // give invite contract allowance
         vm.prank(investor);
-        _paymentToken.approve(address(_raise), _paymentTokenAmount);
+        paymentToken.approve(address(_raise), _paymentTokenAmount);
 
         // run actual test
 
         uint tokenAmount = 33 * 10 ** token.decimals();
 
         // buyer has 1k FPT
-        assertTrue(_paymentToken.balanceOf(investor) == _paymentTokenAmount);
+        assertTrue(paymentToken.balanceOf(investor) == _paymentTokenAmount);
         // they should be able to buy 33 CT for 999 FPT
         vm.prank(investor);
         _raise.buy(tokenAmount, investor);
         // buyer should have 10 FPT left
-        assertTrue(_paymentToken.balanceOf(investor) == 10 * 10 ** _paymentTokenDecimals);
+        assertTrue(paymentToken.balanceOf(investor) == 10 * 10 ** _paymentTokenDecimals);
         // buyer should have the 33 CT they bought
         assertTrue(_token.balanceOf(investor) == tokenAmount, "buyer has wrong amount of token");
         // receiver should have the 990 FPT that were paid, minus the fee
@@ -173,13 +203,13 @@ contract ContinuousFundraisingTest is Test {
         uint256 currencyFee = currencyAmount /
             FeeSettings(address(token.feeSettings())).continuousFundraisingFeeDenominator();
         assertTrue(
-            _paymentToken.balanceOf(receiver) == currencyAmount - currencyFee,
+            paymentToken.balanceOf(receiver) == currencyAmount - currencyFee,
             "receiver has wrong amount of currency"
         );
         // fee collector should have the token and currency fees
         assertEq(
             currencyFee,
-            _paymentToken.balanceOf(feeSettings.feeCollector()),
+            paymentToken.balanceOf(feeSettings.feeCollector()),
             "fee collector has wrong amount of currency"
         );
         assertEq(
@@ -205,7 +235,7 @@ contract ContinuousFundraisingTest is Test {
     */
     function testVaryDecimals() public {
         uint8 _maxDecimals = 25;
-        FakePaymentToken _paymentToken;
+        //FakePaymentToken paymentToken;
 
         for (uint8 _paymentTokenDecimals = 1; _paymentTokenDecimals < _maxDecimals; _paymentTokenDecimals++) {
             //uint8 _paymentTokenDecimals = 10;
@@ -222,7 +252,7 @@ contract ContinuousFundraisingTest is Test {
 
             list = new AllowList();
             Token _token = Token(
-                factory.createTokenClone(
+                tokenFactory.createTokenClone(
                     0,
                     trustedForwarder,
                     feeSettings,
@@ -235,18 +265,22 @@ contract ContinuousFundraisingTest is Test {
             );
 
             vm.prank(paymentTokenProvider);
-            _paymentToken = new FakePaymentToken(_paymentTokenAmount, _paymentTokenDecimals);
+            paymentToken = new FakePaymentToken(_paymentTokenAmount, _paymentTokenDecimals);
             vm.prank(companyOwner);
 
-            ContinuousFundraising _raise = new ContinuousFundraising(
-                trustedForwarder,
-                payable(receiver),
-                1,
-                _maxMintAmount / 100,
-                _price,
-                _maxMintAmount,
-                _paymentToken,
-                _token
+            ContinuousFundraising _raise = ContinuousFundraising(
+                fundraisingFactory.createContinuousFundraisingClone(
+                    0,
+                    trustedForwarder,
+                    address(this),
+                    payable(receiver),
+                    1,
+                    _maxMintAmount / 100,
+                    _price,
+                    _maxMintAmount,
+                    paymentToken,
+                    _token
+                )
             );
             // allow invite contract to mint
             bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
@@ -258,24 +292,24 @@ contract ContinuousFundraisingTest is Test {
 
             // mint _paymentToken for buyer
             vm.prank(paymentTokenProvider);
-            _paymentToken.transfer(investor, _paymentTokenAmount);
-            assertTrue(_paymentToken.balanceOf(investor) == _paymentTokenAmount);
+            paymentToken.transfer(investor, _paymentTokenAmount);
+            assertTrue(paymentToken.balanceOf(investor) == _paymentTokenAmount);
 
             // give invite contract allowance
             vm.prank(investor);
-            _paymentToken.approve(address(_raise), _paymentTokenAmount);
+            paymentToken.approve(address(_raise), _paymentTokenAmount);
 
             // run actual test
 
             uint tokenAmount = 33 * 10 ** token.decimals();
 
             // buyer has 1k FPT
-            assertTrue(_paymentToken.balanceOf(investor) == _paymentTokenAmount);
+            assertTrue(paymentToken.balanceOf(investor) == _paymentTokenAmount);
             // they should be able to buy 33 CT for 999 FPT
             vm.prank(investor);
             _raise.buy(tokenAmount, investor);
             // buyer should have 10 FPT left
-            assertTrue(_paymentToken.balanceOf(investor) == 10 * 10 ** _paymentTokenDecimals);
+            assertTrue(paymentToken.balanceOf(investor) == 10 * 10 ** _paymentTokenDecimals);
             // buyer should have the 33 CT they bought
             assertTrue(_token.balanceOf(investor) == tokenAmount, "buyer has wrong amount of token");
             // receiver should have the 990 FPT that were paid, minus the fee
@@ -283,13 +317,13 @@ contract ContinuousFundraisingTest is Test {
             uint256 currencyFee = currencyAmount /
                 FeeSettings(address(token.feeSettings())).continuousFundraisingFeeDenominator();
             assertTrue(
-                _paymentToken.balanceOf(receiver) == currencyAmount - currencyFee,
+                paymentToken.balanceOf(receiver) == currencyAmount - currencyFee,
                 "receiver has wrong amount of currency"
             );
             // fee collector should have the token and currency fees
             assertEq(
                 currencyFee,
-                _paymentToken.balanceOf(feeSettings.feeCollector()),
+                paymentToken.balanceOf(feeSettings.feeCollector()),
                 "fee collector has wrong amount of currency"
             );
             assertEq(

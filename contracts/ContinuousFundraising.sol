@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.17;
 
-import "@openzeppelin/contracts/access/Ownable2Step.sol";
+import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
 import "./Token.sol";
@@ -22,7 +22,12 @@ import "./Token.sol";
  *      A company will create only one ContinuousFundraising contract for their token (or one for each currency if they want to accept multiple currencies).
  * @dev The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support
  */
-contract ContinuousFundraising is ERC2771Context, Ownable2Step, Pausable, ReentrancyGuard {
+contract ContinuousFundraising is
+    ERC2771ContextUpgradeable,
+    Ownable2StepUpgradeable,
+    PausableUpgradeable,
+    ReentrancyGuardUpgradeable
+{
     using SafeERC20 for IERC20;
 
     /// address that receives the currency when tokens are bought
@@ -76,9 +81,18 @@ contract ContinuousFundraising is ERC2771Context, Ownable2Step, Pausable, Reentr
     event TokensBought(address indexed buyer, uint256 tokenAmount, uint256 currencyAmount);
 
     /**
+     * This constructor creates a logic contract that is used to clone new fundraising contracts.
+     * It has no owner, and can not be used directly.
+     * @param _trustedForwarder This address can execute transactions in the name of any other address
+     */
+    constructor(address _trustedForwarder) ERC2771ContextUpgradeable(_trustedForwarder) {
+        _disableInitializers();
+    }
+
+    /**
      * @notice Sets up the ContinuousFundraising. The contract is usable immediately after deployment, but does need a minting allowance for the token.
      * @dev Constructor that passes the trusted forwarder to the ERC2771Context constructor
-     * @param _trustedForwarder This address can execute transactions in the name of any other address
+     * @param _owner Owner of the contract
      * @param _currencyReceiver address that receives the payment (in currency) when tokens are bought
      * @param _minAmountPerBuyer smallest amount of tokens a buyer is allowed to buy when buying for the first time
      * @param _maxAmountPerBuyer largest amount of tokens a buyer can buy from this contract
@@ -87,8 +101,8 @@ contract ContinuousFundraising is ERC2771Context, Ownable2Step, Pausable, Reentr
      * @param _currency currency used to pay for the token mint. Must be ERC20, so ether can only be used as wrapped ether (WETH)
      * @param _token token to be sold
      */
-    constructor(
-        address _trustedForwarder,
+    function initialize(
+        address _owner,
         address _currencyReceiver,
         uint256 _minAmountPerBuyer,
         uint256 _maxAmountPerBuyer,
@@ -96,7 +110,11 @@ contract ContinuousFundraising is ERC2771Context, Ownable2Step, Pausable, Reentr
         uint256 _maxAmountOfTokenToBeSold,
         IERC20 _currency,
         Token _token
-    ) ERC2771Context(_trustedForwarder) {
+    ) external initializer {
+        require(_owner != address(0), "owner can not be zero address");
+        __Ownable2Step_init(); // sets msgSender() as owner
+        _transferOwnership(_owner); // sets owner as owner
+
         currencyReceiver = _currencyReceiver;
         minAmountPerBuyer = _minAmountPerBuyer;
         maxAmountPerBuyer = _maxAmountPerBuyer;
@@ -104,7 +122,6 @@ contract ContinuousFundraising is ERC2771Context, Ownable2Step, Pausable, Reentr
         maxAmountOfTokenToBeSold = _maxAmountOfTokenToBeSold;
         currency = _currency;
         token = _token;
-        require(_trustedForwarder != address(0), "trustedForwarder can not be zero address");
         require(_currencyReceiver != address(0), "currencyReceiver can not be zero address");
         require(address(_currency) != address(0), "currency can not be zero address");
         require(address(_token) != address(0), "token can not be zero address");
@@ -225,14 +242,14 @@ contract ContinuousFundraising is ERC2771Context, Ownable2Step, Pausable, Reentr
     /**
      * @dev both Ownable and ERC2771Context have a _msgSender() function, so we need to override and select which one to use.
      */
-    function _msgSender() internal view override(Context, ERC2771Context) returns (address) {
-        return ERC2771Context._msgSender();
+    function _msgSender() internal view override(ContextUpgradeable, ERC2771ContextUpgradeable) returns (address) {
+        return ERC2771ContextUpgradeable._msgSender();
     }
 
     /**
      * @dev both Ownable and ERC2771Context have a _msgData() function, so we need to override and select which one to use.
      */
-    function _msgData() internal view override(Context, ERC2771Context) returns (bytes calldata) {
-        return ERC2771Context._msgData();
+    function _msgData() internal view override(ContextUpgradeable, ERC2771ContextUpgradeable) returns (bytes calldata) {
+        return ERC2771ContextUpgradeable._msgData();
     }
 }
