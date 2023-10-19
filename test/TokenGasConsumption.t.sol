@@ -40,6 +40,7 @@ contract tokenTest is Test {
         allowList.set(pauser, requirements);
         allowList.set(transferer, requirements);
         allowList.set(tokenHolder, requirements);
+        allowList.set(admin, requirements);
 
         vm.stopPrank();
 
@@ -70,6 +71,8 @@ contract tokenTest is Test {
         token.mint(tokenHolder, 100);
         vm.prank(minter);
         token.mint(pauser, 100);
+        vm.prank(pauser);
+        token.approve(admin, 100); // for transferFrom test case
 
         assertTrue(token.balanceOf(tokenHolder) == 100, "tokenHolder balance is wrong");
         assertTrue(token.balanceOf(pauser) == 100, "pauser balance is wrong");
@@ -78,6 +81,34 @@ contract tokenTest is Test {
     function testSimpleTransfer() public {
         vm.prank(pauser);
         token.transfer(transferer, 100);
+    }
+
+    function test10Transfers() public {
+        vm.startPrank(pauser);
+        token.transfer(transferer, 10);
+        token.transfer(transferer, 12);
+        token.transfer(transferer, 13);
+        token.transfer(transferer, 14);
+        token.transfer(transferer, 15);
+        vm.stopPrank();
+
+        vm.startPrank(transferer);
+        token.transfer(pauser, 10);
+        token.transfer(pauser, 12);
+        token.transfer(pauser, 13);
+        token.transfer(pauser, 14);
+        token.transfer(pauser, 15);
+        vm.stopPrank();
+    }
+
+    function testGrantAllowance() public {
+        vm.prank(pauser);
+        token.approve(transferer, 100);
+    }
+
+    function testSimpleTransferFrom() public {
+        vm.prank(admin);
+        token.transferFrom(pauser, admin, 100);
     }
 
     function testFailTransfer() public {
