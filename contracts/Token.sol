@@ -144,6 +144,7 @@ contract Token is
         requirements = _requirements;
 
         __ERC20Permit_init(_name);
+        // __ERC20Snapshot_init(); this function is empty, so there is no point in calling it. We did not forget to check though.
         __ERC20_init(_name, _symbol);
     }
 
