@@ -19,7 +19,9 @@ contract ContinuousFundraisingTest is Test {
     ContinuousFundraisingCloneFactory factory;
     ContinuousFundraising raise;
     AllowList list;
-    IFeeSettingsV1 feeSettings;
+    IFeeSettingsV2 feeSettings;
+
+    address wrongFeeReceiver = address(5);
 
     TokenCloneFactory tokenCloneFactory;
     Token token;
@@ -48,7 +50,7 @@ contract ContinuousFundraisingTest is Test {
     function setUp() public {
         list = new AllowList();
         Fees memory fees = Fees(100, 100, 100, 100);
-        feeSettings = new FeeSettings(fees, admin);
+        feeSettings = new FeeSettings(fees, wrongFeeReceiver, admin, wrongFeeReceiver);
 
         // create token
         address tokenLogicContract = address(new Token(trustedForwarder));
@@ -316,7 +318,7 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(buyer);
         vm.expectEmit(true, true, true, true, address(raise));
         emit TokensBought(buyer, tokenBuyAmount, costInPaymentToken);
-        raise.buy(tokenBuyAmount, buyer); // this test fails if 5 * 10**18 is replaced with 5 * 10**token.decimals() for this argument, even though they should be equal
+        raise.buy(tokenBuyAmount, buyer);
         assertTrue(paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore - costInPaymentToken, "buyer has paid");
         assertTrue(token.balanceOf(buyer) == tokenBuyAmount, "buyer has tokens");
         assertTrue(
@@ -325,12 +327,12 @@ contract ContinuousFundraisingTest is Test {
             "receiver has payment tokens"
         );
         assertTrue(
-            paymentToken.balanceOf(token.feeSettings().feeCollector()) ==
+            paymentToken.balanceOf(token.feeSettings().continuousFundraisingFeeCollector()) ==
                 localFeeSettings.continuousFundraisingFee(costInPaymentToken),
             "fee collector has collected fee in payment tokens"
         );
         assertTrue(
-            token.balanceOf(token.feeSettings().feeCollector()) == localFeeSettings.tokenFee(tokenBuyAmount),
+            token.balanceOf(token.feeSettings().tokenFeeCollector()) == localFeeSettings.tokenFee(tokenBuyAmount),
             "fee collector has collected fee in tokens"
         );
         assertTrue(raise.tokensSold() == tokenBuyAmount, "raise has sold tokens");
@@ -546,9 +548,14 @@ contract ContinuousFundraisingTest is Test {
             "receiver received payment tokens"
         );
         assertEq(
-            token.balanceOf(token.feeSettings().feeCollector()),
+            token.balanceOf(token.feeSettings().tokenFeeCollector()),
             tokenFee,
-            "fee collector has collected fee in tokens"
+            "fee collector has not collected fee in tokens"
+        );
+        assertEq(
+            paymentToken.balanceOf(token.feeSettings().continuousFundraisingFeeCollector()),
+            paymentTokenFee,
+            "fee collector has not collected fee in payment tokens"
         );
         assertTrue(raise.tokensSold() == (minAmountPerBuyer * 3) / 2, "raise has sold tokens");
         assertTrue(raise.tokensBought(buyer) == raise.tokensSold(), "raise has sold tokens to buyer");

@@ -79,10 +79,10 @@ contract PersonalInvite {
         // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
         uint256 currencyAmount = Math.ceilDiv(_tokenAmount * _tokenPrice, 10 ** _token.decimals());
 
-        IFeeSettingsV1 feeSettings = _token.feeSettings();
+        IFeeSettingsV2 feeSettings = _token.feeSettings();
         uint256 fee = feeSettings.personalInviteFee(currencyAmount);
         if (fee != 0) {
-            _currency.safeTransferFrom(_currencyPayer, feeSettings.feeCollector(), fee);
+            _currency.safeTransferFrom(_currencyPayer, feeSettings.personalInviteFeeCollector(), fee);
         }
         _currency.safeTransferFrom(_currencyPayer, _currencyReceiver, (currencyAmount - fee));
 

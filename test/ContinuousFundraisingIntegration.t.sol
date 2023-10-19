@@ -41,7 +41,7 @@ contract ContinuousFundraisingTest is Test {
         list = new AllowList();
         Fees memory fees = Fees(100, 100, 100, 100);
         vm.prank(platformAdmin);
-        feeSettings = new FeeSettings(fees, platformAdmin);
+        feeSettings = new FeeSettings(fees, platformAdmin, platformAdmin, platformAdmin);
         vm.prank(platformAdmin);
         token = Token(
             tokenFactory.createTokenClone(

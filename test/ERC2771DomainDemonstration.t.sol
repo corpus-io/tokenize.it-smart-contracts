@@ -76,7 +76,7 @@ contract TokenERC2771Test is Test {
             0
         );
         vm.prank(platformAdmin);
-        feeSettings = new FeeSettings(fees, feeCollector);
+        feeSettings = new FeeSettings(fees, feeCollector, feeCollector, feeCollector);
 
         Token implementation = new Token(address(forwarder));
         factory = new TokenCloneFactory(address(implementation));

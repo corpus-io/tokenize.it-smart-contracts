@@ -62,7 +62,7 @@ contract MainnetCurrencies is Test {
     function setUp() public {
         list = new AllowList();
         Fees memory fees = Fees(100, 100, 100, 0);
-        feeSettings = new FeeSettings(fees, admin);
+        feeSettings = new FeeSettings(fees, admin, admin, admin);
 
         Token implementation = new Token(trustedForwarder);
         TokenCloneFactory tokenCloneFactory = new TokenCloneFactory(address(implementation));
@@ -243,7 +243,7 @@ contract MainnetCurrencies is Test {
             "receiver should have received currency"
         );
         assertEq(
-            _currency.balanceOf(token.feeSettings().feeCollector()),
+            _currency.balanceOf(token.feeSettings().continuousFundraisingFeeCollector()),
             token.feeSettings().continuousFundraisingFee(currencyCost),
             "fee receiver should have received currency"
         );

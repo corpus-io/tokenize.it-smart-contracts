@@ -102,7 +102,7 @@ contract CompanySetUpTest is Test {
         // set up FeeSettings
         Fees memory fees = Fees(tokenFeeDenominator, paymentTokenFeeDenominator, paymentTokenFeeDenominator, 0);
         vm.prank(platformAdmin);
-        feeSettings = new FeeSettings(fees, platformFeeCollector);
+        feeSettings = new FeeSettings(fees, platformFeeCollector, platformFeeCollector, platformFeeCollector);
 
         // set up AllowList
         vm.prank(platformAdmin);

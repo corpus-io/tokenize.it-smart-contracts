@@ -10,15 +10,26 @@ import "./interfaces/IFeeSettings.sol";
  * @author malteish, cjentzsch
  * @notice The FeeSettings contract is used to manage fees paid to the tokenize.it platfom
  */
-contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV1 {
+contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
+    uint128 public constant MIN_TOKEN_FEE_DENOMINATOR = 20;
+    uint128 public constant MIN_CONTINUOUS_FUNDRAISING_FEE_DENOMINATOR = 10;
+    uint128 public constant MIN_PERSONAL_INVITE_FEE_DENOMINATOR = 20;
+
     /// Denominator to calculate fees paid in Token.sol. UINT256_MAX means no fees.
     uint256 public tokenFeeDenominator;
+    /// address the token fees have to be paid to
+    address public tokenFeeCollector;
+
     /// Denominator to calculate fees paid in ContinuousFundraising.sol. UINT256_MAX means no fees.
     uint256 public continuousFundraisingFeeDenominator;
+    /// address the continuous fundraising fees have to be paid to
+    address public continuousFundraisingFeeCollector;
+
     /// Denominator to calculate fees paid in PersonalInvite.sol. UINT256_MAX means no fees.
     uint256 public personalInviteFeeDenominator;
-    /// address the fees have to be paid to
-    address public feeCollector;
+    /// address the personal invite fees have to be paid to
+    address public personalInviteFeeCollector;
+
     /// new fee settings that can be activated (after a delay in case of fee increase)
     Fees public proposedFees;
 
@@ -38,7 +49,11 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV1 {
      * @notice The fee collector has been changed to `newFeeCollector`
      * @param newFeeCollector The new fee collector
      */
-    event FeeCollectorChanged(address indexed newFeeCollector);
+    event FeeCollectorsChanged(
+        address indexed newFeeCollector,
+        address indexed newContinuousFundraisingFeeCollector,
+        address indexed newPersonalInviteFeeCollector
+    );
 
     /**
      * @notice A fee change has been proposed
@@ -49,15 +64,26 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV1 {
     /**
      * @notice Initializes the contract with the given fee denominators and fee collector
      * @param _fees The initial fee denominators
-     * @param _feeCollector The initial fee collector
+     * @param _tokenFeeCollector The initial fee collector
+     * @param _continuousFundraisingFeeCollector The initial continuous fundraising fee collector
+     * @param _personalInviteFeeCollector The initial personal invite fee collector
      */
-    constructor(Fees memory _fees, address _feeCollector) {
+    constructor(
+        Fees memory _fees,
+        address _tokenFeeCollector,
+        address _continuousFundraisingFeeCollector,
+        address _personalInviteFeeCollector
+    ) {
         checkFeeLimits(_fees);
         tokenFeeDenominator = _fees.tokenFeeDenominator;
         continuousFundraisingFeeDenominator = _fees.continuousFundraisingFeeDenominator;
         personalInviteFeeDenominator = _fees.personalInviteFeeDenominator;
-        require(_feeCollector != address(0), "Fee collector cannot be 0x0");
-        feeCollector = _feeCollector;
+        require(_tokenFeeCollector != address(0), "Fee collector cannot be 0x0");
+        tokenFeeCollector = _tokenFeeCollector;
+        require(_continuousFundraisingFeeCollector != address(0), "Fee collector cannot be 0x0");
+        continuousFundraisingFeeCollector = _continuousFundraisingFeeCollector;
+        require(_personalInviteFeeCollector != address(0), "Fee collector cannot be 0x0");
+        personalInviteFeeCollector = _personalInviteFeeCollector;
     }
 
     /**
@@ -94,12 +120,20 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV1 {
 
     /**
      * @notice Sets a new fee collector
-     * @param _feeCollector The new fee collector
+     * @param _tokenFeeCollector The new fee collector
      */
-    function setFeeCollector(address _feeCollector) external onlyOwner {
-        require(_feeCollector != address(0), "Fee collector cannot be 0x0");
-        feeCollector = _feeCollector;
-        emit FeeCollectorChanged(_feeCollector);
+    function setFeeCollectors(
+        address _tokenFeeCollector,
+        address _continuousFundraisingFeeCollector,
+        address _personalOfferFeeCollector
+    ) external onlyOwner {
+        require(_tokenFeeCollector != address(0), "Fee collector cannot be 0x0");
+        tokenFeeCollector = _tokenFeeCollector;
+        require(_continuousFundraisingFeeCollector != address(0), "Fee collector cannot be 0x0");
+        continuousFundraisingFeeCollector = _continuousFundraisingFeeCollector;
+        require(_personalOfferFeeCollector != address(0), "Fee collector cannot be 0x0");
+        personalInviteFeeCollector = _personalOfferFeeCollector;
+        emit FeeCollectorsChanged(_tokenFeeCollector, _continuousFundraisingFeeCollector, _personalOfferFeeCollector);
     }
 
     /**
@@ -107,19 +141,25 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV1 {
      * @param _fees The fees to check
      */
     function checkFeeLimits(Fees memory _fees) internal pure {
-        require(_fees.tokenFeeDenominator >= 20, "Fee must be equal or less 5% (denominator must be >= 20)");
         require(
-            _fees.continuousFundraisingFeeDenominator >= 20,
+            _fees.tokenFeeDenominator >= MIN_TOKEN_FEE_DENOMINATOR,
             "Fee must be equal or less 5% (denominator must be >= 20)"
         );
-        require(_fees.personalInviteFeeDenominator >= 20, "Fee must be equal or less 5% (denominator must be >= 20)");
+        require(
+            _fees.continuousFundraisingFeeDenominator >= MIN_CONTINUOUS_FUNDRAISING_FEE_DENOMINATOR,
+            "ContinuousFundraising fee must be equal or less 10% (denominator must be >= 10)"
+        );
+        require(
+            _fees.personalInviteFeeDenominator >= MIN_PERSONAL_INVITE_FEE_DENOMINATOR,
+            "Fee must be equal or less 5% (denominator must be >= 20)"
+        );
     }
 
     /**
      * @notice Returns the fee for a given token amount
      * @dev will wrongly return 1 if denominator and amount are both uint256 max
      */
-    function tokenFee(uint256 _tokenAmount) external view returns (uint256) {
+    function tokenFee(uint256 _tokenAmount) external view override(IFeeSettingsV1, IFeeSettingsV2) returns (uint256) {
         return _tokenAmount / tokenFeeDenominator;
     }
 
@@ -129,7 +169,9 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV1 {
      * @param _currencyAmount The amount of currency to calculate the fee for
      * @return The fee
      */
-    function continuousFundraisingFee(uint256 _currencyAmount) external view returns (uint256) {
+    function continuousFundraisingFee(
+        uint256 _currencyAmount
+    ) external view override(IFeeSettingsV1, IFeeSettingsV2) returns (uint256) {
         return _currencyAmount / continuousFundraisingFeeDenominator;
     }
 
@@ -139,7 +181,9 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV1 {
      * @param _currencyAmount The amount of currency to calculate the fee for
      * @return The fee
      */
-    function personalInviteFee(uint256 _currencyAmount) external view returns (uint256) {
+    function personalInviteFee(
+        uint256 _currencyAmount
+    ) external view override(IFeeSettingsV1, IFeeSettingsV2) returns (uint256) {
         return _currencyAmount / personalInviteFeeDenominator;
     }
 
@@ -147,7 +191,7 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV1 {
      * @dev Specify where the implementation of owner() is located
      * @return The owner of the contract
      */
-    function owner() public view override(Ownable, IFeeSettingsV1) returns (address) {
+    function owner() public view override(Ownable, IFeeSettingsV1, IFeeSettingsV2) returns (address) {
         return Ownable.owner();
     }
 
@@ -156,9 +200,21 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV1 {
      * @dev See https://eips.ethereum.org/EIPS/eip-165
      * @return `true` for supported interfaces, otherwise `false`
      */
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, IFeeSettingsV1) returns (bool) {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(ERC165, IFeeSettingsV1, IFeeSettingsV2) returns (bool) {
         return
-            interfaceId == type(IFeeSettingsV1).interfaceId || // we implement IFeeSettingsV1
+            interfaceId == type(IFeeSettingsV1).interfaceId || // we implement IFeeSettingsV1 for backwards compatibility
+            interfaceId == type(IFeeSettingsV2).interfaceId || // we implement IFeeSettingsV2
             ERC165.supportsInterface(interfaceId); // default implementation that enables further querying
+    }
+
+    /**
+     * @notice Returns the token fee collector
+     * @dev this is a compatibility function for IFeeSettingsV1. It enables older token contracts to use the new fee settings contract.
+     * @return The token fee collector
+     */
+    function feeCollector() external view override(IFeeSettingsV1) returns (address) {
+        return tokenFeeCollector;
     }
 }
