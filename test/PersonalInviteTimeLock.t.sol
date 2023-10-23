@@ -187,7 +187,7 @@ contract PrivateOfferTimeLockTest is Test {
         // make sure addresses match
         assertEq(address(timeLock), expectedTimeLockAddress, "timeLock address is not correct");
 
-        // deploy personal invite
+        // deploy private offer
         address inviteAddress = privateOfferFactory.deploy(
             salt,
             currencyPayer,

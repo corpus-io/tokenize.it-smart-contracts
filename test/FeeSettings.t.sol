@@ -50,7 +50,7 @@ contract FeeSettingsTest is Test {
             vm.expectRevert("PublicFundraising fee must be equal or less 10% (denominator must be >= 10)");
             new FeeSettings(_fees, admin, admin, admin);
         } else {
-            // this should not revert, as the fee is in valid range for continuous fundraising
+            // this should not revert, as the fee is in valid range for public fundraising
             new FeeSettings(_fees, admin, admin, admin);
         }
 
@@ -377,7 +377,7 @@ contract FeeSettingsTest is Test {
         assertEq(
             _feeSettings.privateOfferFee(amount),
             amount / privateOfferFeeDenominator,
-            "Personal invite fee mismatch"
+            "Private offer fee mismatch"
         );
     }
 
@@ -406,10 +406,10 @@ contract FeeSettingsTest is Test {
         assertEq(
             _feeSettings.privateOfferFee(amount),
             amount / privateOfferFeeDenominator,
-            "Personal invite fee mismatch"
+            "Private offer fee mismatch"
         );
 
-        // only continuous fundraising fee is 0
+        // only public fundraising fee is 0
 
         _fees = Fees(tokenFeeDenominator, UINT256_MAX, privateOfferFeeDenominator, 0);
         _feeSettings = new FeeSettings(_fees, admin, admin, admin);
@@ -419,10 +419,10 @@ contract FeeSettingsTest is Test {
         assertEq(
             _feeSettings.privateOfferFee(amount),
             amount / privateOfferFeeDenominator,
-            "Personal invite fee mismatch"
+            "Private offer fee mismatch"
         );
 
-        // only personal invite fee is 0
+        // only private offer fee is 0
 
         _fees = Fees(tokenFeeDenominator, publicFundraisingFeeDenominator, UINT256_MAX, 0);
         _feeSettings = new FeeSettings(_fees, admin, admin, admin);
@@ -433,7 +433,7 @@ contract FeeSettingsTest is Test {
             amount / publicFundraisingFeeDenominator,
             "Investment fee mismatch"
         );
-        assertEq(_feeSettings.privateOfferFee(amount), 0, "Personal invite fee mismatch");
+        assertEq(_feeSettings.privateOfferFee(amount), 0, "Private offer fee mismatch");
     }
 
     function testERC165IsAvailable() public {
@@ -510,10 +510,10 @@ contract FeeSettingsTest is Test {
         assertEq(
             _feeSettings.privateOfferFee(amount),
             amount / privateOfferFeeDenominator,
-            "Personal invite fee mismatch"
+            "Private offer fee mismatch"
         );
 
-        // only continuous fundraising fee is 0
+        // only public fundraising fee is 0
 
         _fees = Fees(tokenFeeDenominator, UINT256_MAX, privateOfferFeeDenominator, 0);
         _feeSettings = new FeeSettings(_fees, admin, admin, admin);
@@ -523,10 +523,10 @@ contract FeeSettingsTest is Test {
         assertEq(
             _feeSettings.privateOfferFee(amount),
             amount / privateOfferFeeDenominator,
-            "Personal invite fee mismatch"
+            "Private offer fee mismatch"
         );
 
-        // only personal invite fee is 0
+        // only private offer fee is 0
 
         _fees = Fees(tokenFeeDenominator, publicFundraisingFeeDenominator, UINT256_MAX, 0);
         _feeSettings = new FeeSettings(_fees, admin, admin, admin);
@@ -537,6 +537,6 @@ contract FeeSettingsTest is Test {
             amount / publicFundraisingFeeDenominator,
             "Investment fee mismatch"
         );
-        assertEq(_feeSettings.privateOfferFee(amount), 1, "Personal invite fee mismatch");
+        assertEq(_feeSettings.privateOfferFee(amount), 1, "Private offer fee mismatch");
     }
 }

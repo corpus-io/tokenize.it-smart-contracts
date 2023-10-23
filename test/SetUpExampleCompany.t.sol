@@ -371,7 +371,7 @@ contract CompanySetUpTest is Test {
 
         /*
          After setting up their company, the company founder wants to invite a friend to invest.
-         They will use a Personal Invite to do so. The process is as follows:
+         They will use a Private Offer to do so. The process is as follows:
          - The company founder decides on:
             a) the amount of tokens to offer
             b) the price per token
@@ -380,13 +380,13 @@ contract CompanySetUpTest is Test {
             e) the currency
          - They also need the address of the friend they want to invite. Knowing the current state of the web app,
             we assume they don't know this address yet. So, using the web app and the values they just decided on, the
-            founder creates a personal invite link and sends it to the investor.
+            founder creates a private offer link and sends it to the investor.
          - The investor clicks the link and opens the web app. There, they have to do a minimal onboarding, during
             which they sign in with their wallet. Using this address, the web app can now check calculate the personal
             invite smart contract's future address. 
         */
 
-        salt = "random number"; // random number generated and stored by the platform for this Personal Invite
+        salt = "random number"; // random number generated and stored by the platform for this Private Offer
 
         privateOfferAddress = privateOfferFactory.getAddress(
             salt,
@@ -400,7 +400,7 @@ contract CompanySetUpTest is Test {
             IERC20(address(token))
         );
 
-        // If the investor wants to invest, they have to sign a meta transaction granting the personal invite address an sufficient allowance in paymentToken.
+        // If the investor wants to invest, they have to sign a meta transaction granting the private offer address an sufficient allowance in paymentToken.
         // Let's prepare this meta transaction using EIP-2612 approval (ERC-20 permit)
 
         // https://soliditydeveloper.com/erc20-permit
@@ -448,7 +448,7 @@ contract CompanySetUpTest is Test {
         assertTrue(paymentToken.allowance(investor, privateOfferAddress) == costInPaymentToken);
         /*
 
-            Next, the founder has to grant a minting allowance to the personal invite address. This is done by signing a meta transaction and sending it to the platform.
+            Next, the founder has to grant a minting allowance to the private offer address. This is done by signing a meta transaction and sending it to the platform.
         */
 
         // build the message the company admin will sign.
@@ -509,15 +509,15 @@ contract CompanySetUpTest is Test {
         console.log("Forwarder address: ", address(forwarder));
         console.log("allowance set to: ", token.mintingAllowance(privateOfferAddress));
 
-        // check the personal invite contract address has a mintingAllowance now
+        // check the private offer contract address has a mintingAllowance now
         assertTrue(
             token.mintingAllowance(privateOfferAddress) == tokenBuyAmount,
-            "Personal invite address has wrong minting allowance"
+            "Private offer address has wrong minting allowance"
         );
 
         /* 
-            The founder has now granted the personal invite address a minting allowance. The investor has granted a payment token allowance to the personal invite address.
-            This means we can deploy the personal invite contract and be done with it!
+            The founder has now granted the private offer address a minting allowance. The investor has granted a payment token allowance to the private offer address.
+            This means we can deploy the private offer contract and be done with it!
         */
 
         // investor has no tokens before

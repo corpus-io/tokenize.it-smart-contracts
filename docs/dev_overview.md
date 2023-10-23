@@ -29,7 +29,7 @@ Remember that extra tokens will be minted to cover [fees](fees.md), and fees wil
 
 There are 2 investment contracts:
 
-### 1. Personal invite (PrivateOffer.sol)
+### 1. Private offer (PrivateOffer.sol)
 
 This is a personal investment invite allowing a particular investor (represented by their ethereum address) to buy newly issued tokens at a fixed price. The contract is deployed using CREATE2, and the investment is executed during deployment. [Read this](./using_the_contracts.md#personal-invites) for more information.
 

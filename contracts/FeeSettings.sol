@@ -22,12 +22,12 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
 
     /// Denominator to calculate fees paid in PublicFundraising.sol. UINT256_MAX means no fees.
     uint256 public publicFundraisingFeeDenominator;
-    /// address the continuous fundraising fees have to be paid to
+    /// address the public fundraising fees have to be paid to
     address public publicFundraisingFeeCollector;
 
     /// Denominator to calculate fees paid in PrivateOffer.sol. UINT256_MAX means no fees.
     uint256 public privateOfferFeeDenominator;
-    /// address the personal invite fees have to be paid to
+    /// address the private offer fees have to be paid to
     address public privateOfferFeeCollector;
 
     /// new fee settings that can be activated (after a delay in case of fee increase)
@@ -65,8 +65,8 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      * @notice Initializes the contract with the given fee denominators and fee collector
      * @param _fees The initial fee denominators
      * @param _tokenFeeCollector The initial fee collector
-     * @param _publicFundraisingFeeCollector The initial continuous fundraising fee collector
-     * @param _privateOfferFeeCollector The initial personal invite fee collector
+     * @param _publicFundraisingFeeCollector The initial public fundraising fee collector
+     * @param _privateOfferFeeCollector The initial private offer fee collector
      */
     constructor(
         Fees memory _fees,

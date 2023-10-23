@@ -59,7 +59,7 @@ These will be used for the next steps.
 
 # Investments
 
-## Personal Invites
+## Private Offers
 
 In order to create a personal investment invite this [contract](../contracts/PrivateOffer.sol) needs to be used.
 
@@ -95,16 +95,16 @@ The investment is executed during deployment of the contract. Therefore, three s
 - The future contract address needs to be given minting right in the company token contract by calling `increaseMintingAllowance` from an address which has the role of the Minter Admin. In that call, an allowance needs to be given which matches or exceeds the `_amount` of tokens. This step signals the offering company's invitation.
 - The investor needs to give a a sufficient allowance in the currency contract to the future address of the contract. This step signals the investors commitment to the offer.
 
-Once these steps have been completed, the Personal Invite contract can be deployed by anyone (either of the two parties or a third party) with [CREATE2](https://docs.openzeppelin.com/cli/2.8/deploying-with-create2), through the Personal Invite Factory's deploy() function.
+Once these steps have been completed, the Private Offer contract can be deployed by anyone (either of the two parties or a third party) with [CREATE2](https://docs.openzeppelin.com/cli/2.8/deploying-with-create2), through the Private Offer Factory's deploy() function.
 
-## Personal Invite Factory
+## Private Offer Factory
 
 This [contract](../contracts/PrivateOfferFactory.sol) can be used to:
 
 1. Calculate the future address of a PrivateOffer
 2. Deploy the PrivateOffer to this address
 
-## Continuous Fundraising / Starting on open round
+## Public Fundraising / Starting on open round
 
 Deploy the [contract](../contracts/PublicFundraising.sol)
 

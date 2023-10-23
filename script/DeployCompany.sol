@@ -66,8 +66,8 @@ contract DeployCompany is Script {
         // fundraising.transferOwnership(companyAdmin);
         // console.log("Fundraising ownership transferred to: ", companyAdmin);
 
-        // // manual deployment of personal invite for verification
-        // //  calculate personal invite address
+        // // manual deployment of private offer for verification
+        // //  calculate private offer address
         // //uint256 nextNonce = vm.getNonce(deployerAddress) - 3;
         // address nextContract = address(
         //     uint160(

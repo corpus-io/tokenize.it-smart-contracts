@@ -225,7 +225,7 @@ contract TokenERC2771Test is Test {
         );
 
         /*
-         * update settings on continuous fundraising
+         * update settings on public fundraising
          */
 
         // build request
