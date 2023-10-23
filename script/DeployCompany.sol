@@ -7,10 +7,10 @@ import "../lib/forge-std/src/Script.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../contracts/FeeSettings.sol";
 import "../contracts/AllowList.sol";
-import "../contracts/PersonalInviteFactory.sol";
+import "../contracts/PrivateOfferFactory.sol";
 import "../contracts/Token.sol";
 import "../contracts/PublicFundraising.sol";
-import "../contracts/PersonalInvite.sol";
+import "../contracts/PrivateOffer.sol";
 
 contract DeployCompany is Script {
     function setUp() public {}
@@ -85,7 +85,7 @@ contract DeployCompany is Script {
         // );
         // console.log("Next contract address: ", nextContract);
 
-        // PersonalInvite personalInvite = new PersonalInvite(
+        // PrivateOffer privateOffer = new PrivateOffer(
         //     investor,
         //     investor,
         //     companyAdmin,
@@ -96,7 +96,7 @@ contract DeployCompany is Script {
         //     token
         // );
 
-        // console.log("PersonalInvite deployed at: ", address(personalInvite));
+        // console.log("PrivateOffer deployed at: ", address(privateOffer));
 
         vm.stopBroadcast();
     }

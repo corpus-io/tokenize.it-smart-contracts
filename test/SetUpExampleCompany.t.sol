@@ -5,7 +5,7 @@ import "../lib/forge-std/src/Test.sol";
 import "../contracts/TokenCloneFactory.sol";
 import "../contracts/PublicFundraisingCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
-import "../contracts/PersonalInviteFactory.sol";
+import "../contracts/PrivateOfferFactory.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/ERC2771Helper.sol";
 import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific version to avoid import error: yarn add @opengsn/contracts@2.2.5
@@ -22,7 +22,7 @@ contract CompanySetUpTest is Test {
     PublicFundraising raise;
     AllowList list;
     FeeSettings feeSettings;
-    PersonalInviteFactory personalInviteFactory;
+    PrivateOfferFactory privateOfferFactory;
     TokenCloneFactory tokenFactory;
     Token token;
     FakePaymentToken paymentToken;
@@ -92,7 +92,7 @@ contract CompanySetUpTest is Test {
     EIP2612Data eip2612Data;
     uint256 deadline;
     bytes32 salt;
-    address personalInviteAddress;
+    address privateOfferAddress;
 
     function setUp() public {
         // derive addresses from the private keys. Irl the addresses would be provided by the wallet that holds their private keys.
@@ -108,8 +108,8 @@ contract CompanySetUpTest is Test {
         vm.prank(platformAdmin);
         list = new AllowList();
 
-        // set up PersonalInviteFactory
-        personalInviteFactory = new PersonalInviteFactory();
+        // set up PrivateOfferFactory
+        privateOfferFactory = new PrivateOfferFactory();
 
         // investor registers with the platform
         // after kyc, the platform adds the investor to the allowlist with all the properties they were able to proof
@@ -358,7 +358,7 @@ contract CompanySetUpTest is Test {
         assertTrue(paymentToken.balanceOf(companyCurrencyReceiver) > 0, "Company currency not received");
     }
 
-    function launchCompanyAndInvestViaPersonalInvite(Forwarder forwarder) public {
+    function launchCompanyAndInvestViaPrivateOffer(Forwarder forwarder) public {
         // platform deploys the token contract for the founder
         deployToken(forwarder);
 
@@ -388,7 +388,7 @@ contract CompanySetUpTest is Test {
 
         salt = "random number"; // random number generated and stored by the platform for this Personal Invite
 
-        personalInviteAddress = personalInviteFactory.getAddress(
+        privateOfferAddress = privateOfferFactory.getAddress(
             salt,
             investor,
             investorColdWallet,
@@ -408,7 +408,7 @@ contract CompanySetUpTest is Test {
             abi.encode(
                 keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"),
                 investor,
-                personalInviteAddress,
+                privateOfferAddress,
                 costInPaymentToken,
                 paymentToken.nonces(investor),
                 block.timestamp + 1 hours
@@ -439,13 +439,13 @@ contract CompanySetUpTest is Test {
         */
 
         // check allowance is 0 before permit
-        assertTrue(paymentToken.allowance(investor, personalInviteAddress) == 0);
+        assertTrue(paymentToken.allowance(investor, privateOfferAddress) == 0);
 
         vm.prank(platformHotWallet);
-        paymentToken.permit(investor, personalInviteAddress, costInPaymentToken, block.timestamp + 1 hours, v, r, s);
+        paymentToken.permit(investor, privateOfferAddress, costInPaymentToken, block.timestamp + 1 hours, v, r, s);
 
         // check allowance is set after permit
-        assertTrue(paymentToken.allowance(investor, personalInviteAddress) == costInPaymentToken);
+        assertTrue(paymentToken.allowance(investor, privateOfferAddress) == costInPaymentToken);
         /*
 
             Next, the founder has to grant a minting allowance to the personal invite address. This is done by signing a meta transaction and sending it to the platform.
@@ -455,7 +455,7 @@ contract CompanySetUpTest is Test {
         // build request
         bytes memory payload = abi.encodeWithSelector(
             token.increaseMintingAllowance.selector,
-            personalInviteAddress,
+            privateOfferAddress,
             tokenBuyAmount
         );
 
@@ -488,8 +488,8 @@ contract CompanySetUpTest is Test {
 
         console.log("signing address: ", request.from);
 
-        // check the personalInviteAddress has no allowance yet
-        assertTrue(token.mintingAllowance(personalInviteAddress) == 0);
+        // check the privateOfferAddress has no allowance yet
+        assertTrue(token.mintingAllowance(privateOfferAddress) == 0);
         // If the platform has received the signature, it can now execute the meta transaction.
         vm.prank(platformHotWallet);
         forwarder.execute(
@@ -507,11 +507,11 @@ contract CompanySetUpTest is Test {
         delete signature;
 
         console.log("Forwarder address: ", address(forwarder));
-        console.log("allowance set to: ", token.mintingAllowance(personalInviteAddress));
+        console.log("allowance set to: ", token.mintingAllowance(privateOfferAddress));
 
         // check the personal invite contract address has a mintingAllowance now
         assertTrue(
-            token.mintingAllowance(personalInviteAddress) == tokenBuyAmount,
+            token.mintingAllowance(privateOfferAddress) == tokenBuyAmount,
             "Personal invite address has wrong minting allowance"
         );
 
@@ -529,7 +529,7 @@ contract CompanySetUpTest is Test {
         assertEq(paymentToken.balanceOf(companyCurrencyReceiver), 0);
 
         vm.prank(platformHotWallet);
-        personalInviteFactory.deploy(
+        privateOfferFactory.deploy(
             salt,
             investor,
             investorColdWallet,
@@ -559,12 +559,12 @@ contract CompanySetUpTest is Test {
         launchCompanyAndInvestViaContinousFundraising(Forwarder(payable(0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA)));
     }
 
-    function testlaunchCompanyAndInvestViaPersonalInviteWithLocalForwarder() public {
-        launchCompanyAndInvestViaPersonalInvite(new Forwarder());
+    function testlaunchCompanyAndInvestViaPrivateOfferWithLocalForwarder() public {
+        launchCompanyAndInvestViaPrivateOffer(new Forwarder());
     }
 
-    function testlaunchCompanyAndInvestViaPersonalInviteWithMainnetGSNForwarder() public {
+    function testlaunchCompanyAndInvestViaPrivateOfferWithMainnetGSNForwarder() public {
         // uses deployed forwarder on mainnet with fork. https://docs-v2.opengsn.org/networks/ethereum/mainnet.html
-        launchCompanyAndInvestViaPersonalInvite(Forwarder(payable(0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA)));
+        launchCompanyAndInvestViaPrivateOffer(Forwarder(payable(0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA)));
     }
 }

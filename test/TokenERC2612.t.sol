@@ -49,7 +49,7 @@ contract TokenERC2612Test is Test {
 
     uint256 public constant tokenFeeDenominator = UINT256_MAX;
     uint256 public constant publicFundraisingFeeDenominator = 50;
-    uint256 public constant personalInviteFeeDenominator = 70;
+    uint256 public constant privateOfferFeeDenominator = 70;
 
     uint256 public constant tokenMintAmount = UINT256_MAX - 1; // -1 to avoid overflow caused by fee mint
     bytes32 domainSeparator;
@@ -64,7 +64,7 @@ contract TokenERC2612Test is Test {
         allowList = new AllowList();
 
         // deploy fee settings
-        Fees memory fees = Fees(tokenFeeDenominator, publicFundraisingFeeDenominator, personalInviteFeeDenominator, 0);
+        Fees memory fees = Fees(tokenFeeDenominator, publicFundraisingFeeDenominator, privateOfferFeeDenominator, 0);
         vm.prank(platformAdmin);
         feeSettings = new FeeSettings(fees, feeCollector, feeCollector, feeCollector);
 

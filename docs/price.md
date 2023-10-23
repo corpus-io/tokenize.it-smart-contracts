@@ -1,6 +1,6 @@
 # Price
 
-The price definition used in PersonalInvite.sol and PublicFundraising.sol is not very intuitive. Therefore, it is explained here for reference whenever needed.
+The price definition used in PrivateOffer.sol and PublicFundraising.sol is not very intuitive. Therefore, it is explained here for reference whenever needed.
 
 ## Terms used
 

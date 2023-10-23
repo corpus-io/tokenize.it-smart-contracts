@@ -3,12 +3,12 @@ pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/TokenCloneFactory.sol";
-import "../contracts/PersonalInvite.sol";
-import "../contracts/PersonalInviteFactory.sol";
+import "../contracts/PrivateOffer.sol";
+import "../contracts/PrivateOfferFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 
-contract PersonalInviteTest is Test {
+contract PrivateOfferTest is Test {
     event Deal(
         address indexed currencyPayer,
         address indexed tokenReceiver,
@@ -18,7 +18,7 @@ contract PersonalInviteTest is Test {
         Token indexed token
     );
 
-    PersonalInviteFactory factory;
+    PrivateOfferFactory factory;
 
     AllowList list;
     FeeSettings feeSettings;
@@ -43,7 +43,7 @@ contract PersonalInviteTest is Test {
     uint256 requirements = 92785934;
 
     function setUp() public {
-        factory = new PersonalInviteFactory();
+        factory = new PrivateOfferFactory();
         list = new AllowList();
 
         list.set(tokenReceiver, requirements);
@@ -74,7 +74,7 @@ contract PersonalInviteTest is Test {
         //uint rawSalt = 0;
         bytes32 salt = bytes32(rawSalt);
 
-        //bytes memory creationCode = type(PersonalInvite).creationCode;
+        //bytes memory creationCode = type(PrivateOffer).creationCode;
         uint256 amount = 20000000000000;
         uint256 expiration = block.timestamp + 1000;
 
@@ -109,9 +109,9 @@ contract PersonalInviteTest is Test {
         assertEq(currency.balanceOf(currencyReceiver), 0);
         assertEq(token.balanceOf(tokenReceiver), 0);
         assertEq(
-            currency.balanceOf(FeeSettings(address(token.feeSettings())).personalInviteFeeCollector()),
+            currency.balanceOf(FeeSettings(address(token.feeSettings())).privateOfferFeeCollector()),
             0,
-            "personalInviteFeeCollector currency balance is not correct"
+            "privateOfferFeeCollector currency balance is not correct"
         );
         assertEq(
             token.balanceOf(FeeSettings(address(token.feeSettings())).tokenFeeCollector()),
@@ -157,13 +157,13 @@ contract PersonalInviteTest is Test {
 
         assertEq(
             currency.balanceOf(currencyReceiver),
-            currencyAmount - FeeSettings(address(token.feeSettings())).personalInviteFee(currencyAmount)
+            currencyAmount - FeeSettings(address(token.feeSettings())).privateOfferFee(currencyAmount)
         );
 
         assertEq(
-            currency.balanceOf(FeeSettings(address(token.feeSettings())).personalInviteFeeCollector()),
+            currency.balanceOf(FeeSettings(address(token.feeSettings())).privateOfferFeeCollector()),
             feeCollectorCurrencyBalanceBefore +
-                FeeSettings(address(token.feeSettings())).personalInviteFee(currencyAmount),
+                FeeSettings(address(token.feeSettings())).privateOfferFee(currencyAmount),
             "feeCollector currency balance is not correct"
         );
 
@@ -184,7 +184,7 @@ contract PersonalInviteTest is Test {
         //uint rawSalt = 0;
         bytes32 salt = bytes32(uint256(8));
 
-        //bytes memory creationCode = type(PersonalInvite).creationCode;
+        //bytes memory creationCode = type(PrivateOffer).creationCode;
         uint256 expiration = block.timestamp + 1000;
 
         address expectedAddress = factory.getAddress(
@@ -322,7 +322,7 @@ contract PersonalInviteTest is Test {
         //uint rawSalt = 0;
         bytes32 salt = bytes32(uint256(8));
 
-        //bytes memory creationCode = type(PersonalInvite).creationCode;
+        //bytes memory creationCode = type(PrivateOffer).creationCode;
         uint256 expiration = block.timestamp + 1000;
 
         address expectedAddress = factory.getAddress(
@@ -378,7 +378,7 @@ contract PersonalInviteTest is Test {
         //uint rawSalt = 0;
         bytes32 salt = bytes32(rawSalt);
 
-        //bytes memory creationCode = type(PersonalInvite).creationCode;
+        //bytes memory creationCode = type(PrivateOffer).creationCode;
         uint256 tokenAmount = 20000000000000;
         uint256 expiration = block.timestamp + 1000;
         uint256 tokenDecimals = token.decimals();
@@ -412,9 +412,9 @@ contract PersonalInviteTest is Test {
         assertEq(currency.balanceOf(tokenReceiver), 0);
         assertEq(token.balanceOf(tokenReceiver), 0);
         assertEq(
-            currency.balanceOf(token.feeSettings().personalInviteFeeCollector()),
+            currency.balanceOf(token.feeSettings().privateOfferFeeCollector()),
             0,
-            "personalInviteFeeCollector currency balance is not correct"
+            "privateOfferFeeCollector currency balance is not correct"
         );
         assertEq(
             token.balanceOf(token.feeSettings().tokenFeeCollector()),
@@ -448,12 +448,12 @@ contract PersonalInviteTest is Test {
 
         assertEq(
             currency.balanceOf(currencyReceiver),
-            currencyAmount - token.feeSettings().personalInviteFee(currencyAmount)
+            currencyAmount - token.feeSettings().privateOfferFee(currencyAmount)
         );
 
         assertEq(
-            currency.balanceOf(token.feeSettings().personalInviteFeeCollector()),
-            token.feeSettings().personalInviteFee(currencyAmount),
+            currency.balanceOf(token.feeSettings().privateOfferFeeCollector()),
+            token.feeSettings().privateOfferFee(currencyAmount),
             "feeCollector currency balance is not correct"
         );
 

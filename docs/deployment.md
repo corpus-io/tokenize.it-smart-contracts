@@ -6,7 +6,7 @@ The platform-related contracts are:
 
 - AllowList.sol
 - FeeSettings.sol
-- PersonalInviteFactory.sol
+- PrivateOfferFactory.sol
 
 Currently, there is no need for them to be deployed automatically. Instead, deployment can be done with foundry. For some background, review the [foundry book's chapter on deployments](https://book.getfoundry.sh/forge/deploying).
 
@@ -25,7 +25,7 @@ Note:
 - generally, contracts with simple constructor arguments can also be deployed without script:
   ```bash
   forge create --rpc-url $GOERLI_RPC_URL --private-key $PRIVATE_KEY --verify --etherscan-api-key=$ETHERSCAN_API_KEY contracts/AllowList.sol:AllowList
-  forge create --rpc-url $GOERLI_RPC_URL --private-key $PRIVATE_KEY --verify --etherscan-api-key=$ETHERSCAN_API_KEY contracts/PersonalInviteFactory.sol:PersonalInviteFactory
+  forge create --rpc-url $GOERLI_RPC_URL --private-key $PRIVATE_KEY --verify --etherscan-api-key=$ETHERSCAN_API_KEY contracts/PrivateOfferFactory.sol:PrivateOfferFactory
   forge create --rpc-url $GOERLI_RPC_URL --private-key $PRIVATE_KEY --verify --etherscan-api-key=$ETHERSCAN_API_KEY contracts/VestingWalletFactory.sol:VestingWalletFactory
   ```
 
@@ -37,7 +37,7 @@ The company-related contracts are:
 
 - Token.sol
 - ContinuousInvestment.sol
-- PersonalInvite.sol
+- PrivateOffer.sol
 
 They are deployed through the web app.
 

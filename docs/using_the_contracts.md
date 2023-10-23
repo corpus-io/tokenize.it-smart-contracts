@@ -6,7 +6,7 @@ Tokenize.it has already deployed:
 
 1. [allowList](../contracts/AllowList.sol)
 2. [feeSettings](../contracts/FeeSettings.sol)
-3. [PersonalInviteFactory](../contracts/PersonalInviteFactory.sol)
+3. [PrivateOfferFactory](../contracts/PrivateOfferFactory.sol)
 
 These will be used for the next steps.
 
@@ -61,7 +61,7 @@ These will be used for the next steps.
 
 ## Personal Invites
 
-In order to create a personal investment invite this [contract](../contracts/PersonalInvite.sol) needs to be used.
+In order to create a personal investment invite this [contract](../contracts/PrivateOffer.sol) needs to be used.
 
 Constructor:
 
@@ -99,10 +99,10 @@ Once these steps have been completed, the Personal Invite contract can be deploy
 
 ## Personal Invite Factory
 
-This [contract](../contracts/PersonalInviteFactory.sol) can be used to:
+This [contract](../contracts/PrivateOfferFactory.sol) can be used to:
 
-1. Calculate the future address of a PersonalInvite
-2. Deploy the PersonalInvite to this address
+1. Calculate the future address of a PrivateOffer
+2. Deploy the PrivateOffer to this address
 
 ## Continuous Fundraising / Starting on open round
 

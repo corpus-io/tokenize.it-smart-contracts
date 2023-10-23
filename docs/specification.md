@@ -42,17 +42,17 @@ The following statements about the smart contracts should always be true
 
 - TokenFeeDenominator must always be greater equal 20.
 - PublicFundraisingFeeDenominator must always be greater equal 20.
-- PersonalInviteFeeDenominator must always be greater equal 20.
+- PrivateOfferFeeDenominator must always be greater equal 20.
 - The feeCollector can never be 0.
-- Only owner can change feeCollector, tokenFeeDenominator, publicFundraisingFeeDenominator and personalInviteFeeDenominator.
-- Changes to tokenFeeDenominator, publicFundraisingFeeDenominator and or personalInviteFeeDenominator take at least 12 weeks, if at least one of the denominators decreases (e.g. if a fee increases).
-- Setting tokenFeeDenominator, PublicFundraisingFeeDenominator and PersonalInviteFeeDenominator to UINT256_MAX is possible without delay.
-- Increasing tokenFeeDenominator, PublicFundraisingFeeDenominator or PersonalInviteFeeDenominator is possible without delay.
+- Only owner can change feeCollector, tokenFeeDenominator, publicFundraisingFeeDenominator and privateOfferFeeDenominator.
+- Changes to tokenFeeDenominator, publicFundraisingFeeDenominator and or privateOfferFeeDenominator take at least 12 weeks, if at least one of the denominators decreases (e.g. if a fee increases).
+- Setting tokenFeeDenominator, PublicFundraisingFeeDenominator and PrivateOfferFeeDenominator to UINT256_MAX is possible without delay.
+- Increasing tokenFeeDenominator, PublicFundraisingFeeDenominator or PrivateOfferFeeDenominator is possible without delay.
 - Fees for amounts less than UINT256_MAX will be 0 when the denominator is set to UINT256_MAX.
 - The Fee for an amount of UINT256_MAX will always at least 1 bit. (This is accepted behavior to reduce gas.)
 - Charging a fee higher than 5% is not possible.
 
-## PersonalInvite.sol
+## PrivateOffer.sol
 
 - If the buyer has not granted the invite a sufficient allowance in currency, the deploy operation reverts.
 - The deal can only be paid for in currency.
@@ -70,12 +70,12 @@ The following statements about the smart contracts should always be true
 - No settings can be updated.
 - No settings can be changed before deployment without the contract address changing.
 
-## PersonalInviteFactory.sol
+## PrivateOfferFactory.sol
 
 - Contract state cannot be changed.
 - Given equal inputs, getAddress() and deploy() return the same address.
 - Given equal inputs, getAddress() returns the same address regardless of msg.sender.
-- Deploy() returns the address the PersonalInvite contract was deployed to.
+- Deploy() returns the address the PrivateOffer contract was deployed to.
 
 ## PublicFundraising.sol
 

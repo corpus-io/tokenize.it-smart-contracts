@@ -13,7 +13,7 @@ Tokenize.it will collect fees from it's users. There are 2 types of users and 2 
   1.  currencies (WETH, WBTC, USDC, EUROC)
   2.  tokens of companies
 
-Fees are collected during investments and token minting, but from founders only. They are paid both in the investment currency (-> see publicFundraisingFeeDenominator and personalInviteFeeDenominator in [FeeSettings.sol](../contracts/FeeSettings.sol)) and the token minted (-> see tokenFeeDenominator in [FeeSettings.sol](../contracts/FeeSettings.sol)).
+Fees are collected during investments and token minting, but from founders only. They are paid both in the investment currency (-> see publicFundraisingFeeDenominator and privateOfferFeeDenominator in [FeeSettings.sol](../contracts/FeeSettings.sol)) and the token minted (-> see tokenFeeDenominator in [FeeSettings.sol](../contracts/FeeSettings.sol)).
 
 **Example**:
 Investor buys X tokens for Y USDC through the PublicFundraising contract.
@@ -34,7 +34,7 @@ The minimum fee is 0.
 Maximum fees are:
 
 - 5% of tokens minted
-- 5% of currency paid when using PersonalInvite
+- 5% of currency paid when using PrivateOffer
 - 10% of currency paid when using PublicFundraising
 
 ## Fee collectors
@@ -58,11 +58,11 @@ Tokenize.it will deploy and manage at least one [fee settings contract](../contr
 - fee calculation:
   - `tokenFee(uint256 tokenBuyAmount)`
   - `publicFundraisingFee(uint256 paymentAmount)`
-  - `personalInviteFee(uint256 paymentAmount)`
+  - `privateOfferFee(uint256 paymentAmount)`
 - feeCollector addresses
   - `tokenFeeCollector()`
   - `publicFundraisingFeeCollector()`
-  - `personalInviteFeeCollector()`
+  - `privateOfferFeeCollector()`
 
 These values can be changed by tokenize.it. Fee changes are subject to a delay of at least 12 weeks.
 
@@ -80,6 +80,6 @@ fee = amount / feeDenominator
 
 ### Investment contracts
 
-- The investment contracts [PersonalInvite](../contracts/PersonalInvite.sol) and [PublicFundraising](../contracts/PublicFundraising.sol) both access the fee setting through the token contracts they are connected to.
+- The investment contracts [PrivateOffer](../contracts/PrivateOffer.sol) and [PublicFundraising](../contracts/PublicFundraising.sol) both access the fee setting through the token contracts they are connected to.
 - PublicFundraising: When Y currency is paid, the fee is Y/publicFundraisingFeeDenominator. This fee is DEDUCTED from the Y currency paid and transferred to the feeCollector.
-- PersonalInvite: When Y currency is paid, the fee is Y/personalInviteFeeDenominator. This fee is DEDUCTED from the Y currency paid and transferred to the feeCollector.
+- PrivateOffer: When Y currency is paid, the fee is Y/privateOfferFeeDenominator. This fee is DEDUCTED from the Y currency paid and transferred to the feeCollector.

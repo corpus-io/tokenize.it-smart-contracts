@@ -43,7 +43,7 @@ More dev information can be found here:
 
 1. All shares of a company are tokenized using the [Token.sol](contracts/Token.sol) contract
 2. Funds are raised through selling of these tokens:
-   - a customized deal to a specific investor can be realized through the [PersonalInvite.sol](contracts/archive/PersonalInvite.sol) contract
+   - a customized deal to a specific investor can be realized through the [PrivateOffer.sol](contracts/archive/PrivateOffer.sol) contract
    - continuous fundraising, which is open to everyone meeting the requirements, is done through the [PublicFundraising.sol](contracts/PublicFundraising.sol) contract
 3. Employee participation is easy:
    - direct distribution of tokens (does not need another smart contract)

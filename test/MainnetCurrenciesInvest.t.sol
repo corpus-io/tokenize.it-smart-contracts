@@ -6,8 +6,8 @@ import "../lib/forge-std/src/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../contracts/TokenCloneFactory.sol";
 import "../contracts/PublicFundraisingCloneFactory.sol";
-import "../contracts/PersonalInvite.sol";
-import "../contracts/PersonalInviteFactory.sol";
+import "../contracts/PrivateOffer.sol";
+import "../contracts/PrivateOfferFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/ERC20Helper.sol";
 
@@ -24,7 +24,7 @@ contract MainnetCurrencies is Test {
     FeeSettings feeSettings;
 
     Token token;
-    PersonalInviteFactory inviteFactory;
+    PrivateOfferFactory inviteFactory;
 
     PublicFundraisingCloneFactory fundraisingFactory;
 
@@ -72,7 +72,7 @@ contract MainnetCurrencies is Test {
 
         fundraisingFactory = new PublicFundraisingCloneFactory(address(new PublicFundraising(trustedForwarder)));
 
-        inviteFactory = new PersonalInviteFactory();
+        inviteFactory = new PrivateOfferFactory();
         currencyCost = (amountOfTokenToBuy * price) / 10 ** token.decimals();
         currencyAmount = currencyCost * 2;
     }
@@ -184,8 +184,8 @@ contract MainnetCurrencies is Test {
         publicFundraisingWithIERC20Currency(DAI);
     }
 
-    function personalInviteWithIERC20Currency(IERC20 _currency) public {
-        //bytes memory creationCode = type(PersonalInvite).creationCode;
+    function privateOfferWithIERC20Currency(IERC20 _currency) public {
+        //bytes memory creationCode = type(PrivateOffer).creationCode;
         uint256 expiration = block.timestamp + 1000;
 
         address expectedAddress = inviteFactory.getAddress(
@@ -254,23 +254,23 @@ contract MainnetCurrencies is Test {
         console.log("buyer's token balance: ", token.balanceOf(buyer));
     }
 
-    function testPersonalInviteWithMainnetUSDC() public {
-        personalInviteWithIERC20Currency(USDC);
+    function testPrivateOfferWithMainnetUSDC() public {
+        privateOfferWithIERC20Currency(USDC);
     }
 
-    function testPersonalInviteWithMainnetWETH() public {
-        personalInviteWithIERC20Currency(WETH);
+    function testPrivateOfferWithMainnetWETH() public {
+        privateOfferWithIERC20Currency(WETH);
     }
 
-    function testPersonalInviteWithMainnetWBTC() public {
-        personalInviteWithIERC20Currency(WBTC);
+    function testPrivateOfferWithMainnetWBTC() public {
+        privateOfferWithIERC20Currency(WBTC);
     }
 
-    function testPersonalInviteWithMainnetEUROC() public {
-        personalInviteWithIERC20Currency(EUROC);
+    function testPrivateOfferWithMainnetEUROC() public {
+        privateOfferWithIERC20Currency(EUROC);
     }
 
-    function testPersonalInviteWithMainnetDAI() public {
-        personalInviteWithIERC20Currency(DAI);
+    function testPrivateOfferWithMainnetDAI() public {
+        privateOfferWithIERC20Currency(DAI);
     }
 }

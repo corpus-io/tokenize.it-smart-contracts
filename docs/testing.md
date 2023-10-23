@@ -29,7 +29,7 @@ It appears forge makes some mistakes when calculating coverage.
 
 ### Constructors
 
-Constructor coverage is not included in the reports. This is particularly sad because PersonalInvite has a constructor ONLY, and no other code. There are plenty tests that cover correct execution, even though it is not mentioned in the report.
+Constructor coverage is not included in the reports. This is particularly sad because PrivateOffer has a constructor ONLY, and no other code. There are plenty tests that cover correct execution, even though it is not mentioned in the report.
 
 ### Allegedly uncovered branches
 
