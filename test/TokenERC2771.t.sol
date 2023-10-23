@@ -47,7 +47,7 @@ contract TokenERC2771Test is Test {
     address public constant feeCollector = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
 
     uint256 public constant tokenFeeDenominator = 100;
-    uint256 public constant publicOfferFeeDenominator = 50;
+    uint256 public constant publicFundraisingFeeDenominator = 50;
     uint256 public constant personalInviteFeeDenominator = 70;
 
     bytes32 domainSeparator;
@@ -62,7 +62,7 @@ contract TokenERC2771Test is Test {
         allowList = new AllowList();
 
         // deploy fee settings
-        Fees memory fees = Fees(tokenFeeDenominator, publicOfferFeeDenominator, personalInviteFeeDenominator, 0);
+        Fees memory fees = Fees(tokenFeeDenominator, publicFundraisingFeeDenominator, personalInviteFeeDenominator, 0);
         vm.prank(platformAdmin);
         feeSettings = new FeeSettings(fees, feeCollector, feeCollector, feeCollector);
 

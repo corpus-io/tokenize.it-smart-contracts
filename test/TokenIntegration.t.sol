@@ -113,7 +113,7 @@ contract tokenTest is Test {
         Fees memory fees = Fees(UINT256_MAX, UINT256_MAX, UINT256_MAX, 0);
         FeeSettings newFeeSettings = new FeeSettings(fees, newCollector, newCollector, newCollector);
         FeeSettings oldFeeSettings = FeeSettings(address(token.feeSettings()));
-        uint oldInvestmentFeeDenominator = oldFeeSettings.publicOfferFeeDenominator();
+        uint oldInvestmentFeeDenominator = oldFeeSettings.publicFundraisingFeeDenominator();
         uint oldTokenFeeDenominator = oldFeeSettings.tokenFeeDenominator();
         vm.expectEmit(true, true, true, true, address(token));
         emit NewFeeSettingsSuggested(newFeeSettings);
@@ -127,7 +127,7 @@ contract tokenTest is Test {
         );
         assertTrue(token.suggestedFeeSettings() == newFeeSettings, "suggested fee settings not set!");
         assertTrue(
-            FeeSettings(address(token.feeSettings())).publicOfferFeeDenominator() == oldInvestmentFeeDenominator,
+            FeeSettings(address(token.feeSettings())).publicFundraisingFeeDenominator() == oldInvestmentFeeDenominator,
             "investment fee denominator changed!"
         );
         assertTrue(
@@ -141,7 +141,7 @@ contract tokenTest is Test {
         Fees memory fees = Fees(UINT256_MAX, UINT256_MAX, UINT256_MAX, 0);
         FeeSettings newFeeSettings = new FeeSettings(fees, newCollector, newCollector, newCollector);
         FeeSettings oldFeeSettings = FeeSettings(address(token.feeSettings()));
-        uint oldInvestmentFeeDenominator = oldFeeSettings.publicOfferFeeDenominator();
+        uint oldInvestmentFeeDenominator = oldFeeSettings.publicFundraisingFeeDenominator();
         uint oldTokenFeeDenominator = oldFeeSettings.tokenFeeDenominator();
         vm.prank(feeSettings.owner());
         token.suggestNewFeeSettings(newFeeSettings);
@@ -154,7 +154,7 @@ contract tokenTest is Test {
         assertTrue(FeeSettings(address(token.feeSettings())) == newFeeSettings, "fee settings not changed!");
         assertEq(FeeSettings(address(token.feeSettings())).feeCollector(), newCollector, "Wrong feeCollector");
         assertTrue(
-            FeeSettings(address(token.feeSettings())).publicOfferFeeDenominator() != oldInvestmentFeeDenominator,
+            FeeSettings(address(token.feeSettings())).publicFundraisingFeeDenominator() != oldInvestmentFeeDenominator,
             "investment fee denominator changed!"
         );
         assertTrue(

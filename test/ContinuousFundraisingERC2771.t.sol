@@ -3,17 +3,17 @@ pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/TokenCloneFactory.sol";
-import "../contracts/PublicOfferCloneFactory.sol";
+import "../contracts/PublicFundraisingCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/ERC2771Helper.sol";
 import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific version to avoid import error: yarn add @opengsn/contracts@2.2.5
 
-contract PublicOfferTest is Test {
+contract PublicFundraisingTest is Test {
     using ECDSA for bytes32; // for verify with var.recover()
 
-    PublicOfferCloneFactory fundraisingFactory;
-    PublicOffer raise;
+    PublicFundraisingCloneFactory fundraisingFactory;
+    PublicFundraising raise;
     AllowList list;
     FeeSettings feeSettings;
 
@@ -90,10 +90,10 @@ contract PublicOfferTest is Test {
 
     function buyWithERC2771(Forwarder forwarder) public {
         vm.prank(owner);
-        fundraisingFactory = new PublicOfferCloneFactory(address(new PublicOffer(address(forwarder))));
+        fundraisingFactory = new PublicFundraisingCloneFactory(address(new PublicFundraising(address(forwarder))));
 
-        raise = PublicOffer(
-            fundraisingFactory.createPublicOfferClone(
+        raise = PublicFundraising(
+            fundraisingFactory.createPublicFundraisingClone(
                 0,
                 address(forwarder),
                 address(this),

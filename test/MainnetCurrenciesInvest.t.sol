@@ -5,7 +5,7 @@ import "../lib/forge-std/src/Test.sol";
 //import "../lib/forge-std/stdlib.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../contracts/TokenCloneFactory.sol";
-import "../contracts/PublicOfferCloneFactory.sol";
+import "../contracts/PublicFundraisingCloneFactory.sol";
 import "../contracts/PersonalInvite.sol";
 import "../contracts/PersonalInviteFactory.sol";
 import "../contracts/FeeSettings.sol";
@@ -26,7 +26,7 @@ contract MainnetCurrencies is Test {
     Token token;
     PersonalInviteFactory inviteFactory;
 
-    PublicOfferCloneFactory fundraisingFactory;
+    PublicFundraisingCloneFactory fundraisingFactory;
 
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant buyer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
@@ -70,7 +70,7 @@ contract MainnetCurrencies is Test {
             tokenCloneFactory.createTokenClone(0, trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST")
         );
 
-        fundraisingFactory = new PublicOfferCloneFactory(address(new PublicOffer(trustedForwarder)));
+        fundraisingFactory = new PublicFundraisingCloneFactory(address(new PublicFundraising(trustedForwarder)));
 
         inviteFactory = new PersonalInviteFactory();
         currencyCost = (amountOfTokenToBuy * price) / 10 ** token.decimals();
@@ -93,7 +93,7 @@ contract MainnetCurrencies is Test {
     //         .checked_write(amount);
     // }
 
-    function publicOfferWithIERC20Currency(IERC20 _currency) public {
+    function publicFundraisingWithIERC20Currency(IERC20 _currency) public {
         // some math
         //uint _decimals = _currency.decimals(); // can't get decimals from IERC20
         //uint _price = 7 * 10**_decimals; // 7 payment tokens per token
@@ -102,8 +102,8 @@ contract MainnetCurrencies is Test {
         uint256 _currencyAmount = _currencyCost * 2;
 
         // set up fundraise with _currency
-        PublicOffer _raise = PublicOffer(
-            fundraisingFactory.createPublicOfferClone(
+        PublicFundraising _raise = PublicFundraising(
+            fundraisingFactory.createPublicFundraisingClone(
                 0,
                 trustedForwarder,
                 owner,
@@ -148,40 +148,40 @@ contract MainnetCurrencies is Test {
         assertEq(token.balanceOf(receiver), 0, "receiver has no tokens");
         assertEq(
             _currency.balanceOf(receiver),
-            _currencyCost - _currencyCost / FeeSettings(address(token.feeSettings())).publicOfferFeeDenominator(),
+            _currencyCost - _currencyCost / FeeSettings(address(token.feeSettings())).publicFundraisingFeeDenominator(),
             "receiver should have received currency"
         );
         assertEq(
             _currency.balanceOf(FeeSettings(address(token.feeSettings())).feeCollector()),
-            _currencyCost / FeeSettings(address(token.feeSettings())).publicOfferFeeDenominator(),
+            _currencyCost / FeeSettings(address(token.feeSettings())).publicFundraisingFeeDenominator(),
             "fee receiver should have received currency"
         );
         assertEq(
             token.balanceOf(FeeSettings(address(token.feeSettings())).feeCollector()),
-            amountOfTokenToBuy / FeeSettings(address(token.feeSettings())).publicOfferFeeDenominator(),
+            amountOfTokenToBuy / FeeSettings(address(token.feeSettings())).publicFundraisingFeeDenominator(),
             "fee receiver should have received tokens"
         );
         assertEq(_currency.balanceOf(buyer), _currencyAmount - _currencyCost, "buyer should have paid currency");
     }
 
-    function testPublicOfferWithMainnetUSDC() public {
-        publicOfferWithIERC20Currency(USDC);
+    function testPublicFundraisingWithMainnetUSDC() public {
+        publicFundraisingWithIERC20Currency(USDC);
     }
 
-    function testPublicOfferWithMainnetWETH() public {
-        publicOfferWithIERC20Currency(WETH);
+    function testPublicFundraisingWithMainnetWETH() public {
+        publicFundraisingWithIERC20Currency(WETH);
     }
 
-    function testPublicOfferWithMainnetWBTC() public {
-        publicOfferWithIERC20Currency(WBTC);
+    function testPublicFundraisingWithMainnetWBTC() public {
+        publicFundraisingWithIERC20Currency(WBTC);
     }
 
-    function testPublicOfferWithMainnetEUROC() public {
-        publicOfferWithIERC20Currency(EUROC);
+    function testPublicFundraisingWithMainnetEUROC() public {
+        publicFundraisingWithIERC20Currency(EUROC);
     }
 
-    function testPublicOfferWithMainnetDAI() public {
-        publicOfferWithIERC20Currency(DAI);
+    function testPublicFundraisingWithMainnetDAI() public {
+        publicFundraisingWithIERC20Currency(DAI);
     }
 
     function personalInviteWithIERC20Currency(IERC20 _currency) public {
@@ -235,12 +235,12 @@ contract MainnetCurrencies is Test {
         assertEq(token.balanceOf(receiver), 0, "receiver has no tokens");
         assertEq(
             _currency.balanceOf(receiver),
-            currencyCost - token.feeSettings().publicOfferFee(currencyCost),
+            currencyCost - token.feeSettings().publicFundraisingFee(currencyCost),
             "receiver should have received currency"
         );
         assertEq(
-            _currency.balanceOf(token.feeSettings().publicOfferFeeCollector()),
-            token.feeSettings().publicOfferFee(currencyCost),
+            _currency.balanceOf(token.feeSettings().publicFundraisingFeeCollector()),
+            token.feeSettings().publicFundraisingFee(currencyCost),
             "fee receiver should have received currency"
         );
         assertEq(

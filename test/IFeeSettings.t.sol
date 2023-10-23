@@ -8,7 +8,7 @@ contract IFeeSettingsTest is Test {
     function testManuallyVerifyInterfaceID() public {
         // see https://medium.com/@chiqing/ethereum-standard-erc165-explained-63b54ca0d273
         bytes4 expected = getFunctionSelector("tokenFee(uint256)");
-        expected = expected ^ getFunctionSelector("publicOfferFee(uint256)");
+        expected = expected ^ getFunctionSelector("publicFundraisingFee(uint256)");
         expected = expected ^ getFunctionSelector("personalInviteFee(uint256)");
         expected = expected ^ getFunctionSelector("feeCollector()");
         expected = expected ^ getFunctionSelector("owner()");

@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 interface IFeeSettingsV1 {
     function tokenFee(uint256) external view returns (uint256);
 
-    function publicOfferFee(uint256) external view returns (uint256);
+    function publicFundraisingFee(uint256) external view returns (uint256);
 
     function personalInviteFee(uint256) external view returns (uint256);
 
@@ -22,9 +22,9 @@ interface IFeeSettingsV2 {
 
     function tokenFeeCollector() external view returns (address);
 
-    function publicOfferFee(uint256) external view returns (uint256);
+    function publicFundraisingFee(uint256) external view returns (uint256);
 
-    function publicOfferFeeCollector() external view returns (address);
+    function publicFundraisingFeeCollector() external view returns (address);
 
     function personalInviteFee(uint256) external view returns (uint256);
 
@@ -37,7 +37,7 @@ interface IFeeSettingsV2 {
 
 struct Fees {
     uint256 tokenFeeDenominator;
-    uint256 publicOfferFeeDenominator;
+    uint256 publicFundraisingFeeDenominator;
     uint256 personalInviteFeeDenominator;
     uint256 time;
 }

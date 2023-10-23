@@ -41,13 +41,13 @@ The following statements about the smart contracts should always be true
 ## FeeSettings.sol
 
 - TokenFeeDenominator must always be greater equal 20.
-- PublicOfferFeeDenominator must always be greater equal 20.
+- PublicFundraisingFeeDenominator must always be greater equal 20.
 - PersonalInviteFeeDenominator must always be greater equal 20.
 - The feeCollector can never be 0.
-- Only owner can change feeCollector, tokenFeeDenominator, publicOfferFeeDenominator and personalInviteFeeDenominator.
-- Changes to tokenFeeDenominator, publicOfferFeeDenominator and or personalInviteFeeDenominator take at least 12 weeks, if at least one of the denominators decreases (e.g. if a fee increases).
-- Setting tokenFeeDenominator, PublicOfferFeeDenominator and PersonalInviteFeeDenominator to UINT256_MAX is possible without delay.
-- Increasing tokenFeeDenominator, PublicOfferFeeDenominator or PersonalInviteFeeDenominator is possible without delay.
+- Only owner can change feeCollector, tokenFeeDenominator, publicFundraisingFeeDenominator and personalInviteFeeDenominator.
+- Changes to tokenFeeDenominator, publicFundraisingFeeDenominator and or personalInviteFeeDenominator take at least 12 weeks, if at least one of the denominators decreases (e.g. if a fee increases).
+- Setting tokenFeeDenominator, PublicFundraisingFeeDenominator and PersonalInviteFeeDenominator to UINT256_MAX is possible without delay.
+- Increasing tokenFeeDenominator, PublicFundraisingFeeDenominator or PersonalInviteFeeDenominator is possible without delay.
 - Fees for amounts less than UINT256_MAX will be 0 when the denominator is set to UINT256_MAX.
 - The Fee for an amount of UINT256_MAX will always at least 1 bit. (This is accepted behavior to reduce gas.)
 - Charging a fee higher than 5% is not possible.
@@ -77,10 +77,10 @@ The following statements about the smart contracts should always be true
 - Given equal inputs, getAddress() returns the same address regardless of msg.sender.
 - Deploy() returns the address the PersonalInvite contract was deployed to.
 
-## PublicOffer.sol
+## PublicFundraising.sol
 
 - The buy function can be executed many times.
-- To execute the buy function, the buyer must have granted the publicOffer contract a sufficient allowance in currency.
+- To execute the buy function, the buyer must have granted the publicFundraising contract a sufficient allowance in currency.
 - The buy can only be paid for in currency.
 - During the buy, the fee is deducted from the payment and the remaining payment is immediately transferred to the receiver.
 - During the buy, the fee is immediately transferred to the feeCollector.

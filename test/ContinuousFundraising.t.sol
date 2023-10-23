@@ -4,11 +4,11 @@ pragma solidity ^0.8.13;
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/TokenCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
-import "../contracts/PublicOfferCloneFactory.sol";
+import "../contracts/PublicFundraisingCloneFactory.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
 
-contract PublicOfferTest is Test {
+contract PublicFundraisingTest is Test {
     event CurrencyReceiverChanged(address indexed);
     event MinAmountPerBuyerChanged(uint256);
     event MaxAmountPerBuyerChanged(uint256);
@@ -16,8 +16,8 @@ contract PublicOfferTest is Test {
     event MaxAmountOfTokenToBeSoldChanged(uint256);
     event TokensBought(address indexed buyer, uint256 tokenAmount, uint256 currencyAmount);
 
-    PublicOfferCloneFactory factory;
-    PublicOffer raise;
+    PublicFundraisingCloneFactory factory;
+    PublicFundraising raise;
     AllowList list;
     IFeeSettingsV2 feeSettings;
 
@@ -68,10 +68,10 @@ contract PublicOfferTest is Test {
         assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
 
         vm.prank(owner);
-        factory = new PublicOfferCloneFactory(address(new PublicOffer(trustedForwarder)));
+        factory = new PublicFundraisingCloneFactory(address(new PublicFundraising(trustedForwarder)));
 
-        raise = PublicOffer(
-            factory.createPublicOfferClone(
+        raise = PublicFundraising(
+            factory.createPublicFundraisingClone(
                 0,
                 trustedForwarder,
                 owner,
@@ -99,7 +99,7 @@ contract PublicOfferTest is Test {
     }
 
     function testLogicContractCreation() public {
-        PublicOffer _logic = new PublicOffer(address(1));
+        PublicFundraising _logic = new PublicFundraising(address(1));
 
         console.log("address of logic contract: ", address(_logic));
 
@@ -127,8 +127,8 @@ contract PublicOfferTest is Test {
     }
 
     function testConstructorHappyCase() public {
-        PublicOffer _raise = PublicOffer(
-            factory.createPublicOfferClone(
+        PublicFundraising _raise = PublicFundraising(
+            factory.createPublicFundraisingClone(
                 0,
                 trustedForwarder,
                 address(this),
@@ -151,9 +151,9 @@ contract PublicOfferTest is Test {
     }
 
     function testConstructorWithAddress0() public {
-        vm.expectRevert("PublicOfferCloneFactory: Unexpected trustedForwarder");
-        PublicOffer(
-            factory.createPublicOfferClone(
+        vm.expectRevert("PublicFundraisingCloneFactory: Unexpected trustedForwarder");
+        PublicFundraising(
+            factory.createPublicFundraisingClone(
                 0,
                 address(0),
                 address(this),
@@ -168,7 +168,7 @@ contract PublicOfferTest is Test {
         );
 
         vm.expectRevert("owner can not be zero address");
-        factory.createPublicOfferClone(
+        factory.createPublicFundraisingClone(
             0,
             trustedForwarder,
             address(0),
@@ -182,7 +182,7 @@ contract PublicOfferTest is Test {
         );
 
         vm.expectRevert("currencyReceiver can not be zero address");
-        factory.createPublicOfferClone(
+        factory.createPublicFundraisingClone(
             0,
             trustedForwarder,
             address(this),
@@ -196,7 +196,7 @@ contract PublicOfferTest is Test {
         );
 
         vm.expectRevert("currency can not be zero address");
-        factory.createPublicOfferClone(
+        factory.createPublicFundraisingClone(
             0,
             trustedForwarder,
             address(this),
@@ -210,7 +210,7 @@ contract PublicOfferTest is Test {
         );
 
         vm.expectRevert("token can not be zero address");
-        factory.createPublicOfferClone(
+        factory.createPublicFundraisingClone(
             0,
             trustedForwarder,
             address(this),
@@ -258,8 +258,8 @@ contract PublicOfferTest is Test {
         maliciousPaymentToken = new MaliciousPaymentToken(_paymentTokenAmount);
         vm.prank(owner);
 
-        PublicOffer _raise = PublicOffer(
-            factory.createPublicOfferClone(
+        PublicFundraising _raise = PublicFundraising(
+            factory.createPublicFundraisingClone(
                 0,
                 trustedForwarder,
                 address(this),
@@ -323,12 +323,12 @@ contract PublicOfferTest is Test {
         assertTrue(token.balanceOf(buyer) == tokenBuyAmount, "buyer has tokens");
         assertTrue(
             paymentToken.balanceOf(receiver) ==
-                costInPaymentToken - localFeeSettings.publicOfferFee(costInPaymentToken),
+                costInPaymentToken - localFeeSettings.publicFundraisingFee(costInPaymentToken),
             "receiver has payment tokens"
         );
         assertTrue(
-            paymentToken.balanceOf(token.feeSettings().publicOfferFeeCollector()) ==
-                localFeeSettings.publicOfferFee(costInPaymentToken),
+            paymentToken.balanceOf(token.feeSettings().publicFundraisingFeeCollector()) ==
+                localFeeSettings.publicFundraisingFee(costInPaymentToken),
             "fee collector has collected fee in payment tokens"
         );
         assertTrue(
@@ -542,7 +542,7 @@ contract PublicOfferTest is Test {
             FeeSettings(address(token.feeSettings())).tokenFeeDenominator();
         uint256 paymentTokenFee = (costInPaymentTokenForMinAmount * 3) /
             2 /
-            FeeSettings(address(token.feeSettings())).publicOfferFeeDenominator();
+            FeeSettings(address(token.feeSettings())).publicFundraisingFeeDenominator();
         assertTrue(
             paymentToken.balanceOf(receiver) == (costInPaymentTokenForMinAmount * 3) / 2 - paymentTokenFee,
             "receiver received payment tokens"
@@ -553,7 +553,7 @@ contract PublicOfferTest is Test {
             "fee collector has not collected fee in tokens"
         );
         assertEq(
-            paymentToken.balanceOf(token.feeSettings().publicOfferFeeCollector()),
+            paymentToken.balanceOf(token.feeSettings().publicFundraisingFeeCollector()),
             paymentTokenFee,
             "fee collector has not collected fee in payment tokens"
         );
@@ -1120,8 +1120,8 @@ contract PublicOfferTest is Test {
 
         // create the raise contract
         vm.prank(owner);
-        raise = PublicOffer(
-            factory.createPublicOfferClone(
+        raise = PublicFundraising(
+            factory.createPublicFundraisingClone(
                 0,
                 trustedForwarder,
                 address(this),
@@ -1167,8 +1167,8 @@ contract PublicOfferTest is Test {
 
         // create the raise contract
         vm.prank(owner);
-        raise = PublicOffer(
-            factory.createPublicOfferClone(
+        raise = PublicFundraising(
+            factory.createPublicFundraisingClone(
                 0,
                 trustedForwarder,
                 address(this),

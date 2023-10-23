@@ -1,6 +1,6 @@
 # Price
 
-The price definition used in PersonalInvite.sol and PublicOffer.sol is not very intuitive. Therefore, it is explained here for reference whenever needed.
+The price definition used in PersonalInvite.sol and PublicFundraising.sol is not very intuitive. Therefore, it is explained here for reference whenever needed.
 
 ## Terms used
 
@@ -53,7 +53,7 @@ The error introduced by rounding is less than or equal to one currency bit. For 
   ```
   The unit is omitted, so the price will be 2\*10^8
 - investor wants to buy 150 tokens
-- they call PublicOffer.buy(150 \* 10\*\*18)
+- they call PublicFundraising.buy(150 \* 10\*\*18)
 - so \_amount is 150 \* 10\*\*18
 - 150 \* 10^18 \* 2 \* 10^8 = 300 \* 10^26 = 3 \* 10^28
 - calculate amount due in USDC bits: 3 \* 10^28/10^18 = 3 \* 10^10

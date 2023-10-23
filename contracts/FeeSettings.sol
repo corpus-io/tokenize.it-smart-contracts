@@ -20,10 +20,10 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
     /// address the token fees have to be paid to
     address public tokenFeeCollector;
 
-    /// Denominator to calculate fees paid in PublicOffer.sol. UINT256_MAX means no fees.
-    uint256 public publicOfferFeeDenominator;
+    /// Denominator to calculate fees paid in PublicFundraising.sol. UINT256_MAX means no fees.
+    uint256 public publicFundraisingFeeDenominator;
     /// address the continuous fundraising fees have to be paid to
-    address public publicOfferFeeCollector;
+    address public publicFundraisingFeeCollector;
 
     /// Denominator to calculate fees paid in PersonalInvite.sol. UINT256_MAX means no fees.
     uint256 public personalInviteFeeDenominator;
@@ -34,14 +34,14 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
     Fees public proposedFees;
 
     /**
-     * @notice Fee denominators have been set to the following values: `tokenFeeDenominator`, `publicOfferFeeDenominator`, `personalInviteFeeDenominator`
+     * @notice Fee denominators have been set to the following values: `tokenFeeDenominator`, `publicFundraisingFeeDenominator`, `personalInviteFeeDenominator`
      * @param tokenFeeDenominator Defines the fee paid in Token.sol. UINT256_MAX means no fees.
-     * @param publicOfferFeeDenominator Defines the fee paid in PublicOffer.sol. UINT256_MAX means no fees.
+     * @param publicFundraisingFeeDenominator Defines the fee paid in PublicFundraising.sol. UINT256_MAX means no fees.
      * @param personalInviteFeeDenominator Defines the fee paid in PersonalInvite.sol. UINT256_MAX means no fees.
      */
     event SetFeeDenominators(
         uint256 tokenFeeDenominator,
-        uint256 publicOfferFeeDenominator,
+        uint256 publicFundraisingFeeDenominator,
         uint256 personalInviteFeeDenominator
     );
 
@@ -51,7 +51,7 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      */
     event FeeCollectorsChanged(
         address indexed newFeeCollector,
-        address indexed newPublicOfferFeeCollector,
+        address indexed newPublicFundraisingFeeCollector,
         address indexed newPersonalInviteFeeCollector
     );
 
@@ -65,23 +65,23 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      * @notice Initializes the contract with the given fee denominators and fee collector
      * @param _fees The initial fee denominators
      * @param _tokenFeeCollector The initial fee collector
-     * @param _publicOfferFeeCollector The initial continuous fundraising fee collector
+     * @param _publicFundraisingFeeCollector The initial continuous fundraising fee collector
      * @param _personalInviteFeeCollector The initial personal invite fee collector
      */
     constructor(
         Fees memory _fees,
         address _tokenFeeCollector,
-        address _publicOfferFeeCollector,
+        address _publicFundraisingFeeCollector,
         address _personalInviteFeeCollector
     ) {
         checkFeeLimits(_fees);
         tokenFeeDenominator = _fees.tokenFeeDenominator;
-        publicOfferFeeDenominator = _fees.publicOfferFeeDenominator;
+        publicFundraisingFeeDenominator = _fees.publicFundraisingFeeDenominator;
         personalInviteFeeDenominator = _fees.personalInviteFeeDenominator;
         require(_tokenFeeCollector != address(0), "Fee collector cannot be 0x0");
         tokenFeeCollector = _tokenFeeCollector;
-        require(_publicOfferFeeCollector != address(0), "Fee collector cannot be 0x0");
-        publicOfferFeeCollector = _publicOfferFeeCollector;
+        require(_publicFundraisingFeeCollector != address(0), "Fee collector cannot be 0x0");
+        publicFundraisingFeeCollector = _publicFundraisingFeeCollector;
         require(_personalInviteFeeCollector != address(0), "Fee collector cannot be 0x0");
         personalInviteFeeCollector = _personalInviteFeeCollector;
     }
@@ -97,7 +97,7 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
         // if at least one fee increases, enforce minimum delay
         if (
             _fees.tokenFeeDenominator < tokenFeeDenominator ||
-            _fees.publicOfferFeeDenominator < publicOfferFeeDenominator ||
+            _fees.publicFundraisingFeeDenominator < publicFundraisingFeeDenominator ||
             _fees.personalInviteFeeDenominator < personalInviteFeeDenominator
         ) {
             require(_fees.time > block.timestamp + 12 weeks, "Fee change must be at least 12 weeks in the future");
@@ -112,9 +112,9 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
     function executeFeeChange() external onlyOwner {
         require(block.timestamp >= proposedFees.time, "Fee change must be executed after the change time");
         tokenFeeDenominator = proposedFees.tokenFeeDenominator;
-        publicOfferFeeDenominator = proposedFees.publicOfferFeeDenominator;
+        publicFundraisingFeeDenominator = proposedFees.publicFundraisingFeeDenominator;
         personalInviteFeeDenominator = proposedFees.personalInviteFeeDenominator;
-        emit SetFeeDenominators(tokenFeeDenominator, publicOfferFeeDenominator, personalInviteFeeDenominator);
+        emit SetFeeDenominators(tokenFeeDenominator, publicFundraisingFeeDenominator, personalInviteFeeDenominator);
         delete proposedFees;
     }
 
@@ -124,16 +124,16 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      */
     function setFeeCollectors(
         address _tokenFeeCollector,
-        address _publicOfferFeeCollector,
+        address _publicFundraisingFeeCollector,
         address _personalOfferFeeCollector
     ) external onlyOwner {
         require(_tokenFeeCollector != address(0), "Fee collector cannot be 0x0");
         tokenFeeCollector = _tokenFeeCollector;
-        require(_publicOfferFeeCollector != address(0), "Fee collector cannot be 0x0");
-        publicOfferFeeCollector = _publicOfferFeeCollector;
+        require(_publicFundraisingFeeCollector != address(0), "Fee collector cannot be 0x0");
+        publicFundraisingFeeCollector = _publicFundraisingFeeCollector;
         require(_personalOfferFeeCollector != address(0), "Fee collector cannot be 0x0");
         personalInviteFeeCollector = _personalOfferFeeCollector;
-        emit FeeCollectorsChanged(_tokenFeeCollector, _publicOfferFeeCollector, _personalOfferFeeCollector);
+        emit FeeCollectorsChanged(_tokenFeeCollector, _publicFundraisingFeeCollector, _personalOfferFeeCollector);
     }
 
     /**
@@ -146,8 +146,8 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
             "Fee must be equal or less 5% (denominator must be >= 20)"
         );
         require(
-            _fees.publicOfferFeeDenominator >= MIN_CONTINUOUS_FUNDRAISING_FEE_DENOMINATOR,
-            "PublicOffer fee must be equal or less 10% (denominator must be >= 10)"
+            _fees.publicFundraisingFeeDenominator >= MIN_CONTINUOUS_FUNDRAISING_FEE_DENOMINATOR,
+            "PublicFundraising fee must be equal or less 10% (denominator must be >= 10)"
         );
         require(
             _fees.personalInviteFeeDenominator >= MIN_PERSONAL_INVITE_FEE_DENOMINATOR,
@@ -164,15 +164,15 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
     }
 
     /**
-     * @notice Calculates the fee for a given currency amount in PublicOffer.sol
+     * @notice Calculates the fee for a given currency amount in PublicFundraising.sol
      * @dev will wrongly return 1 if denominator and amount are both uint256 max
      * @param _currencyAmount The amount of currency to calculate the fee for
      * @return The fee
      */
-    function publicOfferFee(
+    function publicFundraisingFee(
         uint256 _currencyAmount
     ) external view override(IFeeSettingsV1, IFeeSettingsV2) returns (uint256) {
-        return _currencyAmount / publicOfferFeeDenominator;
+        return _currencyAmount / publicFundraisingFeeDenominator;
     }
 
     /**
