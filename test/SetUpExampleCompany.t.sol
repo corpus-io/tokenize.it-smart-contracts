@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/TokenCloneFactory.sol";
-import "../contracts/ContinuousFundraisingCloneFactory.sol";
+import "../contracts/PublicOfferCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "../contracts/PersonalInviteFactory.sol";
 import "./resources/FakePaymentToken.sol";
@@ -18,8 +18,8 @@ import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific versi
 contract CompanySetUpTest is Test {
     using ECDSA for bytes32; // for verify with var.recover()
 
-    ContinuousFundraisingCloneFactory fundraisingFactory;
-    ContinuousFundraising raise;
+    PublicOfferCloneFactory fundraisingFactory;
+    PublicOffer raise;
     AllowList list;
     FeeSettings feeSettings;
     PersonalInviteFactory personalInviteFactory;
@@ -188,12 +188,10 @@ contract CompanySetUpTest is Test {
         // after setting up their company, the company admin might want to launch a fundraising campaign. They choose all settings in the web, but the contract
         // will be deployed by the platform.
         vm.prank(platformHotWallet);
-        fundraisingFactory = new ContinuousFundraisingCloneFactory(
-            address(new ContinuousFundraising(address(forwarder)))
-        );
+        fundraisingFactory = new PublicOfferCloneFactory(address(new PublicOffer(address(forwarder))));
 
-        raise = ContinuousFundraising(
-            fundraisingFactory.createContinuousFundraisingClone(
+        raise = PublicOffer(
+            fundraisingFactory.createPublicOfferClone(
                 0,
                 address(forwarder),
                 companyAdmin,
@@ -552,11 +550,11 @@ contract CompanySetUpTest is Test {
         assertTrue(paymentToken.balanceOf(companyAdmin) > 0, "Company currency not received");
     }
 
-    function testlaunchCompanyAndInvestViaContinuousFundraisingWithLocalForwarder() public {
+    function testlaunchCompanyAndInvestViaPublicOfferWithLocalForwarder() public {
         launchCompanyAndInvestViaContinousFundraising(new Forwarder());
     }
 
-    function testlaunchCompanyAndInvestViaContinuousFundraisingWithMainnetGSNForwarder() public {
+    function testlaunchCompanyAndInvestViaPublicOfferWithMainnetGSNForwarder() public {
         // uses deployed forwarder on mainnet with fork. https://docs-v2.opengsn.org/networks/ethereum/mainnet.html
         launchCompanyAndInvestViaContinousFundraising(Forwarder(payable(0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA)));
     }

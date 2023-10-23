@@ -44,7 +44,7 @@ More dev information can be found here:
 1. All shares of a company are tokenized using the [Token.sol](contracts/Token.sol) contract
 2. Funds are raised through selling of these tokens:
    - a customized deal to a specific investor can be realized through the [PersonalInvite.sol](contracts/archive/PersonalInvite.sol) contract
-   - continuous fundraising, which is open to everyone meeting the requirements, is done through the [ContinuousFundraising.sol](contracts/ContinuousFundraising.sol) contract
+   - continuous fundraising, which is open to everyone meeting the requirements, is done through the [PublicOffer.sol](contracts/PublicOffer.sol) contract
 3. Employee participation is easy:
    - direct distribution of tokens (does not need another smart contract)
    - vesting can be realized using the [DssVest.sol](https://github.com/makerdao/dss-vest/blob/master/src/DssVest.sol) contract by MakerDao
@@ -75,7 +75,7 @@ Two contracts implement [EIP-2771](https://eips.ethereum.org/EIPS/eip-2771), and
   - deployed 2022-04-21
   - Visit on [etherscan](https://etherscan.io/address/0xaa3e82b4c4093b4ba13cb5714382c99adbf750ca) ([see transactions here](https://etherscan.io/txsInternal?a=0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA&&m=advanced&p=1))
   - This [dashboard](https://dune.com/oren/meta-transactions-on-ethereum-over-time) lists the forwarder as second most active forwarder contract with over 2000 transactions executed
-  - used in our [tests](./test/ContinuousFundraisingERC2771.t.sol).
+  - used in our [tests](./test/PublicOfferERC2771.t.sol).
 
 The platform will maintain a hot wallet (EOA) in order to send transactions to the forwarder contract. This results in the following flow:
 

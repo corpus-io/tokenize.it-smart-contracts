@@ -33,7 +33,7 @@ Constructor coverage is not included in the reports. This is particularly sad be
 
 ### Allegedly uncovered branches
 
-Forge claims this if statement in ContinuousFundraising.sol and Token.sol has an uncovered branch:
+Forge claims this if statement in PublicOffer.sol and Token.sol has an uncovered branch:
 
 ```solidity
 if (fee != 0) {...}
@@ -43,4 +43,4 @@ Both branches (fee>0 and fee == 0) are covered with explicit tests though.
 
 ### Uncovered lines
 
-The line `return ERC2771Context._msgData();` in ContinuousFundraising.sol and Token.sol is actually not covered by tests. It is not used in the contracts either, but has to be included to specify inheritance.
+The line `return ERC2771Context._msgData();` in PublicOffer.sol and Token.sol is actually not covered by tests. It is not used in the contracts either, but has to be included to specify inheritance.

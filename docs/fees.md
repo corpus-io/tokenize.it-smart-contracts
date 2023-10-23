@@ -13,18 +13,18 @@ Tokenize.it will collect fees from it's users. There are 2 types of users and 2 
   1.  currencies (WETH, WBTC, USDC, EUROC)
   2.  tokens of companies
 
-Fees are collected during investments and token minting, but from founders only. They are paid both in the investment currency (-> see continuousFundraisingFeeDenominator and personalInviteFeeDenominator in [FeeSettings.sol](../contracts/FeeSettings.sol)) and the token minted (-> see tokenFeeDenominator in [FeeSettings.sol](../contracts/FeeSettings.sol)).
+Fees are collected during investments and token minting, but from founders only. They are paid both in the investment currency (-> see publicOfferFeeDenominator and personalInviteFeeDenominator in [FeeSettings.sol](../contracts/FeeSettings.sol)) and the token minted (-> see tokenFeeDenominator in [FeeSettings.sol](../contracts/FeeSettings.sol)).
 
 **Example**:
-Investor buys X tokens for Y USDC through the ContinuousFundraising contract.
+Investor buys X tokens for Y USDC through the PublicOffer contract.
 
 - X tokens are minted to the investor
 - X/tokenFeeDenominator tokens are minted to the feeCollector
 - So the company mints a total of X + X/tokenFeeDenominator tokens in this transaction
 - Investor pays Y USDC
-- Y/continuousFundraisingFeeDenominator USDC goes to the feeCollector
-- So the company receives Y - Y/continuousFundraisingFeeDenominator USDC in this transaction
-- In total, the company minted X + X/tokenFeeDenominator tokens and received Y - Y/continuousFundraisingFeeDenominator USDC. It paid fees both in token and currency.
+- Y/publicOfferFeeDenominator USDC goes to the feeCollector
+- So the company receives Y - Y/publicOfferFeeDenominator USDC in this transaction
+- In total, the company minted X + X/tokenFeeDenominator tokens and received Y - Y/publicOfferFeeDenominator USDC. It paid fees both in token and currency.
 - The investor pays Y USDC for X tokens, like they expected. They did not pay fees.
 
 ### Fee limits
@@ -35,7 +35,7 @@ Maximum fees are:
 
 - 5% of tokens minted
 - 5% of currency paid when using PersonalInvite
-- 10% of currency paid when using ContinuousFundraising
+- 10% of currency paid when using PublicOffer
 
 ## Fee collectors
 
@@ -57,11 +57,11 @@ Tokenize.it will deploy and manage at least one [fee settings contract](../contr
 
 - fee calculation:
   - `tokenFee(uint256 tokenBuyAmount)`
-  - `continuousFundraisingFee(uint256 paymentAmount)`
+  - `publicOfferFee(uint256 paymentAmount)`
   - `personalInviteFee(uint256 paymentAmount)`
 - feeCollector addresses
   - `tokenFeeCollector()`
-  - `continuousFundraisingFeeCollector()`
+  - `publicOfferFeeCollector()`
   - `personalInviteFeeCollector()`
 
 These values can be changed by tokenize.it. Fee changes are subject to a delay of at least 12 weeks.
@@ -80,6 +80,6 @@ fee = amount / feeDenominator
 
 ### Investment contracts
 
-- The investment contracts [PersonalInvite](../contracts/PersonalInvite.sol) and [ContinuousFundraising](../contracts/ContinuousFundraising.sol) both access the fee setting through the token contracts they are connected to.
-- ContinuousFundraising: When Y currency is paid, the fee is Y/continuousFundraisingFeeDenominator. This fee is DEDUCTED from the Y currency paid and transferred to the feeCollector.
+- The investment contracts [PersonalInvite](../contracts/PersonalInvite.sol) and [PublicOffer](../contracts/PublicOffer.sol) both access the fee setting through the token contracts they are connected to.
+- PublicOffer: When Y currency is paid, the fee is Y/publicOfferFeeDenominator. This fee is DEDUCTED from the Y currency paid and transferred to the feeCollector.
 - PersonalInvite: When Y currency is paid, the fee is Y/personalInviteFeeDenominator. This fee is DEDUCTED from the Y currency paid and transferred to the feeCollector.

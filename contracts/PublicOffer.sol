@@ -12,17 +12,17 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./Token.sol";
 
 /**
- * @title ContinuousFundraising
+ * @title PublicOffer
  * @author malteish, cjentzsch
  * @notice This contract represents the offer to buy an amount of tokens at a preset price. It can be used by anyone and there is no limit to the number of times it can be used.
  *      The buyer can decide how many tokens to buy, but has to buy at least minAmount and can buy at most maxAmount.
  *      The currency the offer is denominated in is set at creation time and can be updated later.
  *      The contract can be paused at any time by the owner, which will prevent any new deals from being made. Then, changes to the contract can be made, like changing the currency, price or requirements.
  *      The contract can be unpaused after "delay", which will allow new deals to be made again.
- *      A company will create only one ContinuousFundraising contract for their token (or one for each currency if they want to accept multiple currencies).
+ *      A company will create only one PublicOffer contract for their token (or one for each currency if they want to accept multiple currencies).
  * @dev The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support
  */
-contract ContinuousFundraising is
+contract PublicOffer is
     ERC2771ContextUpgradeable,
     Ownable2StepUpgradeable,
     PausableUpgradeable,
@@ -90,7 +90,7 @@ contract ContinuousFundraising is
     }
 
     /**
-     * @notice Sets up the ContinuousFundraising. The contract is usable immediately after deployment, but does need a minting allowance for the token.
+     * @notice Sets up the PublicOffer. The contract is usable immediately after deployment, but does need a minting allowance for the token.
      * @dev Constructor that passes the trusted forwarder to the ERC2771Context constructor
      * @param _owner Owner of the contract
      * @param _currencyReceiver address that receives the payment (in currency) when tokens are bought
@@ -155,9 +155,9 @@ contract ContinuousFundraising is
         uint256 currencyAmount = Math.ceilDiv(_amount * tokenPrice, 10 ** token.decimals());
 
         IFeeSettingsV2 feeSettings = token.feeSettings();
-        uint256 fee = feeSettings.continuousFundraisingFee(currencyAmount);
+        uint256 fee = feeSettings.publicOfferFee(currencyAmount);
         if (fee != 0) {
-            currency.safeTransferFrom(_msgSender(), feeSettings.continuousFundraisingFeeCollector(), fee);
+            currency.safeTransferFrom(_msgSender(), feeSettings.publicOfferFeeCollector(), fee);
         }
 
         currency.safeTransferFrom(_msgSender(), currencyReceiver, currencyAmount - fee);

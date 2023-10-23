@@ -106,7 +106,7 @@ This [contract](../contracts/PersonalInviteFactory.sol) can be used to:
 
 ## Continuous Fundraising / Starting on open round
 
-Deploy the [contract](../contracts/ContinuousFundraising.sol)
+Deploy the [contract](../contracts/PublicOffer.sol)
 
 Constructor:
 
@@ -141,9 +141,9 @@ The contract needs to be given a minting allowance in the company token contract
 An investor can buy tokens by calling the `buy(uint _amount)` function.
 `_amount` ist the amount of tokens they are buying, in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate).
 
-The investor needs to give a a sufficient allowance in the currency contract to the continuousFundraising contract for the deal to be successful
+The investor needs to give a a sufficient allowance in the currency contract to the publicOffer contract for the deal to be successful
 
-The owner of the ContinuousFundraising contract can pause the contract by calling `pause()`, which stops further buys. When paused, parameters of the fundraising can be changed. Pausing the contract as well as each setting update starts a cool down period of 24 hours. Only after this cool down period has passed can the fundraising be unpaused by calling `unpause()`. This is to ensure an investor can know the conditions that currently apply before investing (e.g. frontrunning in a buy with a price increase is not possible).
+The owner of the PublicOffer contract can pause the contract by calling `pause()`, which stops further buys. When paused, parameters of the fundraising can be changed. Pausing the contract as well as each setting update starts a cool down period of 24 hours. Only after this cool down period has passed can the fundraising be unpaused by calling `unpause()`. This is to ensure an investor can know the conditions that currently apply before investing (e.g. frontrunning in a buy with a price increase is not possible).
 
 # Employee participation with or without vesting
 

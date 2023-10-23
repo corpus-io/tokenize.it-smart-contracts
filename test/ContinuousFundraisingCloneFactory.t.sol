@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/ContinuousFundraisingCloneFactory.sol";
+import "../contracts/PublicOfferCloneFactory.sol";
 import "../contracts/TokenCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/ERC2771Helper.sol";
@@ -13,8 +13,8 @@ contract tokenTest is Test {
     AllowList allowList;
     FeeSettings feeSettings;
     TokenCloneFactory tokenFactory;
-    ContinuousFundraising fundraisingImplementation;
-    ContinuousFundraisingCloneFactory fundraisingFactory;
+    PublicOffer fundraisingImplementation;
+    PublicOfferCloneFactory fundraisingFactory;
     address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant requirer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
@@ -45,8 +45,8 @@ contract tokenTest is Test {
         Token tokenImplementation = new Token(trustedForwarder);
         tokenFactory = new TokenCloneFactory(address(tokenImplementation));
 
-        fundraisingImplementation = new ContinuousFundraising(trustedForwarder);
-        fundraisingFactory = new ContinuousFundraisingCloneFactory(address(fundraisingImplementation));
+        fundraisingImplementation = new PublicOffer(trustedForwarder);
+        fundraisingFactory = new PublicOfferCloneFactory(address(fundraisingImplementation));
     }
 
     function testAddressPrediction(
@@ -72,8 +72,8 @@ contract tokenTest is Test {
         vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
 
         // create new clone factory so we can use the local forwarder
-        fundraisingImplementation = new ContinuousFundraising(_trustedForwarder);
-        fundraisingFactory = new ContinuousFundraisingCloneFactory(address(fundraisingImplementation));
+        fundraisingImplementation = new PublicOffer(_trustedForwarder);
+        fundraisingFactory = new PublicOfferCloneFactory(address(fundraisingImplementation));
 
         bytes32 salt = keccak256(
             abi.encodePacked(
@@ -105,7 +105,7 @@ contract tokenTest is Test {
         );
         assertEq(expected1, expected2, "address prediction with salt and params not equal");
 
-        address actual = fundraisingFactory.createContinuousFundraisingClone(
+        address actual = fundraisingFactory.createPublicOfferClone(
             _rawSalt,
             _trustedForwarder,
             _owner,
@@ -141,7 +141,7 @@ contract tokenTest is Test {
         vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
 
         // deploy once
-        fundraisingFactory.createContinuousFundraisingClone(
+        fundraisingFactory.createPublicOfferClone(
             _rawSalt,
             trustedForwarder,
             _owner,
@@ -156,7 +156,7 @@ contract tokenTest is Test {
 
         // deploy again
         vm.expectRevert("ERC1167: create2 failed");
-        fundraisingFactory.createContinuousFundraisingClone(
+        fundraisingFactory.createPublicOfferClone(
             _rawSalt,
             trustedForwarder,
             _owner,
@@ -193,11 +193,11 @@ contract tokenTest is Test {
         vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
 
         // create new clone factory so we can use the local forwarder
-        fundraisingImplementation = new ContinuousFundraising(_trustedForwarder);
-        fundraisingFactory = new ContinuousFundraisingCloneFactory(address(fundraisingImplementation));
+        fundraisingImplementation = new PublicOffer(_trustedForwarder);
+        fundraisingFactory = new PublicOfferCloneFactory(address(fundraisingImplementation));
 
-        ContinuousFundraising raise = ContinuousFundraising(
-            fundraisingFactory.createContinuousFundraisingClone(
+        PublicOffer raise = PublicOffer(
+            fundraisingFactory.createPublicOfferClone(
                 _rawSalt,
                 _trustedForwarder,
                 _owner,
@@ -230,8 +230,8 @@ contract tokenTest is Test {
         vm.assume(rando != address(0));
         vm.assume(rando != _admin);
 
-        ContinuousFundraising raise = ContinuousFundraising(
-            fundraisingFactory.createContinuousFundraisingClone(
+        PublicOffer raise = PublicOffer(
+            fundraisingFactory.createPublicOfferClone(
                 0,
                 trustedForwarder,
                 _admin,

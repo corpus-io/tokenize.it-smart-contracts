@@ -9,7 +9,7 @@ import "../contracts/FeeSettings.sol";
 import "../contracts/AllowList.sol";
 import "../contracts/PersonalInviteFactory.sol";
 import "../contracts/Token.sol";
-import "../contracts/ContinuousFundraising.sol";
+import "../contracts/PublicOffer.sol";
 import "../contracts/PersonalInvite.sol";
 
 contract DeployCompany is Script {
@@ -51,7 +51,7 @@ contract DeployCompany is Script {
         // Token token = Token(0x6BC442F04C727a19Cc0AF14ec9b2acD3e12651F3);
         // console.log("Token at: ", address(token));
 
-        // ContinuousFundraising fundraising = new ContinuousFundraising(
+        // PublicOffer fundraising = new PublicOffer(
         //     forwarder,
         //     companyAdmin,
         //     0,
