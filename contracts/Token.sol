@@ -255,7 +255,7 @@ contract Token is ERC2771ContextUpgradeable, ERC20PermitUpgradeable, PausableUpg
      *    3. transfers from one address to another. The sender and recipient must be allowed to transact.
      * @dev this hook is executed before the transfer function itself
      */
-    function _beforeTokenTransfer(address _from, address _to, uint256 _amount) internal virtual {
+    function _update(address _from, address _to, uint256 _value) internal virtual override {
         _requireNotPaused();
         if (_from != address(0) && _to != address(0)) {
             // token transfer
