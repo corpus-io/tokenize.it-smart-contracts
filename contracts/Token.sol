@@ -256,6 +256,7 @@ contract Token is ERC2771ContextUpgradeable, ERC20PermitUpgradeable, PausableUpg
      * @dev this hook is executed before the transfer function itself
      */
     function _update(address _from, address _to, uint256 _value) internal virtual override {
+        super._update(_from, _to, _value);
         _requireNotPaused();
         if (_from != address(0) && _to != address(0)) {
             // token transfer
