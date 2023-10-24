@@ -8,6 +8,8 @@ import "../contracts/PrivateOfferFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 
+error Create2FailedDeployment();
+
 contract PrivateOfferTest is Test {
     event Deal(
         address indexed currencyPayer,
@@ -351,7 +353,7 @@ contract PrivateOfferTest is Test {
         currency.approve(expectedAddress, maxCurrencyAmount);
 
         // make sure balances are as expected before deployment
-        vm.expectRevert("Create2: Failed on deploy");
+        vm.expectRevert(Create2FailedDeployment.selector);
         factory.deploy(
             salt,
             currencyPayer,

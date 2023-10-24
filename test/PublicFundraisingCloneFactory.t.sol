@@ -7,8 +7,12 @@ import "../contracts/TokenCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/ERC2771Helper.sol";
 
-contract tokenTest is Test {
+contract publicFundraisingCloneFactoryTest is Test {
     using ECDSA for bytes32;
+
+    error OwnableUnauthorizedAccount(address account);
+    error EnforcedPause();
+    error ERC1167FailedCreateClone();
 
     AllowList allowList;
     FeeSettings feeSettings;
@@ -155,7 +159,7 @@ contract tokenTest is Test {
         );
 
         // deploy again
-        vm.expectRevert("ERC1167: create2 failed");
+        vm.expectRevert(ERC1167FailedCreateClone.selector);
         fundraisingFactory.createPublicFundraisingClone(
             _rawSalt,
             trustedForwarder,
@@ -246,7 +250,7 @@ contract tokenTest is Test {
         );
 
         vm.prank(rando);
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(abi.encodeWithSelector(OwnableUnauthorizedAccount.selector, rando));
         raise.pause();
 
         assertFalse(raise.paused());
@@ -255,12 +259,12 @@ contract tokenTest is Test {
         assertTrue(raise.paused());
 
         vm.prank(rando);
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(abi.encodeWithSelector(OwnableUnauthorizedAccount.selector, rando));
         raise.unpause();
 
         // can't buy when paused
         vm.prank(rando);
-        vm.expectRevert("Pausable: paused");
+        vm.expectRevert(EnforcedPause.selector);
         raise.buy(1, address(this));
 
         vm.warp(block.timestamp + 1 days + 1);

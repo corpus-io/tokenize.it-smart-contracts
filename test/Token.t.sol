@@ -10,6 +10,10 @@ contract tokenTest is Test {
     event RequirementsChanged(uint newRequirements);
     event MintingAllowanceChanged(address indexed minter, uint256 newAllowance);
 
+    error InvalidInitialization();
+    error ERC20InvalidSender(address sender);
+    error ERC20InvalidReceiver(address receiver);
+
     Token token;
     Token implementation = new Token(trustedForwarder);
     TokenCloneFactory tokenCloneFactory = new TokenCloneFactory(address(implementation));
@@ -79,7 +83,7 @@ contract tokenTest is Test {
         console.log("address of logic contract: ", address(_logic));
 
         // try to initialize
-        vm.expectRevert("Initializable: contract is already initialized");
+        vm.expectRevert(InvalidInitialization.selector);
         _logic.initialize(IFeeSettingsV2(address(2)), address(3), AllowList(address(4)), 3, "testToken", "TEST");
 
         // all settings are 0
@@ -523,7 +527,7 @@ contract tokenTest is Test {
         token.mint(_address, _amount);
         assertTrue(token.balanceOf(_address) == _amount, "balance is wrong");
 
-        vm.expectRevert("ERC20: transfer to the zero address");
+        vm.expectRevert(abi.encodeWithSelector(ERC20InvalidReceiver.selector, address(0)));
         vm.prank(_address);
         token.transfer(address(0), _amount);
     }
@@ -531,7 +535,7 @@ contract tokenTest is Test {
     function testTransferFrom0(address _address) public {
         uint _amount = 100;
 
-        vm.expectRevert("ERC20: transfer from the zero address");
+        vm.expectRevert(abi.encodeWithSelector(ERC20InvalidSender.selector, address(0)));
         vm.prank(address(0));
         token.transfer(_address, _amount);
     }

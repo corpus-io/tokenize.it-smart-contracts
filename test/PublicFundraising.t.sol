@@ -9,6 +9,9 @@ import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
 
 contract PublicFundraisingTest is Test {
+    error InvalidInitialization();
+    error ReentrancyGuardReentrantCall();
+
     event CurrencyReceiverChanged(address indexed);
     event MinAmountPerBuyerChanged(uint256);
     event MaxAmountPerBuyerChanged(uint256);
@@ -104,7 +107,7 @@ contract PublicFundraisingTest is Test {
         console.log("address of logic contract: ", address(_logic));
 
         // try to initialize
-        vm.expectRevert("Initializable: contract is already initialized");
+        vm.expectRevert(InvalidInitialization.selector);
         _logic.initialize(
             address(this),
             payable(receiver),
@@ -301,7 +304,7 @@ contract PublicFundraisingTest is Test {
         assertTrue(maliciousPaymentToken.balanceOf(buyer) == _paymentTokenAmount);
         uint256 buyAmount = _maxMintAmount / 100000;
         vm.prank(buyer);
-        vm.expectRevert("ReentrancyGuard: reentrant call");
+        vm.expectRevert(ReentrancyGuardReentrantCall.selector);
         _raise.buy(buyAmount, buyer);
     }
 

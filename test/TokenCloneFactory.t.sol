@@ -10,6 +10,11 @@ import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 contract tokenCloneFactoryTest is Test {
     using ECDSA for bytes32;
 
+    error ERC1167FailedCreateClone();
+    error InvalidInitialization();
+    error EnforcedPause();
+    error AccessControlUnauthorizedAccount(address account, bytes32 role);
+
     Token implementation;
     AllowList allowList;
     FeeSettings feeSettings;
@@ -115,7 +120,7 @@ contract tokenCloneFactoryTest is Test {
             _symbol
         );
 
-        vm.expectRevert("ERC1167: create2 failed");
+        vm.expectRevert(ERC1167FailedCreateClone.selector);
         factory.createTokenClone(
             _salt,
             trustedForwarder,
@@ -196,7 +201,7 @@ contract tokenCloneFactoryTest is Test {
         assertEq(domainSeparatorAddress, address(clone), "domainSeparatorAddress not set");
 
         // test contract can not be initialized again
-        vm.expectRevert("Initializable: contract is already initialized");
+        vm.expectRevert(InvalidInitialization.selector);
         clone.initialize(feeSettings, admin, allowList, requirements, "testToken", "TEST");
     }
 
@@ -227,9 +232,13 @@ contract tokenCloneFactoryTest is Test {
                 "TST"
             )
         );
+        bytes32 pauserRole = _token.PAUSER_ROLE();
+
+        vm.prank(_admin);
+        _token.mint(rando, 1);
 
         vm.prank(rando);
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(AccessControlUnauthorizedAccount.selector, rando, pauserRole));
         _token.pause();
 
         assertFalse(_token.paused());
@@ -237,13 +246,15 @@ contract tokenCloneFactoryTest is Test {
         _token.pause();
         assertTrue(_token.paused());
 
+        console.log(rando);
+
         vm.prank(rando);
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(AccessControlUnauthorizedAccount.selector, rando, pauserRole));
         _token.unpause();
 
         // can't transfer when paused
         vm.prank(rando);
-        vm.expectRevert("Pausable: paused");
+        vm.expectRevert(EnforcedPause.selector);
         _token.transfer(_admin, 1);
 
         vm.prank(_admin);
