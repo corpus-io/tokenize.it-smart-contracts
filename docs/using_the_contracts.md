@@ -6,7 +6,7 @@ Tokenize.it has already deployed:
 
 1. [allowList](../contracts/AllowList.sol)
 2. [feeSettings](../contracts/FeeSettings.sol)
-3. [PersonalInviteFactory](../contracts/PersonalInviteFactory.sol)
+3. [PrivateOfferFactory](../contracts/PrivateOfferFactory.sol)
 
 These will be used for the next steps.
 
@@ -59,9 +59,9 @@ These will be used for the next steps.
 
 # Investments
 
-## Personal Invites
+## Private Offers
 
-In order to create a personal investment invite this [contract](../contracts/PersonalInvite.sol) needs to be used.
+In order to create a personal investment invite this [contract](../contracts/PrivateOffer.sol) needs to be used.
 
 Constructor:
 
@@ -95,18 +95,18 @@ The investment is executed during deployment of the contract. Therefore, three s
 - The future contract address needs to be given minting right in the company token contract by calling `increaseMintingAllowance` from an address which has the role of the Minter Admin. In that call, an allowance needs to be given which matches or exceeds the `_amount` of tokens. This step signals the offering company's invitation.
 - The investor needs to give a a sufficient allowance in the currency contract to the future address of the contract. This step signals the investors commitment to the offer.
 
-Once these steps have been completed, the Personal Invite contract can be deployed by anyone (either of the two parties or a third party) with [CREATE2](https://docs.openzeppelin.com/cli/2.8/deploying-with-create2), through the Personal Invite Factory's deploy() function.
+Once these steps have been completed, the Private Offer contract can be deployed by anyone (either of the two parties or a third party) with [CREATE2](https://docs.openzeppelin.com/cli/2.8/deploying-with-create2), through the Private Offer Factory's deploy() function.
 
-## Personal Invite Factory
+## Private Offer Factory
 
-This [contract](../contracts/PersonalInviteFactory.sol) can be used to:
+This [contract](../contracts/PrivateOfferFactory.sol) can be used to:
 
-1. Calculate the future address of a PersonalInvite
-2. Deploy the PersonalInvite to this address
+1. Calculate the future address of a PrivateOffer
+2. Deploy the PrivateOffer to this address
 
-## Continuous Fundraising / Starting on open round
+## Public Fundraising / Starting on open round
 
-Deploy the [contract](../contracts/ContinuousFundraising.sol)
+Deploy the [contract](../contracts/PublicFundraising.sol)
 
 Constructor:
 
@@ -141,9 +141,9 @@ The contract needs to be given a minting allowance in the company token contract
 An investor can buy tokens by calling the `buy(uint _amount)` function.
 `_amount` ist the amount of tokens they are buying, in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate).
 
-The investor needs to give a a sufficient allowance in the currency contract to the continuousFundraising contract for the deal to be successful
+The investor needs to give a a sufficient allowance in the currency contract to the publicFundraising contract for the deal to be successful
 
-The owner of the ContinuousFundraising contract can pause the contract by calling `pause()`, which stops further buys. When paused, parameters of the fundraising can be changed. Pausing the contract as well as each setting update starts a cool down period of 24 hours. Only after this cool down period has passed can the fundraising be unpaused by calling `unpause()`. This is to ensure an investor can know the conditions that currently apply before investing (e.g. frontrunning in a buy with a price increase is not possible).
+The owner of the PublicFundraising contract can pause the contract by calling `pause()`, which stops further buys. When paused, parameters of the fundraising can be changed. Pausing the contract as well as each setting update starts a cool down period of 24 hours. Only after this cool down period has passed can the fundraising be unpaused by calling `unpause()`. This is to ensure an investor can know the conditions that currently apply before investing (e.g. frontrunning in a buy with a price increase is not possible).
 
 # Employee participation with or without vesting
 

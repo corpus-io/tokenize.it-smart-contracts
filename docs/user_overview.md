@@ -10,16 +10,16 @@ Let's assume that there will be one (1) platform, many (**X**) companies and man
 |----|----|----|---|
 | AllowList | 1 | platform | used by all companies |
 | FeeSettings | 1 | platform | used by all companies |
-| PersonalInviteFactory | 1 | --- | helps to deploy PersonalInvite to deterministic address, can be used by all PersonalInvites |
+| PrivateOfferFactory | 1 | --- | helps to deploy PrivateOffer to deterministic address, can be used by all PrivateOffers |
 | Token | X | company | represents a specific companies shares |
-| ContinuousFundraising | X | company | most companies will want raise funds from all eligible investors |
-| PersonalInvite | >X | --- | most companies will extend special investment offers to specific investors, or receive these from investors |
+| PublicFundraising | X | company | most companies will want raise funds from all eligible investors |
+| PrivateOffer | >X | --- | most companies will extend special investment offers to specific investors, or receive these from investors |
 
 # Example work flow: creating company and raising funds
 
 ## Platform deployment
 
-Tokenize.it deploys AllowList, FeeSettings and PersonalInviteFactory contracts once. See [deployment](deployment.md) for more information. Also, a web app will be provided. This app will not be described in depth here.
+Tokenize.it deploys AllowList, FeeSettings and PrivateOfferFactory contracts once. See [deployment](deployment.md) for more information. Also, a web app will be provided. This app will not be described in depth here.
 
 ## Company deployment
 
@@ -35,9 +35,9 @@ When investments are processed, [fees are charged](fees.md).
 
 ### Open fundraising
 
-The founder can offer shares at a certain price to the public. If they want to do so, the platform deploys a ContinuousFundraising contract and transfers ownership to the founder.
+The founder can offer shares at a certain price to the public. If they want to do so, the platform deploys a PublicFundraising contract and transfers ownership to the founder.
 
-Afterwards, the founder grants a token minting allowance to the ContinuousFundraising contract, enabling it to mint shares.
+Afterwards, the founder grants a token minting allowance to the PublicFundraising contract, enabling it to mint shares.
 
 In order to buy tokens, investors must grant an allowance in payment currency and execute the deal() function. This will transfer the payment to the receiver selected by the founder and mint tokens to the investor.
 
@@ -47,7 +47,7 @@ All transactions can be performed without founders or investors having to pay et
 
 ### Closed fundraising
 
-Founders and investors can agree on specific terms for an investment, e.g. a special price or a special currency to pay with (see [supported currencies](../README.md#supported-currencies)). This investment is executed during deployment of the PersonalInvite contract.
+Founders and investors can agree on specific terms for an investment, e.g. a special price or a special currency to pay with (see [supported currencies](../README.md#supported-currencies)). This investment is executed during deployment of the PrivateOffer contract.
 
 Founder and investor have to agree on the deal in 3 ways before the contract can be deployed:
 

@@ -3,14 +3,14 @@ pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/TokenCloneFactory.sol";
-import "../contracts/PersonalInvite.sol";
-import "../contracts/PersonalInviteFactory.sol";
+import "../contracts/PrivateOffer.sol";
+import "../contracts/PrivateOfferFactory.sol";
 import "../contracts/FeeSettings.sol";
 
-contract PersonalInviteFactoryTest is Test {
+contract PrivateOfferFactoryTest is Test {
     event Deploy(address indexed addr);
 
-    PersonalInviteFactory factory;
+    PrivateOfferFactory factory;
 
     AllowList list;
     FeeSettings feeSettings;
@@ -32,7 +32,7 @@ contract PersonalInviteFactoryTest is Test {
     uint256 public constant price = 10000000;
 
     function setUp() public {
-        factory = new PersonalInviteFactory();
+        factory = new PrivateOfferFactory();
         list = new AllowList();
         Fees memory fees = Fees(100, 100, 100, 0);
         feeSettings = new FeeSettings(fees, admin, admin, admin);
@@ -51,7 +51,7 @@ contract PersonalInviteFactoryTest is Test {
         //uint256 rawSalt = 0;
         bytes32 salt = bytes32(rawSalt);
 
-        //bytes memory creationCode = type(PersonalInvite).creationCode;
+        //bytes memory creationCode = type(PrivateOffer).creationCode;
         uint256 amount = 20000000000000;
         uint256 expiration = block.timestamp + 1000;
 

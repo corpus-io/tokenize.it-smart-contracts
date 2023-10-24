@@ -4,13 +4,13 @@ pragma solidity ^0.8.13;
 import "../../lib/forge-std/src/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../../contracts/Token.sol";
-import "../../contracts/ContinuousFundraising.sol";
+import "../../contracts/PublicFundraising.sol";
 
 /*
     malicious currency to that tries to reenter a function a set number of times
 */
 contract MaliciousPaymentToken is ERC20 {
-    ContinuousFundraising public exploitTarget;
+    PublicFundraising public exploitTarget;
     uint256 public timesToReenter;
     uint256 public amountToReenterWith;
     uint256 public reentrancyCount;
@@ -25,7 +25,7 @@ contract MaliciousPaymentToken is ERC20 {
     @notice set which contract to exploit
      */
     function setExploitTarget(address _exploitTarget, uint256 _timesToReenter, uint256 _amountToReenterWith) public {
-        exploitTarget = ContinuousFundraising(_exploitTarget);
+        exploitTarget = PublicFundraising(_exploitTarget);
         timesToReenter = _timesToReenter;
         amountToReenterWith = _amountToReenterWith;
     }
