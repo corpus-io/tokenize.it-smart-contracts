@@ -5,6 +5,7 @@ import "../lib/forge-std/src/Test.sol";
 import "../contracts/TokenCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/ERC2771Helper.sol";
+import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 contract tokenCloneFactoryTest is Test {
     using ECDSA for bytes32;
@@ -354,11 +355,11 @@ contract tokenCloneFactoryTest is Test {
             )
         );
 
-        //bytes32 hash = ECDSA.toTypedDataHash(clone.DOMAIN_SEPARATOR(), structHash);
+        //bytes32 hash = MessageHashUtils.toTypedDataHash(clone.DOMAIN_SEPARATOR(), structHash);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
             _tokenOwnerPrivateKey,
-            ECDSA.toTypedDataHash(clone.DOMAIN_SEPARATOR(), structHash)
+            MessageHashUtils.toTypedDataHash(clone.DOMAIN_SEPARATOR(), structHash)
         );
 
         // check allowance

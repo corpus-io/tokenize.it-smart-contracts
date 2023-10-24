@@ -6,6 +6,7 @@ import "../contracts/TokenCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific version to avoid import error: yarn add @opengsn/contracts@2.2.5
+import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 contract TokenERC2612Test is Test {
     using ECDSA for bytes32; // for verify with var.recover()
@@ -116,7 +117,7 @@ contract TokenERC2612Test is Test {
             abi.encode(permitTypehash, tokenOwner, tokenSpender, _tokenPermitAmount, nonce, deadline)
         );
 
-        bytes32 hash = ECDSA.toTypedDataHash(DOMAIN_SEPARATOR, structHash);
+        bytes32 hash = MessageHashUtils.toTypedDataHash(DOMAIN_SEPARATOR, structHash);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(tokenOwnerPrivateKey, hash);
 

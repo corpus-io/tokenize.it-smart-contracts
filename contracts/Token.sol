@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol";
 import "./AllowList.sol";
 import "./interfaces/IFeeSettings.sol";
@@ -255,8 +255,7 @@ contract Token is ERC2771ContextUpgradeable, ERC20PermitUpgradeable, PausableUpg
      *    3. transfers from one address to another. The sender and recipient must be allowed to transact.
      * @dev this hook is executed before the transfer function itself
      */
-    function _beforeTokenTransfer(address _from, address _to, uint256 _amount) internal virtual override {
-        super._beforeTokenTransfer(_from, _to, _amount);
+    function _beforeTokenTransfer(address _from, address _to, uint256 _amount) internal virtual {
         _requireNotPaused();
         if (_from != address(0) && _to != address(0)) {
             // token transfer

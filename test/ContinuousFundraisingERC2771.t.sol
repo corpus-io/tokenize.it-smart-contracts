@@ -8,6 +8,7 @@ import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/ERC2771Helper.sol";
 import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific version to avoid import error: yarn add @opengsn/contracts@2.2.5
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract ContinuousFundraisingTest is Test {
     using ECDSA for bytes32; // for verify with var.recover()
@@ -136,7 +137,7 @@ contract ContinuousFundraisingTest is Test {
         */
         // // https://github.com/foundry-rs/foundry/issues/3330
         // // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/cryptography/ECDSA.sol
-        // bytes32 digest = ECDSA.toTypedDataHash(domainSeparator, keccak256(payload));
+        // bytes32 digest = MessageHashUtils.toTypedDataHash(domainSeparator, keccak256(payload));
         // (uint8 v, bytes32 r, bytes32 s) = vm.sign(privKey, digest);
 
         // todo: get nonce from forwarder

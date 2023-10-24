@@ -3,8 +3,9 @@ pragma solidity 0.8.21;
 
 import "../lib/forge-std/src/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import "../contracts/Token.sol";
 import "../contracts/ContinuousFundraising.sol";
 import "../contracts/PersonalInvite.sol";
@@ -75,7 +76,7 @@ contract MainnetCurrencies is Test {
             abi.encode(PERMIT_TYPE_HASH, tokenOwner, tokenSpender, _tokenPermitAmount, nonce, deadline)
         );
 
-        bytes32 hash = ECDSA.toTypedDataHash(DOMAIN_SEPARATOR, structHash);
+        bytes32 hash = MessageHashUtils.toTypedDataHash(DOMAIN_SEPARATOR, structHash);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(_tokenOwnerPrivateKey, hash);
 
@@ -153,7 +154,7 @@ contract MainnetCurrencies is Test {
             abi.encode(DaiLike(address(token)).PERMIT_TYPEHASH(), tokenOwner, tokenSpender, nonce, deadline, allowed)
         );
 
-        bytes32 hash = ECDSA.toTypedDataHash(DOMAIN_SEPARATOR, structHash);
+        bytes32 hash = MessageHashUtils.toTypedDataHash(DOMAIN_SEPARATOR, structHash);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(tokenOwnerPrivateKey, hash);
 

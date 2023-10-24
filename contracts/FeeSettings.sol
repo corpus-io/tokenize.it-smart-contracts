@@ -73,7 +73,7 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
         address _tokenFeeCollector,
         address _continuousFundraisingFeeCollector,
         address _personalInviteFeeCollector
-    ) {
+    ) Ownable(msg.sender) {
         checkFeeLimits(_fees);
         tokenFeeDenominator = _fees.tokenFeeDenominator;
         continuousFundraisingFeeDenominator = _fees.continuousFundraisingFeeDenominator;

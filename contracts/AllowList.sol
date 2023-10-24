@@ -36,6 +36,8 @@ contract AllowList is Ownable2Step {
      */
     mapping(address => uint256) public map;
 
+    constructor() Ownable(msg.sender) {}
+
     /**
      * @notice Attributes for `key` have been set to `value`
      * @param _addr address the attributes are set for

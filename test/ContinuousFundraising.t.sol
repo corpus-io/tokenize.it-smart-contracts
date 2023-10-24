@@ -1139,7 +1139,7 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(mintAllower);
         token.increaseMintingAllowance(address(raise), UINT256_MAX);
         vm.prank(buyer);
-        paymentToken.increaseAllowance(address(raise), UINT256_MAX);
+        paymentToken.approve(address(raise), UINT256_MAX);
 
         vm.expectRevert(); //("Arithmetic over/underflow"); //("Division or modulo by 0");
         vm.prank(buyer);
@@ -1191,7 +1191,7 @@ contract ContinuousFundraisingTest is Test {
         vm.prank(mintAllower);
         token.increaseMintingAllowance(address(raise), _tokenBuyAmount);
         vm.prank(buyer);
-        paymentToken.increaseAllowance(address(raise), maxCurrencyAmount);
+        paymentToken.approve(address(raise), maxCurrencyAmount);
 
         vm.prank(buyer);
         raise.buy(_tokenBuyAmount, buyer);
