@@ -5,9 +5,9 @@ import "../lib/forge-std/src/Test.sol";
 //import "../lib/forge-std/stdlib.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../contracts/TokenCloneFactory.sol";
-import "../contracts/ContinuousFundraisingCloneFactory.sol";
-import "../contracts/PersonalInvite.sol";
-import "../contracts/PersonalInviteFactory.sol";
+import "../contracts/PublicFundraisingCloneFactory.sol";
+import "../contracts/PrivateOffer.sol";
+import "../contracts/PrivateOfferFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/ERC20Helper.sol";
 
@@ -24,9 +24,9 @@ contract MainnetCurrencies is Test {
     FeeSettings feeSettings;
 
     Token token;
-    PersonalInviteFactory inviteFactory;
+    PrivateOfferFactory inviteFactory;
 
-    ContinuousFundraisingCloneFactory fundraisingFactory;
+    PublicFundraisingCloneFactory fundraisingFactory;
 
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant buyer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
@@ -70,11 +70,9 @@ contract MainnetCurrencies is Test {
             tokenCloneFactory.createTokenClone(0, trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST")
         );
 
-        fundraisingFactory = new ContinuousFundraisingCloneFactory(
-            address(new ContinuousFundraising(trustedForwarder))
-        );
+        fundraisingFactory = new PublicFundraisingCloneFactory(address(new PublicFundraising(trustedForwarder)));
 
-        inviteFactory = new PersonalInviteFactory();
+        inviteFactory = new PrivateOfferFactory();
         currencyCost = (amountOfTokenToBuy * price) / 10 ** token.decimals();
         currencyAmount = currencyCost * 2;
     }
@@ -95,7 +93,7 @@ contract MainnetCurrencies is Test {
     //         .checked_write(amount);
     // }
 
-    function continuousFundraisingWithIERC20Currency(IERC20 _currency) public {
+    function publicFundraisingWithIERC20Currency(IERC20 _currency) public {
         // some math
         //uint _decimals = _currency.decimals(); // can't get decimals from IERC20
         //uint _price = 7 * 10**_decimals; // 7 payment tokens per token
@@ -104,8 +102,8 @@ contract MainnetCurrencies is Test {
         uint256 _currencyAmount = _currencyCost * 2;
 
         // set up fundraise with _currency
-        ContinuousFundraising _raise = ContinuousFundraising(
-            fundraisingFactory.createContinuousFundraisingClone(
+        PublicFundraising _raise = PublicFundraising(
+            fundraisingFactory.createPublicFundraisingClone(
                 0,
                 trustedForwarder,
                 owner,
@@ -150,46 +148,44 @@ contract MainnetCurrencies is Test {
         assertEq(token.balanceOf(receiver), 0, "receiver has no tokens");
         assertEq(
             _currency.balanceOf(receiver),
-            _currencyCost -
-                _currencyCost /
-                FeeSettings(address(token.feeSettings())).continuousFundraisingFeeDenominator(),
+            _currencyCost - _currencyCost / FeeSettings(address(token.feeSettings())).publicFundraisingFeeDenominator(),
             "receiver should have received currency"
         );
         assertEq(
             _currency.balanceOf(FeeSettings(address(token.feeSettings())).feeCollector()),
-            _currencyCost / FeeSettings(address(token.feeSettings())).continuousFundraisingFeeDenominator(),
+            _currencyCost / FeeSettings(address(token.feeSettings())).publicFundraisingFeeDenominator(),
             "fee receiver should have received currency"
         );
         assertEq(
             token.balanceOf(FeeSettings(address(token.feeSettings())).feeCollector()),
-            amountOfTokenToBuy / FeeSettings(address(token.feeSettings())).continuousFundraisingFeeDenominator(),
+            amountOfTokenToBuy / FeeSettings(address(token.feeSettings())).publicFundraisingFeeDenominator(),
             "fee receiver should have received tokens"
         );
         assertEq(_currency.balanceOf(buyer), _currencyAmount - _currencyCost, "buyer should have paid currency");
     }
 
-    function testContinuousFundraisingWithMainnetUSDC() public {
-        continuousFundraisingWithIERC20Currency(USDC);
+    function testPublicFundraisingWithMainnetUSDC() public {
+        publicFundraisingWithIERC20Currency(USDC);
     }
 
-    function testContinuousFundraisingWithMainnetWETH() public {
-        continuousFundraisingWithIERC20Currency(WETH);
+    function testPublicFundraisingWithMainnetWETH() public {
+        publicFundraisingWithIERC20Currency(WETH);
     }
 
-    function testContinuousFundraisingWithMainnetWBTC() public {
-        continuousFundraisingWithIERC20Currency(WBTC);
+    function testPublicFundraisingWithMainnetWBTC() public {
+        publicFundraisingWithIERC20Currency(WBTC);
     }
 
-    function testContinuousFundraisingWithMainnetEUROC() public {
-        continuousFundraisingWithIERC20Currency(EUROC);
+    function testPublicFundraisingWithMainnetEUROC() public {
+        publicFundraisingWithIERC20Currency(EUROC);
     }
 
-    function testContinuousFundraisingWithMainnetDAI() public {
-        continuousFundraisingWithIERC20Currency(DAI);
+    function testPublicFundraisingWithMainnetDAI() public {
+        publicFundraisingWithIERC20Currency(DAI);
     }
 
-    function personalInviteWithIERC20Currency(IERC20 _currency) public {
-        //bytes memory creationCode = type(PersonalInvite).creationCode;
+    function privateOfferWithIERC20Currency(IERC20 _currency) public {
+        //bytes memory creationCode = type(PrivateOffer).creationCode;
         uint256 expiration = block.timestamp + 1000;
 
         address expectedAddress = inviteFactory.getAddress(
@@ -239,12 +235,12 @@ contract MainnetCurrencies is Test {
         assertEq(token.balanceOf(receiver), 0, "receiver has no tokens");
         assertEq(
             _currency.balanceOf(receiver),
-            currencyCost - token.feeSettings().continuousFundraisingFee(currencyCost),
+            currencyCost - token.feeSettings().publicFundraisingFee(currencyCost),
             "receiver should have received currency"
         );
         assertEq(
-            _currency.balanceOf(token.feeSettings().continuousFundraisingFeeCollector()),
-            token.feeSettings().continuousFundraisingFee(currencyCost),
+            _currency.balanceOf(token.feeSettings().publicFundraisingFeeCollector()),
+            token.feeSettings().publicFundraisingFee(currencyCost),
             "fee receiver should have received currency"
         );
         assertEq(
@@ -258,23 +254,23 @@ contract MainnetCurrencies is Test {
         console.log("buyer's token balance: ", token.balanceOf(buyer));
     }
 
-    function testPersonalInviteWithMainnetUSDC() public {
-        personalInviteWithIERC20Currency(USDC);
+    function testPrivateOfferWithMainnetUSDC() public {
+        privateOfferWithIERC20Currency(USDC);
     }
 
-    function testPersonalInviteWithMainnetWETH() public {
-        personalInviteWithIERC20Currency(WETH);
+    function testPrivateOfferWithMainnetWETH() public {
+        privateOfferWithIERC20Currency(WETH);
     }
 
-    function testPersonalInviteWithMainnetWBTC() public {
-        personalInviteWithIERC20Currency(WBTC);
+    function testPrivateOfferWithMainnetWBTC() public {
+        privateOfferWithIERC20Currency(WBTC);
     }
 
-    function testPersonalInviteWithMainnetEUROC() public {
-        personalInviteWithIERC20Currency(EUROC);
+    function testPrivateOfferWithMainnetEUROC() public {
+        privateOfferWithIERC20Currency(EUROC);
     }
 
-    function testPersonalInviteWithMainnetDAI() public {
-        personalInviteWithIERC20Currency(DAI);
+    function testPrivateOfferWithMainnetDAI() public {
+        privateOfferWithIERC20Currency(DAI);
     }
 }

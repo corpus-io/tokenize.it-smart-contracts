@@ -4,11 +4,11 @@ pragma solidity 0.8.21;
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/TokenCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
-import "../contracts/ContinuousFundraisingCloneFactory.sol";
+import "../contracts/PublicFundraisingCloneFactory.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
 
-contract ContinuousFundraisingTest is Test {
+contract PublicFundraisingTest is Test {
     event CurrencyReceiverChanged(address indexed);
     event MinAmountPerBuyerChanged(uint256);
     event MaxAmountPerBuyerChanged(uint256);
@@ -16,8 +16,8 @@ contract ContinuousFundraisingTest is Test {
     event MaxAmountOfTokenToBeSoldChanged(uint256);
     event TokensBought(address indexed buyer, uint256 tokenAmount, uint256 currencyAmount);
 
-    ContinuousFundraisingCloneFactory factory;
-    ContinuousFundraising raise;
+    PublicFundraisingCloneFactory factory;
+    PublicFundraising raise;
     AllowList list;
     IFeeSettingsV2 feeSettings;
 
@@ -68,10 +68,10 @@ contract ContinuousFundraisingTest is Test {
         assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
 
         vm.prank(owner);
-        factory = new ContinuousFundraisingCloneFactory(address(new ContinuousFundraising(trustedForwarder)));
+        factory = new PublicFundraisingCloneFactory(address(new PublicFundraising(trustedForwarder)));
 
-        raise = ContinuousFundraising(
-            factory.createContinuousFundraisingClone(
+        raise = PublicFundraising(
+            factory.createPublicFundraisingClone(
                 0,
                 trustedForwarder,
                 owner,
@@ -99,7 +99,7 @@ contract ContinuousFundraisingTest is Test {
     }
 
     function testLogicContractCreation() public {
-        ContinuousFundraising _logic = new ContinuousFundraising(address(1));
+        PublicFundraising _logic = new PublicFundraising(address(1));
 
         console.log("address of logic contract: ", address(_logic));
 
@@ -127,8 +127,8 @@ contract ContinuousFundraisingTest is Test {
     }
 
     function testConstructorHappyCase() public {
-        ContinuousFundraising _raise = ContinuousFundraising(
-            factory.createContinuousFundraisingClone(
+        PublicFundraising _raise = PublicFundraising(
+            factory.createPublicFundraisingClone(
                 0,
                 trustedForwarder,
                 address(this),
@@ -151,9 +151,9 @@ contract ContinuousFundraisingTest is Test {
     }
 
     function testConstructorWithAddress0() public {
-        vm.expectRevert("ContinuousFundraisingCloneFactory: Unexpected trustedForwarder");
-        ContinuousFundraising(
-            factory.createContinuousFundraisingClone(
+        vm.expectRevert("PublicFundraisingCloneFactory: Unexpected trustedForwarder");
+        PublicFundraising(
+            factory.createPublicFundraisingClone(
                 0,
                 address(0),
                 address(this),
@@ -168,7 +168,7 @@ contract ContinuousFundraisingTest is Test {
         );
 
         vm.expectRevert("owner can not be zero address");
-        factory.createContinuousFundraisingClone(
+        factory.createPublicFundraisingClone(
             0,
             trustedForwarder,
             address(0),
@@ -182,7 +182,7 @@ contract ContinuousFundraisingTest is Test {
         );
 
         vm.expectRevert("currencyReceiver can not be zero address");
-        factory.createContinuousFundraisingClone(
+        factory.createPublicFundraisingClone(
             0,
             trustedForwarder,
             address(this),
@@ -196,7 +196,7 @@ contract ContinuousFundraisingTest is Test {
         );
 
         vm.expectRevert("currency can not be zero address");
-        factory.createContinuousFundraisingClone(
+        factory.createPublicFundraisingClone(
             0,
             trustedForwarder,
             address(this),
@@ -210,7 +210,7 @@ contract ContinuousFundraisingTest is Test {
         );
 
         vm.expectRevert("token can not be zero address");
-        factory.createContinuousFundraisingClone(
+        factory.createPublicFundraisingClone(
             0,
             trustedForwarder,
             address(this),
@@ -258,8 +258,8 @@ contract ContinuousFundraisingTest is Test {
         maliciousPaymentToken = new MaliciousPaymentToken(_paymentTokenAmount);
         vm.prank(owner);
 
-        ContinuousFundraising _raise = ContinuousFundraising(
-            factory.createContinuousFundraisingClone(
+        PublicFundraising _raise = PublicFundraising(
+            factory.createPublicFundraisingClone(
                 0,
                 trustedForwarder,
                 address(this),
@@ -323,12 +323,12 @@ contract ContinuousFundraisingTest is Test {
         assertTrue(token.balanceOf(buyer) == tokenBuyAmount, "buyer has tokens");
         assertTrue(
             paymentToken.balanceOf(receiver) ==
-                costInPaymentToken - localFeeSettings.continuousFundraisingFee(costInPaymentToken),
+                costInPaymentToken - localFeeSettings.publicFundraisingFee(costInPaymentToken),
             "receiver has payment tokens"
         );
         assertTrue(
-            paymentToken.balanceOf(token.feeSettings().continuousFundraisingFeeCollector()) ==
-                localFeeSettings.continuousFundraisingFee(costInPaymentToken),
+            paymentToken.balanceOf(token.feeSettings().publicFundraisingFeeCollector()) ==
+                localFeeSettings.publicFundraisingFee(costInPaymentToken),
             "fee collector has collected fee in payment tokens"
         );
         assertTrue(
@@ -542,7 +542,7 @@ contract ContinuousFundraisingTest is Test {
             FeeSettings(address(token.feeSettings())).tokenFeeDenominator();
         uint256 paymentTokenFee = (costInPaymentTokenForMinAmount * 3) /
             2 /
-            FeeSettings(address(token.feeSettings())).continuousFundraisingFeeDenominator();
+            FeeSettings(address(token.feeSettings())).publicFundraisingFeeDenominator();
         assertTrue(
             paymentToken.balanceOf(receiver) == (costInPaymentTokenForMinAmount * 3) / 2 - paymentTokenFee,
             "receiver received payment tokens"
@@ -553,7 +553,7 @@ contract ContinuousFundraisingTest is Test {
             "fee collector has not collected fee in tokens"
         );
         assertEq(
-            paymentToken.balanceOf(token.feeSettings().continuousFundraisingFeeCollector()),
+            paymentToken.balanceOf(token.feeSettings().publicFundraisingFeeCollector()),
             paymentTokenFee,
             "fee collector has not collected fee in payment tokens"
         );
@@ -1120,8 +1120,8 @@ contract ContinuousFundraisingTest is Test {
 
         // create the raise contract
         vm.prank(owner);
-        raise = ContinuousFundraising(
-            factory.createContinuousFundraisingClone(
+        raise = PublicFundraising(
+            factory.createPublicFundraisingClone(
                 0,
                 trustedForwarder,
                 address(this),
@@ -1167,8 +1167,8 @@ contract ContinuousFundraisingTest is Test {
 
         // create the raise contract
         vm.prank(owner);
-        raise = ContinuousFundraising(
-            factory.createContinuousFundraisingClone(
+        raise = PublicFundraising(
+            factory.createPublicFundraisingClone(
                 0,
                 trustedForwarder,
                 address(this),

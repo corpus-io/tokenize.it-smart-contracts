@@ -3,15 +3,15 @@ pragma solidity 0.8.21;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/TokenCloneFactory.sol";
-import "../contracts/PersonalInvite.sol";
-import "../contracts/PersonalInviteFactory.sol";
+import "../contracts/PrivateOffer.sol";
+import "../contracts/PrivateOfferFactory.sol";
 import "../contracts/VestingWalletFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 import "../node_modules/@openzeppelin/contracts/finance/VestingWallet.sol";
 
-contract PersonalInviteTimeLockTest is Test {
-    PersonalInviteFactory personalInviteFactory;
+contract PrivateOfferTimeLockTest is Test {
+    PrivateOfferFactory privateOfferFactory;
     VestingWalletFactory vestingWalletFactory;
 
     AllowList list;
@@ -35,7 +35,7 @@ contract PersonalInviteTimeLockTest is Test {
     uint256 requirements = 92785934;
 
     function setUp() public {
-        personalInviteFactory = new PersonalInviteFactory();
+        privateOfferFactory = new PrivateOfferFactory();
         vestingWalletFactory = new VestingWalletFactory();
         list = new AllowList();
 
@@ -110,7 +110,7 @@ contract PersonalInviteTimeLockTest is Test {
      * @param attemptTime try to release tokens after this amount of time
      * @param releaseDuration how long the releasing of tokens should take
      */
-    function testPersonalInviteWithTimeLock(
+    function testPrivateOfferWithTimeLock(
         bytes32 salt,
         uint64 releaseStartTime,
         uint64 releaseDuration,
@@ -140,13 +140,13 @@ contract PersonalInviteTimeLockTest is Test {
         // add time lock and token receiver to the allow list
         list.set(expectedTimeLockAddress, requirements);
 
-        //bytes memory creationCode = type(PersonalInvite).creationCode;
+        //bytes memory creationCode = type(PrivateOffer).creationCode;
         uint256 tokenAmount = 20000000000000;
         uint256 expiration = block.timestamp + 1000;
         uint256 tokenDecimals = token.decimals();
         uint256 currencyAmount = (tokenAmount * price) / 10 ** tokenDecimals;
 
-        address expectedInviteAddress = personalInviteFactory.getAddress(
+        address expectedInviteAddress = privateOfferFactory.getAddress(
             salt,
             currencyPayer,
             expectedTimeLockAddress,
@@ -176,7 +176,7 @@ contract PersonalInviteTimeLockTest is Test {
 
         console.log(
             "feeCollector currency balance before deployment: %s",
-            currency.balanceOf(token.feeSettings().personalInviteFeeCollector())
+            currency.balanceOf(token.feeSettings().privateOfferFeeCollector())
         );
 
         // create vesting wallet as token receiver
@@ -187,8 +187,8 @@ contract PersonalInviteTimeLockTest is Test {
         // make sure addresses match
         assertEq(address(timeLock), expectedTimeLockAddress, "timeLock address is not correct");
 
-        // deploy personal invite
-        address inviteAddress = personalInviteFactory.deploy(
+        // deploy private offer
+        address inviteAddress = privateOfferFactory.deploy(
             salt,
             currencyPayer,
             expectedTimeLockAddress,
@@ -210,26 +210,26 @@ contract PersonalInviteTimeLockTest is Test {
 
         assertEq(
             currency.balanceOf(currencyReceiver),
-            currencyAmount - token.feeSettings().personalInviteFee(currencyAmount),
+            currencyAmount - token.feeSettings().privateOfferFee(currencyAmount),
             "currencyReceiver wrong balance after deployment"
         );
 
         assertEq(
-            currency.balanceOf(token.feeSettings().personalInviteFeeCollector()),
-            token.feeSettings().personalInviteFee(currencyAmount),
+            currency.balanceOf(token.feeSettings().privateOfferFeeCollector()),
+            token.feeSettings().privateOfferFee(currencyAmount),
             "feeCollector currency balance is not correct"
         );
 
         assertEq(token.balanceOf(address(timeLock)), tokenAmount, "timeLock wrong token balance after deployment");
 
         assertEq(
-            token.balanceOf(token.feeSettings().personalInviteFeeCollector()),
+            token.balanceOf(token.feeSettings().privateOfferFeeCollector()),
             token.feeSettings().tokenFee(tokenAmount),
             "feeCollector token balance is not correct"
         );
 
         /*
-         * PersonalInvite worked properly, now test the time lock
+         * PrivateOffer worked properly, now test the time lock
          */
         // immediate release should not work
         assertEq(token.balanceOf(tokenReceiver), 0, "investor vault should have no tokens");

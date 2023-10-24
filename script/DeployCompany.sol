@@ -7,10 +7,10 @@ import "../lib/forge-std/src/Script.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../contracts/FeeSettings.sol";
 import "../contracts/AllowList.sol";
-import "../contracts/PersonalInviteFactory.sol";
+import "../contracts/PrivateOfferFactory.sol";
 import "../contracts/Token.sol";
-import "../contracts/ContinuousFundraising.sol";
-import "../contracts/PersonalInvite.sol";
+import "../contracts/PublicFundraising.sol";
+import "../contracts/PrivateOffer.sol";
 
 contract DeployCompany is Script {
     function setUp() public {}
@@ -51,7 +51,7 @@ contract DeployCompany is Script {
         // Token token = Token(0x6BC442F04C727a19Cc0AF14ec9b2acD3e12651F3);
         // console.log("Token at: ", address(token));
 
-        // ContinuousFundraising fundraising = new ContinuousFundraising(
+        // PublicFundraising fundraising = new PublicFundraising(
         //     forwarder,
         //     companyAdmin,
         //     0,
@@ -66,8 +66,8 @@ contract DeployCompany is Script {
         // fundraising.transferOwnership(companyAdmin);
         // console.log("Fundraising ownership transferred to: ", companyAdmin);
 
-        // // manual deployment of personal invite for verification
-        // //  calculate personal invite address
+        // // manual deployment of private offer for verification
+        // //  calculate private offer address
         // //uint256 nextNonce = vm.getNonce(deployerAddress) - 3;
         // address nextContract = address(
         //     uint160(
@@ -85,7 +85,7 @@ contract DeployCompany is Script {
         // );
         // console.log("Next contract address: ", nextContract);
 
-        // PersonalInvite personalInvite = new PersonalInvite(
+        // PrivateOffer privateOffer = new PrivateOffer(
         //     investor,
         //     investor,
         //     companyAdmin,
@@ -96,7 +96,7 @@ contract DeployCompany is Script {
         //     token
         // );
 
-        // console.log("PersonalInvite deployed at: ", address(personalInvite));
+        // console.log("PrivateOffer deployed at: ", address(privateOffer));
 
         vm.stopBroadcast();
     }

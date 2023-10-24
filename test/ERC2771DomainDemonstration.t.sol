@@ -6,7 +6,7 @@ import "../contracts/TokenCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/ERC2771Helper.sol";
-import "../contracts/ContinuousFundraisingCloneFactory.sol";
+import "../contracts/PublicFundraisingCloneFactory.sol";
 
 import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific version to avoid import error: yarn add @opengsn/contracts@2.2.5
 
@@ -53,8 +53,8 @@ contract TokenERC2771Test is Test {
     address public constant feeCollector = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
 
     uint256 public constant tokenFeeDenominator = 100;
-    uint256 public constant continuousFundraisingFeeDenominator = 50;
-    uint256 public constant personalInviteFeeDenominator = 70;
+    uint256 public constant publicFundraisingFeeDenominator = 50;
+    uint256 public constant privateOfferFeeDenominator = 70;
 
     bytes32 domainSeparator;
     bytes32 requestType;
@@ -69,12 +69,7 @@ contract TokenERC2771Test is Test {
         allowList = new AllowList();
 
         // deploy fee settings
-        Fees memory fees = Fees(
-            tokenFeeDenominator,
-            continuousFundraisingFeeDenominator,
-            personalInviteFeeDenominator,
-            0
-        );
+        Fees memory fees = Fees(tokenFeeDenominator, publicFundraisingFeeDenominator, privateOfferFeeDenominator, 0);
         vm.prank(platformAdmin);
         feeSettings = new FeeSettings(fees, feeCollector, feeCollector, feeCollector);
 
@@ -108,11 +103,11 @@ contract TokenERC2771Test is Test {
 
         // deploy fundraising
         paymentToken = new FakePaymentToken(6 * 10 ** 18, 18);
-        ContinuousFundraisingCloneFactory fundraisingFactory = new ContinuousFundraisingCloneFactory(
-            address(new ContinuousFundraising(address(forwarder)))
+        PublicFundraisingCloneFactory fundraisingFactory = new PublicFundraisingCloneFactory(
+            address(new PublicFundraising(address(forwarder)))
         );
-        ContinuousFundraising raise = ContinuousFundraising(
-            fundraisingFactory.createContinuousFundraisingClone(
+        PublicFundraising raise = PublicFundraising(
+            fundraisingFactory.createPublicFundraisingClone(
                 0,
                 address(forwarder),
                 companyAdmin,
@@ -230,7 +225,7 @@ contract TokenERC2771Test is Test {
         );
 
         /*
-         * update settings on continuous fundraising
+         * update settings on public fundraising
          */
 
         // build request

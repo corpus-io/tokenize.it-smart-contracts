@@ -5,15 +5,15 @@ pragma solidity 0.8.21;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/utils/Create2.sol";
-import "../contracts/PersonalInvite.sol";
+import "../contracts/PrivateOffer.sol";
 
 /**
- * @title PersonalInviteFactory
+ * @title PrivateOfferFactory
  * @author malteish, cjentzsch
- * @notice This contract deploys PersonalInvites using create2. It is used to deploy PersonalInvites with a deterministic address.
- * @dev One deployment of this contract can be used for deployment of any number of PersonalInvites using create2.
+ * @notice This contract deploys PrivateOffers using create2. It is used to deploy PrivateOffers with a deterministic address.
+ * @dev One deployment of this contract can be used for deployment of any number of PrivateOffers using create2.
  */
-contract PersonalInviteFactory {
+contract PrivateOfferFactory {
     event Deploy(address indexed addr);
 
     /**
@@ -112,7 +112,7 @@ contract PersonalInviteFactory {
     ) private pure returns (bytes memory) {
         return
             abi.encodePacked(
-                type(PersonalInvite).creationCode,
+                type(PrivateOffer).creationCode,
                 abi.encode(
                     _currencyPayer,
                     _tokenReceiver,
