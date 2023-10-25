@@ -147,17 +147,29 @@ contract PublicFundraising is
     function activateDynamicPricing(
         uint128 _linearSlopeEnumerator,
         uint128 _linearSlopeDenominator,
-        uint256 _baseBlock
+        uint256 _startTime
     ) external onlyOwner whenPaused {
         require(_linearSlopeEnumerator != 0, "_linearSlopeEnumerator needs to be a non-zero amount");
         require(_linearSlopeDenominator != 0, "_linearSlopeDenominator needs to be a non-zero amount");
         dynamicPricingLinearTime = Linear(_linearSlopeEnumerator, _linearSlopeDenominator);
-        dynamicPricingLinearTimeStart = _baseBlock;
+        dynamicPricingLinearTimeStart = _startTime;
+        coolDownStart = block.timestamp;
     }
 
     function deactivateDynamicPricing() external onlyOwner whenPaused {
         dynamicPricingLinearTime = Linear(0, 0);
         dynamicPricingLinearTimeStart = 0;
+    }
+
+    function getPrice() public view returns (uint256) {
+        if (dynamicPricingLinearTime.slopeEnumerator != 0) {
+            return
+                tokenPrice +
+                ((block.timestamp - dynamicPricingLinearTimeStart) * dynamicPricingLinearTime.slopeEnumerator) /
+                dynamicPricingLinearTime.slopeDenominator;
+        }
+
+        return tokenPrice;
     }
 
     /**
@@ -176,16 +188,8 @@ contract PublicFundraising is
         tokensSold += _amount;
         tokensBought[_tokenReceiver] += _amount;
 
-        uint256 currentPrice = tokenPrice;
-
-        if (dynamicPricingLinearTime.slopeEnumerator != 0) {
-            currentPrice +=
-                ((block.timestamp - dynamicPricingLinearTimeStart) * dynamicPricingLinearTime.slopeEnumerator) /
-                dynamicPricingLinearTime.slopeDenominator;
-        }
-
         // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
-        uint256 currencyAmount = Math.ceilDiv(_amount * tokenPrice, 10 ** token.decimals());
+        uint256 currencyAmount = Math.ceilDiv(_amount * getPrice(), 10 ** token.decimals());
 
         IFeeSettingsV2 feeSettings = token.feeSettings();
         uint256 fee = feeSettings.publicFundraisingFee(currencyAmount);
