@@ -11,6 +11,11 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 
 import "./Token.sol";
 
+struct Linear {
+    uint128 slopeEnumerator;
+    uint128 slopeDenominator;
+}
+
 /**
  * @title PublicFundraising
  * @author malteish, cjentzsch
@@ -56,6 +61,10 @@ contract PublicFundraising is
 
     /// This mapping keeps track of how much each buyer has bought, in order to enforce maxAmountPerBuyer
     mapping(address => uint256) public tokensBought;
+
+    /// Linear dynamic pricing parameters
+    Linear public dynamicPricingLinearTime;
+    uint256 public dynamicPricingLinearTimeStart;
 
     /// @notice CurrencyReceiver has been changed to `newCurrencyReceiver`
     /// @param newCurrencyReceiver address that receives the payment (in currency) when tokens are bought
@@ -135,6 +144,22 @@ contract PublicFundraising is
         // after creating the contract, it needs a minting allowance (in the token contract)
     }
 
+    function activateDynamicPricing(
+        uint128 _linearSlopeEnumerator,
+        uint128 _linearSlopeDenominator,
+        uint256 _baseBlock
+    ) external onlyOwner whenPaused {
+        require(_linearSlopeEnumerator != 0, "_linearSlopeEnumerator needs to be a non-zero amount");
+        require(_linearSlopeDenominator != 0, "_linearSlopeDenominator needs to be a non-zero amount");
+        dynamicPricingLinearTime = Linear(_linearSlopeEnumerator, _linearSlopeDenominator);
+        dynamicPricingLinearTimeStart = _baseBlock;
+    }
+
+    function deactivateDynamicPricing() external onlyOwner whenPaused {
+        dynamicPricingLinearTime = Linear(0, 0);
+        dynamicPricingLinearTimeStart = 0;
+    }
+
     /**
      * @notice Buy `amount` tokens and mint them to `_tokenReceiver`.
      * @param _amount amount of tokens to buy, in bits (smallest subunit of token)
@@ -150,6 +175,14 @@ contract PublicFundraising is
 
         tokensSold += _amount;
         tokensBought[_tokenReceiver] += _amount;
+
+        uint256 currentPrice = tokenPrice;
+
+        if (dynamicPricingLinearTime.slopeEnumerator != 0) {
+            currentPrice +=
+                ((block.timestamp - dynamicPricingLinearTimeStart) * dynamicPricingLinearTime.slopeEnumerator) /
+                dynamicPricingLinearTime.slopeDenominator;
+        }
 
         // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
         uint256 currencyAmount = Math.ceilDiv(_amount * tokenPrice, 10 ** token.decimals());
