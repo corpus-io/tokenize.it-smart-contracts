@@ -10,11 +10,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
 import "./Token.sol";
-
-struct Linear {
-    uint128 slopeEnumerator;
-    uint128 slopeDenominator;
-}
+import "./interfaces/IPriceDynamic.sol";
 
 /**
  * @title PublicFundraising
@@ -43,7 +39,12 @@ contract PublicFundraising is
     uint256 public maxAmountPerBuyer;
     /// The price of a token, expressed as amount of bits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2*10^6 ).
     /// @dev units: [tokenPrice] = [currency_bits]/[token], so for above example: [tokenPrice] = [USDC_bits]/[TOK]
-    uint256 public tokenPrice;
+    uint256 public priceBase;
+    uint256 public priceMin;
+    uint256 public priceMax;
+    /// dynamic pricing oracle
+    IPriceDynamic public priceDynamicOracle;
+
     /// total amount of tokens that CAN BE minted through this contract, in bits (bit = smallest subunit of token)
     uint256 public maxAmountOfTokenToBeSold;
     /// total amount of tokens that HAVE BEEN minted through this contract, in bits (bit = smallest subunit of token)
@@ -61,10 +62,6 @@ contract PublicFundraising is
 
     /// This mapping keeps track of how much each buyer has bought, in order to enforce maxAmountPerBuyer
     mapping(address => uint256) public tokensBought;
-
-    /// Linear dynamic pricing parameters
-    Linear public dynamicPricingLinearTime;
-    uint256 public dynamicPricingLinearTimeStart;
 
     /// @notice CurrencyReceiver has been changed to `newCurrencyReceiver`
     /// @param newCurrencyReceiver address that receives the payment (in currency) when tokens are bought
@@ -88,6 +85,8 @@ contract PublicFundraising is
      * @param currencyAmount Amount of currency paid
      */
     event TokensBought(address indexed buyer, uint256 tokenAmount, uint256 currencyAmount);
+
+    event DynamicPricingActivated(address priceOracle, uint256 priceMin, uint256 priceMax);
 
     /**
      * This constructor creates a logic contract that is used to clone new fundraising contracts.
@@ -127,7 +126,9 @@ contract PublicFundraising is
         currencyReceiver = _currencyReceiver;
         minAmountPerBuyer = _minAmountPerBuyer;
         maxAmountPerBuyer = _maxAmountPerBuyer;
-        tokenPrice = _tokenPrice;
+        priceBase = _tokenPrice;
+        priceMin = _tokenPrice;
+        priceMax = _tokenPrice;
         maxAmountOfTokenToBeSold = _maxAmountOfTokenToBeSold;
         currency = _currency;
         token = _token;
@@ -145,31 +146,31 @@ contract PublicFundraising is
     }
 
     function activateDynamicPricing(
-        uint128 _linearSlopeEnumerator,
-        uint128 _linearSlopeDenominator,
-        uint256 _startTime
+        IPriceDynamic _priceOracle,
+        uint256 _priceMin,
+        uint256 _priceMax
     ) external onlyOwner whenPaused {
-        require(_linearSlopeEnumerator != 0, "_linearSlopeEnumerator needs to be a non-zero amount");
-        require(_linearSlopeDenominator != 0, "_linearSlopeDenominator needs to be a non-zero amount");
-        dynamicPricingLinearTime = Linear(_linearSlopeEnumerator, _linearSlopeDenominator);
-        dynamicPricingLinearTimeStart = _startTime;
+        require(address(_priceOracle) != address(0), "_priceOracle can not be zero address");
+        priceOracle = _priceOracle;
+        require(_priceMin <= priceBase, "_priceMin needs to be smaller or equal to priceBase");
+        priceMin = _priceMin;
+        require(priceBase <= _priceMax, "_priceMax needs to be larger or equal to priceBase");
+        priceMax = _priceMax;
         coolDownStart = block.timestamp;
+
+        emit DynamicPricingActivated(_priceOracle, _priceMin, _priceMax);
     }
 
     function deactivateDynamicPricing() external onlyOwner whenPaused {
-        dynamicPricingLinearTime = Linear(0, 0);
-        dynamicPricingLinearTimeStart = 0;
+        priceOracle = IPriceDynamic(address(0));
     }
 
     function getPrice() public view returns (uint256) {
-        if (dynamicPricingLinearTime.slopeEnumerator != 0) {
-            return
-                tokenPrice +
-                ((block.timestamp - dynamicPricingLinearTimeStart) * dynamicPricingLinearTime.slopeEnumerator) /
-                dynamicPricingLinearTime.slopeDenominator;
+        if (address(priceOracle) != address(0)) {
+            return Math.min(Math.max(priceOracle.getPrice(), priceMin), priceMax);
         }
 
-        return tokenPrice;
+        return priceBase;
     }
 
     /**
@@ -243,7 +244,7 @@ contract PublicFundraising is
      */
     function setCurrencyAndTokenPrice(IERC20 _currency, uint256 _tokenPrice) external onlyOwner whenPaused {
         require(_tokenPrice != 0, "_tokenPrice needs to be a non-zero amount");
-        tokenPrice = _tokenPrice;
+        priceBase = _tokenPrice;
         currency = _currency;
         emit TokenPriceAndCurrencyChanged(_tokenPrice, _currency);
         coolDownStart = block.timestamp;

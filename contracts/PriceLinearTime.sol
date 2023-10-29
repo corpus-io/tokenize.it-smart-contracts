@@ -6,7 +6,7 @@ import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "./interfaces/IDynamicPrice.sol";
+import "./interfaces/IPriceDynamic.sol";
 
 struct Linear {
     uint64 slopeEnumerator;
@@ -30,7 +30,7 @@ contract PriceLinearTime is
     Ownable2StepUpgradeable,
     PausableUpgradeable,
     ReentrancyGuardUpgradeable,
-    IDynamicPrice
+    IPriceDynamic
 {
     Linear public parameters;
     uint256 public startTime;
