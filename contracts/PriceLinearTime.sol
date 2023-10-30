@@ -33,7 +33,6 @@ contract PriceLinearTime is
     IPriceDynamic
 {
     Linear public parameters;
-    uint256 public startTime;
 
     /**
      * This constructor creates a logic contract that is used to clone new fundraising contracts.
@@ -60,6 +59,7 @@ contract PriceLinearTime is
         require(_slopeEnumerator != 0, "slopeEnumerator can not be zero");
         require(_slopeDenominator != 0, "slopeDenominator can not be zero");
         require(_startTime > block.timestamp, "startTime must be in the future");
+        parameters = Linear(_slopeEnumerator, _slopeDenominator, _startTime);
     }
 
     function getPrice(uint256 basePrice) public view returns (uint256) {

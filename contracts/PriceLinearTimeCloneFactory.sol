@@ -6,7 +6,7 @@ import "./PriceLinearTime.sol";
 import "./CloneFactory.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
-contract TokenCloneFactory is CloneFactory {
+contract PriceLinearTimeCloneFactory is CloneFactory {
     constructor(address _implementation) CloneFactory(_implementation) {}
 
     function createPriceLinearTime(

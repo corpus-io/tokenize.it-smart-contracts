@@ -5,7 +5,7 @@ import "../lib/forge-std/src/Test.sol";
 import "../contracts/TokenCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "../contracts/PublicFundraisingCloneFactory.sol";
-import "../contracts/PriceLinearTime.sol";
+import "../contracts/PriceLinearTimeCloneFactory.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
 
@@ -25,6 +25,7 @@ contract PublicFundraisingTest is Test {
     TokenCloneFactory tokenCloneFactory;
     Token token;
     FakePaymentToken paymentToken;
+    PriceLinearTimeCloneFactory priceLinearTimeCloneFactory;
 
     address public constant companyAdmin = address(1);
     address public constant buyer = address(2);
@@ -107,46 +108,78 @@ contract PublicFundraisingTest is Test {
         // give raise contract allowance
         vm.prank(buyer);
         paymentToken.approve(address(raise), paymentTokenAmount);
+
+        // set up price oracle factory
+        PriceLinearTime priceLinearTimeLogicContract = new PriceLinearTime(trustedForwarder);
+        priceLinearTimeCloneFactory = new PriceLinearTimeCloneFactory(address(priceLinearTimeLogicContract));
     }
 
     function testDynamicPricingLinearTime(uint128 timeShift) public {
         vm.assume(timeShift > 1 days);
+        uint256 startTime = block.timestamp + 1 days + 1;
 
         vm.startPrank(companyAdmin);
 
         // set up price oracle to increase the price by 1 payment token per second
-        PriceLinearTime priceOracle = new PriceLinearTime(trustedForwarder);
-        priceOracle.initialize(companyAdmin, 1e6, 1, uint64(block.timestamp + 1 days + 1));
+        PriceLinearTime priceOracle = PriceLinearTime(
+            priceLinearTimeCloneFactory.createPriceLinearTime(
+                0,
+                trustedForwarder,
+                companyAdmin,
+                1e6,
+                1,
+                uint64(startTime)
+            )
+        );
 
         // configure raise to use oracle
         raise.pause();
-        uint256 startTime = block.timestamp + 1 days + 1;
         raise.activateDynamicPricing(IPriceDynamic(priceOracle), raise.priceBase(), raise.priceBase() * 2);
         vm.warp(startTime);
         raise.unpause();
+
+        vm.stopPrank();
 
         // check time and price
         console.log("Timestamp matches tomorrow: %s", block.timestamp == startTime);
         uint256 currentPrice = raise.getPrice();
         console.log("Price: %s", currentPrice);
-        assertTrue(currentPrice == price);
+        assertTrue(currentPrice == price, "Price should be equal to base price before start time");
 
         // check price 1 second later
         vm.warp(startTime + 1);
         currentPrice = raise.getPrice();
         console.log("Price: %s", currentPrice);
-        assertTrue(currentPrice == price + 1e6);
+        assertTrue(currentPrice == price + 1e6, "Price should be equal to base price + 1 payment token");
 
-        // check price 1 day later
+        // buy now and make sure this price was used
+        assertEq(token.balanceOf(buyer), 0, "Buyer should have 0 tokens before");
+        uint256 buyerPaymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
+        vm.prank(buyer);
+        raise.buy(1e18, buyer);
+        assertTrue(token.balanceOf(buyer) == 1e18, "Buyer should have 1 token");
+        assertEq(
+            paymentToken.balanceOf(buyer),
+            buyerPaymentTokenBalanceBefore - currentPrice,
+            "Buyer should have paid currentPrice"
+        );
+
+        // check price 4 seconds later
+        vm.warp(startTime + 4);
+        currentPrice = raise.getPrice();
+        console.log("Price: %s", currentPrice);
+        assertTrue(currentPrice == price + 4 * 1e6, "Price should be equal to base price + 4 payment token");
+
+        // check price much later
         vm.warp(startTime + 1 days);
         currentPrice = raise.getPrice();
         console.log("Price: %s", currentPrice);
-        assertTrue(currentPrice == price + 1e6 * 1 days);
+        assertTrue(currentPrice == price * 2, "Price should be equal to max price");
 
         // check price timeShift later
         vm.warp(startTime + timeShift);
         currentPrice = raise.getPrice();
         console.log("Price: %s", currentPrice);
-        assertTrue(currentPrice == price + 1e6 * uint256(timeShift));
+        assertTrue(currentPrice == price * 2, "Price should be equal to max price after timeShift");
     }
 }
