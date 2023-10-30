@@ -9,6 +9,26 @@ import "../contracts/PriceLinearTimeCloneFactory.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
 
+/// fixture that always returns max price
+contract MaxPriceOracle is IPriceDynamic {
+    constructor() {}
+
+    // solhint-disable-next-line
+    function getPrice(uint256 basePrice) external view returns (uint256) {
+        return type(uint256).max;
+    }
+}
+
+/// fixture that always returns max price
+contract MinPriceOracle is IPriceDynamic {
+    constructor() {}
+
+    // solhint-disable-next-line
+    function getPrice(uint256 basePrice) external view returns (uint256) {
+        return type(uint256).min;
+    }
+}
+
 contract PublicFundraisingTest is Test {
     event CurrencyReceiverChanged(address indexed);
     event MinAmountPerBuyerChanged(uint256);
@@ -182,5 +202,49 @@ contract PublicFundraisingTest is Test {
         currentPrice = raise.getPrice();
         console.log("Price: %s", currentPrice);
         assertTrue(currentPrice == price * 2, "Price should be equal to max price after timeShift");
+    }
+
+    function testMaxPrice(uint256 maxPrice) public {
+        vm.assume(maxPrice >= price);
+        vm.warp(0);
+
+        // deploy max price oracle
+        MaxPriceOracle maxPriceOracle = new MaxPriceOracle();
+
+        // configure raise to use oracle
+        vm.startPrank(companyAdmin);
+        raise.pause();
+        raise.activateDynamicPricing(IPriceDynamic(maxPriceOracle), raise.priceBase(), maxPrice);
+        vm.warp(1 days + 1);
+        raise.unpause();
+
+        vm.stopPrank();
+
+        // check price
+        uint256 currentPrice = raise.getPrice();
+        console.log("Price: %s", currentPrice);
+        assertTrue(currentPrice == maxPrice, "Price should be equal to max price");
+    }
+
+    function testMinPrice(uint256 minPrice) public {
+        vm.assume(minPrice <= price);
+        vm.warp(0);
+
+        // deploy max price oracle
+        MinPriceOracle maxPriceOracle = new MinPriceOracle();
+
+        // configure raise to use oracle
+        vm.startPrank(companyAdmin);
+        raise.pause();
+        raise.activateDynamicPricing(IPriceDynamic(maxPriceOracle), minPrice, raise.priceBase());
+        vm.warp(1 days + 1);
+        raise.unpause();
+
+        vm.stopPrank();
+
+        // check price
+        uint256 currentPrice = raise.getPrice();
+        console.log("Price: %s", currentPrice);
+        assertTrue(currentPrice == minPrice, "Price should be equal to min price");
     }
 }
