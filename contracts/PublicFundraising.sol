@@ -43,7 +43,7 @@ contract PublicFundraising is
     uint256 public priceMin;
     uint256 public priceMax;
     /// dynamic pricing oracle
-    IPriceDynamic public priceDynamicOracle;
+    IPriceDynamic public priceOracle;
 
     /// total amount of tokens that CAN BE minted through this contract, in bits (bit = smallest subunit of token)
     uint256 public maxAmountOfTokenToBeSold;
@@ -158,7 +158,7 @@ contract PublicFundraising is
         priceMax = _priceMax;
         coolDownStart = block.timestamp;
 
-        emit DynamicPricingActivated(_priceOracle, _priceMin, _priceMax);
+        emit DynamicPricingActivated(address(_priceOracle), _priceMin, _priceMax);
     }
 
     function deactivateDynamicPricing() external onlyOwner whenPaused {
@@ -167,7 +167,7 @@ contract PublicFundraising is
 
     function getPrice() public view returns (uint256) {
         if (address(priceOracle) != address(0)) {
-            return Math.min(Math.max(priceOracle.getPrice(), priceMin), priceMax);
+            return Math.min(Math.max(priceOracle.getPrice(priceBase), priceMin), priceMax);
         }
 
         return priceBase;

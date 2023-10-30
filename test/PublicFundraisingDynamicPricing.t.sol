@@ -5,6 +5,7 @@ import "../lib/forge-std/src/Test.sol";
 import "../contracts/TokenCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "../contracts/PublicFundraisingCloneFactory.sol";
+import "../contracts/PriceLinearTime.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
 
@@ -111,11 +112,16 @@ contract PublicFundraisingTest is Test {
     function testDynamicPricingLinearTime(uint128 timeShift) public {
         vm.assume(timeShift > 1 days);
 
-        // configure contract to increase the price by 1 payment token per second
         vm.startPrank(companyAdmin);
+
+        // set up price oracle to increase the price by 1 payment token per second
+        PriceLinearTime priceOracle = new PriceLinearTime(trustedForwarder);
+        priceOracle.initialize(companyAdmin, 1e6, 1, uint64(block.timestamp + 1 days + 1));
+
+        // configure raise to use oracle
         raise.pause();
         uint256 startTime = block.timestamp + 1 days + 1;
-        raise.activateDynamicPricing(1e6, 1, startTime);
+        raise.activateDynamicPricing(IPriceDynamic(priceOracle), raise.priceBase(), raise.priceBase() * 2);
         vm.warp(startTime);
         raise.unpause();
 
