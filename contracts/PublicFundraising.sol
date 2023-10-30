@@ -127,8 +127,6 @@ contract PublicFundraising is
         minAmountPerBuyer = _minAmountPerBuyer;
         maxAmountPerBuyer = _maxAmountPerBuyer;
         priceBase = _tokenPrice;
-        priceMin = _tokenPrice;
-        priceMax = _tokenPrice;
         maxAmountOfTokenToBeSold = _maxAmountOfTokenToBeSold;
         currency = _currency;
         token = _token;
