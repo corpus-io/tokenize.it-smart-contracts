@@ -62,6 +62,17 @@ contract PriceLinearTime is
         parameters = Linear(_slopeEnumerator, _slopeDenominator, _startTime);
     }
 
+    /**
+     * Update the parameters of the linear price function
+     * @param _parameters The new parameters
+     */
+    function updateParameters(Linear memory _parameters) external onlyOwner {
+        require(_parameters.slopeEnumerator != 0, "slopeEnumerator can not be zero");
+        require(_parameters.slopeDenominator != 0, "slopeDenominator can not be zero");
+        require(_parameters.startTime > block.timestamp, "startTime must be in the future");
+        parameters = _parameters;
+    }
+
     function getPrice(uint256 basePrice) public view returns (uint256) {
         if (block.timestamp > parameters.startTime) {
             return
