@@ -2,14 +2,14 @@
 
 pragma solidity 0.8.17;
 
-import "./ContinuousFundraising.sol";
+import "./PublicFundraising.sol";
 import "./CloneFactory.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
-contract ContinuousFundraisingCloneFactory is CloneFactory {
+contract PublicFundraisingCloneFactory is CloneFactory {
     constructor(address _implementation) CloneFactory(_implementation) {}
 
-    function createContinuousFundraisingClone(
+    function createPublicFundraisingClone(
         bytes32 _rawSalt,
         address _trustedForwarder,
         address _owner,
@@ -36,12 +36,12 @@ contract ContinuousFundraisingCloneFactory is CloneFactory {
             )
         );
         address clone = Clones.cloneDeterministic(implementation, salt);
-        ContinuousFundraising continuousFundraising = ContinuousFundraising(clone);
+        PublicFundraising publicFundraising = PublicFundraising(clone);
         require(
-            continuousFundraising.isTrustedForwarder(_trustedForwarder),
-            "ContinuousFundraisingCloneFactory: Unexpected trustedForwarder"
+            publicFundraising.isTrustedForwarder(_trustedForwarder),
+            "PublicFundraisingCloneFactory: Unexpected trustedForwarder"
         );
-        continuousFundraising.initialize(
+        publicFundraising.initialize(
             _owner,
             _currencyReceiver,
             _minAmountPerBuyer,

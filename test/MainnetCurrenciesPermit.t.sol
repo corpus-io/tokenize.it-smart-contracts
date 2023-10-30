@@ -6,9 +6,9 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../contracts/Token.sol";
-import "../contracts/ContinuousFundraising.sol";
-import "../contracts/PersonalInvite.sol";
-import "../contracts/PersonalInviteFactory.sol";
+import "../contracts/PublicFundraising.sol";
+import "../contracts/PrivateOffer.sol";
+import "../contracts/PrivateOfferFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/ERC20Helper.sol";
 

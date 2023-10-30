@@ -6,7 +6,7 @@ pragma solidity 0.8.17;
 import "../lib/forge-std/src/Script.sol";
 import "../contracts/FeeSettings.sol";
 import "../contracts/AllowList.sol";
-import "../contracts/PersonalInviteFactory.sol";
+import "../contracts/PrivateOfferFactory.sol";
 import "../contracts/Token.sol";
 
 /*

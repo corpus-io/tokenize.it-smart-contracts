@@ -200,7 +200,7 @@ contract Token is
     }
 
     /**
-     * @notice Increase the amount of tokens `_minter` can mint by `_allowance`. Any address can be used, e.g. of an investment contract like PersonalInvite, a vesting contract, or an EOA.
+     * @notice Increase the amount of tokens `_minter` can mint by `_allowance`. Any address can be used, e.g. of an investment contract like PrivateOffer, a vesting contract, or an EOA.
      *      The contract does not keep track of how many tokens a minter has minted over time
      * @param _minter address of the minter
      * @param _allowance how many tokens can be minted by this minter, in addition to their current allowance (excluding the tokens minted as a fee)

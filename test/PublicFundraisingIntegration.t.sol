@@ -3,13 +3,13 @@ pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/TokenCloneFactory.sol";
-import "../contracts/ContinuousFundraisingCloneFactory.sol";
+import "../contracts/PublicFundraisingCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
 
-contract ContinuousFundraisingTest is Test {
-    ContinuousFundraising raise;
+contract PublicFundraisingTest is Test {
+    PublicFundraising raise;
     AllowList list;
     FeeSettings feeSettings;
 
@@ -17,7 +17,7 @@ contract ContinuousFundraisingTest is Test {
     TokenCloneFactory tokenFactory = new TokenCloneFactory(address(implementation));
     Token token;
     FakePaymentToken paymentToken;
-    ContinuousFundraisingCloneFactory fundraisingFactory;
+    PublicFundraisingCloneFactory fundraisingFactory;
 
     address public constant platformAdmin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant investor = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
@@ -66,12 +66,10 @@ contract ContinuousFundraisingTest is Test {
 
         vm.prank(companyOwner);
 
-        fundraisingFactory = new ContinuousFundraisingCloneFactory(
-            address(new ContinuousFundraising(trustedForwarder))
-        );
+        fundraisingFactory = new PublicFundraisingCloneFactory(address(new PublicFundraising(trustedForwarder)));
 
-        raise = ContinuousFundraising(
-            fundraisingFactory.createContinuousFundraisingClone(
+        raise = PublicFundraising(
+            fundraisingFactory.createPublicFundraisingClone(
                 0,
                 trustedForwarder,
                 address(this),
@@ -101,12 +99,12 @@ contract ContinuousFundraisingTest is Test {
     /*
     set up with FakePaymentToken which has variable decimals to make sure that doesn't break anything
     */
-    function feeCalculation(uint256 tokenFeeDenominator, uint256 continuousFundraisingFeeDenominator) public {
+    function feeCalculation(uint256 tokenFeeDenominator, uint256 publicFundraisingFeeDenominator) public {
         // apply fees for test
         Fees memory fees = Fees(
             tokenFeeDenominator,
-            continuousFundraisingFeeDenominator,
-            continuousFundraisingFeeDenominator,
+            publicFundraisingFeeDenominator,
+            publicFundraisingFeeDenominator,
             block.timestamp + 13 weeks
         );
         vm.prank(platformAdmin);
@@ -152,8 +150,8 @@ contract ContinuousFundraisingTest is Test {
         paymentToken = new FakePaymentToken(_paymentTokenAmount, _paymentTokenDecimals);
         vm.prank(companyOwner);
 
-        ContinuousFundraising _raise = ContinuousFundraising(
-            fundraisingFactory.createContinuousFundraisingClone(
+        PublicFundraising _raise = PublicFundraising(
+            fundraisingFactory.createPublicFundraisingClone(
                 0,
                 trustedForwarder,
                 address(this),
@@ -201,7 +199,7 @@ contract ContinuousFundraisingTest is Test {
 
         uint currencyAmount = 990 * 10 ** _paymentTokenDecimals;
         uint256 currencyFee = currencyAmount /
-            FeeSettings(address(token.feeSettings())).continuousFundraisingFeeDenominator();
+            FeeSettings(address(token.feeSettings())).publicFundraisingFeeDenominator();
         assertTrue(
             paymentToken.balanceOf(receiver) == currencyAmount - currencyFee,
             "receiver has wrong amount of currency"
@@ -224,10 +222,10 @@ contract ContinuousFundraisingTest is Test {
         feeCalculation(UINT256_MAX, UINT256_MAX);
     }
 
-    function testVariousFees(uint256 tokenFeeDenominator, uint256 continuousFundraisingFeeDenominator) public {
+    function testVariousFees(uint256 tokenFeeDenominator, uint256 publicFundraisingFeeDenominator) public {
         vm.assume(tokenFeeDenominator >= 20);
-        vm.assume(continuousFundraisingFeeDenominator >= 20);
-        feeCalculation(tokenFeeDenominator, continuousFundraisingFeeDenominator);
+        vm.assume(publicFundraisingFeeDenominator >= 20);
+        feeCalculation(tokenFeeDenominator, publicFundraisingFeeDenominator);
     }
 
     /*
@@ -268,8 +266,8 @@ contract ContinuousFundraisingTest is Test {
             paymentToken = new FakePaymentToken(_paymentTokenAmount, _paymentTokenDecimals);
             vm.prank(companyOwner);
 
-            ContinuousFundraising _raise = ContinuousFundraising(
-                fundraisingFactory.createContinuousFundraisingClone(
+            PublicFundraising _raise = PublicFundraising(
+                fundraisingFactory.createPublicFundraisingClone(
                     0,
                     trustedForwarder,
                     address(this),
@@ -315,7 +313,7 @@ contract ContinuousFundraisingTest is Test {
             // receiver should have the 990 FPT that were paid, minus the fee
             uint currencyAmount = 990 * 10 ** _paymentTokenDecimals;
             uint256 currencyFee = currencyAmount /
-                FeeSettings(address(token.feeSettings())).continuousFundraisingFeeDenominator();
+                FeeSettings(address(token.feeSettings())).publicFundraisingFeeDenominator();
             assertTrue(
                 paymentToken.balanceOf(receiver) == currencyAmount - currencyFee,
                 "receiver has wrong amount of currency"
