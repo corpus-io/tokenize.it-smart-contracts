@@ -114,10 +114,8 @@ contract PublicFundraisingTest is Test {
         priceLinearTimeCloneFactory = new PriceLinearTimeCloneFactory(address(priceLinearTimeLogicContract));
     }
 
-    // function testDynamicPricingLinearTime(uint128 timeShift) public {
-    //     vm.assume(timeShift > 1 days);
-    function testDynamicPricingLinearTime() public {
-        uint128 timeShift = 84001;
+    function testDynamicPricingLinearTime(uint128 timeShift) public {
+        vm.assume(timeShift > 1 days);
         vm.warp(0);
         uint256 startTime = 1 days + 1;
 
