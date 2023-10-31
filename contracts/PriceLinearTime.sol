@@ -3,7 +3,6 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./interfaces/IPriceDynamic.sol";
@@ -28,7 +27,6 @@ struct Linear {
 contract PriceLinearTime is
     ERC2771ContextUpgradeable,
     Ownable2StepUpgradeable,
-    PausableUpgradeable,
     ReentrancyGuardUpgradeable,
     IPriceDynamic
 {
