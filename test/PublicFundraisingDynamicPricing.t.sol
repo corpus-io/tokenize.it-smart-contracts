@@ -5,7 +5,7 @@ import "../lib/forge-std/src/Test.sol";
 import "../contracts/TokenCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "../contracts/PublicFundraisingCloneFactory.sol";
-import "../contracts/PriceLinearTimeCloneFactory.sol";
+import "../contracts/PriceLinearCloneFactory.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
 
@@ -45,7 +45,7 @@ contract PublicFundraisingTest is Test {
     TokenCloneFactory tokenCloneFactory;
     Token token;
     FakePaymentToken paymentToken;
-    PriceLinearTimeCloneFactory priceLinearTimeCloneFactory;
+    PriceLinearCloneFactory priceLinearCloneFactory;
 
     address public constant companyAdmin = address(1);
     address public constant buyer = address(2);
@@ -130,11 +130,11 @@ contract PublicFundraisingTest is Test {
         paymentToken.approve(address(raise), paymentTokenAmount);
 
         // set up price oracle factory
-        PriceLinearTime priceLinearTimeLogicContract = new PriceLinearTime(trustedForwarder);
-        priceLinearTimeCloneFactory = new PriceLinearTimeCloneFactory(address(priceLinearTimeLogicContract));
+        PriceLinear priceLinearLogicContract = new PriceLinear(trustedForwarder);
+        priceLinearCloneFactory = new PriceLinearCloneFactory(address(priceLinearLogicContract));
     }
 
-    function testDynamicPricingLinearTime(uint128 timeShift) public {
+    function testDynamicPricingLinearTime(uint64 timeShift) public {
         vm.assume(timeShift > 1 days);
         vm.warp(0);
         uint256 startTime = 1 days + 1;
@@ -142,14 +142,17 @@ contract PublicFundraisingTest is Test {
         vm.startPrank(companyAdmin);
 
         // set up price oracle to increase the price by 1 payment token per second
-        PriceLinearTime priceOracle = PriceLinearTime(
-            priceLinearTimeCloneFactory.createPriceLinearTime(
+        PriceLinear priceOracle = PriceLinear(
+            priceLinearCloneFactory.createPriceLinear(
                 0,
                 trustedForwarder,
                 companyAdmin,
                 1e6,
                 1,
-                uint64(startTime)
+                uint64(startTime),
+                1,
+                false,
+                true
             )
         );
 
