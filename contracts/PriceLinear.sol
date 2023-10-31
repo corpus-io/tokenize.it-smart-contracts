@@ -111,20 +111,21 @@ contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPri
     }
 
     function getPrice(uint256 basePrice) public view returns (uint256) {
-        uint256 current = parameters.isBlockBased == 1 ? block.number : block.timestamp;
+        Linear memory _parameters = parameters;
+        uint256 current = _parameters.isBlockBased == 1 ? block.number : block.timestamp;
 
-        if (current <= parameters.start) {
+        if (current <= _parameters.start) {
             return basePrice;
         }
 
         /// @dev note that the division is rounded down, generating a step function if stepDuration > 1
-        uint256 change = (((current - parameters.start) / parameters.stepDuration) * parameters.slopeEnumerator) /
-            parameters.slopeDenominator;
+        uint256 change = (((current - _parameters.start) / _parameters.stepDuration) * _parameters.slopeEnumerator) /
+            _parameters.slopeDenominator;
 
         //uint256 change = uint256((current - parameters.start) / parameters.stepDuration) * parameters.slopeEnumerator;
 
         // if price is rising, add change, else subtract change
-        if (parameters.isRising == 1) {
+        if (_parameters.isRising == 1) {
             return basePrice + change;
         } else {
             // prevent underflow
