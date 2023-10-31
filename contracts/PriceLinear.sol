@@ -126,6 +126,10 @@ contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPri
 
         // if price is rising, add change, else subtract change
         if (_parameters.isRising == 1) {
+            // prevent overflow
+            if (type(uint256).max - basePrice <= change) {
+                return type(uint256).max;
+            }
             return basePrice + change;
         } else {
             // prevent underflow
