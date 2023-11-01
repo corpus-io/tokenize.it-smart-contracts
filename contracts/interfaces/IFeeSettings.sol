@@ -35,9 +35,20 @@ interface IFeeSettingsV2 {
     function supportsInterface(bytes4) external view returns (bool); //because we inherit from ERC165
 }
 
+/**
+ * @title FeeFactor struct
+ * @notice FeeFactor is a struct used to represent a fee factor, split into a numerator and a denominator
+ * @dev The fee factor is calculated as `numerator / denominator`
+ * @dev As fees over 100% don't make sense, the denominator will almost always be greater than or equal to the numerator
+ */
+struct FeeFactor {
+    uint128 numerator;
+    uint128 denominator;
+}
+
 struct Fees {
-    uint256 tokenFeeDenominator;
-    uint256 publicFundraisingFeeDenominator;
-    uint256 privateOfferFeeDenominator;
+    FeeFactor tokenFeeFactor;
+    FeeFactor publicFundraisingFeeFactor;
+    FeeFactor privateOfferFeeFactor;
     uint256 time;
 }
