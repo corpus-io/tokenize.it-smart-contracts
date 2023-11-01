@@ -56,4 +56,136 @@ contract PublicFundraisingTest is Test {
             assertEq(oracle.getPrice(price), type(uint256).max, "Price should have increased to max");
         }
     }
+
+    function testStepping() public {
+        uint256 price = 1e18;
+        uint32 stepWidth = 10;
+        uint256 startTime = 5;
+        uint64 increasePerStep = 1e9;
+
+        vm.warp(0);
+
+        PriceLinear oracle = PriceLinear(
+            priceLinearCloneFactory.createPriceLinear(
+                bytes32(uint256(0)),
+                trustedForwarder,
+                companyAdmin,
+                increasePerStep,
+                stepWidth,
+                uint64(startTime),
+                stepWidth,
+                false,
+                true
+            )
+        );
+
+        assertEq(oracle.getPrice(price), price, "Price changed before start time");
+
+        vm.warp(1 + startTime);
+        assertEq(oracle.getPrice(price), price, "Price changed at 1");
+
+        vm.warp(9 + startTime);
+        assertEq(oracle.getPrice(price), price, "Price changed at 9");
+
+        vm.warp(startTime + stepWidth);
+        assertEq(oracle.getPrice(price), price + increasePerStep, "Price should have increased by 1 step");
+        console.log("Price: %s", oracle.getPrice(price));
+        console.log("Increase per step: %s", increasePerStep);
+
+        vm.warp(startTime + stepWidth + 5);
+        assertEq(oracle.getPrice(price), price + increasePerStep, "Price should have increased by 1 step");
+        console.log("Price: %s", oracle.getPrice(price));
+        console.log("Increase per step: %s", increasePerStep);
+
+        vm.warp(startTime + 2 * stepWidth);
+        assertEq(oracle.getPrice(price), price + 2 * increasePerStep, "Price should have increased by 2 steps");
+    }
+
+    function testDecrease() public {
+        uint256 price = 1e18;
+        uint32 stepWidth = 10;
+        uint256 startTime = 5;
+        uint64 decreasePerStep = 1e9;
+
+        vm.warp(0);
+
+        PriceLinear oracle = PriceLinear(
+            priceLinearCloneFactory.createPriceLinear(
+                bytes32(uint256(0)),
+                trustedForwarder,
+                companyAdmin,
+                decreasePerStep,
+                stepWidth,
+                uint64(startTime),
+                stepWidth,
+                false,
+                false
+            )
+        );
+
+        assertEq(oracle.getPrice(price), price, "Price changed before start time");
+
+        vm.warp(1 + startTime);
+        assertEq(oracle.getPrice(price), price, "Price changed at 1");
+
+        vm.warp(9 + startTime);
+        assertEq(oracle.getPrice(price), price, "Price changed at 9");
+
+        vm.warp(startTime + stepWidth);
+        assertEq(oracle.getPrice(price), price - decreasePerStep, "Price should have decreased by 1 step");
+        console.log("Price: %s", oracle.getPrice(price));
+        console.log("Increase per step: %s", decreasePerStep);
+
+        vm.warp(startTime + stepWidth + 5);
+        assertEq(oracle.getPrice(price), price - decreasePerStep, "Price should have decreased by 1 step");
+        console.log("Price: %s", oracle.getPrice(price));
+        console.log("Increase per step: %s", decreasePerStep);
+
+        vm.warp(startTime + 2 * stepWidth);
+        assertEq(oracle.getPrice(price), price - 2 * decreasePerStep, "Price should have decreased by 2 steps");
+    }
+
+    function testBlockBased() public {
+        uint256 price = 1e18;
+        uint32 stepWidth = 10;
+        uint256 startBlock = 5;
+        uint64 decreasePerStep = 1e9;
+
+        vm.roll(0);
+
+        PriceLinear oracle = PriceLinear(
+            priceLinearCloneFactory.createPriceLinear(
+                bytes32(uint256(0)),
+                trustedForwarder,
+                companyAdmin,
+                decreasePerStep,
+                stepWidth,
+                uint64(startBlock),
+                stepWidth,
+                true,
+                false
+            )
+        );
+
+        assertEq(oracle.getPrice(price), price, "Price changed before start time");
+
+        vm.roll(1 + startBlock);
+        assertEq(oracle.getPrice(price), price, "Price changed at 1");
+
+        vm.roll(9 + startBlock);
+        assertEq(oracle.getPrice(price), price, "Price changed at 9");
+
+        vm.roll(startBlock + stepWidth);
+        assertEq(oracle.getPrice(price), price - decreasePerStep, "Price should have decreased by 1 step");
+        console.log("Price: %s", oracle.getPrice(price));
+        console.log("Increase per step: %s", decreasePerStep);
+
+        vm.roll(startBlock + stepWidth + 5);
+        assertEq(oracle.getPrice(price), price - decreasePerStep, "Price should have decreased by 1 step");
+        console.log("Price: %s", oracle.getPrice(price));
+        console.log("Increase per step: %s", decreasePerStep);
+
+        vm.roll(startBlock + 2 * stepWidth);
+        assertEq(oracle.getPrice(price), price - 2 * decreasePerStep, "Price should have decreased by 2 steps");
+    }
 }

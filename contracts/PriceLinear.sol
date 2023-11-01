@@ -119,8 +119,9 @@ contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPri
         }
 
         /// @dev note that the division is rounded down, generating a step function if stepDuration > 1
-        uint256 change = (((current - _parameters.start) / _parameters.stepDuration) * _parameters.slopeEnumerator) /
-            _parameters.slopeDenominator;
+        uint256 change = (((current - _parameters.start) / _parameters.stepDuration) *
+            _parameters.stepDuration *
+            _parameters.slopeEnumerator) / _parameters.slopeDenominator;
 
         //uint256 change = uint256((current - parameters.start) / parameters.stepDuration) * parameters.slopeEnumerator;
 
