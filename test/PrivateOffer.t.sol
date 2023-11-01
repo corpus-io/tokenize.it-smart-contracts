@@ -48,7 +48,8 @@ contract PrivateOfferTest is Test {
 
         list.set(tokenReceiver, requirements);
 
-        Fees memory fees = Fees(100, 100, 100, 0);
+        FeeFactor memory feeFactor = FeeFactor(1, 100);
+        Fees memory fees = Fees(feeFactor, feeFactor, feeFactor, 0);
         feeSettings = new FeeSettings(fees, wrongFeeReceiver, wrongFeeReceiver, admin);
 
         Token implementation = new Token(trustedForwarder);

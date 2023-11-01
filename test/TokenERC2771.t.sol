@@ -62,7 +62,12 @@ contract TokenERC2771Test is Test {
         allowList = new AllowList();
 
         // deploy fee settings
-        Fees memory fees = Fees(tokenFeeDenominator, publicFundraisingFeeDenominator, privateOfferFeeDenominator, 0);
+        Fees memory fees = Fees(
+            FeeFactor(1, tokenFeeDenominator),
+            FeeFactor(1, publicFundraisingFeeDenominator),
+            FeeFactor(1, privateOfferFeeDenominator),
+            0
+        );
         vm.prank(platformAdmin);
         feeSettings = new FeeSettings(fees, feeCollector, feeCollector, feeCollector);
 

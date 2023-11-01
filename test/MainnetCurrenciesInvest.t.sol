@@ -61,7 +61,8 @@ contract MainnetCurrencies is Test {
 
     function setUp() public {
         list = new AllowList();
-        Fees memory fees = Fees(100, 100, 100, 0);
+        FeeFactor memory feeFactor = FeeFactor(1, 100);
+        Fees memory fees = Fees(feeFactor, feeFactor, feeFactor, 0);
         feeSettings = new FeeSettings(fees, admin, admin, admin);
 
         Token implementation = new Token(trustedForwarder);
@@ -148,17 +149,17 @@ contract MainnetCurrencies is Test {
         assertEq(token.balanceOf(receiver), 0, "receiver has no tokens");
         assertEq(
             _currency.balanceOf(receiver),
-            _currencyCost - _currencyCost / FeeSettings(address(token.feeSettings())).publicFundraisingFeeDenominator(),
+            _currencyCost - FeeSettings(address(token.feeSettings())).publicFundraisingFee(_currencyCost),
             "receiver should have received currency"
         );
         assertEq(
             _currency.balanceOf(FeeSettings(address(token.feeSettings())).feeCollector()),
-            _currencyCost / FeeSettings(address(token.feeSettings())).publicFundraisingFeeDenominator(),
+            FeeSettings(address(token.feeSettings())).publicFundraisingFee(_currencyCost),
             "fee receiver should have received currency"
         );
         assertEq(
             token.balanceOf(FeeSettings(address(token.feeSettings())).feeCollector()),
-            amountOfTokenToBuy / FeeSettings(address(token.feeSettings())).publicFundraisingFeeDenominator(),
+            FeeSettings(address(token.feeSettings())).tokenFee(amountOfTokenToBuy),
             "fee receiver should have received tokens"
         );
         assertEq(_currency.balanceOf(buyer), _currencyAmount - _currencyCost, "buyer should have paid currency");
