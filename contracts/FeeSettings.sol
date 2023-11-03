@@ -169,22 +169,6 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV1 {
         uint32 bNumerator,
         uint32 bDenominator
     ) internal pure returns (bool) {
-        return aNumerator * bDenominator > bNumerator * aDenominator;
-    }
-
-    /**
-     * Compares two fractions and returns true if the first one is greater than the second one
-     * @param aNumerator numerator in fraction aNumerator/aDenominator
-     * @param aDenominator denominator in fraction aNumerator/aDenominator
-     * @param bNumerator numerator in fraction bNumerator/bDenominator
-     * @param bDenominator denominator in fraction bNumerator/bDenominator
-     */
-    function _isFractionAGreater(
-        uint32 aNumerator,
-        uint32 aDenominator,
-        uint32 bNumerator,
-        uint32 bDenominator
-    ) internal pure returns (bool) {
         return uint256(aNumerator) * bDenominator > uint256(bNumerator) * aDenominator;
     }
 
