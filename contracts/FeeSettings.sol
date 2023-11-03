@@ -177,12 +177,6 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV1 {
      * @param _fees The fees to check
      */
     function checkFeeLimits(Fees memory _fees) internal pure {
-        require(_fees.tokenFeeDenominator > 0, "Token fee denominator must be greater than 0");
-        require(
-            _fees.continuousFundraisingFeeDenominator > 0,
-            "ContinuousFundraising fee denominator must be greater than 0"
-        );
-        require(_fees.personalInviteFeeDenominator > 0, "PersonalInvite fee denominator must be greater than 0");
         require(
             !_isFractionAGreater(
                 _fees.tokenFeeNumerator,
