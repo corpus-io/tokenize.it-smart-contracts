@@ -34,7 +34,7 @@ contract PrivateOfferFactoryTest is Test {
     function setUp() public {
         factory = new PrivateOfferFactory();
         list = new AllowList();
-        Fees memory fees = Fees(100, 100, 100, 0);
+        Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
         feeSettings = new FeeSettings(fees, admin, admin, admin);
 
         Token implementation = new Token(trustedForwarder);
