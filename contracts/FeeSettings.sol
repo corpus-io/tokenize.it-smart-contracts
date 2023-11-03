@@ -84,8 +84,11 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      */
     constructor(Fees memory _fees, address _feeCollector) {
         checkFeeLimits(_fees);
+        tokenFeeNumerator = _fees.tokenFeeNumerator;
         tokenFeeDenominator = _fees.tokenFeeDenominator;
+        publicFundraisingFeeNumerator = _fees.publicFundraisingFeeNumerator;
         continuousFundraisingFeeDenominator = _fees.continuousFundraisingFeeDenominator;
+        privateOfferFeeNumerator = _fees.privateOfferFeeNumerator;
         personalInviteFeeDenominator = _fees.personalInviteFeeDenominator;
         require(_feeCollector != address(0), "Fee collector cannot be 0x0");
         feeCollector = _feeCollector;
