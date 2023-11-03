@@ -190,7 +190,7 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
         uint32 bNumerator,
         uint32 bDenominator
     ) internal pure returns (bool) {
-        return aNumerator * bDenominator > bNumerator * aDenominator;
+        return uint256(aNumerator) * bDenominator > uint256(bNumerator) * aDenominator;
     }
 
     /**
