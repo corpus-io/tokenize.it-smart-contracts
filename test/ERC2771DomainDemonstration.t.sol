@@ -68,9 +68,9 @@ contract TokenERC2771Test is Test {
             1,
             tokenFeeDenominator,
             1,
-            publicFundraisingFeeDenominator,
+            continuousFundraisingFeeDenominator,
             1,
-            privateOfferFeeDenominator,
+            personalInviteFeeDenominator,
             0
         );
         vm.prank(platformAdmin);

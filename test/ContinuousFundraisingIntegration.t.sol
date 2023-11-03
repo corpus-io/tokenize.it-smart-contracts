@@ -78,7 +78,7 @@ contract ContinuousFundraisingTest is Test {
     /*
     set up with FakePaymentToken which has variable decimals to make sure that doesn't break anything
     */
-    function feeCalculation(uint32 tokenFeeDenominator, uint32 publicFundraisingFeeDenominator) public {
+    function feeCalculation(uint32 tokenFeeDenominator, uint32 continuousFundraisingFeeDenominator) public {
         // apply fees for test
         Fees memory fees = Fees(
             1,
