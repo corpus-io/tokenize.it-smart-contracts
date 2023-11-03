@@ -15,18 +15,26 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
     uint128 public constant MIN_CONTINUOUS_FUNDRAISING_FEE_DENOMINATOR = 10;
     uint128 public constant MIN_PERSONAL_INVITE_FEE_DENOMINATOR = 20;
 
-    /// Denominator to calculate fees paid in Token.sol. UINT256_MAX means no fees.
-    uint256 public tokenFeeDenominator;
+    /// Numerator to calculate fees paid in Token.sol.
+    uint32 public tokenFeeNumerator;
+    /// Denominator to calculate fees paid in Token.sol.
+    uint32 public tokenFeeDenominator;
+
+    /// Numerator to calculate fees paid in PublicFundraising.sol.
+    uint32 public publicFundraisingFeeNumerator;
+    /// Denominator to calculate fees paid in PublicFundraising.sol.
+    uint32 public publicFundraisingFeeDenominator;
+
+    /// Numerator to calculate fees paid in PrivateOffer.sol.
+    uint32 public privateOfferFeeNumerator;
+    /// Denominator to calculate fees paid in PrivateOffer.sol.
+    uint32 public privateOfferFeeDenominator;
+
     /// address the token fees have to be paid to
     address public tokenFeeCollector;
-
-    /// Denominator to calculate fees paid in PublicFundraising.sol. UINT256_MAX means no fees.
-    uint256 public publicFundraisingFeeDenominator;
     /// address the public fundraising fees have to be paid to
     address public publicFundraisingFeeCollector;
 
-    /// Denominator to calculate fees paid in PrivateOffer.sol. UINT256_MAX means no fees.
-    uint256 public privateOfferFeeDenominator;
     /// address the private offer fees have to be paid to
     address public privateOfferFeeCollector;
 
@@ -34,15 +42,21 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
     Fees public proposedFees;
 
     /**
-     * @notice Fee denominators have been set to the following values: `tokenFeeDenominator`, `publicFundraisingFeeDenominator`, `privateOfferFeeDenominator`
-     * @param tokenFeeDenominator Defines the fee paid in Token.sol. UINT256_MAX means no fees.
-     * @param publicFundraisingFeeDenominator Defines the fee paid in PublicFundraising.sol. UINT256_MAX means no fees.
-     * @param privateOfferFeeDenominator Defines the fee paid in PrivateOffer.sol. UINT256_MAX means no fees.
+     * @notice Fee factors have been changed
+     * @param tokenFeeNumerator a in fraction a/b that defines the fee paid in Token: fee = amount * a / b
+     * @param tokenFeeDenominator b in fraction a/b that defines the fee paid in Token: fee = amount * a / b
+     * @param publicFundraisingFeeNumerator a in fraction a/b that defines the fee paid in currency for public fundraising: fee = amount * a / b
+     * @param publicFundraisingFeeDenominator b in fraction a/b that defines the fee paid in currency for public fundraising: fee = amount * a / b
+     * @param privateOfferFeeNumerator a in fraction a/b that defines the fee paid in currency for private offers: fee = amount * a / b
+     * @param privateOfferFeeDenominator b in fraction a/b that defines the fee paid in currency for private offers: fee = amount * a / b
      */
     event SetFeeDenominators(
-        uint256 tokenFeeDenominator,
-        uint256 publicFundraisingFeeDenominator,
-        uint256 privateOfferFeeDenominator
+        uint32 tokenFeeNumerator,
+        uint32 tokenFeeDenominator,
+        uint32 publicFundraisingFeeNumerator,
+        uint32 publicFundraisingFeeDenominator,
+        uint32 privateOfferFeeNumerator,
+        uint32 privateOfferFeeDenominator
     );
 
     /**
