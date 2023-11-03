@@ -41,7 +41,7 @@ contract PersonalInviteTimeLockTest is Test {
 
         list.set(tokenReceiver, requirements);
 
-        Fees memory fees = Fees(100, 100, 100, 0);
+        Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
         feeSettings = new FeeSettings(fees, admin);
 
         token = new Token(trustedForwarder, feeSettings, admin, list, requirements, "token", "TOK");
