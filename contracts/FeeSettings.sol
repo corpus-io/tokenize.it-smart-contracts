@@ -11,9 +11,15 @@ import "./interfaces/IFeeSettings.sol";
  * @notice The FeeSettings contract is used to manage fees paid to the tokenize.it platfom
  */
 contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
-    uint128 public constant MIN_TOKEN_FEE_DENOMINATOR = 20;
-    uint128 public constant MIN_CONTINUOUS_FUNDRAISING_FEE_DENOMINATOR = 10;
-    uint128 public constant MIN_PERSONAL_INVITE_FEE_DENOMINATOR = 20;
+    /// max token fee is 5%
+    uint32 public constant MAX_TOKEN_FEE_NUMERATOR = 1;
+    uint32 public constant MIN_TOKEN_FEE_DENOMINATOR = 20;
+    /// max public fundraising fee is 10%
+    uint32 public constant MAX_CONTINUOUS_FUNDRAISING_FEE_NUMERATOR = 1;
+    uint32 public constant MIN_CONTINUOUS_FUNDRAISING_FEE_DENOMINATOR = 10;
+    /// max private offer fee is 5%
+    uint32 public constant MAX_PERSONAL_INVITE_FEE_NUMERATOR = 1;
+    uint32 public constant MIN_PERSONAL_INVITE_FEE_DENOMINATOR = 20;
 
     /// Numerator to calculate fees paid in Token.sol.
     uint32 public tokenFeeNumerator;
@@ -125,10 +131,20 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      */
     function executeFeeChange() external onlyOwner {
         require(block.timestamp >= proposedFees.time, "Fee change must be executed after the change time");
+        tokenFeeNumerator = proposedFees.tokenFeeNumerator;
         tokenFeeDenominator = proposedFees.tokenFeeDenominator;
+        publicFundraisingFeeNumerator = proposedFees.publicFundraisingFeeNumerator;
         publicFundraisingFeeDenominator = proposedFees.publicFundraisingFeeDenominator;
+        privateOfferFeeNumerator = proposedFees.privateOfferFeeNumerator;
         privateOfferFeeDenominator = proposedFees.privateOfferFeeDenominator;
-        emit SetFeeDenominators(tokenFeeDenominator, publicFundraisingFeeDenominator, privateOfferFeeDenominator);
+        emit SetFeeDenominators(
+            tokenFeeNumerator,
+            tokenFeeDenominator,
+            publicFundraisingFeeNumerator,
+            publicFundraisingFeeDenominator,
+            privateOfferFeeNumerator,
+            privateOfferFeeDenominator
+        );
         delete proposedFees;
     }
 
@@ -151,20 +167,51 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
     }
 
     /**
+     * Compares two fractions and returns true if the first one is greater than the second one
+     * @param aNumerator numerator in fraction aNumerator/aDenominator
+     * @param aDenominator denominator in fraction aNumerator/aDenominator
+     * @param bNumerator numerator in fraction bNumerator/bDenominator
+     * @param bDenominator denominator in fraction bNumerator/bDenominator
+     */
+    function _isFractionAGreater(
+        uint32 aNumerator,
+        uint32 aDenominator,
+        uint32 bNumerator,
+        uint32 bDenominator
+    ) internal pure returns (bool) {
+        return aNumerator * bDenominator > bNumerator * aDenominator;
+    }
+
+    /**
      * @notice Checks if the given fee settings are valid
      * @param _fees The fees to check
      */
     function checkFeeLimits(Fees memory _fees) internal pure {
         require(
-            _fees.tokenFeeDenominator >= MIN_TOKEN_FEE_DENOMINATOR,
-            "Fee must be equal or less 5% (denominator must be >= 20)"
+            !_isFractionAGreater(
+                _fees.tokenFeeNumerator,
+                _fees.tokenFeeDenominator,
+                MAX_TOKEN_FEE_NUMERATOR,
+                MIN_TOKEN_FEE_DENOMINATOR
+            ),
+            "Fee must be equal or less 5%"
         );
         require(
-            _fees.publicFundraisingFeeDenominator >= MIN_CONTINUOUS_FUNDRAISING_FEE_DENOMINATOR,
+            !_isFractionAGreater(
+                _fees.publicFundraisingFeeNumerator,
+                _fees.publicFundraisingFeeDenominator,
+                MAX_CONTINUOUS_FUNDRAISING_FEE_NUMERATOR,
+                MIN_CONTINUOUS_FUNDRAISING_FEE_DENOMINATOR
+            ),
             "PublicFundraising fee must be equal or less 10% (denominator must be >= 10)"
         );
         require(
-            _fees.privateOfferFeeDenominator >= MIN_PERSONAL_INVITE_FEE_DENOMINATOR,
+            !_isFractionAGreater(
+                _fees.privateOfferFeeNumerator,
+                _fees.privateOfferFeeDenominator,
+                MAX_PERSONAL_INVITE_FEE_NUMERATOR,
+                MIN_PERSONAL_INVITE_FEE_DENOMINATOR
+            ),
             "Fee must be equal or less 5% (denominator must be >= 20)"
         );
     }
@@ -174,7 +221,7 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      * @dev will wrongly return 1 if denominator and amount are both uint256 max
      */
     function tokenFee(uint256 _tokenAmount) external view override(IFeeSettingsV1, IFeeSettingsV2) returns (uint256) {
-        return _tokenAmount / tokenFeeDenominator;
+        return (_tokenAmount * tokenFeeNumerator) / tokenFeeDenominator;
     }
 
     /**
@@ -186,7 +233,7 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
     function publicFundraisingFee(
         uint256 _currencyAmount
     ) external view override(IFeeSettingsV1, IFeeSettingsV2) returns (uint256) {
-        return _currencyAmount / publicFundraisingFeeDenominator;
+        return (_currencyAmount * publicFundraisingFeeNumerator) / publicFundraisingFeeDenominator;
     }
 
     /**
@@ -198,7 +245,7 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
     function privateOfferFee(
         uint256 _currencyAmount
     ) external view override(IFeeSettingsV1, IFeeSettingsV2) returns (uint256) {
-        return _currencyAmount / privateOfferFeeDenominator;
+        return (_currencyAmount * privateOfferFeeNumerator) / privateOfferFeeDenominator;
     }
 
     /**
