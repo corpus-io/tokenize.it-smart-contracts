@@ -46,9 +46,9 @@ contract TokenERC2771Test is Test {
     address public constant platformAdmin = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
     address public constant feeCollector = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
 
-    uint256 public constant tokenFeeDenominator = 100;
-    uint256 public constant continuousFundraisingFeeDenominator = 50;
-    uint256 public constant personalInviteFeeDenominator = 70;
+    uint32 public constant tokenFeeDenominator = 100;
+    uint32 public constant continuousFundraisingFeeDenominator = 50;
+    uint32 public constant personalInviteFeeDenominator = 70;
 
     bytes32 domainSeparator;
     bytes32 requestType;
@@ -63,8 +63,11 @@ contract TokenERC2771Test is Test {
 
         // deploy fee settings
         Fees memory fees = Fees(
+            1,
             tokenFeeDenominator,
+            1,
             continuousFundraisingFeeDenominator,
+            1,
             personalInviteFeeDenominator,
             0
         );
