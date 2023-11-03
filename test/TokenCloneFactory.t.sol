@@ -31,7 +31,7 @@ contract tokenCloneFactoryTest is Test {
     function setUp() public {
         vm.startPrank(feeSettingsAndAllowListOwner);
         allowList = new AllowList();
-        Fees memory fees = Fees(100, 100, 100, 0);
+        Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
         feeSettings = new FeeSettings(
             fees,
             feeSettingsAndAllowListOwner,
@@ -143,7 +143,7 @@ contract tokenCloneFactoryTest is Test {
         console.log("symbol: %s", symbol);
 
         FeeSettings _feeSettings = new FeeSettings(
-            Fees(100, 100, 100, 0),
+            Fees(1, 100, 1, 100, 1, 100, 0),
             feeSettingsAndAllowListOwner,
             feeSettingsAndAllowListOwner,
             feeSettingsAndAllowListOwner
@@ -208,7 +208,7 @@ contract tokenCloneFactoryTest is Test {
         vm.assume(rando != _admin);
 
         FeeSettings _feeSettings = new FeeSettings(
-            Fees(100, 100, 100, 0),
+            Fees(1, 100, 1, 100, 1, 100, 0),
             feeSettingsAndAllowListOwner,
             feeSettingsAndAllowListOwner,
             feeSettingsAndAllowListOwner
@@ -258,7 +258,7 @@ contract tokenCloneFactoryTest is Test {
         vm.assume(newPauser != admin);
 
         FeeSettings _feeSettings = new FeeSettings(
-            Fees(100, 100, 100, 0),
+            Fees(1, 100, 1, 100, 1, 100, 0),
             feeSettingsAndAllowListOwner,
             feeSettingsAndAllowListOwner,
             feeSettingsAndAllowListOwner

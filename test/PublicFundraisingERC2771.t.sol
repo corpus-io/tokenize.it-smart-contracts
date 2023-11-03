@@ -58,12 +58,20 @@ contract PublicFundraisingTest is Test {
     uint256 tokenBuyAmount;
     uint256 costInPaymentToken;
 
-    uint256 tokenFeeDenominator = 100;
-    uint256 paymentTokenFeeDenominator = 50;
+    uint32 tokenFeeDenominator = 100;
+    uint32 paymentTokenFeeDenominator = 50;
 
     function setUp() public {
         list = new AllowList();
-        Fees memory fees = Fees(tokenFeeDenominator, paymentTokenFeeDenominator, paymentTokenFeeDenominator, 0);
+        Fees memory fees = Fees(
+            1,
+            tokenFeeDenominator,
+            1,
+            paymentTokenFeeDenominator,
+            1,
+            paymentTokenFeeDenominator,
+            0
+        );
         feeSettings = new FeeSettings(fees, admin, admin, admin);
 
         Token implementation = new Token(trustedForwarder);
