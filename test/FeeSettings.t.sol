@@ -98,17 +98,17 @@ contract FeeSettingsTest is Test {
         vm.prank(admin);
         FeeSettings _feeSettings = new FeeSettings(fees, admin, admin, admin);
 
-        Fees memory feeChange = Fees(1, newDenominator, 0, 1, 0, 1, uint64(block.timestamp + 7884001));
+        Fees memory feeChange = Fees(1, newDenominator, 0, 1, 0, 1, uint64(block.timestamp + delay));
         vm.prank(admin);
         vm.expectRevert("Fee change must be at least 12 weeks in the future");
         _feeSettings.planFeeChange(feeChange);
 
-        feeChange = Fees(0, 1, 1, newDenominator, 0, 1, uint64(block.timestamp + 7884001));
+        feeChange = Fees(0, 1, 1, newDenominator, 0, 1, uint64(block.timestamp + delay));
         vm.prank(admin);
         vm.expectRevert("Fee change must be at least 12 weeks in the future");
         _feeSettings.planFeeChange(feeChange);
 
-        feeChange = Fees(0, 1, 0, 1, 1, newDenominator, uint64(block.timestamp + 7884001));
+        feeChange = Fees(0, 1, 0, 1, 1, newDenominator, uint64(block.timestamp + delay));
         vm.prank(admin);
         vm.expectRevert("Fee change must be at least 12 weeks in the future");
         _feeSettings.planFeeChange(feeChange);
@@ -448,8 +448,9 @@ contract FeeSettingsTest is Test {
     }
 
     /**
-     * @dev the fee calculation is implemented to accept a wrong result in one case:
+     * @dev the fee calculation WAS implemented to accept a wrong result in one case:
      *      if denominator is UINT256_MAX and amount is UINT256_MAX, the result will be 1 instead of 0
+     *      This has now been fixed
      */
     function testCalculate0FeesForAmountUINT256_MAX(
         uint32 tokenFeeDenominator,
@@ -466,7 +467,7 @@ contract FeeSettingsTest is Test {
         Fees memory _fees = Fees(0, 1, 1, publicFundraisingFeeDenominator, 1, privateOfferFeeDenominator, 0);
         FeeSettings _feeSettings = new FeeSettings(_fees, admin, admin, admin);
 
-        assertEq(_feeSettings.tokenFee(amount), 1, "Token fee mismatch");
+        assertEq(_feeSettings.tokenFee(amount), 0, "Token fee mismatch");
         assertEq(
             _feeSettings.publicFundraisingFee(amount),
             amount / publicFundraisingFeeDenominator,
@@ -484,7 +485,7 @@ contract FeeSettingsTest is Test {
         _feeSettings = new FeeSettings(_fees, admin, admin, admin);
 
         assertEq(_feeSettings.tokenFee(amount), amount / tokenFeeDenominator, "Token fee mismatch");
-        assertEq(_feeSettings.publicFundraisingFee(amount), 1, "Investment fee mismatch");
+        assertEq(_feeSettings.publicFundraisingFee(amount), 0, "Investment fee mismatch");
         assertEq(
             _feeSettings.privateOfferFee(amount),
             amount / privateOfferFeeDenominator,
@@ -502,6 +503,6 @@ contract FeeSettingsTest is Test {
             amount / publicFundraisingFeeDenominator,
             "Investment fee mismatch"
         );
-        assertEq(_feeSettings.privateOfferFee(amount), 1, "Private offer fee mismatch");
+        assertEq(_feeSettings.privateOfferFee(amount), 0, "Private offer fee mismatch");
     }
 }
