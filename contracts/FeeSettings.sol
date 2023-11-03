@@ -56,7 +56,7 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      * @param privateOfferFeeNumerator a in fraction a/b that defines the fee paid in currency for private offers: fee = amount * a / b
      * @param privateOfferFeeDenominator b in fraction a/b that defines the fee paid in currency for private offers: fee = amount * a / b
      */
-    event SetFeeDenominators(
+    event SetFee(
         uint32 tokenFeeNumerator,
         uint32 tokenFeeDenominator,
         uint32 publicFundraisingFeeNumerator,
@@ -155,7 +155,7 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
         publicFundraisingFeeDenominator = proposedFees.publicFundraisingFeeDenominator;
         privateOfferFeeNumerator = proposedFees.privateOfferFeeNumerator;
         privateOfferFeeDenominator = proposedFees.privateOfferFeeDenominator;
-        emit SetFeeDenominators(
+        emit SetFee(
             tokenFeeNumerator,
             tokenFeeDenominator,
             publicFundraisingFeeNumerator,
@@ -221,7 +221,7 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
                 MAX_CONTINUOUS_FUNDRAISING_FEE_NUMERATOR,
                 MAX_CONTINUOUS_FUNDRAISING_FEE_DENOMINATOR
             ),
-            "PublicFundraising fee must be equal or less 10% (denominator must be >= 10)"
+            "PublicFundraising fee must be equal or less 10%"
         );
         require(
             !_isFractionAGreater(
@@ -230,7 +230,7 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
                 MAX_PERSONAL_INVITE_FEE_NUMERATOR,
                 MAX_PERSONAL_INVITE_FEE_DENOMINATOR
             ),
-            "Fee must be equal or less 5% (denominator must be >= 20)"
+            "Fee must be equal or less 5%"
         );
     }
 
