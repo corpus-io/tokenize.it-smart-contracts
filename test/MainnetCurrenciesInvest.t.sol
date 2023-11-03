@@ -59,8 +59,8 @@ contract MainnetCurrencies is Test {
 
     function setUp() public {
         list = new AllowList();
-        Fees memory fees = Fees(100, 100, 100, 0);
-        feeSettings = new FeeSettings(fees, admin);
+        Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
+        feeSettings = new FeeSettings(fees, admin, admin, admin);
 
         token = new Token(trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST");
         factory = new PersonalInviteFactory();
