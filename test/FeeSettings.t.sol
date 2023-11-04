@@ -44,7 +44,7 @@ contract FeeSettingsTest is Test {
 
         console.log("Testing token fee");
         _fees = Fees(numerator, denominator, 1, 30, 1, 100, 0);
-        vm.expectRevert("Fee must be equal or less 5%");
+        vm.expectRevert("Token fee must be equal or less 5%");
         new FeeSettings(_fees, admin, admin, admin);
 
         console.log("Testing PublicFundraising fee");
@@ -59,7 +59,7 @@ contract FeeSettingsTest is Test {
 
         console.log("Testing PrivateOffer fee");
         _fees = Fees(1, 30, 1, 40, numerator, denominator, 0);
-        vm.expectRevert("Fee must be equal or less 5%");
+        vm.expectRevert("PrivateOffer fee must be equal or less 5%");
         new FeeSettings(_fees, admin, admin, admin);
     }
 
@@ -69,7 +69,7 @@ contract FeeSettingsTest is Test {
         FeeSettings _feeSettings = new FeeSettings(fees, admin, admin, admin);
 
         Fees memory feeChange = Fees(numerator, denominator, 1, 100, 1, 100, uint64(block.timestamp + 7884001));
-        vm.expectRevert("Fee must be equal or less 5%");
+        vm.expectRevert("Token fee must be equal or less 5%");
         _feeSettings.planFeeChange(feeChange);
     }
 
@@ -89,7 +89,7 @@ contract FeeSettingsTest is Test {
         FeeSettings _feeSettings = new FeeSettings(fees, admin, admin, admin);
 
         Fees memory feeChange = Fees(1, 100, 1, 100, numerator, denominator, uint64(block.timestamp + 7884001));
-        vm.expectRevert("Fee must be equal or less 5%");
+        vm.expectRevert("PersonalInvite fee must be equal or less 5%");
         _feeSettings.planFeeChange(feeChange);
     }
 
@@ -570,5 +570,18 @@ contract FeeSettingsTest is Test {
             "Investment fee mismatch"
         );
         assertEq(_feeSettings.privateOfferFee(amount), 0, "Private offer fee mismatch");
+    }
+
+    function test0DenominatorIsNotPossible() public {
+        Fees memory fees = Fees(1, 0, 1, 0, 1, 0, 0);
+        vm.expectRevert("Denominator cannot be 0");
+        new FeeSettings(fees, admin, admin, admin);
+
+        // set 0 fee first, then update to 0 denominator
+        fees = Fees(0, 1, 0, 1, 0, 1, 0);
+        FeeSettings _feeSettings = new FeeSettings(fees, admin, admin, admin);
+        fees = Fees(0, 0, 0, 0, 0, 0, 0);
+        vm.expectRevert("Denominator cannot be 0");
+        _feeSettings.planFeeChange(fees);
     }
 }
