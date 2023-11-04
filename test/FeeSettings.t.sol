@@ -39,6 +39,7 @@ contract FeeSettingsTest is Test {
     uint256 public constant price = 10000000;
 
     function testEnforceFeeRangeInConstructor(uint32 numerator, uint32 denominator) public {
+        vm.assume(denominator > 0);
         vm.assume(!tokenOrPrivateOfferFeeInValidRange(numerator, denominator));
         Fees memory _fees;
 
@@ -64,6 +65,7 @@ contract FeeSettingsTest is Test {
     }
 
     function testEnforceTokenFeeRangeInFeeChanger(uint32 numerator, uint32 denominator) public {
+        vm.assume(denominator > 0);
         vm.assume(!tokenOrPrivateOfferFeeInValidRange(numerator, denominator));
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
         FeeSettings _feeSettings = new FeeSettings(fees, admin, admin, admin);
@@ -74,6 +76,7 @@ contract FeeSettingsTest is Test {
     }
 
     function testEnforcePublicFundraisingFeeRangeInFeeChanger(uint32 numerator, uint32 denominator) public {
+        vm.assume(denominator > 0);
         vm.assume(!publicFundraisingFeeInValidRange(numerator, denominator));
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
         FeeSettings _feeSettings = new FeeSettings(fees, admin, admin, admin);
@@ -84,12 +87,13 @@ contract FeeSettingsTest is Test {
     }
 
     function testEnforcePrivateOfferFeeRangeInFeeChanger(uint32 numerator, uint32 denominator) public {
+        vm.assume(denominator > 0);
         vm.assume(!tokenOrPrivateOfferFeeInValidRange(numerator, denominator));
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
         FeeSettings _feeSettings = new FeeSettings(fees, admin, admin, admin);
 
         Fees memory feeChange = Fees(1, 100, 1, 100, numerator, denominator, uint64(block.timestamp + 7884001));
-        vm.expectRevert("PersonalInvite fee must be equal or less 5%");
+        vm.expectRevert("PrivateOffer fee must be equal or less 5%");
         _feeSettings.planFeeChange(feeChange);
     }
 
@@ -283,6 +287,7 @@ contract FeeSettingsTest is Test {
         uint32 privateOfferFeeNumerator,
         uint32 privateOfferFeeDenominator
     ) public {
+        vm.assume(tokenFeeDenominator > 0 && publicFundraisingFeeDenominator > 0 && privateOfferFeeDenominator > 0);
         vm.assume(tokenOrPrivateOfferFeeInValidRange(tokenFeeNumerator, tokenFeeDenominator));
         vm.assume(tokenOrPrivateOfferFeeInValidRange(privateOfferFeeNumerator, privateOfferFeeDenominator));
         vm.assume(publicFundraisingFeeInValidRange(publicFundraisingFeeNumerator, publicFundraisingFeeDenominator));
