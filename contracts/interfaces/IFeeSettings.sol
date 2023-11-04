@@ -18,8 +18,11 @@ interface IFeeSettingsV1 {
 }
 
 struct Fees {
-    uint256 tokenFeeDenominator;
-    uint256 continuousFundraisingFeeDenominator;
-    uint256 personalInviteFeeDenominator;
-    uint256 time;
+    uint32 tokenFeeNumerator;
+    uint32 tokenFeeDenominator;
+    uint32 continuousFundraisingFeeNumerator;
+    uint32 continuousFundraisingFeeDenominator;
+    uint32 personalInviteFeeNumerator;
+    uint32 personalInviteFeeDenominator;
+    uint64 time;
 }

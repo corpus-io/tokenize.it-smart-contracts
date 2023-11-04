@@ -31,7 +31,7 @@ contract tokenTest is Test {
         vm.prank(admin);
         allowList = new AllowList();
         vm.prank(feeSettingsOwner);
-        Fees memory fees = Fees(100, 100, 100, 0);
+        Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
         feeSettings = new FeeSettings(fees, admin);
         token = new Token(trustedForwarder, feeSettings, admin, allowList, 0x0, "testToken", "TEST");
         console.log(msg.sender);
@@ -74,7 +74,7 @@ contract tokenTest is Test {
 
     function testSuggestNewFeeSettingsWrongCaller(address wrongUpdater) public {
         vm.assume(wrongUpdater != feeSettings.owner());
-        Fees memory fees = Fees(UINT256_MAX, UINT256_MAX, UINT256_MAX, 0);
+        Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
         FeeSettings newFeeSettings = new FeeSettings(fees, pauser);
         vm.prank(wrongUpdater);
         vm.expectRevert("Only fee settings owner can suggest fee settings update");
@@ -82,7 +82,7 @@ contract tokenTest is Test {
     }
 
     function testSuggestNewFeeSettingsFeeCollector() public {
-        Fees memory fees = Fees(UINT256_MAX, UINT256_MAX, UINT256_MAX, 0);
+        Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
         FeeSettings newFeeSettings = new FeeSettings(fees, pauser);
         vm.prank(feeSettings.feeCollector());
         vm.expectRevert("Only fee settings owner can suggest fee settings update");
@@ -97,7 +97,7 @@ contract tokenTest is Test {
 
     function testSuggestNewFeeSettings(address newCollector) public {
         vm.assume(newCollector != address(0));
-        Fees memory fees = Fees(UINT256_MAX, UINT256_MAX, UINT256_MAX, 0);
+        Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
         FeeSettings newFeeSettings = new FeeSettings(fees, newCollector);
         FeeSettings oldFeeSettings = FeeSettings(address(token.feeSettings()));
         uint oldInvestmentFeeDenominator = oldFeeSettings.continuousFundraisingFeeDenominator();
@@ -126,7 +126,7 @@ contract tokenTest is Test {
 
     function testAcceptNewFeeSettings(address newCollector) public {
         vm.assume(newCollector != address(0));
-        Fees memory fees = Fees(UINT256_MAX, UINT256_MAX, UINT256_MAX, 0);
+        Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
         FeeSettings newFeeSettings = new FeeSettings(fees, newCollector);
         FeeSettings oldFeeSettings = FeeSettings(address(token.feeSettings()));
         uint oldInvestmentFeeDenominator = oldFeeSettings.continuousFundraisingFeeDenominator();
@@ -154,7 +154,7 @@ contract tokenTest is Test {
 
     function testAcceptFeeCollectorInsteadOfFeeSettings(address newFeeSettingsPretendAddress) public {
         vm.assume(newFeeSettingsPretendAddress != address(0));
-        Fees memory fees = Fees(UINT256_MAX, UINT256_MAX, UINT256_MAX, 0);
+        Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
         FeeSettings newFeeSettings = new FeeSettings(fees, newFeeSettingsPretendAddress);
         vm.assume(newFeeSettingsPretendAddress != address(newFeeSettings));
 
@@ -169,7 +169,7 @@ contract tokenTest is Test {
     }
 
     function testAcceptWrongFeeSettings() public {
-        Fees memory fees = Fees(UINT256_MAX, UINT256_MAX, UINT256_MAX, 0);
+        Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
         FeeSettings realNewFeeSettings = new FeeSettings(fees, feeSettings.feeCollector());
         FeeSettings fakeNewFeeSettings = new FeeSettings(fees, feeSettings.feeCollector());
 
@@ -280,7 +280,7 @@ contract tokenTest is Test {
     }
 
     function testFeeSettingsUpdateRevertsWhenContractFailsERC165Check() public {
-        Fees memory fees = Fees(UINT256_MAX, UINT256_MAX, UINT256_MAX, 0);
+        Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
         FeeSettings[] memory feeSettingsArray = new FeeSettings[](3);
         feeSettingsArray[0] = new FeeSettingsFailERC165Check0(fees, feeSettings.feeCollector());
         feeSettingsArray[1] = new FeeSettingsFailERC165Check1(fees, feeSettings.feeCollector());

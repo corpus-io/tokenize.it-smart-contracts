@@ -28,7 +28,7 @@ contract DeployPlatform is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         console.log("Deploying FeeSettings contract...");
-        Fees memory fees = Fees(100, 100, 100, 0);
+        Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
         FeeSettings feeSettings = new FeeSettings(fees, platformColdWallet);
         console.log("FeeSettings deployed at: ", address(feeSettings));
         feeSettings.transferOwnership(platformColdWallet);

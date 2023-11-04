@@ -28,7 +28,7 @@ contract tokenTest is Test {
         vm.prank(admin);
         allowList = new AllowList();
         vm.prank(feeSettingsOwner);
-        Fees memory fees = Fees(100, 100, 100, 0);
+        Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
         feeSettings = new FeeSettings(fees, admin);
         token = Token(
             tokenFactory.deploy(0x0, trustedForwarder, feeSettings, admin, allowList, 0x0, "SetupToken", "TEST")
@@ -206,7 +206,7 @@ contract tokenTest is Test {
         vm.assume(_admin != address(0));
         vm.assume(address(_allowList) != address(0));
         // create new feeSettings
-        Fees memory fees = Fees(111, 222, 333, 0);
+        Fees memory fees = Fees(1, 111, 1, 222, 1, 333, 0);
         FeeSettings _feeSettings = new FeeSettings(fees, _feeCollector);
 
         address expectedAddress = tokenFactory.getAddress(

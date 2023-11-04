@@ -27,7 +27,7 @@ contract tokenTest is Test {
         vm.prank(admin);
         allowList = new AllowList();
         vm.prank(feeSettingsOwner);
-        Fees memory fees = Fees(100, 100, 100, 0);
+        Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
         feeSettings = new FeeSettings(fees, admin);
         token = new Token(trustedForwarder, feeSettings, admin, allowList, 0x0, "testToken", "TEST");
         console.log(msg.sender);
