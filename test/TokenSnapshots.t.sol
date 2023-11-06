@@ -20,14 +20,12 @@ contract tokenTest is Test {
     address public constant pauser = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
     address public constant feeSettingsAndAllowListOwner = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
 
-    uint256 requirements = 934332;
-
     event RequirementsChanged(uint256 newRequirements);
 
     function setUp() public {
         vm.startPrank(feeSettingsAndAllowListOwner);
         allowList = new AllowList();
-        Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
+        Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
         feeSettings = new FeeSettings(
             fees,
             feeSettingsAndAllowListOwner,
@@ -36,11 +34,6 @@ contract tokenTest is Test {
         );
 
         address tokenHolder = address(this);
-
-        allowList.set(pauser, requirements);
-        allowList.set(transferer, requirements);
-        allowList.set(tokenHolder, requirements);
-        allowList.set(admin, requirements);
 
         vm.stopPrank();
 
@@ -54,7 +47,7 @@ contract tokenTest is Test {
                 feeSettings,
                 admin,
                 allowList,
-                requirements,
+                0,
                 "testToken",
                 "TEST"
             )
@@ -77,7 +70,7 @@ contract tokenTest is Test {
         assertTrue(token.balanceOf(pauser) == 100, "pauser balance is wrong");
     }
 
-    function testTotalSupply() public {
+    function testOneSnapshot() public {
         uint256 totalSupply = token.totalSupply();
         vm.prank(admin);
         uint256 snapshotId = token.createSnapshot();
@@ -95,5 +88,52 @@ contract tokenTest is Test {
         // but snapshot balances must not have changed
         assertTrue(token.balanceOfAt(pauser, snapshotId) == 100, "pauser balanceAt is wrong");
         assertTrue(token.balanceOfAt(transferer, snapshotId) == 0, "transferer balanceAt is wrong");
+    }
+
+    function testMultipleSnapshots(uint256 amount1, address rando1, uint256 amount2, address rando2) public {
+        vm.assume(rando1 != rando2);
+        vm.assume(amount2 < (type(uint256).max) - 1000);
+        vm.assume(amount1 < (type(uint256).max - amount2) - 1000);
+        vm.assume(rando1 != address(0));
+        vm.assume(rando2 != address(0));
+
+        uint256 snapshotId;
+
+        vm.prank(admin);
+        snapshotId = token.createSnapshot();
+        console.log("snapshotId: %s", snapshotId);
+
+        vm.prank(mintAllower);
+        token.mint(rando1, amount1);
+
+        vm.prank(admin);
+        token.createSnapshot();
+
+        vm.prank(mintAllower);
+        token.mint(rando2, amount2);
+
+        vm.prank(admin);
+        token.createSnapshot();
+
+        vm.prank(rando1);
+        token.transfer(rando2, amount1);
+
+        vm.prank(admin);
+        token.createSnapshot();
+
+        // verify all snapshots are correct
+        assertTrue(token.balanceOfAt(rando1, 1) == 0, "rando1 balanceAt 0 is wrong");
+        assertTrue(token.balanceOfAt(rando1, 2) == amount1, "rando1 balanceAt is wrong");
+        assertTrue(token.balanceOfAt(rando1, 3) == amount1, "rando1 balanceAt is wrong");
+        assertTrue(token.balanceOfAt(rando1, 4) == 0, "rando1 balanceAt is wrong");
+
+        assertTrue(token.balanceOfAt(rando2, 1) == 0, "rando2 balanceAt is wrong");
+        assertTrue(token.balanceOfAt(rando2, 2) == 0, "rando2 balanceAt is wrong");
+        assertTrue(token.balanceOfAt(rando2, 3) == amount2, "rando2 balanceAt is wrong");
+        assertTrue(token.balanceOfAt(rando2, 4) == amount1 + amount2, "rando2 balanceAt is wrong");
+
+        // verify current balances are correct
+        assertTrue(token.balanceOf(rando1) == 0, "rando1 balance is wrong");
+        assertTrue(token.balanceOf(rando2) == amount1 + amount2, "rando2 balance is wrong");
     }
 }
