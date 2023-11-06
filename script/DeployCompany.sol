@@ -26,10 +26,10 @@ contract DeployCompany is Script {
 
         console.log("FeeSettings at: ", address(feeSettings));
         console.log("Allowlist at: ", address(allowList));
-        ERC20 usdc = ERC20(0x07865c6E87B9F70255377e024ace6630C1Eaa37F);
+        // ERC20 usdc = ERC20(0x07865c6E87B9F70255377e024ace6630C1Eaa37F);
 
-        address companyAdmin = 0x6CcD9E07b035f9E6e7f086f3EaCf940187d03A29; // testing founder
-        address forwarder = 0x0445d09A1917196E1DC12EdB7334C70c1FfB1623;
+        // address companyAdmin = 0x6CcD9E07b035f9E6e7f086f3EaCf940187d03A29; // testing founder
+        // address forwarder = 0x0445d09A1917196E1DC12EdB7334C70c1FfB1623;
         // address investor = 0x35bb2Ded62588f7fb3771658dbE699826Cd1041A;
 
         // string memory name = "MyTasticToken";
@@ -38,15 +38,7 @@ contract DeployCompany is Script {
 
         // console.log("Deploying Token contract...");
 
-        // Token token = new Token(
-        //     forwarder,
-        //     feeSettings,
-        //     admin,
-        //     allowList,
-        //     requirements,
-        //     name,
-        //     symbol
-        // );
+        // Token token = new Token(forwarder, feeSettings, companyAdmin, allowList, requirements, name, symbol);
 
         // Token token = Token(0x6BC442F04C727a19Cc0AF14ec9b2acD3e12651F3);
         // console.log("Token at: ", address(token));
