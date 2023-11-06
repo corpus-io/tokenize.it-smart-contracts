@@ -7,13 +7,9 @@ import "../contracts/FeeSettings.sol";
 import "./resources/ERC2771Helper.sol";
 
 contract TokenV2 is Token {
-    bool v2initialized;
-
     constructor(address _trustedForwarder) Token(_trustedForwarder) {}
 
-    function initializeV2() public {
-        require(!v2initialized, "already initialized");
-        v2initialized = true;
+    function initializeV2() public reinitializer(2) {
         version = 2;
     }
 
@@ -85,11 +81,15 @@ contract tokenProxyUpgradeTest is Test {
         tokenV2.makeMeRich();
         assertEq(token.balanceOf(address(this)), 1e50);
 
-        // v2 no is not initialized yet, so version should still be 1
+        // v2 is not initialized yet, so version should still be 1
         assertEq(token.version(), 1);
 
         // initialize v2
         tokenV2.initializeV2();
         assertEq(token.version(), 2);
+
+        // initializing again is not possible
+        vm.expectRevert("Initializable: contract is already initialized");
+        tokenV2.initializeV2();
     }
 }
