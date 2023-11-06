@@ -296,7 +296,7 @@ contract tokenProxyFactoryTest is Test {
         assertTrue(_token.paused());
     }
 
-    function testPermitWithClone(
+    function testPermitWithProxy(
         string memory name,
         string memory symbol,
         address _admin,
@@ -308,6 +308,7 @@ contract tokenProxyFactoryTest is Test {
         vm.assume(_relayer != address(0));
         vm.assume(_tokenSpender != address(0));
         vm.assume(_tokenSpender != feeSettingsAndAllowListOwner);
+        vm.assume(_tokenSpender != trustedForwarder);
         vm.assume(bytes(name).length > 0);
         vm.assume(bytes(symbol).length > 0);
         vm.assume(_tokenPermitAmount < (type(uint256).max / 10) * 9); // leave room for fees
