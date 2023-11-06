@@ -6,7 +6,7 @@ import "../contracts/TokenProxyFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/ERC2771Helper.sol";
 
-contract tokenCloneFactoryTest is Test {
+contract tokenProxyFactoryTest is Test {
     using ECDSA for bytes32;
 
     Token implementation;
@@ -45,51 +45,51 @@ contract tokenCloneFactoryTest is Test {
         factory = new TokenProxyFactory(address(implementation));
     }
 
-    // function testAddressPrediction(
-    //     bytes32 _salt,
-    //     address _admin,
-    //     AllowList _allowList,
-    //     uint256 _requirements,
-    //     string memory _name,
-    //     string memory _symbol
-    // ) public {
-    //     console.log("IFeeSettingsV2 interface id: ");
-    //     console.logBytes4(type(IFeeSettingsV2).interfaceId);
+    function testAddressPrediction(
+        bytes32 _salt,
+        address _admin,
+        AllowList _allowList,
+        uint256 _requirements,
+        string memory _name,
+        string memory _symbol
+    ) public {
+        console.log("IFeeSettingsV2 interface id: ");
+        console.logBytes4(type(IFeeSettingsV2).interfaceId);
 
-    //     console.log("Supports interface: ", feeSettings.supportsInterface(type(IFeeSettingsV2).interfaceId));
+        console.log("Supports interface: ", feeSettings.supportsInterface(type(IFeeSettingsV2).interfaceId));
 
-    //     vm.assume(trustedForwarder != address(0));
-    //     vm.assume(_admin != address(0));
-    //     vm.assume(address(_allowList) != address(0));
+        vm.assume(trustedForwarder != address(0));
+        vm.assume(_admin != address(0));
+        vm.assume(address(_allowList) != address(0));
 
-    //     bytes32 salt = keccak256(
-    //         abi.encodePacked(_salt, trustedForwarder, feeSettings, _admin, _allowList, _requirements, _name, _symbol)
-    //     );
-    //     address expected1 = factory.predictCloneAddress(salt);
-    //     address expected2 = factory.predictCloneAddress(
-    //         _salt,
-    //         trustedForwarder,
-    //         feeSettings,
-    //         _admin,
-    //         _allowList,
-    //         _requirements,
-    //         _name,
-    //         _symbol
-    //     );
-    //     assertEq(expected1, expected2, "address prediction with salt and params not equal");
+        bytes32 salt = keccak256(
+            abi.encodePacked(_salt, trustedForwarder, feeSettings, _admin, _allowList, _requirements, _name, _symbol)
+        );
+        address expected1 = factory.predictProxyAddress(salt);
+        address expected2 = factory.predictProxyAddress(
+            _salt,
+            trustedForwarder,
+            feeSettings,
+            _admin,
+            _allowList,
+            _requirements,
+            _name,
+            _symbol
+        );
+        assertEq(expected1, expected2, "address prediction with salt and params not equal");
 
-    //     address actual = factory.createTokenProxy(
-    //         _salt,
-    //         trustedForwarder,
-    //         feeSettings,
-    //         _admin,
-    //         _allowList,
-    //         _requirements,
-    //         _name,
-    //         _symbol
-    //     );
-    //     assertEq(expected1, actual, "address prediction failed");
-    // }
+        address actual = factory.createTokenProxy(
+            _salt,
+            trustedForwarder,
+            feeSettings,
+            _admin,
+            _allowList,
+            _requirements,
+            _name,
+            _symbol
+        );
+        assertEq(expected1, actual, "address prediction failed");
+    }
 
     // function testSecondDeploymentFails(
     //     bytes32 _salt,
@@ -170,33 +170,33 @@ contract tokenCloneFactoryTest is Test {
         assertEq(clone.requirements(), _requirements, "requirements not set");
         assertEq(address(clone.feeSettings()), address(_feeSettings), "feeSettings not set");
 
-        // // check trustedForwarder is set
-        // assertTrue(clone.isTrustedForwarder(trustedForwarder), "trustedForwarder not set");
+        // check trustedForwarder is set
+        assertTrue(clone.isTrustedForwarder(trustedForwarder), "trustedForwarder not set");
 
-        // // test roles are assigned
-        // assertTrue(clone.hasRole(clone.REQUIREMENT_ROLE(), _admin), "requirer not set");
-        // assertTrue(clone.hasRole(clone.MINTALLOWER_ROLE(), _admin), "mintAllower not set");
-        // assertTrue(clone.hasRole(clone.BURNER_ROLE(), _admin), "burner not set");
-        // assertTrue(clone.hasRole(clone.TRANSFERERADMIN_ROLE(), _admin), "transfererAdmin not set");
-        // assertTrue(clone.hasRole(clone.PAUSER_ROLE(), _admin), "pauser not set");
+        // test roles are assigned
+        assertTrue(clone.hasRole(clone.REQUIREMENT_ROLE(), _admin), "requirer not set");
+        assertTrue(clone.hasRole(clone.MINTALLOWER_ROLE(), _admin), "mintAllower not set");
+        assertTrue(clone.hasRole(clone.BURNER_ROLE(), _admin), "burner not set");
+        assertTrue(clone.hasRole(clone.TRANSFERERADMIN_ROLE(), _admin), "transfererAdmin not set");
+        assertTrue(clone.hasRole(clone.PAUSER_ROLE(), _admin), "pauser not set");
 
-        // // test EIP712 Domain Separator is set correctly
-        // string memory domainSeparatorName;
-        // string memory domainSeparatorVersion;
-        // uint256 domainSeparatorChainId;
-        // address domainSeparatorAddress;
+        // test EIP712 Domain Separator is set correctly
+        string memory domainSeparatorName;
+        string memory domainSeparatorVersion;
+        uint256 domainSeparatorChainId;
+        address domainSeparatorAddress;
 
-        // (, domainSeparatorName, domainSeparatorVersion, domainSeparatorChainId, domainSeparatorAddress, , ) = clone
-        //     .eip712Domain();
+        (, domainSeparatorName, domainSeparatorVersion, domainSeparatorChainId, domainSeparatorAddress, , ) = clone
+            .eip712Domain();
 
-        // assertEq(domainSeparatorName, name, "domainSeparatorName not set");
-        // assertEq(domainSeparatorVersion, "1", "domainSeparatorVersion not set");
-        // assertEq(domainSeparatorChainId, block.chainid, "domainSeparatorChainId not set");
-        // assertEq(domainSeparatorAddress, address(clone), "domainSeparatorAddress not set");
+        assertEq(domainSeparatorName, name, "domainSeparatorName not set");
+        assertEq(domainSeparatorVersion, "1", "domainSeparatorVersion not set");
+        assertEq(domainSeparatorChainId, block.chainid, "domainSeparatorChainId not set");
+        assertEq(domainSeparatorAddress, address(clone), "domainSeparatorAddress not set");
 
-        // // test contract can not be initialized again
-        // vm.expectRevert("Initializable: contract is already initialized");
-        // clone.initialize(feeSettings, admin, allowList, requirements, "testToken", "TEST");
+        // test contract can not be initialized again
+        vm.expectRevert("Initializable: contract is already initialized");
+        clone.initialize(feeSettings, admin, allowList, requirements, "testToken", "TEST");
     }
 
     // /*

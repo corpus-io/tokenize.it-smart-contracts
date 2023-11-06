@@ -3,12 +3,14 @@
 pragma solidity 0.8.17;
 
 import "./Token.sol";
-import "./CloneFactory.sol";
+import "./Factory.sol";
 import "@openzeppelin/contracts/utils/Create2.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-contract TokenProxyFactory is CloneFactory {
-    constructor(address _implementation) CloneFactory(_implementation) {}
+contract TokenProxyFactory is Factory {
+    event NewProxy(address proxy);
+
+    constructor(address _implementation) Factory(_implementation) {}
 
     function createTokenProxy(
         bytes32 _rawSalt,
@@ -38,7 +40,7 @@ contract TokenProxyFactory is CloneFactory {
         Token cloneToken = Token(address(proxy));
         require(cloneToken.isTrustedForwarder(_trustedForwarder), "TokenCloneFactory: Unexpected trustedForwarder");
         cloneToken.initialize(_feeSettings, _admin, _allowList, _requirements, _name, _symbol);
-        emit NewClone(address(proxy));
+        emit NewProxy(address(proxy));
         return address(proxy);
     }
 
@@ -63,6 +65,10 @@ contract TokenProxyFactory is CloneFactory {
             _symbol
         );
         return Create2.computeAddress(salt, keccak256(getBytecode()));
+    }
+
+    function predictProxyAddress(bytes32 _salt) external view returns (address) {
+        return Create2.computeAddress(_salt, keccak256(getBytecode()));
     }
 
     /**

@@ -3,17 +3,12 @@
 pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
+import "./Factory.sol";
 
-abstract contract CloneFactory {
+abstract contract CloneFactory is Factory {
     event NewClone(address clone);
 
-    /// The address of the implementation to clone
-    address immutable implementation;
-
-    constructor(address _implementation) {
-        require(_implementation != address(0), "CloneFactory: implementation can not be zero");
-        implementation = _implementation;
-    }
+    constructor(address _implementation) Factory(_implementation) {}
 
     /**
      * @notice Predicts the address of a clone that will be created
