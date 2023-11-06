@@ -30,13 +30,6 @@ contract Token is
     AccessControlUpgradeable,
     UUPSUpgradeable
 {
-    /**
-     * @dev This empty reserved space is put in place to allow future versions to inherit
-     * from contracts that need storage. This mimics openzeppelin's approach.
-     * For more information, see https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
-     */
-    uint256[500] private __gap;
-
     /// @notice The role that has the ability to define which requirements an address must satisfy to receive tokens
     bytes32 public constant REQUIREMENT_ROLE = keccak256("REQUIREMENT_ROLE");
     /// @notice The role that has the ability to grant minting allowances
@@ -49,6 +42,19 @@ contract Token is
     bytes32 public constant TRANSFERER_ROLE = keccak256("TRANSFERER_ROLE");
     /// @notice The role that has the ability to pause the token. Transferring, burning and minting will not be possible while the contract is paused.
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+
+    /**
+     * @dev This empty reserved space is put in place to allow future versions to inherit
+     * from contracts that need storage. This mimics openzeppelin's approach.
+     * For more information, see https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     * Its size is chosen for the first used variable (allowList) to be in storage slot 1000.
+     * This is checked in the testTokenStorageGap unit test.
+     * Whenever an inheritance is added, removed or changed, the storage location of allowList and
+     * all following variables is likely to change too, with catastrophic results. So remember to update
+     * this gap in order to keep allowList at position 1000!
+     * More info at [../docs/upgradeability.md]
+     */
+    uint256[496] private __gap;
 
     // Map managed by tokenize.it, which assigns addresses requirements which they fulfill
     AllowList public allowList;
