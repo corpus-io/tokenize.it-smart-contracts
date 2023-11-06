@@ -31,7 +31,6 @@ struct Linear {
  */
 contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPriceDynamic {
     Linear public parameters;
-    uint256 public nextSlot = 1;
 
     /**
      * This constructor creates a logic contract that is used to clone new fundraising contracts.
