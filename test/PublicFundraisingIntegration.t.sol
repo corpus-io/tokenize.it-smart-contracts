@@ -39,7 +39,7 @@ contract PublicFundraisingTest is Test {
 
     function setUp() public {
         list = new AllowList();
-        Fees memory fees = Fees(100, 100, 100, 100);
+        Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 100);
         vm.prank(platformAdmin);
         feeSettings = new FeeSettings(fees, platformAdmin, platformAdmin, platformAdmin);
         vm.prank(platformAdmin);
@@ -99,13 +99,16 @@ contract PublicFundraisingTest is Test {
     /*
     set up with FakePaymentToken which has variable decimals to make sure that doesn't break anything
     */
-    function feeCalculation(uint256 tokenFeeDenominator, uint256 publicFundraisingFeeDenominator) public {
+    function feeCalculation(uint32 tokenFeeDenominator, uint32 publicFundraisingFeeDenominator) public {
         // apply fees for test
         Fees memory fees = Fees(
+            1,
             tokenFeeDenominator,
+            1,
             publicFundraisingFeeDenominator,
+            1,
             publicFundraisingFeeDenominator,
-            block.timestamp + 13 weeks
+            uint64(block.timestamp + 13 weeks)
         );
         vm.prank(platformAdmin);
         feeSettings.planFeeChange(fees);
@@ -219,10 +222,10 @@ contract PublicFundraisingTest is Test {
     }
 
     function testFee0() public {
-        feeCalculation(UINT256_MAX, UINT256_MAX);
+        feeCalculation(type(uint32).max, type(uint32).max);
     }
 
-    function testVariousFees(uint256 tokenFeeDenominator, uint256 publicFundraisingFeeDenominator) public {
+    function testVariousFees(uint32 tokenFeeDenominator, uint32 publicFundraisingFeeDenominator) public {
         vm.assume(tokenFeeDenominator >= 20);
         vm.assume(publicFundraisingFeeDenominator >= 20);
         feeCalculation(tokenFeeDenominator, publicFundraisingFeeDenominator);

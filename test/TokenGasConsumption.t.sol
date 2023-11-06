@@ -27,7 +27,7 @@ contract tokenTest is Test {
     function setUp() public {
         vm.startPrank(feeSettingsAndAllowListOwner);
         allowList = new AllowList();
-        Fees memory fees = Fees(100, 100, 100, 0);
+        Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
         feeSettings = new FeeSettings(
             fees,
             feeSettingsAndAllowListOwner,
