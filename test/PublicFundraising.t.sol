@@ -49,7 +49,7 @@ contract PublicFundraisingTest is Test {
 
     function setUp() public {
         list = new AllowList();
-        Fees memory fees = Fees(100, 100, 100, 100);
+        Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 100);
         feeSettings = new FeeSettings(fees, wrongFeeReceiver, admin, wrongFeeReceiver);
 
         // create token
@@ -1183,7 +1183,7 @@ contract PublicFundraisingTest is Test {
         );
 
         // set fees to 0, otherwise extra currency is minted which causes an overflow
-        Fees memory fees = Fees(UINT256_MAX, UINT256_MAX, UINT256_MAX, 0);
+        Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
         FeeSettings(address(token.feeSettings())).planFeeChange(fees);
         FeeSettings(address(token.feeSettings())).executeFeeChange();
 

@@ -3,6 +3,7 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20SnapshotUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol";
 import "./AllowList.sol";
@@ -21,7 +22,13 @@ import "./interfaces/IFeeSettings.sol";
  *
  * @dev The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support and meta-transactions.
  */
-contract Token is ERC2771ContextUpgradeable, ERC20PermitUpgradeable, PausableUpgradeable, AccessControlUpgradeable {
+contract Token is
+    ERC2771ContextUpgradeable,
+    ERC20PermitUpgradeable,
+    ERC20SnapshotUpgradeable,
+    PausableUpgradeable,
+    AccessControlUpgradeable
+{
     /// @notice The role that has the ability to define which requirements an address must satisfy to receive tokens
     bytes32 public constant REQUIREMENT_ROLE = keccak256("REQUIREMENT_ROLE");
     /// @notice The role that has the ability to grant minting allowances
@@ -34,6 +41,8 @@ contract Token is ERC2771ContextUpgradeable, ERC20PermitUpgradeable, PausableUpg
     bytes32 public constant TRANSFERER_ROLE = keccak256("TRANSFERER_ROLE");
     /// @notice The role that has the ability to pause the token. Transferring, burning and minting will not be possible while the contract is paused.
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    /// @notice The role that can create snapshots of the token balances
+    bytes32 public constant SNAPSHOTCREATOR_ROLE = keccak256("SNAPSHOTCREATOR_ROLE");
 
     // Map managed by tokenize.it, which assigns addresses requirements which they fulfill
     AllowList public allowList;
@@ -124,6 +133,7 @@ contract Token is ERC2771ContextUpgradeable, ERC20PermitUpgradeable, PausableUpg
         _grantRole(BURNER_ROLE, _admin);
         _grantRole(TRANSFERERADMIN_ROLE, _admin);
         _grantRole(PAUSER_ROLE, _admin);
+        _grantRole(SNAPSHOTCREATOR_ROLE, _admin);
 
         // set up fee collection
         _checkIfFeeSettingsImplementsInterface(_feeSettings);
@@ -137,6 +147,7 @@ contract Token is ERC2771ContextUpgradeable, ERC20PermitUpgradeable, PausableUpg
         requirements = _requirements;
 
         __ERC20Permit_init(_name);
+        __ERC20Snapshot_init();
         __ERC20_init(_name, _symbol);
     }
 
@@ -248,6 +259,10 @@ contract Token is ERC2771ContextUpgradeable, ERC20PermitUpgradeable, PausableUpg
         _burn(_from, _amount);
     }
 
+    function createSnapshot() external onlyRole(SNAPSHOTCREATOR_ROLE) returns (uint256) {
+        return _snapshot();
+    }
+
     /**
      * @notice There are 3 types of transfers:
      *    1. minting: transfers from the zero address to another address. Only minters can do this, which is checked in the mint function. The recipient must be allowed to transact.
@@ -255,7 +270,11 @@ contract Token is ERC2771ContextUpgradeable, ERC20PermitUpgradeable, PausableUpg
      *    3. transfers from one address to another. The sender and recipient must be allowed to transact.
      * @dev this hook is executed before the transfer function itself
      */
-    function _beforeTokenTransfer(address _from, address _to, uint256 _amount) internal virtual override {
+    function _beforeTokenTransfer(
+        address _from,
+        address _to,
+        uint256 _amount
+    ) internal virtual override(ERC20SnapshotUpgradeable, ERC20Upgradeable) {
         super._beforeTokenTransfer(_from, _to, _amount);
         _requireNotPaused();
         if (_from != address(0) && _to != address(0)) {

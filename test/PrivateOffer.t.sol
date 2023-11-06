@@ -48,7 +48,7 @@ contract PrivateOfferTest is Test {
 
         list.set(tokenReceiver, requirements);
 
-        Fees memory fees = Fees(100, 100, 100, 0);
+        Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
         feeSettings = new FeeSettings(fees, wrongFeeReceiver, wrongFeeReceiver, admin);
 
         Token implementation = new Token(trustedForwarder);
@@ -200,7 +200,7 @@ contract PrivateOfferTest is Test {
         );
 
         // set fees to 0, otherwise extra tokens are minted which causes an overflow
-        Fees memory fees = Fees(UINT256_MAX, UINT256_MAX, UINT256_MAX, 0);
+        Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
         FeeSettings(address(token.feeSettings())).planFeeChange(fees);
         FeeSettings(address(token.feeSettings())).executeFeeChange();
 
