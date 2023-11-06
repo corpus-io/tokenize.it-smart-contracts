@@ -5,6 +5,8 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+
 import "./AllowList.sol";
 import "./interfaces/IFeeSettings.sol";
 
@@ -21,7 +23,20 @@ import "./interfaces/IFeeSettings.sol";
  *
  * @dev The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support and meta-transactions.
  */
-contract Token is ERC2771ContextUpgradeable, ERC20PermitUpgradeable, PausableUpgradeable, AccessControlUpgradeable {
+contract Token is
+    ERC2771ContextUpgradeable,
+    ERC20PermitUpgradeable,
+    PausableUpgradeable,
+    AccessControlUpgradeable,
+    UUPSUpgradeable
+{
+    /**
+     * @dev This empty reserved space is put in place to allow future versions to inherit
+     * from contracts that need storage. This mimics openzeppelin's approach.
+     * For more information, see https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     */
+    uint256[500] private __gap;
+
     /// @notice The role that has the ability to define which requirements an address must satisfy to receive tokens
     bytes32 public constant REQUIREMENT_ROLE = keccak256("REQUIREMENT_ROLE");
     /// @notice The role that has the ability to grant minting allowances
@@ -138,7 +153,15 @@ contract Token is ERC2771ContextUpgradeable, ERC20PermitUpgradeable, PausableUpg
 
         __ERC20Permit_init(_name);
         __ERC20_init(_name, _symbol);
+        __UUPSUpgradeable_init();
     }
+
+    /**
+     * This function is called during the upgrade process. The modifier onlyRole(DEFAULT_ADMIN_ROLE)
+     * is used to make sure that only the admin can perform upgrades.
+     * @param newImplementation address of the new implementation contract
+     */
+    function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
 
     /**
      * @notice Change the AllowList that defines which addresses satisfy which requirements to `_allowList`.
