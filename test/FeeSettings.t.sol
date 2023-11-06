@@ -39,12 +39,13 @@ contract FeeSettingsTest is Test {
     uint256 public constant price = 10000000;
 
     function testEnforceFeeRangeInConstructor(uint32 numerator, uint32 denominator) public {
+        vm.assume(denominator > 0);
         vm.assume(!tokenOrPrivateOfferFeeInValidRange(numerator, denominator));
         Fees memory _fees;
 
         console.log("Testing token fee");
         _fees = Fees(numerator, denominator, 1, 30, 1, 100, 0);
-        vm.expectRevert("Fee must be equal or less 5%");
+        vm.expectRevert("Token fee must be equal or less 5%");
         new FeeSettings(_fees, admin, admin, admin);
 
         console.log("Testing PublicFundraising fee");
@@ -59,21 +60,23 @@ contract FeeSettingsTest is Test {
 
         console.log("Testing PrivateOffer fee");
         _fees = Fees(1, 30, 1, 40, numerator, denominator, 0);
-        vm.expectRevert("Fee must be equal or less 5%");
+        vm.expectRevert("PrivateOffer fee must be equal or less 5%");
         new FeeSettings(_fees, admin, admin, admin);
     }
 
     function testEnforceTokenFeeRangeInFeeChanger(uint32 numerator, uint32 denominator) public {
+        vm.assume(denominator > 0);
         vm.assume(!tokenOrPrivateOfferFeeInValidRange(numerator, denominator));
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
         FeeSettings _feeSettings = new FeeSettings(fees, admin, admin, admin);
 
         Fees memory feeChange = Fees(numerator, denominator, 1, 100, 1, 100, uint64(block.timestamp + 7884001));
-        vm.expectRevert("Fee must be equal or less 5%");
+        vm.expectRevert("Token fee must be equal or less 5%");
         _feeSettings.planFeeChange(feeChange);
     }
 
     function testEnforcePublicFundraisingFeeRangeInFeeChanger(uint32 numerator, uint32 denominator) public {
+        vm.assume(denominator > 0);
         vm.assume(!publicFundraisingFeeInValidRange(numerator, denominator));
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
         FeeSettings _feeSettings = new FeeSettings(fees, admin, admin, admin);
@@ -84,12 +87,13 @@ contract FeeSettingsTest is Test {
     }
 
     function testEnforcePrivateOfferFeeRangeInFeeChanger(uint32 numerator, uint32 denominator) public {
+        vm.assume(denominator > 0);
         vm.assume(!tokenOrPrivateOfferFeeInValidRange(numerator, denominator));
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
         FeeSettings _feeSettings = new FeeSettings(fees, admin, admin, admin);
 
         Fees memory feeChange = Fees(1, 100, 1, 100, numerator, denominator, uint64(block.timestamp + 7884001));
-        vm.expectRevert("Fee must be equal or less 5%");
+        vm.expectRevert("PrivateOffer fee must be equal or less 5%");
         _feeSettings.planFeeChange(feeChange);
     }
 
@@ -283,6 +287,7 @@ contract FeeSettingsTest is Test {
         uint32 privateOfferFeeNumerator,
         uint32 privateOfferFeeDenominator
     ) public {
+        vm.assume(tokenFeeDenominator > 0 && publicFundraisingFeeDenominator > 0 && privateOfferFeeDenominator > 0);
         vm.assume(tokenOrPrivateOfferFeeInValidRange(tokenFeeNumerator, tokenFeeDenominator));
         vm.assume(tokenOrPrivateOfferFeeInValidRange(privateOfferFeeNumerator, privateOfferFeeDenominator));
         vm.assume(publicFundraisingFeeInValidRange(publicFundraisingFeeNumerator, publicFundraisingFeeDenominator));
@@ -570,5 +575,18 @@ contract FeeSettingsTest is Test {
             "Investment fee mismatch"
         );
         assertEq(_feeSettings.privateOfferFee(amount), 0, "Private offer fee mismatch");
+    }
+
+    function test0DenominatorIsNotPossible() public {
+        Fees memory fees = Fees(1, 0, 1, 0, 1, 0, 0);
+        vm.expectRevert("Denominator cannot be 0");
+        new FeeSettings(fees, admin, admin, admin);
+
+        // set 0 fee first, then update to 0 denominator
+        fees = Fees(0, 1, 0, 1, 0, 1, 0);
+        FeeSettings _feeSettings = new FeeSettings(fees, admin, admin, admin);
+        fees = Fees(0, 0, 0, 0, 0, 0, 0);
+        vm.expectRevert("Denominator cannot be 0");
+        _feeSettings.planFeeChange(fees);
     }
 }
