@@ -56,7 +56,7 @@ contract Token is
      * this gap in order to keep allowList at position 1000!
      * More info at [../docs/upgradeability.md]
      */
-    uint256[496] private __gap;
+    uint256[446] private __gap;
     /// @notice The role that can create snapshots of the token balances
     bytes32 public constant SNAPSHOTCREATOR_ROLE = keccak256("SNAPSHOTCREATOR_ROLE");
 
