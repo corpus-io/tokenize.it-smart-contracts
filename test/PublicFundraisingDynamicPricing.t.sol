@@ -78,7 +78,7 @@ contract PublicFundraisingTest is Test {
         // set up platform
         vm.startPrank(platformAdmin);
         list = new AllowList();
-        Fees memory fees = Fees(100, 100, 100, 100);
+        Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 100);
         feeSettings = new FeeSettings(fees, platformAdmin, platformAdmin, platformAdmin);
 
         // create token
