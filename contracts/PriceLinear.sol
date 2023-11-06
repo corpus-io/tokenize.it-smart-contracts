@@ -18,9 +18,9 @@ struct Linear {
     uint32 stepDuration;
     /// if 0: `stepDuration` is in seconds and `start` is an epoch
     /// if 1: `stepDuration` is in blocks and `start` is a block number
-    uint8 isBlockBased;
+    bool isBlockBased;
     /// if 0 price is falling, if 1 price is rising
-    uint8 isRising;
+    bool isRising;
 }
 
 /**
@@ -31,6 +31,7 @@ struct Linear {
  */
 contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPriceDynamic {
     Linear public parameters;
+    uint256 public nextSlot = 1;
 
     /**
      * This constructor creates a logic contract that is used to clone new fundraising contracts.
@@ -105,14 +106,14 @@ contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPri
             slopeDenominator: _slopeDenominator,
             start: _startTimeOrBlockNumber,
             stepDuration: _stepDuration,
-            isBlockBased: _isBlockBased ? 1 : 0,
-            isRising: _isRising ? 1 : 0
+            isBlockBased: _isBlockBased,
+            isRising: _isRising
         });
     }
 
     function getPrice(uint256 basePrice) public view returns (uint256) {
         Linear memory _parameters = parameters;
-        uint256 current = _parameters.isBlockBased == 1 ? block.number : block.timestamp;
+        uint256 current = _parameters.isBlockBased ? block.number : block.timestamp;
 
         if (current <= _parameters.start) {
             return basePrice;
@@ -126,7 +127,7 @@ contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPri
         //uint256 change = uint256((current - parameters.start) / parameters.stepDuration) * parameters.slopeEnumerator;
 
         // if price is rising, add change, else subtract change
-        if (_parameters.isRising == 1) {
+        if (_parameters.isRising) {
             // prevent overflow
             if (type(uint256).max - basePrice <= change) {
                 return type(uint256).max;
