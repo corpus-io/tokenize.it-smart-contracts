@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/TokenCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract tokenTest is Test {
     Token token;
@@ -11,7 +12,7 @@ contract tokenTest is Test {
     FeeSettings feeSettings;
     address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
-    address public constant requirer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
+    address public constant snapshotCreator = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
     address public constant mintAllower = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
     address public constant minter = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
     address public constant burner = 0x4109709eCFa91A80626ff3989d68F67f5b1DD124;
@@ -57,6 +58,7 @@ contract tokenTest is Test {
         vm.startPrank(admin);
         token.grantRole(token.MINTALLOWER_ROLE(), mintAllower);
         token.increaseMintingAllowance(minter, 200);
+        token.grantRole(token.SNAPSHOTCREATOR_ROLE(), snapshotCreator);
         vm.stopPrank();
 
         vm.prank(minter);
@@ -99,26 +101,26 @@ contract tokenTest is Test {
 
         uint256 snapshotId;
 
-        vm.prank(admin);
+        vm.prank(snapshotCreator);
         snapshotId = token.createSnapshot();
         console.log("snapshotId: %s", snapshotId);
 
         vm.prank(mintAllower);
         token.mint(rando1, amount1);
 
-        vm.prank(admin);
+        vm.prank(snapshotCreator);
         token.createSnapshot();
 
         vm.prank(mintAllower);
         token.mint(rando2, amount2);
 
-        vm.prank(admin);
+        vm.prank(snapshotCreator);
         token.createSnapshot();
 
         vm.prank(rando1);
         token.transfer(rando2, amount1);
 
-        vm.prank(admin);
+        vm.prank(snapshotCreator);
         token.createSnapshot();
 
         // verify all snapshots are correct
@@ -135,5 +137,40 @@ contract tokenTest is Test {
         // verify current balances are correct
         assertTrue(token.balanceOf(rando1) == 0, "rando1 balance is wrong");
         assertTrue(token.balanceOf(rando2) == amount1 + amount2, "rando2 balance is wrong");
+    }
+
+    function testOnlySnapshotCreatorCanSnapshot(address rando) public {
+        vm.assume(rando != address(0));
+        vm.assume(!token.hasRole(token.SNAPSHOTCREATOR_ROLE(), rando));
+        string memory randoString = Strings.toHexString(uint256(uint160(rando)), 20);
+        console.log("randoString: %s", randoString);
+        string memory error = string.concat("AccessControl: account ", randoString);
+        console.log("error: %s", error);
+        error = string.concat(
+            error,
+            " is missing role 0x0f808695ed46dfe84975e0868729f72470bdaab0e6414a139300622caf1a5940"
+        );
+        console.log("error: %s", error);
+        vm.prank(rando);
+        vm.expectRevert(bytes(error));
+        token.createSnapshot();
+
+        // make rando snapshot creator and create snapshot
+        vm.startPrank(admin);
+        token.grantRole(token.SNAPSHOTCREATOR_ROLE(), rando);
+        vm.stopPrank();
+        vm.prank(rando);
+        token.createSnapshot();
+    }
+
+    function testAdminIsRoleAdminForSnapshotCreator(address rando) public {
+        vm.assume(rando != address(0));
+        vm.assume(!token.hasRole(token.SNAPSHOTCREATOR_ROLE(), rando));
+
+        // make rando snapshot creator and create snapshot
+        bytes32 snapshotCreatorRole = token.SNAPSHOTCREATOR_ROLE();
+        vm.prank(admin);
+        token.grantRole(snapshotCreatorRole, rando);
+        require(token.hasRole(token.SNAPSHOTCREATOR_ROLE(), rando), "rando is not snapshot creator");
     }
 }

@@ -41,6 +41,8 @@ contract Token is
     bytes32 public constant TRANSFERER_ROLE = keccak256("TRANSFERER_ROLE");
     /// @notice The role that has the ability to pause the token. Transferring, burning and minting will not be possible while the contract is paused.
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    /// @notice The role that can create snapshots of the token balances
+    bytes32 public constant SNAPSHOTCREATOR_ROLE = keccak256("SNAPSHOTCREATOR_ROLE");
 
     // Map managed by tokenize.it, which assigns addresses requirements which they fulfill
     AllowList public allowList;
@@ -131,6 +133,7 @@ contract Token is
         _grantRole(BURNER_ROLE, _admin);
         _grantRole(TRANSFERERADMIN_ROLE, _admin);
         _grantRole(PAUSER_ROLE, _admin);
+        _grantRole(SNAPSHOTCREATOR_ROLE, _admin);
 
         // set up fee collection
         _checkIfFeeSettingsImplementsInterface(_feeSettings);
@@ -256,7 +259,7 @@ contract Token is
         _burn(_from, _amount);
     }
 
-    function createSnapshot() external onlyRole(DEFAULT_ADMIN_ROLE) returns (uint256) {
+    function createSnapshot() external onlyRole(SNAPSHOTCREATOR_ROLE) returns (uint256) {
         return _snapshot();
     }
 
