@@ -26,8 +26,6 @@ contract tokenProxyFactoryTest is Test {
 
     uint256 requirements = 0;
 
-    event RequirementsChanged(uint256 newRequirements);
-
     function setUp() public {
         vm.startPrank(feeSettingsAndAllowListOwner);
         allowList = new AllowList();

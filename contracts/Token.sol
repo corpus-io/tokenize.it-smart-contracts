@@ -94,6 +94,8 @@ contract Token is
      */
     mapping(address => uint256) public mintingAllowance; // used for token generating events such as vesting or new financing rounds
 
+    uint256 public version;
+
     /// @param newRequirements The new requirements that will be enforced from now on.
     event RequirementsChanged(uint newRequirements);
     /// @param newAllowList The AllowList contract that is in use from now on.
@@ -150,6 +152,9 @@ contract Token is
 
         // set requirements (can be 0 to allow everyone to send and receive tokens)
         requirements = _requirements;
+
+        // set version (can be updated in proxy storage by later implementation contracts)
+        version = 1;
 
         __ERC20Permit_init(_name);
         __ERC20_init(_name, _symbol);
