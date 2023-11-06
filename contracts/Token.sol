@@ -3,6 +3,7 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20SnapshotUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -26,6 +27,7 @@ import "./interfaces/IFeeSettings.sol";
 contract Token is
     ERC2771ContextUpgradeable,
     ERC20PermitUpgradeable,
+    ERC20SnapshotUpgradeable,
     PausableUpgradeable,
     AccessControlUpgradeable,
     UUPSUpgradeable
@@ -55,6 +57,8 @@ contract Token is
      * More info at [../docs/upgradeability.md]
      */
     uint256[496] private __gap;
+    /// @notice The role that can create snapshots of the token balances
+    bytes32 public constant SNAPSHOTCREATOR_ROLE = keccak256("SNAPSHOTCREATOR_ROLE");
 
     // Map managed by tokenize.it, which assigns addresses requirements which they fulfill
     AllowList public allowList;
@@ -147,6 +151,7 @@ contract Token is
         _grantRole(BURNER_ROLE, _admin);
         _grantRole(TRANSFERERADMIN_ROLE, _admin);
         _grantRole(PAUSER_ROLE, _admin);
+        _grantRole(SNAPSHOTCREATOR_ROLE, _admin);
 
         // set up fee collection
         _checkIfFeeSettingsImplementsInterface(_feeSettings);
@@ -163,6 +168,7 @@ contract Token is
         version = 1;
 
         __ERC20Permit_init(_name);
+        __ERC20Snapshot_init();
         __ERC20_init(_name, _symbol);
         __UUPSUpgradeable_init();
     }
@@ -282,6 +288,10 @@ contract Token is
         _burn(_from, _amount);
     }
 
+    function createSnapshot() external onlyRole(SNAPSHOTCREATOR_ROLE) returns (uint256) {
+        return _snapshot();
+    }
+
     /**
      * @notice There are 3 types of transfers:
      *    1. minting: transfers from the zero address to another address. Only minters can do this, which is checked in the mint function. The recipient must be allowed to transact.
@@ -289,7 +299,11 @@ contract Token is
      *    3. transfers from one address to another. The sender and recipient must be allowed to transact.
      * @dev this hook is executed before the transfer function itself
      */
-    function _beforeTokenTransfer(address _from, address _to, uint256 _amount) internal virtual override {
+    function _beforeTokenTransfer(
+        address _from,
+        address _to,
+        uint256 _amount
+    ) internal virtual override(ERC20SnapshotUpgradeable, ERC20Upgradeable) {
         super._beforeTokenTransfer(_from, _to, _amount);
         _requireNotPaused();
         if (_from != address(0) && _to != address(0)) {

@@ -206,13 +206,19 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      */
     function checkFeeLimits(Fees memory _fees) internal pure {
         require(
+            _fees.tokenFeeDenominator > 0 &&
+                _fees.publicFundraisingFeeDenominator > 0 &&
+                _fees.privateOfferFeeDenominator > 0,
+            "Denominator cannot be 0"
+        );
+        require(
             !_isFractionAGreater(
                 _fees.tokenFeeNumerator,
                 _fees.tokenFeeDenominator,
                 MAX_TOKEN_FEE_NUMERATOR,
                 MAX_TOKEN_FEE_DENOMINATOR
             ),
-            "Fee must be equal or less 5%"
+            "Token fee must be equal or less 5%"
         );
         require(
             !_isFractionAGreater(
@@ -230,7 +236,7 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
                 MAX_PERSONAL_INVITE_FEE_NUMERATOR,
                 MAX_PERSONAL_INVITE_FEE_DENOMINATOR
             ),
-            "Fee must be equal or less 5%"
+            "PrivateOffer fee must be equal or less 5%"
         );
     }
 
