@@ -20,28 +20,20 @@ contract TokenProxyFactory is CloneFactory {
         string memory _name,
         string memory _symbol
     ) external returns (address) {
-        bytes32 salt = keccak256(
-            abi.encodePacked(
-                _rawSalt,
-                _trustedForwarder,
-                _feeSettings,
-                _admin,
-                _allowList,
-                _requirements,
-                _name,
-                _symbol
-            )
+        bytes32 salt = getSalt(
+            _rawSalt,
+            _trustedForwarder,
+            _feeSettings,
+            _admin,
+            _allowList,
+            _requirements,
+            _name,
+            _symbol
         );
-        bytes memory noArguments;
-        ERC1967Proxy proxy = new ERC1967Proxy(implementation, noArguments);
-        // Create2.deploy(
-        //     0,
-        //     salt,
-        //     abi.encodePacked(
-        //         type(ERC1967Proxy).creationCode
-        //         //abi.encode(implementation, abi.encode(_feeSettings, _admin, _allowList, _requirements, _name, _symbol))
-        //     )
-        // );
+        //bytes memory noArguments;
+        // ERC1967Proxy proxy = new ERC1967Proxy(implementation, noArguments);
+        address proxyAddress = Create2.deploy(0, salt, getBytecode());
+        ERC1967Proxy proxy = ERC1967Proxy(payable(proxyAddress));
         //Clones.cloneDeterministic(implementation, salt);
         Token cloneToken = Token(address(proxy));
         require(cloneToken.isTrustedForwarder(_trustedForwarder), "TokenCloneFactory: Unexpected trustedForwarder");
@@ -50,28 +42,64 @@ contract TokenProxyFactory is CloneFactory {
         return address(proxy);
     }
 
-    function predictCloneAddress(
+    function predictProxyAddress(
         bytes32 _rawSalt,
         address _trustedForwarder,
-        IFeeSettingsV1 _feeSettings,
+        IFeeSettingsV2 _feeSettings,
         address _admin,
         AllowList _allowList,
         uint256 _requirements,
         string memory _name,
         string memory _symbol
     ) external view returns (address) {
-        bytes32 salt = keccak256(
-            abi.encodePacked(
-                _rawSalt,
-                _trustedForwarder,
-                _feeSettings,
-                _admin,
-                _allowList,
-                _requirements,
-                _name,
-                _symbol
-            )
+        bytes32 salt = getSalt(
+            _rawSalt,
+            _trustedForwarder,
+            _feeSettings,
+            _admin,
+            _allowList,
+            _requirements,
+            _name,
+            _symbol
         );
-        return Clones.predictDeterministicAddress(implementation, salt);
+        return Create2.computeAddress(salt, keccak256(getBytecode()));
+    }
+
+    /**
+     * @dev Generates the bytecode of the contract to be deployed, using the parameters.
+     * @return bytecode of the contract to be deployed.
+     */
+    function getBytecode() private view returns (bytes memory) {
+        return
+            abi.encodePacked(
+                type(ERC1967Proxy).creationCode,
+                abi.encode(implementation, new bytes(0))
+                //abi.encode(_feeSettings, _admin, _allowList, _requirements, _name, _symbol))
+            );
+    }
+
+    function getSalt(
+        bytes32 _rawSalt,
+        address _trustedForwarder,
+        IFeeSettingsV2 _feeSettings,
+        address _admin,
+        AllowList _allowList,
+        uint256 _requirements,
+        string memory _name,
+        string memory _symbol
+    ) public pure returns (bytes32) {
+        return
+            keccak256(
+                abi.encodePacked(
+                    _rawSalt,
+                    _trustedForwarder,
+                    _feeSettings,
+                    _admin,
+                    _allowList,
+                    _requirements,
+                    _name,
+                    _symbol
+                )
+            );
     }
 }
