@@ -159,7 +159,7 @@ contract PublicFundraising is
      * @param _amount amount of tokens to buy, in bits (smallest subunit of token)
      * @param _tokenReceiver address the tokens should be minted to
      */
-    function buy(uint256 _amount, address _tokenReceiver) external whenNotPaused nonReentrant {
+    function buy(uint256 _amount, address _tokenReceiver) public whenNotPaused nonReentrant {
         _checkAndDeliver(_amount, _tokenReceiver);
         // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
         uint256 currencyAmount = Math.ceilDiv(_amount * tokenPrice, 10 ** token.decimals());
@@ -172,6 +172,14 @@ contract PublicFundraising is
 
         currency.safeTransferFrom(_msgSender(), currencyReceiver, currencyAmount - fee);
         emit TokensBought(_msgSender(), _amount, currencyAmount);
+    }
+
+    // todo: maybe rename this to findBestDeal(amount) and make it public view?
+    function buyMax(uint256 _minAmount, address _tokenReceiver) external whenNotPaused nonReentrant {
+        uint256 currencyAmount = Math.ceilDiv(_minAmount * tokenPrice, 10 ** token.decimals());
+        uint256 amount = (currencyAmount * 10 ** token.decimals()) / tokenPrice;
+
+        buy(amount, _tokenReceiver);
     }
 
     function onTokenTransfer(
