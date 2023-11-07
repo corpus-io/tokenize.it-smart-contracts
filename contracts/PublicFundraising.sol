@@ -58,7 +58,9 @@ contract PublicFundraising is
     /// This mapping keeps track of how much each buyer has bought, in order to enforce maxAmountPerBuyer
     mapping(address => uint256) public tokensBought;
 
-    uint256 autoPauseDate;
+    /// During every buy, the autoPauseDate is checked. If it is in the past, the contract is paused.
+    /// @dev setting this to 0 disables the auto-pause feature
+    uint256 public autoPauseDate;
 
     /// @notice CurrencyReceiver has been changed to `newCurrencyReceiver`
     /// @param newCurrencyReceiver address that receives the payment (in currency) when tokens are bought
