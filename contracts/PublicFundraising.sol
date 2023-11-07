@@ -135,12 +135,7 @@ contract PublicFundraising is
         // after creating the contract, it needs a minting allowance (in the token contract)
     }
 
-    /**
-     * @notice Buy `amount` tokens and mint them to `_tokenReceiver`.
-     * @param _amount amount of tokens to buy, in bits (smallest subunit of token)
-     * @param _tokenReceiver address the tokens should be minted to
-     */
-    function buy(uint256 _amount, address _tokenReceiver) external whenNotPaused nonReentrant {
+    function _checkAndDeliver(uint256 _amount, address _tokenReceiver) internal {
         require(tokensSold + _amount <= maxAmountOfTokenToBeSold, "Not enough tokens to sell left");
         require(tokensBought[_tokenReceiver] + _amount >= minAmountPerBuyer, "Buyer needs to buy at least minAmount");
         require(
@@ -151,6 +146,21 @@ contract PublicFundraising is
         tokensSold += _amount;
         tokensBought[_tokenReceiver] += _amount;
 
+        token.mint(_tokenReceiver, _amount);
+    }
+
+    function _getFeeAndFeeReceiver(uint256 _currencyAmount) internal view returns (uint256, address) {
+        IFeeSettingsV2 feeSettings = token.feeSettings();
+        return (feeSettings.publicFundraisingFee(_currencyAmount), feeSettings.publicFundraisingFeeCollector());
+    }
+
+    /**
+     * @notice Buy `amount` tokens and mint them to `_tokenReceiver`.
+     * @param _amount amount of tokens to buy, in bits (smallest subunit of token)
+     * @param _tokenReceiver address the tokens should be minted to
+     */
+    function buy(uint256 _amount, address _tokenReceiver) external whenNotPaused nonReentrant {
+        _checkAndDeliver(_amount, _tokenReceiver);
         // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
         uint256 currencyAmount = Math.ceilDiv(_amount * tokenPrice, 10 ** token.decimals());
 
@@ -161,9 +171,27 @@ contract PublicFundraising is
         }
 
         currency.safeTransferFrom(_msgSender(), currencyReceiver, currencyAmount - fee);
-
-        token.mint(_tokenReceiver, _amount);
         emit TokensBought(_msgSender(), _amount, currencyAmount);
+    }
+
+    function onTokenTransfer(
+        address _from,
+        uint256 _currencyAmount,
+        bytes calldata data
+    ) public nonReentrant returns (bool) {
+        require(_msgSender() == address(currency), "only currency can call this function");
+
+        // calculate token amount from currency amount and price. Must be rounded down anyway, so the normal integer math is fine.
+        uint256 amount = (_currencyAmount * 10 ** token.decimals()) / tokenPrice;
+
+        _checkAndDeliver(amount, _from);
+
+        // move payment to currencyReceiver and feeCollector
+        (uint256 fee, address feeCollector) = _getFeeAndFeeReceiver(_currencyAmount);
+        currency.safeTransfer(feeCollector, fee);
+        currency.safeTransfer(currencyReceiver, _currencyAmount - fee);
+
+        emit TokensBought(_from, amount, _currencyAmount);
     }
 
     /**
