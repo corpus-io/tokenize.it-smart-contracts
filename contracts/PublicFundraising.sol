@@ -178,10 +178,11 @@ contract PublicFundraising is
         address _from,
         uint256 _currencyAmount,
         bytes calldata data
-    ) public nonReentrant returns (bool) {
+    ) external whenNotPaused nonReentrant returns (bool) {
         require(_msgSender() == address(currency), "only currency can call this function");
 
-        // calculate token amount from currency amount and price. Must be rounded down anyway, so the normal integer math is fine.
+        /// calculate token amount from currency amount and price. Must be rounded down anyway, so the normal integer math is fine.
+        /// This calculation often results in a larger amount of tokens
         uint256 amount = (_currencyAmount * 10 ** token.decimals()) / tokenPrice;
 
         _checkAndDeliver(amount, _from);
@@ -192,6 +193,9 @@ contract PublicFundraising is
         currency.safeTransfer(currencyReceiver, _currencyAmount - fee);
 
         emit TokensBought(_from, amount, _currencyAmount);
+
+        // return true is an antipattern, but required by the interface
+        return true;
     }
 
     /**
