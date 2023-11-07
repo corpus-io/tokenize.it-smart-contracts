@@ -1212,4 +1212,35 @@ contract PublicFundraisingTest is Test {
         raise.acceptOwnership();
         assertTrue(raise.owner() == newOwner);
     }
+
+    function testAutoPause(uint256 autoPauseDate, uint256 testDate) public {
+        vm.assume(testDate > 1 days + 1);
+        vm.assume(autoPauseDate > 1);
+        uint256 tokenBuyAmount = 5 * 10 ** token.decimals();
+        uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * raise.tokenPrice(), 10 ** 18);
+
+        vm.startPrank(owner);
+        raise.pause();
+        raise.setAutoPauseDate(autoPauseDate);
+        vm.warp(1 days + 10);
+        raise.unpause();
+        vm.stopPrank();
+
+        vm.warp(testDate);
+
+        // log block.timestamp and autoPauseDate
+        console.log("block.timestamp: ", block.timestamp);
+        console.log("autoPauseDate: ", autoPauseDate);
+
+        if (testDate > autoPauseDate) {
+            vm.expectRevert("Pausing contract because of auto-pause date");
+            vm.prank(buyer);
+            raise.buy(tokenBuyAmount, buyer);
+        } else {
+            vm.prank(buyer);
+            vm.expectEmit(true, true, true, true, address(raise));
+            emit TokensBought(buyer, tokenBuyAmount, costInPaymentToken);
+            raise.buy(tokenBuyAmount, buyer);
+        }
+    }
 }

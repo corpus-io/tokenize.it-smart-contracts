@@ -30,6 +30,10 @@ contract PublicFundraising is
 {
     using SafeERC20 for IERC20;
 
+    /// @notice Minimum waiting time between pause or parameter change and unpause.
+    /// @dev delay is calculated from pause or parameter change to unpause.
+    uint256 public constant delay = 1 days;
+
     /// address that receives the currency when tokens are bought
     address public currencyReceiver;
     /// smallest amount of tokens that can be minted, in bits (bit = smallest subunit of token)
@@ -48,14 +52,13 @@ contract PublicFundraising is
     /// token to be minted
     Token public token;
 
-    /// @notice Minimum waiting time between pause or parameter change and unpause.
-    /// @dev delay is calculated from pause or parameter change to unpause.
-    uint256 public constant delay = 1 days;
     /// timestamp of the last time the contract was paused or a parameter was changed
     uint256 public coolDownStart;
 
     /// This mapping keeps track of how much each buyer has bought, in order to enforce maxAmountPerBuyer
     mapping(address => uint256) public tokensBought;
+
+    uint256 autoPauseDate;
 
     /// @notice CurrencyReceiver has been changed to `newCurrencyReceiver`
     /// @param newCurrencyReceiver address that receives the payment (in currency) when tokens are bought
@@ -148,6 +151,15 @@ contract PublicFundraising is
             "Total amount of bought tokens needs to be lower than or equal to maxAmount"
         );
 
+        // auto pause
+        if (autoPauseDate != 0 && block.timestamp > autoPauseDate) {
+            _pause();
+            coolDownStart = block.timestamp;
+            // auto-pause has triggered, reset it so it will not trigger again if the owner unpauses the contract
+            autoPauseDate = 0;
+            revert("Pausing contract because of auto-pause date");
+        }
+
         tokensSold += _amount;
         tokensBought[_tokenReceiver] += _amount;
 
@@ -221,6 +233,11 @@ contract PublicFundraising is
         maxAmountOfTokenToBeSold = _maxAmountOfTokenToBeSold;
         emit MaxAmountOfTokenToBeSoldChanged(_maxAmountOfTokenToBeSold);
         coolDownStart = block.timestamp;
+    }
+
+    /// set auto pause date
+    function setAutoPauseDate(uint256 _autoPauseDate) external onlyOwner whenPaused {
+        autoPauseDate = _autoPauseDate;
     }
 
     /**
