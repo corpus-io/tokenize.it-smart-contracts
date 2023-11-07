@@ -154,7 +154,6 @@ contract PublicFundraising is
         // auto pause
         if (autoPauseDate != 0 && block.timestamp > autoPauseDate) {
             _pause();
-            coolDownStart = block.timestamp;
             // auto-pause has triggered, reset it so it will not trigger again if the owner unpauses the contract
             autoPauseDate = 0;
             revert("Pausing contract because of auto-pause date");
@@ -240,12 +239,16 @@ contract PublicFundraising is
         autoPauseDate = _autoPauseDate;
     }
 
+    function _pause() internal override(PausableUpgradeable) {
+        super._pause();
+        coolDownStart = block.timestamp;
+    }
+
     /**
      * @notice pause the contract
      */
     function pause() external onlyOwner {
         _pause();
-        coolDownStart = block.timestamp;
     }
 
     /**
