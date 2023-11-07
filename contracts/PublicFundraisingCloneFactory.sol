@@ -19,7 +19,8 @@ contract PublicFundraisingCloneFactory is CloneFactory {
         uint256 _tokenPrice,
         uint256 _maxAmountOfTokenToBeSold,
         IERC20 _currency,
-        Token _token
+        Token _token,
+        uint256 _autoPauseDate
     ) external returns (address) {
         bytes32 salt = keccak256(
             abi.encodePacked(
@@ -32,7 +33,8 @@ contract PublicFundraisingCloneFactory is CloneFactory {
                 _tokenPrice,
                 _maxAmountOfTokenToBeSold,
                 _currency,
-                _token
+                _token,
+                _autoPauseDate
             )
         );
         address clone = Clones.cloneDeterministic(implementation, salt);
@@ -49,7 +51,8 @@ contract PublicFundraisingCloneFactory is CloneFactory {
             _tokenPrice,
             _maxAmountOfTokenToBeSold,
             _currency,
-            _token
+            _token,
+            _autoPauseDate
         );
         emit NewClone(clone);
         return clone;
@@ -65,7 +68,8 @@ contract PublicFundraisingCloneFactory is CloneFactory {
         uint256 _tokenPrice,
         uint256 _maxAmountOfTokenToBeSold,
         IERC20 _currency,
-        Token _token
+        Token _token,
+        uint256 _autoPauseDate
     ) external view returns (address) {
         bytes32 salt = keccak256(
             abi.encodePacked(
@@ -78,7 +82,8 @@ contract PublicFundraisingCloneFactory is CloneFactory {
                 _tokenPrice,
                 _maxAmountOfTokenToBeSold,
                 _currency,
-                _token
+                _token,
+                _autoPauseDate
             )
         );
         return Clones.predictDeterministicAddress(implementation, salt);

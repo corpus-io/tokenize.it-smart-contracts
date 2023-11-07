@@ -49,7 +49,7 @@ contract tokenTest is Test {
         fundraisingFactory = new PublicFundraisingCloneFactory(address(fundraisingImplementation));
     }
 
-    function testAddressPrediction(
+    function testAddressPrediction1(
         bytes32 _rawSalt,
         address _trustedForwarder,
         address _owner,
@@ -59,7 +59,8 @@ contract tokenTest is Test {
         uint256 _tokenPrice,
         uint256 _maxAmountOfTokenToBeSold,
         IERC20 _currency,
-        Token _token
+        Token _token,
+        uint256 _autoPauseDate
     ) public {
         vm.assume(_trustedForwarder != address(0));
         vm.assume(_owner != address(0));
@@ -86,7 +87,8 @@ contract tokenTest is Test {
                 _tokenPrice,
                 _maxAmountOfTokenToBeSold,
                 _currency,
-                _token
+                _token,
+                _autoPauseDate
             )
         );
 
@@ -101,9 +103,60 @@ contract tokenTest is Test {
             _tokenPrice,
             _maxAmountOfTokenToBeSold,
             _currency,
-            _token
+            _token,
+            _autoPauseDate
         );
+
+        // log both addresses
+        console.log(expected1);
+        console.log(expected2);
         assertEq(expected1, expected2, "address prediction with salt and params not equal");
+    }
+
+    function testAddressPrediction2(
+        bytes32 _rawSalt,
+        address _trustedForwarder,
+        address _owner,
+        address _currencyReceiver,
+        uint256 _minAmountPerBuyer,
+        uint256 _maxAmountPerBuyer,
+        uint256 _tokenPrice,
+        uint256 _maxAmountOfTokenToBeSold,
+        IERC20 _currency,
+        Token _token,
+        uint256 _autoPauseDate
+    ) public {
+        vm.assume(_trustedForwarder != address(0));
+        vm.assume(_owner != address(0));
+        vm.assume(address(_currency) != address(0));
+        vm.assume(address(_token) != address(0));
+        vm.assume(_currencyReceiver != address(0));
+        vm.assume(_minAmountPerBuyer > 0);
+        vm.assume(_maxAmountPerBuyer >= _minAmountPerBuyer);
+        vm.assume(_tokenPrice > 0);
+        vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
+
+        // create new clone factory so we can use the local forwarder
+        fundraisingImplementation = new PublicFundraising(_trustedForwarder);
+        fundraisingFactory = new PublicFundraisingCloneFactory(address(fundraisingImplementation));
+
+        bytes32 salt = keccak256(
+            abi.encodePacked(
+                _rawSalt,
+                _trustedForwarder,
+                _owner,
+                _currencyReceiver,
+                _minAmountPerBuyer,
+                _maxAmountPerBuyer,
+                _tokenPrice,
+                _maxAmountOfTokenToBeSold,
+                _currency,
+                _token,
+                _autoPauseDate
+            )
+        );
+
+        address expected1 = fundraisingFactory.predictCloneAddress(salt);
 
         address actual = fundraisingFactory.createPublicFundraisingClone(
             _rawSalt,
@@ -115,7 +168,8 @@ contract tokenTest is Test {
             _tokenPrice,
             _maxAmountOfTokenToBeSold,
             _currency,
-            _token
+            _token,
+            _autoPauseDate
         );
         assertEq(expected1, actual, "address prediction failed");
     }
@@ -151,7 +205,8 @@ contract tokenTest is Test {
             _tokenPrice,
             _maxAmountOfTokenToBeSold,
             _currency,
-            _token
+            _token,
+            0
         );
 
         // deploy again
@@ -166,7 +221,8 @@ contract tokenTest is Test {
             _tokenPrice,
             _maxAmountOfTokenToBeSold,
             _currency,
-            _token
+            _token,
+            0
         );
     }
 
@@ -207,7 +263,8 @@ contract tokenTest is Test {
                 _tokenPrice,
                 _maxAmountOfTokenToBeSold,
                 _currency,
-                _token
+                _token,
+                0
             )
         );
 
@@ -241,7 +298,8 @@ contract tokenTest is Test {
                 3,
                 4,
                 IERC20(address(1)),
-                Token(address(2))
+                Token(address(2)),
+                0
             )
         );
 
