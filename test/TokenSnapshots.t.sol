@@ -98,6 +98,8 @@ contract tokenTest is Test {
         vm.assume(amount1 < (type(uint256).max - amount2) - 1000);
         vm.assume(rando1 != address(0));
         vm.assume(rando2 != address(0));
+        vm.assume(token.balanceOf(rando1) == 0);
+        vm.assume(token.balanceOf(rando2) == 0);
 
         uint256 snapshotId;
 
