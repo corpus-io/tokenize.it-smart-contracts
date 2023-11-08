@@ -1223,15 +1223,15 @@ contract PublicFundraisingTest is Test {
         assertTrue(raise.owner() == newOwner);
     }
 
-    function testAutoPauseActivation(uint256 autoPauseDate, uint256 testDate) public {
+    function testAutoPauseActivation(uint256 _autoPauseDate, uint256 testDate) public {
         vm.assume(testDate > 1 days + 1);
-        vm.assume(autoPauseDate > 1);
+        vm.assume(_autoPauseDate > 1);
         uint256 tokenBuyAmount = 5 * 10 ** token.decimals();
         uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * raise.priceBase(), 10 ** 18);
 
         vm.startPrank(owner);
         raise.pause();
-        raise.setAutoPauseDate(autoPauseDate);
+        raise.setAutoPauseDate(_autoPauseDate);
         vm.warp(1 days + 10);
         raise.unpause();
         vm.stopPrank();
@@ -1240,9 +1240,9 @@ contract PublicFundraisingTest is Test {
 
         // log block.timestamp and autoPauseDate
         console.log("block.timestamp: ", block.timestamp);
-        console.log("autoPauseDate: ", autoPauseDate);
+        console.log("autoPauseDate: ", _autoPauseDate);
 
-        if (testDate > autoPauseDate) {
+        if (testDate > _autoPauseDate) {
             vm.expectRevert("Pausing contract because of auto-pause date");
             vm.prank(buyer);
             raise.buy(tokenBuyAmount, buyer);
@@ -1316,7 +1316,8 @@ contract PublicFundraisingTest is Test {
                 _price,
                 maxAmountOfTokenToBeSold,
                 paymentToken,
-                token
+                token,
+                0
             )
         );
 
@@ -1359,7 +1360,8 @@ contract PublicFundraisingTest is Test {
                 _price,
                 maxAmountOfTokenToBeSold,
                 paymentToken,
-                token
+                token,
+                0
             )
         );
 
