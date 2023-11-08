@@ -340,11 +340,6 @@ contract PublicFundraisingTest is Test {
     }
 
     function testBuyTooMuch() public {
-        uint256 tokenBuyAmount = 5 * 10 ** token.decimals();
-        uint256 costInPaymentToken = (tokenBuyAmount * price) / 10 ** 18;
-
-        assert(costInPaymentToken == 35 * 10 ** paymentTokenDecimals); // 35 payment tokens, manually calculated
-
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
 
         vm.prank(buyer);
@@ -401,9 +396,9 @@ contract PublicFundraisingTest is Test {
         uint256 availableBalance = paymentToken.balanceOf(buyer);
 
         vm.prank(buyer);
-        paymentToken.transfer(person1, availableBalance / 2);
+        paymentToken.transfer(person1, availableBalance / 3);
         vm.prank(buyer);
-        paymentToken.transfer(person2, 10 ** 6);
+        paymentToken.transfer(person2, availableBalance / 3);
 
         vm.prank(person1);
         paymentToken.approve(address(raise), paymentTokenAmount);
@@ -1211,5 +1206,89 @@ contract PublicFundraisingTest is Test {
         vm.prank(newOwner);
         raise.acceptOwnership();
         assertTrue(raise.owner() == newOwner);
+    }
+
+    function testMaxAmountFixed() public {
+        uint256 _price = 7 * 10 ** paymentTokenDecimals; // 7 payment tokens per token
+        PublicFundraising _raise = PublicFundraising(
+            factory.createPublicFundraisingClone(
+                bytes32("a"),
+                trustedForwarder,
+                owner,
+                payable(receiver),
+                minAmountPerBuyer,
+                maxAmountPerBuyer,
+                _price,
+                maxAmountOfTokenToBeSold,
+                paymentToken,
+                token
+            )
+        );
+
+        // If I want to buy 1 tokens bit, I need to pay 1 payment token bit, even though
+        // the "real" cost would only be 7/(10^12) payment tokens
+        // Therefore, it is cleverer if I buy as much as possible for that 1 payment token bit, which is 1/7 tokens
+        uint256 _amount = 1; // token bit
+        uint256 _currencyAmount = _raise.calculateCurrencyAmountFromTokenAmount(_amount); // 1 payment token bit
+        uint256 _maxAmountManual = _raise.calculateTokenAmountFromCurrencyAmount(_currencyAmount); // 1/7 * 10^12 tokens
+        uint256 _maxAmount = _raise.findMaxAmount(_amount);
+        uint256 _effectivePrice = (_currencyAmount * 10 ** token.decimals()) / _maxAmount;
+
+        // log all 3 values
+        console.log("amount", _amount);
+        console.log("currencyAmount", _currencyAmount);
+        console.log("maxAmount", _maxAmount);
+        // difference between amount and maxAmount
+        console.log("difference", _maxAmount - _amount);
+        // price calculated from _maxAmount and _currencyAmount
+        console.log("price", (_currencyAmount * 10 ** token.decimals()) / _maxAmount);
+
+        assertTrue(_effectivePrice == _price, "Prices don't match");
+        assertTrue(_maxAmount == uint256(10 ** 12) / 7, "Max amount is wrong");
+        assertTrue(_maxAmount == _maxAmountManual, "Max amounts don't match");
+    }
+
+    function testMaxAmountVariable(uint256 _price, uint256 _amount) public {
+        vm.assume(_price > 0);
+        vm.assume(_amount > 0);
+        vm.assume(_amount < type(uint256).max / _price);
+
+        PublicFundraising _raise = PublicFundraising(
+            factory.createPublicFundraisingClone(
+                bytes32("a"),
+                trustedForwarder,
+                owner,
+                payable(receiver),
+                minAmountPerBuyer,
+                maxAmountPerBuyer,
+                _price,
+                maxAmountOfTokenToBeSold,
+                paymentToken,
+                token
+            )
+        );
+
+        uint256 _currencyAmount = _raise.calculateCurrencyAmountFromTokenAmount(_amount);
+
+        vm.assume(_currencyAmount < type(uint256).max / 10 ** token.decimals()); // otherwise an overflow will occur
+        uint256 _maxAmountManual = _raise.calculateTokenAmountFromCurrencyAmount(_currencyAmount);
+        uint256 _maxAmount = _raise.findMaxAmount(_amount);
+        uint256 _effectivePriceForMax = (_currencyAmount * 10 ** token.decimals()) / _maxAmount;
+        uint256 _effectivePriceForInput = (_currencyAmount * 10 ** token.decimals()) / _amount;
+
+        // log all 3 values
+        console.log("amount", _amount);
+        console.log("currencyAmount", _currencyAmount);
+        console.log("maxAmount", _maxAmount);
+        // difference between amount and maxAmount
+        console.log("difference", _maxAmount - _amount);
+        // price calculated from _maxAmount and _currencyAmount
+        console.log("_effectivePriceForMax", _effectivePriceForMax);
+        console.log("price", _price);
+
+        assertTrue(_effectivePriceForInput >= _price, "Effective price lower than nominal price!");
+        assertTrue(_effectivePriceForMax >= _price, "Effective price for max amount lower than nominal price");
+        assertTrue(_maxAmount >= _amount, "Max amount is wrong");
+        assertTrue(_maxAmount == _maxAmountManual, "Max amounts don't match");
     }
 }
