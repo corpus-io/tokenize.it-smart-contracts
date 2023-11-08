@@ -195,9 +195,20 @@ contract PublicFundraising is
     ) external whenNotPaused nonReentrant returns (bool) {
         require(_msgSender() == address(currency), "only the currency contract can call this function");
 
+        // if a recipient address was provided in data, use it as receiver. Otherwise, use _from as receiver.
+        address tokenReceiver;
+        if (data.length == 32) {
+            tokenReceiver = abi.decode(data, (address));
+        } else {
+            tokenReceiver = _from;
+        }
+
+        // address tokenReceiver = abi.decode(data, (address));
+        // tokenReceiver = tokenReceiver == address(0) ? _from : tokenReceiver;
+
         uint256 amount = calculateTokenAmountFromCurrencyAmount(_currencyAmount);
 
-        _checkAndDeliver(amount, _from);
+        _checkAndDeliver(amount, tokenReceiver);
 
         // move payment to currencyReceiver and feeCollector
         (uint256 fee, address feeCollector) = _getFeeAndFeeReceiver(_currencyAmount);

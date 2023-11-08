@@ -340,11 +340,6 @@ contract PublicFundraisingTest is Test {
     }
 
     function testBuyTooMuch() public {
-        uint256 tokenBuyAmount = 5 * 10 ** token.decimals();
-        uint256 costInPaymentToken = (tokenBuyAmount * price) / 10 ** 18;
-
-        assert(costInPaymentToken == 35 * 10 ** paymentTokenDecimals); // 35 payment tokens, manually calculated
-
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
 
         vm.prank(buyer);

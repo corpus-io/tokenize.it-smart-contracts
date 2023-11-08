@@ -233,60 +233,62 @@ contract PublicFundraisingTest is Test {
         );
     }
 
-    // function testBuyTooMuch() public {
-    //     uint256 tokenBuyAmount = 5 * 10 ** token.decimals();
-    //     uint256 costInPaymentToken = (tokenBuyAmount * price) / 10 ** 18;
+    function testBuyTooMuch() public {
+        uint256 tokenBuyAmount = maxAmountPerBuyer + 1;
+        uint256 costInPaymentToken = raise.calculateCurrencyAmountFromTokenAmount(tokenBuyAmount);
 
-    //     assert(costInPaymentToken == 35 * 10 ** paymentTokenDecimals); // 35 payment tokens, manually calculated
+        uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
 
-    //     uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
+        vm.prank(buyer);
+        vm.expectRevert("Total amount of bought tokens needs to be lower than or equal to maxAmount");
+        paymentToken.transferAndCall(address(raise), costInPaymentToken, new bytes(0));
+        assertTrue(paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore);
+        assertTrue(token.balanceOf(buyer) == 0);
+        assertTrue(paymentToken.balanceOf(receiver) == 0);
+        assertTrue(raise.tokensSold() == 0);
+        assertTrue(raise.tokensBought(buyer) == 0);
+    }
 
-    //     vm.prank(buyer);
-    //     vm.expectRevert("Total amount of bought tokens needs to be lower than or equal to maxAmount");
-    //     raise.buy(maxAmountPerBuyer + 10 ** 18, buyer); //+ 10**token.decimals());
-    //     assertTrue(paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore);
-    //     assertTrue(token.balanceOf(buyer) == 0);
-    //     assertTrue(paymentToken.balanceOf(receiver) == 0);
-    //     assertTrue(raise.tokensSold() == 0);
-    //     assertTrue(raise.tokensBought(buyer) == 0);
-    // }
+    function testBuyAndMintToDifferentAddress() public {
+        address addressWithFunds = address(1);
+        address addressForTokens = address(2);
 
-    // function testBuyAndMintToDifferentAddress() public {
-    //     address addressWithFunds = vm.addr(1);
-    //     address addressForTokens = vm.addr(2);
+        uint256 currencyAmount = price; // buy one token
+        uint256 tokenBuyAmount = raise.calculateTokenAmountFromCurrencyAmount(currencyAmount);
 
-    //     uint256 availableBalance = paymentToken.balanceOf(buyer);
+        vm.prank(buyer);
+        paymentToken.transfer(addressWithFunds, currencyAmount);
 
-    //     vm.prank(buyer);
-    //     paymentToken.transfer(addressWithFunds, availableBalance / 2);
+        vm.prank(addressWithFunds);
+        paymentToken.approve(address(raise), paymentTokenAmount);
 
-    //     vm.prank(addressWithFunds);
-    //     paymentToken.approve(address(raise), paymentTokenAmount);
+        // check state before
+        assertTrue(paymentToken.balanceOf(addressWithFunds) == currencyAmount, "addressWithFunds has no funds");
+        assertTrue(paymentToken.balanceOf(addressForTokens) == 0, "addressForTokens has funds");
+        assertTrue(token.balanceOf(addressForTokens) == 0, "addressForTokens has tokens before buy");
+        assertTrue(token.balanceOf(addressWithFunds) == 0, "addressWithFunds has tokens before buy");
 
-    //     // check state before
-    //     assertTrue(paymentToken.balanceOf(addressWithFunds) == availableBalance / 2, "addressWithFunds has no funds");
-    //     assertTrue(paymentToken.balanceOf(addressForTokens) == 0, "addressForTokens has funds");
-    //     assertTrue(token.balanceOf(addressForTokens) == 0, "addressForTokens has tokens before buy");
-    //     assertTrue(token.balanceOf(addressWithFunds) == 0, "addressWithFunds has tokens before buy");
+        // execute buy, with addressForTokens as recipient
+        bytes memory data = abi.encode(addressForTokens);
 
-    //     // execute buy, with addressForTokens as recipient
-    //     vm.prank(addressWithFunds);
-    //     raise.buy(maxAmountOfTokenToBeSold / 2, addressForTokens);
+        console.log("bytes lenght: ", data.length);
 
-    //     // check state after
-    //     console.log("addressWithFunds balance: ", paymentToken.balanceOf(addressWithFunds));
-    //     assertTrue(
-    //         paymentToken.balanceOf(addressWithFunds) <=
-    //             availableBalance / 2 - paymentToken.balanceOf(raise.currencyReceiver()),
-    //         "addressWithFunds has funds after buy"
-    //     );
-    //     assertTrue(paymentToken.balanceOf(addressForTokens) == 0, "addressForTokens has funds after buy");
-    //     assertTrue(
-    //         token.balanceOf(addressForTokens) == maxAmountOfTokenToBeSold / 2,
-    //         "addressForTokens has wrong amount of tokens after buy"
-    //     );
-    //     assertTrue(token.balanceOf(addressWithFunds) == 0, "addressWithFunds has tokens after buy");
-    // }
+        vm.startPrank(addressWithFunds);
+        paymentToken.transferAndCall(address(raise), currencyAmount, data);
+        vm.stopPrank();
+
+        // log token holdings of addressForTokens
+        console.log("addressForTokens token balance: ", token.balanceOf(addressForTokens));
+
+        // check state after
+        console.log("addressWithFunds balance: ", paymentToken.balanceOf(addressWithFunds));
+        assertTrue(paymentToken.balanceOf(addressWithFunds) == 0, "addressWithFunds has funds after buy");
+        assertTrue(paymentToken.balanceOf(addressForTokens) == 0, "addressForTokens has funds after buy");
+        assertTrue(
+            token.balanceOf(addressForTokens) == tokenBuyAmount,
+            "addressForTokens has wrong amount of tokens after buy"
+        );
+    }
 
     // function testMultiplePeopleBuyTooMuch() public {
     //     address person1 = vm.addr(1);
