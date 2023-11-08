@@ -162,8 +162,7 @@ contract PublicFundraising is
     function buy(uint256 _amount, address _tokenReceiver) public whenNotPaused nonReentrant {
         _checkAndDeliver(_amount, _tokenReceiver);
         // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
-        uint256 currencyAmount = Math.ceilDiv(_amount * tokenPrice, 10 ** token.decimals());
-
+        uint256 currencyAmount = calculateCurrencyAmountFromTokenAmount(_amount);
         IFeeSettingsV2 feeSettings = token.feeSettings();
         uint256 fee = feeSettings.publicFundraisingFee(currencyAmount);
         if (fee != 0) {
@@ -174,12 +173,19 @@ contract PublicFundraising is
         emit TokensBought(_msgSender(), _amount, currencyAmount);
     }
 
-    // todo: maybe rename this to findBestDeal(amount) and make it public view?
-    function buyMax(uint256 _minAmount, address _tokenReceiver) external whenNotPaused nonReentrant {
-        uint256 currencyAmount = Math.ceilDiv(_minAmount * tokenPrice, 10 ** token.decimals());
-        uint256 amount = (currencyAmount * 10 ** token.decimals()) / tokenPrice;
+    /// calculate token amount from currency amount and price. Must be rounded down anyway, so the normal integer math is fine.
+    /// This calculation often results in a larger amount of tokens
+    function calculateTokenAmountFromCurrencyAmount(uint256 _currencyAmount) public view returns (uint256) {
+        return (_currencyAmount * 10 ** token.decimals()) / tokenPrice;
+    }
 
-        buy(amount, _tokenReceiver);
+    function calculateCurrencyAmountFromTokenAmount(uint256 _tokenAmount) public view returns (uint256) {
+        return Math.ceilDiv(_tokenAmount * tokenPrice, 10 ** token.decimals());
+    }
+
+    function findMaxAmount(uint256 _minAmount) external view returns (uint256) {
+        uint256 currencyAmount = calculateCurrencyAmountFromTokenAmount(_minAmount);
+        return (calculateTokenAmountFromCurrencyAmount(currencyAmount));
     }
 
     function onTokenTransfer(
@@ -187,11 +193,9 @@ contract PublicFundraising is
         uint256 _currencyAmount,
         bytes calldata data
     ) external whenNotPaused nonReentrant returns (bool) {
-        require(_msgSender() == address(currency), "only currency can call this function");
+        require(_msgSender() == address(currency), "only the currency contract can call this function");
 
-        /// calculate token amount from currency amount and price. Must be rounded down anyway, so the normal integer math is fine.
-        /// This calculation often results in a larger amount of tokens
-        uint256 amount = (_currencyAmount * 10 ** token.decimals()) / tokenPrice;
+        uint256 amount = calculateTokenAmountFromCurrencyAmount(_currencyAmount);
 
         _checkAndDeliver(amount, _from);
 
