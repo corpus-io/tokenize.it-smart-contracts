@@ -396,9 +396,9 @@ contract PublicFundraisingTest is Test {
         uint256 availableBalance = paymentToken.balanceOf(buyer);
 
         vm.prank(buyer);
-        paymentToken.transfer(person1, availableBalance / 2);
+        paymentToken.transfer(person1, availableBalance / 3);
         vm.prank(buyer);
-        paymentToken.transfer(person2, 10 ** 6);
+        paymentToken.transfer(person2, availableBalance / 3);
 
         vm.prank(person1);
         paymentToken.approve(address(raise), paymentTokenAmount);

@@ -196,7 +196,6 @@ contract PublicFundraising is
      * @param _tokenReceiver address the tokens should be minted to
      */
     function buy(uint256 _amount, address _tokenReceiver) public whenNotPaused nonReentrant {
-        _checkAndDeliver(_amount, _tokenReceiver);
         // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
         uint256 currencyAmount = calculateCurrencyAmountFromTokenAmount(_amount);
         IFeeSettingsV2 feeSettings = token.feeSettings();
@@ -206,6 +205,8 @@ contract PublicFundraising is
         }
 
         currency.safeTransferFrom(_msgSender(), currencyReceiver, currencyAmount - fee);
+        _checkAndDeliver(_amount, _tokenReceiver);
+
         emit TokensBought(_msgSender(), _amount, currencyAmount);
     }
 
@@ -244,12 +245,12 @@ contract PublicFundraising is
 
         uint256 amount = calculateTokenAmountFromCurrencyAmount(_currencyAmount);
 
-        _checkAndDeliver(amount, tokenReceiver);
-
         // move payment to currencyReceiver and feeCollector
         (uint256 fee, address feeCollector) = _getFeeAndFeeReceiver(_currencyAmount);
         currency.safeTransfer(feeCollector, fee);
         currency.safeTransfer(currencyReceiver, _currencyAmount - fee);
+
+        _checkAndDeliver(amount, tokenReceiver);
 
         emit TokensBought(_from, amount, _currencyAmount);
 
