@@ -6,6 +6,8 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUp
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20SnapshotUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+
 import "./AllowList.sol";
 import "./interfaces/IFeeSettings.sol";
 
@@ -27,7 +29,8 @@ contract Token is
     ERC20PermitUpgradeable,
     ERC20SnapshotUpgradeable,
     PausableUpgradeable,
-    AccessControlUpgradeable
+    AccessControlUpgradeable,
+    UUPSUpgradeable
 {
     /// @notice The role that has the ability to define which requirements an address must satisfy to receive tokens
     bytes32 public constant REQUIREMENT_ROLE = keccak256("REQUIREMENT_ROLE");
@@ -41,6 +44,19 @@ contract Token is
     bytes32 public constant TRANSFERER_ROLE = keccak256("TRANSFERER_ROLE");
     /// @notice The role that has the ability to pause the token. Transferring, burning and minting will not be possible while the contract is paused.
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+
+    /**
+     * @dev This empty reserved space is put in place to allow future versions to inherit
+     * from contracts that need storage. This mimics openzeppelin's approach.
+     * For more information, see https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     * Its size is chosen for the first used variable (allowList) to be in storage slot 1000.
+     * This is checked in the testTokenStorageGap unit test.
+     * Whenever an inheritance is added, removed or changed, the storage location of allowList and
+     * all following variables is likely to change too, with catastrophic results. So remember to update
+     * this gap in order to keep allowList at position 1000!
+     * More info at [../docs/upgradeability.md]
+     */
+    uint256[446] private __gap;
     /// @notice The role that can create snapshots of the token balances
     bytes32 public constant SNAPSHOTCREATOR_ROLE = keccak256("SNAPSHOTCREATOR_ROLE");
 
@@ -87,6 +103,8 @@ contract Token is
      *      100 tokens will be minted to the `to` address, and 1 token to the feeCollector.
      */
     mapping(address => uint256) public mintingAllowance; // used for token generating events such as vesting or new financing rounds
+
+    uint256 public version;
 
     /// @param newRequirements The new requirements that will be enforced from now on.
     event RequirementsChanged(uint newRequirements);
@@ -146,10 +164,21 @@ contract Token is
         // set requirements (can be 0 to allow everyone to send and receive tokens)
         requirements = _requirements;
 
+        // set version (can be updated in proxy storage by later implementation contracts)
+        version = 1;
+
         __ERC20Permit_init(_name);
         __ERC20Snapshot_init();
         __ERC20_init(_name, _symbol);
+        __UUPSUpgradeable_init();
     }
+
+    /**
+     * This function is called during the upgrade process. The modifier onlyRole(DEFAULT_ADMIN_ROLE)
+     * is used to make sure that only the admin can perform upgrades.
+     * @param newImplementation address of the new implementation contract
+     */
+    function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
 
     /**
      * @notice Change the AllowList that defines which addresses satisfy which requirements to `_allowList`.

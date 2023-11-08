@@ -1080,4 +1080,26 @@ contract tokenTest is Test {
         vm.expectRevert();
         token.acceptNewFeeSettings(FeeSettings(address(0)));
     }
+
+    /**
+     * This test checks if the token contract's storage begins at slot 1000.
+     * This is important. For more information, see ../docs/upgradeability.md
+     */
+    function testTokenStorageGap(address _allowList) public {
+        vm.assume(_allowList != address(0));
+        vm.startPrank(admin);
+        token.setAllowList(AllowList(_allowList));
+        vm.stopPrank();
+
+        bytes32 inputAddress = bytes32(uint256(uint160(_allowList)));
+        console.logBytes32(inputAddress);
+        bytes32 storedAddress = vm.load(address(token), bytes32(uint256(1000)));
+        console.logBytes32(storedAddress);
+
+        assertEq(
+            storedAddress,
+            inputAddress,
+            "stored address is not the same as input address. Storage slot of allowList in Token changed!"
+        );
+    }
 }

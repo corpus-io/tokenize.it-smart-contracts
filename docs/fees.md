@@ -4,16 +4,17 @@
 
 ### Who pays fees
 
-Tokenize.it will collect fees from it's users. There are 2 types of users and 2 types of assets on the platform:
+Tokenize.it will collect fees from it's users. There are 3 types of users and 2 types of assets on the platform:
 
 - users
   1.  founders
   2.  investors
+  3.  employees
 - assets
-  1.  currencies (WETH, WBTC, USDC, EUROC)
+  1.  currencies (WETH, WBTC, USDC, EUROC, EURe)
   2.  tokens of companies
 
-Fees are collected during investments and token minting, but from founders only. They are paid both in the investment currency (-> see publicFundraisingFeeDenominator and privateOfferFeeDenominator in [FeeSettings.sol](../contracts/FeeSettings.sol)) and the token minted (-> see tokenFeeDenominator in [FeeSettings.sol](../contracts/FeeSettings.sol)).
+Fees are collected during investments and token minting. They are paid both in the investment currency (-> see publicFundraisingFeeDenominator and privateOfferFeeDenominator in [FeeSettings.sol](../contracts/FeeSettings.sol)) and the token minted (-> see tokenFeeDenominator in [FeeSettings.sol](../contracts/FeeSettings.sol)).
 
 **Example**:
 Investor buys X tokens for Y USDC through the PublicFundraising contract.
@@ -26,6 +27,12 @@ Investor buys X tokens for Y USDC through the PublicFundraising contract.
 - So the company receives Y - Y/publicFundraisingFeeDenominator USDC in this transaction
 - In total, the company minted X + X/tokenFeeDenominator tokens and received Y - Y/publicFundraisingFeeDenominator USDC. It paid fees both in token and currency.
 - The investor pays Y USDC for X tokens, like they expected. They did not pay fees.
+
+### Interpretation
+
+The smart contracts assume that the fees are paid by the company. The company will receive less currency and mint more tokens than the investor pays for. The investor will receive the tokens they paid for, and will not pay fees.
+
+It is, however, possible to interpret the fees as paid by the investor. In this case, the relative fee and the price have to be adapted and do not refer to the price the company offers the investor on a 1:1 base anymore.
 
 ### Fee limits
 
@@ -83,3 +90,25 @@ fee = amount / feeDenominator
 - The investment contracts [PrivateOffer](../contracts/PrivateOffer.sol) and [PublicFundraising](../contracts/PublicFundraising.sol) both access the fee setting through the token contracts they are connected to.
 - PublicFundraising: When Y currency is paid, the fee is Y/publicFundraisingFeeDenominator. This fee is DEDUCTED from the Y currency paid and transferred to the feeCollector.
 - PrivateOffer: When Y currency is paid, the fee is Y/privateOfferFeeDenominator. This fee is DEDUCTED from the Y currency paid and transferred to the feeCollector.
+
+## Discounts
+
+Fee discounts can be realized in two ways, which will be explained in the next paragraphs.
+
+### On-chain discounts
+
+The platform can deploy a new FeeSettings contract for a founder or a group of founders. If a new token is deployed, it can use the new FeeSettings contract straight away. Existing tokens can switch to the new FeeSettings contract when the platform proposes the switch and the founder accepts it.
+
+The new FeeSettings contract can provide reduced fees, for example 0.5% instead of 1%.
+
+If the discount should only be valid for a certain duration, the platform can update the parameters of the FeeSettings contract after the discount period has ended. The new parameters can be the same as those of the old FeeSettings contract. In this case, the founders would not benefit from a discount anymore.
+
+If the platform wants to encourage the founders to switch back to the old FeeSettings contract, it can do so by increasing the fees in the new contract beyond the settings in the old one and proposing a switch back to the old contract. The founders can then accept the switch back to the old contract and benefit from the lower fees again.
+
+### Off-chain discounts
+
+The platform can also offer discounts off-chain. For example, the platform can offer a discount to a founder for a certain duration and refund the difference between the discounted fee and the regular fee to the founder.
+
+The refund can be executed on-chain or off-chain.
+
+This approach is more flexible than the on-chain approach, and provides better privacy.
