@@ -290,55 +290,53 @@ contract PublicFundraisingTest is Test {
         );
     }
 
-    // function testMultiplePeopleBuyTooMuch() public {
-    //     address person1 = vm.addr(1);
-    //     address person2 = vm.addr(2);
+    function testMultiplePeopleBuyTooMuch() public {
+        address person1 = address(1);
+        address person2 = address(2);
 
-    //     uint256 availableBalance = paymentToken.balanceOf(buyer);
+        uint256 amountToSpend = raise.calculateCurrencyAmountFromTokenAmount(raise.maxAmountOfTokenToBeSold()) / 2;
 
-    //     vm.prank(buyer);
-    //     paymentToken.transfer(person1, availableBalance / 2);
-    //     vm.prank(buyer);
-    //     paymentToken.transfer(person2, 10 ** 6);
+        vm.prank(buyer);
+        paymentToken.transfer(person1, amountToSpend);
+        vm.prank(buyer);
+        paymentToken.transfer(person2, amountToSpend);
 
-    //     vm.prank(person1);
-    //     paymentToken.approve(address(raise), paymentTokenAmount);
+        vm.prank(buyer);
+        paymentToken.transferAndCall(address(raise), amountToSpend, new bytes(0));
+        vm.prank(person1);
+        paymentToken.transferAndCall(address(raise), amountToSpend, new bytes(0));
+        vm.prank(person2);
+        vm.expectRevert("Not enough tokens to sell left");
+        paymentToken.transferAndCall(address(raise), amountToSpend, new bytes(0));
+    }
 
-    //     vm.prank(person2);
-    //     paymentToken.approve(address(raise), paymentTokenAmount);
+    function testMultipleAddressesBuyForOneReceiver() public {
+        address person1 = vm.addr(1);
+        address person2 = vm.addr(2);
 
-    //     vm.prank(buyer);
-    //     raise.buy(maxAmountOfTokenToBeSold / 2, buyer);
-    //     vm.prank(person1);
-    //     raise.buy(maxAmountOfTokenToBeSold / 2, person1);
-    //     vm.prank(person2);
-    //     vm.expectRevert("Not enough tokens to sell left");
-    //     raise.buy(10 ** 18, person2);
-    // }
+        uint256 availableBalance = paymentToken.balanceOf(buyer);
 
-    // function testMultipleAddressesBuyForOneReceiver() public {
-    //     address person1 = vm.addr(1);
-    //     address person2 = vm.addr(2);
+        vm.prank(buyer);
+        paymentToken.transfer(person1, availableBalance / 2);
+        vm.prank(buyer);
+        paymentToken.transfer(person2, 10 ** 6);
 
-    //     uint256 availableBalance = paymentToken.balanceOf(buyer);
+        uint256 amountToPay = raise.calculateCurrencyAmountFromTokenAmount(maxAmountPerBuyer / 2) + 1;
+        bytes memory data = abi.encode(buyer);
 
-    //     vm.prank(buyer);
-    //     paymentToken.transfer(person1, availableBalance / 2);
-    //     vm.prank(buyer);
-    //     paymentToken.transfer(person2, 10 ** 6);
+        console.log("Buying first batch of tokens");
 
-    //     vm.prank(person1);
-    //     paymentToken.approve(address(raise), paymentTokenAmount);
+        vm.startPrank(buyer);
+        paymentToken.transferAndCall(address(raise), amountToPay, data);
+        vm.stopPrank();
 
-    //     vm.prank(person2);
-    //     paymentToken.approve(address(raise), paymentTokenAmount);
+        console.log("Buying second batch of tokens");
 
-    //     vm.prank(buyer);
-    //     raise.buy(maxAmountOfTokenToBeSold / 2, buyer);
-    //     vm.prank(person1);
-    //     vm.expectRevert("Total amount of bought tokens needs to be lower than or equal to maxAmount");
-    //     raise.buy(maxAmountOfTokenToBeSold / 2, buyer);
-    // }
+        vm.startPrank(person1);
+        vm.expectRevert("Total amount of bought tokens needs to be lower than or equal to maxAmount");
+        paymentToken.transferAndCall(address(raise), amountToPay, data);
+        vm.stopPrank();
+    }
 
     // function testCorrectAccounting() public {
     //     address person1 = vm.addr(1);
