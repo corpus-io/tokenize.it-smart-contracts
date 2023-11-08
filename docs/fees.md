@@ -11,7 +11,7 @@ Tokenize.it will collect fees from it's users. There are 3 types of users and 2 
   2.  investors
   3.  employees
 - assets
-  1.  currencies (WETH, WBTC, USDC, EURO, EURe)
+  1.  currencies (WETH, WBTC, USDC, EUROC, EURe)
   2.  tokens of companies
 
 Fees are collected during investments and token minting. They are paid both in the investment currency (-> see publicFundraisingFeeDenominator and privateOfferFeeDenominator in [FeeSettings.sol](../contracts/FeeSettings.sol)) and the token minted (-> see tokenFeeDenominator in [FeeSettings.sol](../contracts/FeeSettings.sol)).
