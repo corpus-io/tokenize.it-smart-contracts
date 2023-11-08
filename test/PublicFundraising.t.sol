@@ -125,7 +125,7 @@ contract PublicFundraisingTest is Test {
         assertTrue(_logic.currencyReceiver() == address(0));
         assertTrue(_logic.minAmountPerBuyer() == 0);
         assertTrue(_logic.maxAmountPerBuyer() == 0);
-        assertTrue(_logic.tokenPrice() == 0);
+        assertTrue(_logic.priceBase() == 0);
         assertTrue(address(_logic.currency()) == address(0));
         assertTrue(address(_logic.token()) == address(0));
     }
@@ -151,7 +151,7 @@ contract PublicFundraisingTest is Test {
         assertTrue(_raise.minAmountPerBuyer() == minAmountPerBuyer);
         assertTrue(_raise.maxAmountPerBuyer() == maxAmountPerBuyer);
         assertTrue(_raise.maxAmountOfTokenToBeSold() == maxAmountOfTokenToBeSold);
-        assertTrue(_raise.tokenPrice() == price);
+        assertTrue(_raise.priceBase() == price);
         assertTrue(_raise.currency() == paymentToken);
         assertTrue(_raise.token() == token);
         assertTrue(_raise.autoPauseDate() == autoPauseDate);
@@ -321,7 +321,7 @@ contract PublicFundraisingTest is Test {
     function testBuyHappyCase(uint256 tokenBuyAmount) public {
         vm.assume(tokenBuyAmount >= raise.minAmountPerBuyer());
         vm.assume(tokenBuyAmount <= raise.maxAmountPerBuyer());
-        uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * raise.tokenPrice(), 10 ** 18);
+        uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * raise.priceBase(), 10 ** 18);
         vm.assume(costInPaymentToken <= paymentToken.balanceOf(buyer));
 
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
@@ -603,7 +603,7 @@ contract PublicFundraisingTest is Test {
         uint256 realPrice = (realCostInPaymentToken * 10 ** 18) / token.balanceOf(buyer);
         console.log("realCostInPaymentToken", realCostInPaymentToken);
         console.log("token.balanceOf(buyer)", token.balanceOf(buyer));
-        console.log("advertised price: ", raise.tokenPrice());
+        console.log("advertised price: ", raise.priceBase());
         console.log("real price: ", realPrice);
         assertTrue(token.balanceOf(buyer) == tokenBuyAmount, "buyer has not received tokens");
         assertTrue(paymentToken.balanceOf(receiver) >= 1, "receiver has not received any payment");
@@ -748,7 +748,7 @@ contract PublicFundraisingTest is Test {
     */
     function testUpdateCurrencyAndPricePaused(uint256 newPrice) public {
         vm.assume(newPrice > 0);
-        assertTrue(raise.tokenPrice() == price);
+        assertTrue(raise.priceBase() == price);
         assertTrue(raise.currency() == paymentToken);
 
         FakePaymentToken newPaymentToken = new FakePaymentToken(700, 3);
@@ -759,7 +759,7 @@ contract PublicFundraisingTest is Test {
         vm.expectEmit(true, true, true, true, address(raise));
         emit TokenPriceAndCurrencyChanged(newPrice, newPaymentToken);
         raise.setCurrencyAndTokenPrice(newPaymentToken, newPrice);
-        assertTrue(raise.tokenPrice() == newPrice);
+        assertTrue(raise.priceBase() == newPrice);
         assertTrue(raise.currency() == newPaymentToken);
         vm.prank(owner);
         vm.expectRevert("_tokenPrice needs to be a non-zero amount");
@@ -1232,7 +1232,7 @@ contract PublicFundraisingTest is Test {
         vm.assume(testDate > 1 days + 1);
         vm.assume(autoPauseDate > 1);
         uint256 tokenBuyAmount = 5 * 10 ** token.decimals();
-        uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * raise.tokenPrice(), 10 ** 18);
+        uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * raise.priceBase(), 10 ** 18);
 
         vm.startPrank(owner);
         raise.pause();
@@ -1280,7 +1280,7 @@ contract PublicFundraisingTest is Test {
         vm.warp(testDate);
 
         uint256 tokenBuyAmount = 5 * 10 ** token.decimals();
-        uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * raise.tokenPrice(), 10 ** 18);
+        uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * raise.priceBase(), 10 ** 18);
 
         // log test date, auto pause date and block.timestamp
         console.log("testDate: ", testDate);

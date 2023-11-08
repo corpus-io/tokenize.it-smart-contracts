@@ -56,7 +56,7 @@ contract tokenTest is Test {
         address _currencyReceiver,
         uint256 _minAmountPerBuyer,
         uint256 _maxAmountPerBuyer,
-        uint256 _tokenPrice,
+        uint256 _priceBase,
         uint256 _maxAmountOfTokenToBeSold,
         IERC20 _currency,
         Token _token,
@@ -69,7 +69,7 @@ contract tokenTest is Test {
         vm.assume(_currencyReceiver != address(0));
         vm.assume(_minAmountPerBuyer > 0);
         vm.assume(_maxAmountPerBuyer >= _minAmountPerBuyer);
-        vm.assume(_tokenPrice > 0);
+        vm.assume(_priceBase > 0);
         vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
 
         // create new clone factory so we can use the local forwarder
@@ -84,7 +84,7 @@ contract tokenTest is Test {
                 _currencyReceiver,
                 _minAmountPerBuyer,
                 _maxAmountPerBuyer,
-                _tokenPrice,
+                _priceBase,
                 _maxAmountOfTokenToBeSold,
                 _currency,
                 _token,
@@ -100,7 +100,7 @@ contract tokenTest is Test {
             _currencyReceiver,
             _minAmountPerBuyer,
             _maxAmountPerBuyer,
-            _tokenPrice,
+            _priceBase,
             _maxAmountOfTokenToBeSold,
             _currency,
             _token,
@@ -180,7 +180,7 @@ contract tokenTest is Test {
         address _currencyReceiver,
         uint256 _minAmountPerBuyer,
         uint256 _maxAmountPerBuyer,
-        uint256 _tokenPrice,
+        uint256 _priceBase,
         uint256 _maxAmountOfTokenToBeSold,
         IERC20 _currency,
         Token _token
@@ -191,7 +191,7 @@ contract tokenTest is Test {
         vm.assume(_currencyReceiver != address(0));
         vm.assume(_minAmountPerBuyer > 0);
         vm.assume(_maxAmountPerBuyer >= _minAmountPerBuyer);
-        vm.assume(_tokenPrice > 0);
+        vm.assume(_priceBase > 0);
         vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
 
         // deploy once
@@ -202,7 +202,7 @@ contract tokenTest is Test {
             _currencyReceiver,
             _minAmountPerBuyer,
             _maxAmountPerBuyer,
-            _tokenPrice,
+            _priceBase,
             _maxAmountOfTokenToBeSold,
             _currency,
             _token,
@@ -218,7 +218,7 @@ contract tokenTest is Test {
             _currencyReceiver,
             _minAmountPerBuyer,
             _maxAmountPerBuyer,
-            _tokenPrice,
+            _priceBase,
             _maxAmountOfTokenToBeSold,
             _currency,
             _token,
@@ -233,7 +233,7 @@ contract tokenTest is Test {
         address _currencyReceiver,
         uint256 _minAmountPerBuyer,
         uint256 _maxAmountPerBuyer,
-        uint256 _tokenPrice,
+        uint256 _priceBase,
         uint256 _maxAmountOfTokenToBeSold,
         IERC20 _currency,
         Token _token
@@ -245,7 +245,7 @@ contract tokenTest is Test {
         vm.assume(_currencyReceiver != address(0));
         vm.assume(_minAmountPerBuyer > 0);
         vm.assume(_maxAmountPerBuyer >= _minAmountPerBuyer);
-        vm.assume(_tokenPrice > 0);
+        vm.assume(_priceBase > 0);
         vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
 
         // create new clone factory so we can use the local forwarder
@@ -260,7 +260,7 @@ contract tokenTest is Test {
                 _currencyReceiver,
                 _minAmountPerBuyer,
                 _maxAmountPerBuyer,
-                _tokenPrice,
+                _priceBase,
                 _maxAmountOfTokenToBeSold,
                 _currency,
                 _token,
@@ -273,7 +273,7 @@ contract tokenTest is Test {
         assertEq(raise.currencyReceiver(), _currencyReceiver, "currencyReceiver not set");
         assertEq(raise.minAmountPerBuyer(), _minAmountPerBuyer, "minAmountPerBuyer not set");
         assertEq(raise.maxAmountPerBuyer(), _maxAmountPerBuyer, "maxAmountPerBuyer not set");
-        assertEq(raise.tokenPrice(), _tokenPrice, "tokenPrice not set");
+        assertEq(raise.priceBase(), _priceBase, "priceBase not set");
         assertEq(raise.maxAmountOfTokenToBeSold(), _maxAmountOfTokenToBeSold, "maxAmountOfTokenToBeSold not set");
         assertEq(address(raise.currency()), address(_currency), "currency not set");
         assertEq(address(raise.token()), address(_token), "token not set");
