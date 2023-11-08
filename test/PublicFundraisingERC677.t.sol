@@ -338,146 +338,52 @@ contract PublicFundraisingTest is Test {
         vm.stopPrank();
     }
 
-    // function testCorrectAccounting() public {
-    //     address person1 = vm.addr(1);
-    //     address person2 = vm.addr(2);
+    function testCorrectAccounting() public {
+        address person1 = address(1);
 
-    //     uint256 availableBalance = paymentToken.balanceOf(buyer);
+        uint256 availableBalance = paymentToken.balanceOf(buyer);
 
-    //     vm.prank(buyer);
-    //     paymentToken.transfer(person1, availableBalance / 2);
-    //     vm.prank(buyer);
-    //     paymentToken.transfer(person2, 10 ** 6);
+        vm.prank(buyer);
+        paymentToken.transfer(person1, availableBalance / 2);
 
-    //     vm.prank(person1);
-    //     paymentToken.approve(address(raise), paymentTokenAmount);
+        uint256 tokenAmount1 = raise.findMaxAmount(maxAmountOfTokenToBeSold / 2);
+        uint256 tokenAmount2 = raise.findMaxAmount(maxAmountOfTokenToBeSold / 4);
 
-    //     vm.prank(person2);
-    //     paymentToken.approve(address(raise), paymentTokenAmount);
+        // check all entries are 0 before
+        assertTrue(raise.tokensSold() == 0, "raise has sold tokens");
+        assertTrue(raise.tokensBought(buyer) == 0, "buyer has bought tokens");
+        assertTrue(raise.tokensBought(person1) == 0, "person1 has bought tokens");
 
-    //     // check all entries are 0 before
-    //     assertTrue(raise.tokensSold() == 0);
-    //     assertTrue(raise.tokensBought(buyer) == 0);
-    //     assertTrue(raise.tokensBought(person1) == 0);
-    //     assertTrue(raise.tokensBought(person2) == 0);
+        vm.prank(buyer);
+        raise.buy(tokenAmount1, buyer);
+        vm.prank(buyer);
+        raise.buy(tokenAmount2, person1);
 
-    //     vm.prank(buyer);
-    //     raise.buy(maxAmountOfTokenToBeSold / 2, buyer);
-    //     vm.prank(buyer);
-    //     raise.buy(maxAmountOfTokenToBeSold / 4, person1);
-    //     vm.prank(buyer);
-    //     raise.buy(maxAmountOfTokenToBeSold / 8, person2);
+        // check all entries are correct after
+        assertTrue(raise.tokensSold() == tokenAmount1 + tokenAmount2, "raise has sold wrong amount of tokens");
+        assertTrue(raise.tokensBought(buyer) == tokenAmount1);
+        assertTrue(raise.tokensBought(person1) == tokenAmount2);
+        assertTrue(token.balanceOf(buyer) == tokenAmount1);
+        assertTrue(token.balanceOf(person1) == tokenAmount2);
+    }
 
-    //     // check all entries are correct after
-    //     assertTrue(raise.tokensSold() == (maxAmountOfTokenToBeSold * 7) / 8);
-    //     assertTrue(raise.tokensBought(buyer) == maxAmountOfTokenToBeSold / 2);
-    //     assertTrue(raise.tokensBought(person1) == maxAmountOfTokenToBeSold / 4);
-    //     assertTrue(raise.tokensBought(person2) == maxAmountOfTokenToBeSold / 8);
-    //     assertTrue(token.balanceOf(buyer) == maxAmountOfTokenToBeSold / 2);
-    //     assertTrue(token.balanceOf(person1) == maxAmountOfTokenToBeSold / 4);
-    //     assertTrue(token.balanceOf(person2) == maxAmountOfTokenToBeSold / 8);
-    // }
+    function testBuyTooLittle() public {
+        uint256 tokenBuyAmount = 5 * 10 ** token.decimals();
+        uint256 costInPaymentToken = (tokenBuyAmount * price) / 10 ** 18;
 
-    // function testExceedMintingAllowance() public {
-    //     // reduce minting allowance of fundraising contract, so the revert happens in Token
-    //     vm.startPrank(mintAllower);
-    //     token.decreaseMintingAllowance(
-    //         address(raise),
-    //         token.mintingAllowance(address(raise)) - (maxAmountPerBuyer / 2)
-    //     );
-    //     vm.stopPrank();
+        assert(costInPaymentToken == 35 * 10 ** paymentTokenDecimals); // 35 payment tokens, manually calculated
 
-    //     vm.prank(buyer);
-    //     vm.expectRevert("MintingAllowance too low");
-    //     raise.buy(maxAmountPerBuyer, buyer); //+ 10**token.decimals());
-    //     assertTrue(token.balanceOf(buyer) == 0);
-    //     assertTrue(paymentToken.balanceOf(receiver) == 0);
-    //     assertTrue(raise.tokensSold() == 0);
-    //     assertTrue(raise.tokensBought(buyer) == 0);
-    // }
+        uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
 
-    // function testBuyTooLittle() public {
-    //     uint256 tokenBuyAmount = 5 * 10 ** token.decimals();
-    //     uint256 costInPaymentToken = (tokenBuyAmount * price) / 10 ** 18;
+        uint256 currencyAmount = raise.calculateCurrencyAmountFromTokenAmount(minAmountPerBuyer / 2);
 
-    //     assert(costInPaymentToken == 35 * 10 ** paymentTokenDecimals); // 35 payment tokens, manually calculated
-
-    //     uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
-
-    //     vm.prank(buyer);
-    //     vm.expectRevert("Buyer needs to buy at least minAmount");
-    //     raise.buy(minAmountPerBuyer / 2, buyer);
-    //     assertTrue(paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore);
-    //     assertTrue(token.balanceOf(buyer) == 0);
-    //     assertTrue(paymentToken.balanceOf(receiver) == 0);
-    //     assertTrue(raise.tokensSold() == 0);
-    //     assertTrue(raise.tokensBought(buyer) == 0);
-    // }
-
-    // function testBuySmallAmountAfterInitialInvestment() public {
-    //     uint256 tokenBuyAmount = minAmountPerBuyer;
-    //     uint256 costInPaymentTokenForMinAmount = (tokenBuyAmount * price) / 10 ** 18;
-    //     uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
-
-    //     vm.prank(buyer);
-    //     raise.buy(minAmountPerBuyer, buyer);
-
-    //     // buy less than minAmount -> should be okay because minAmount has already been bought.
-    //     vm.prank(buyer);
-    //     raise.buy(minAmountPerBuyer / 2, buyer);
-
-    //     assertTrue(
-    //         paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore - (costInPaymentTokenForMinAmount * 3) / 2,
-    //         "buyer has payment tokens"
-    //     );
-    //     assertTrue(token.balanceOf(buyer) == (minAmountPerBuyer * 3) / 2, "buyer has tokens");
-    //     uint256 tokenFee = (minAmountPerBuyer * 3) /
-    //         2 /
-    //         FeeSettings(address(token.feeSettings())).tokenFeeDenominator();
-    //     uint256 paymentTokenFee = (costInPaymentTokenForMinAmount * 3) /
-    //         2 /
-    //         FeeSettings(address(token.feeSettings())).publicFundraisingFeeDenominator();
-    //     assertTrue(
-    //         paymentToken.balanceOf(receiver) == (costInPaymentTokenForMinAmount * 3) / 2 - paymentTokenFee,
-    //         "receiver received payment tokens"
-    //     );
-    //     assertEq(
-    //         token.balanceOf(token.feeSettings().tokenFeeCollector()),
-    //         tokenFee,
-    //         "fee collector has not collected fee in tokens"
-    //     );
-    //     assertEq(
-    //         paymentToken.balanceOf(token.feeSettings().publicFundraisingFeeCollector()),
-    //         paymentTokenFee,
-    //         "fee collector has not collected fee in payment tokens"
-    //     );
-    //     assertTrue(raise.tokensSold() == (minAmountPerBuyer * 3) / 2, "raise has sold tokens");
-    //     assertTrue(raise.tokensBought(buyer) == raise.tokensSold(), "raise has sold tokens to buyer");
-    // }
-
-    // /*
-    //     try to buy more than allowed
-    // */
-    // function testFailOverflow() public {
-    //     vm.prank(buyer);
-    //     raise.buy(maxAmountPerBuyer + 1, buyer);
-    // }
-
-    // /*
-    //     try to buy less than allowed
-    // */
-    // function testFailUnderflow() public {
-    //     vm.prank(buyer);
-    //     raise.buy(minAmountPerBuyer - 1, buyer);
-    // }
-
-    // /*
-    //     try to buy while paused
-    // */
-    // function testFailPaused() public {
-    //     vm.prank(owner);
-    //     raise.pause();
-    //     vm.prank(buyer);
-    //     raise.buy(minAmountPerBuyer, buyer);
-    // }
+        vm.startPrank(buyer);
+        vm.expectRevert("Buyer needs to buy at least minAmount");
+        paymentToken.transferAndCall(address(raise), currencyAmount, new bytes(0));
+        assertTrue(paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore);
+        assertTrue(token.balanceOf(buyer) == 0);
+        assertTrue(paymentToken.balanceOf(receiver) == 0);
+        assertTrue(raise.tokensSold() == 0);
+        assertTrue(raise.tokensBought(buyer) == 0);
+    }
 }
