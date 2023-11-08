@@ -180,15 +180,15 @@ contract PublicFundraisingTest is Test {
         // uint256 tokenBuyAmount = 10 ** token.decimals(); // buy one token
         vm.assume(tokenBuyAmount >= raise.minAmountPerBuyer());
         vm.assume(tokenBuyAmount <= raise.maxAmountPerBuyer());
-        uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * raise.tokenPrice(), 10 ** 18);
+        uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * raise.priceBase(), 10 ** 18);
         vm.assume(costInPaymentToken <= paymentToken.balanceOf(buyer));
 
-        uint256 realTokenBuyAmount = (costInPaymentToken * 10 ** token.decimals()) / raise.tokenPrice();
+        uint256 realTokenBuyAmount = (costInPaymentToken * 10 ** token.decimals()) / raise.getPrice();
 
         // log tokenBuyAmount and costInPaymentToken and price, realTokenBuyAmount
         console.log("tokenBuyAmount: ", tokenBuyAmount);
         console.log("costInPaymentToken: ", costInPaymentToken);
-        console.log("tokenPrice: ", raise.tokenPrice());
+        console.log("tokenPrice: ", raise.getPrice());
         console.log("realTokenBuyAmount: ", realTokenBuyAmount);
         // log price from realTokenBuyAmount and costInPaymentToken
         console.log(

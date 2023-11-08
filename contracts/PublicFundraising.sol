@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
 import "./Token.sol";
+import "./interfaces/IPriceDynamic.sol";
 
 /**
  * @title PublicFundraising
@@ -38,7 +39,12 @@ contract PublicFundraising is
     uint256 public maxAmountPerBuyer;
     /// The price of a token, expressed as amount of bits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2*10^6 ).
     /// @dev units: [tokenPrice] = [currency_bits]/[token], so for above example: [tokenPrice] = [USDC_bits]/[TOK]
-    uint256 public tokenPrice;
+    uint256 public priceBase;
+    uint256 public priceMin;
+    uint256 public priceMax;
+    /// dynamic pricing oracle
+    IPriceDynamic public priceOracle;
+
     /// total amount of tokens that CAN BE minted through this contract, in bits (bit = smallest subunit of token)
     uint256 public maxAmountOfTokenToBeSold;
     /// total amount of tokens that HAVE BEEN minted through this contract, in bits (bit = smallest subunit of token)
@@ -80,6 +86,8 @@ contract PublicFundraising is
      */
     event TokensBought(address indexed buyer, uint256 tokenAmount, uint256 currencyAmount);
 
+    event DynamicPricingActivated(address priceOracle, uint256 priceMin, uint256 priceMax);
+
     /**
      * This constructor creates a logic contract that is used to clone new fundraising contracts.
      * It has no owner, and can not be used directly.
@@ -118,7 +126,7 @@ contract PublicFundraising is
         currencyReceiver = _currencyReceiver;
         minAmountPerBuyer = _minAmountPerBuyer;
         maxAmountPerBuyer = _maxAmountPerBuyer;
-        tokenPrice = _tokenPrice;
+        priceBase = _tokenPrice;
         maxAmountOfTokenToBeSold = _maxAmountOfTokenToBeSold;
         currency = _currency;
         token = _token;
@@ -133,6 +141,34 @@ contract PublicFundraising is
         require(_maxAmountOfTokenToBeSold != 0, "_maxAmountOfTokenToBeSold needs to be larger than zero");
 
         // after creating the contract, it needs a minting allowance (in the token contract)
+    }
+
+    function activateDynamicPricing(
+        IPriceDynamic _priceOracle,
+        uint256 _priceMin,
+        uint256 _priceMax
+    ) external onlyOwner whenPaused {
+        require(address(_priceOracle) != address(0), "_priceOracle can not be zero address");
+        priceOracle = _priceOracle;
+        require(_priceMin <= priceBase, "_priceMin needs to be smaller or equal to priceBase");
+        priceMin = _priceMin;
+        require(priceBase <= _priceMax, "_priceMax needs to be larger or equal to priceBase");
+        priceMax = _priceMax;
+        coolDownStart = block.timestamp;
+
+        emit DynamicPricingActivated(address(_priceOracle), _priceMin, _priceMax);
+    }
+
+    function deactivateDynamicPricing() external onlyOwner whenPaused {
+        priceOracle = IPriceDynamic(address(0));
+    }
+
+    function getPrice() public view returns (uint256) {
+        if (address(priceOracle) != address(0)) {
+            return Math.min(Math.max(priceOracle.getPrice(priceBase), priceMin), priceMax);
+        }
+
+        return priceBase;
     }
 
     function _checkAndDeliver(uint256 _amount, address _tokenReceiver) internal {
@@ -176,11 +212,11 @@ contract PublicFundraising is
     /// calculate token amount from currency amount and price. Must be rounded down anyway, so the normal integer math is fine.
     /// This calculation often results in a larger amount of tokens
     function calculateTokenAmountFromCurrencyAmount(uint256 _currencyAmount) public view returns (uint256) {
-        return (_currencyAmount * 10 ** token.decimals()) / tokenPrice;
+        return (_currencyAmount * 10 ** token.decimals()) / getPrice();
     }
 
     function calculateCurrencyAmountFromTokenAmount(uint256 _tokenAmount) public view returns (uint256) {
-        return Math.ceilDiv(_tokenAmount * tokenPrice, 10 ** token.decimals());
+        return Math.ceilDiv(_tokenAmount * getPrice(), 10 ** token.decimals());
     }
 
     function findMaxAmount(uint256 _minAmount) external view returns (uint256) {
@@ -261,7 +297,7 @@ contract PublicFundraising is
      */
     function setCurrencyAndTokenPrice(IERC20 _currency, uint256 _tokenPrice) external onlyOwner whenPaused {
         require(_tokenPrice != 0, "_tokenPrice needs to be a non-zero amount");
-        tokenPrice = _tokenPrice;
+        priceBase = _tokenPrice;
         currency = _currency;
         emit TokenPriceAndCurrencyChanged(_tokenPrice, _currency);
         coolDownStart = block.timestamp;
