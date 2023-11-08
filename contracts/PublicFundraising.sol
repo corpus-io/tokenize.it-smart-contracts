@@ -178,12 +178,7 @@ contract PublicFundraising is
         return priceBase;
     }
 
-    /**
-     * @notice Buy `amount` tokens and mint them to `_tokenReceiver`.
-     * @param _amount amount of tokens to buy, in bits (smallest subunit of token)
-     * @param _tokenReceiver address the tokens should be minted to
-     */
-    function buy(uint256 _amount, address _tokenReceiver) external whenNotPaused nonReentrant {
+    function _checkAndDeliver(uint256 _amount, address _tokenReceiver) internal {
         require(tokensSold + _amount <= maxAmountOfTokenToBeSold, "Not enough tokens to sell left");
         require(tokensBought[_tokenReceiver] + _amount >= minAmountPerBuyer, "Buyer needs to buy at least minAmount");
         require(
@@ -202,9 +197,22 @@ contract PublicFundraising is
         tokensSold += _amount;
         tokensBought[_tokenReceiver] += _amount;
 
-        // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
-        uint256 currencyAmount = Math.ceilDiv(_amount * getPrice(), 10 ** token.decimals());
+        token.mint(_tokenReceiver, _amount);
+    }
 
+    function _getFeeAndFeeReceiver(uint256 _currencyAmount) internal view returns (uint256, address) {
+        IFeeSettingsV2 feeSettings = token.feeSettings();
+        return (feeSettings.publicFundraisingFee(_currencyAmount), feeSettings.publicFundraisingFeeCollector());
+    }
+
+    /**
+     * @notice Buy `amount` tokens and mint them to `_tokenReceiver`.
+     * @param _amount amount of tokens to buy, in bits (smallest subunit of token)
+     * @param _tokenReceiver address the tokens should be minted to
+     */
+    function buy(uint256 _amount, address _tokenReceiver) public whenNotPaused nonReentrant {
+        // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
+        uint256 currencyAmount = calculateCurrencyAmountFromTokenAmount(_amount);
         IFeeSettingsV2 feeSettings = token.feeSettings();
         uint256 fee = feeSettings.publicFundraisingFee(currencyAmount);
         if (fee != 0) {
@@ -212,9 +220,57 @@ contract PublicFundraising is
         }
 
         currency.safeTransferFrom(_msgSender(), currencyReceiver, currencyAmount - fee);
+        _checkAndDeliver(_amount, _tokenReceiver);
 
-        token.mint(_tokenReceiver, _amount);
         emit TokensBought(_msgSender(), _amount, currencyAmount);
+    }
+
+    /// calculate token amount from currency amount and price. Must be rounded down anyway, so the normal integer math is fine.
+    /// This calculation often results in a larger amount of tokens
+    function calculateTokenAmountFromCurrencyAmount(uint256 _currencyAmount) public view returns (uint256) {
+        return (_currencyAmount * 10 ** token.decimals()) / getPrice();
+    }
+
+    function calculateCurrencyAmountFromTokenAmount(uint256 _tokenAmount) public view returns (uint256) {
+        return Math.ceilDiv(_tokenAmount * getPrice(), 10 ** token.decimals());
+    }
+
+    function findMaxAmount(uint256 _minAmount) external view returns (uint256) {
+        uint256 currencyAmount = calculateCurrencyAmountFromTokenAmount(_minAmount);
+        return (calculateTokenAmountFromCurrencyAmount(currencyAmount));
+    }
+
+    function onTokenTransfer(
+        address _from,
+        uint256 _currencyAmount,
+        bytes calldata data
+    ) external whenNotPaused nonReentrant returns (bool) {
+        require(_msgSender() == address(currency), "only the currency contract can call this function");
+
+        // if a recipient address was provided in data, use it as receiver. Otherwise, use _from as receiver.
+        address tokenReceiver;
+        if (data.length == 32) {
+            tokenReceiver = abi.decode(data, (address));
+        } else {
+            tokenReceiver = _from;
+        }
+
+        // address tokenReceiver = abi.decode(data, (address));
+        // tokenReceiver = tokenReceiver == address(0) ? _from : tokenReceiver;
+
+        uint256 amount = calculateTokenAmountFromCurrencyAmount(_currencyAmount);
+
+        // move payment to currencyReceiver and feeCollector
+        (uint256 fee, address feeCollector) = _getFeeAndFeeReceiver(_currencyAmount);
+        currency.safeTransfer(feeCollector, fee);
+        currency.safeTransfer(currencyReceiver, _currencyAmount - fee);
+
+        _checkAndDeliver(amount, tokenReceiver);
+
+        emit TokensBought(_from, amount, _currencyAmount);
+
+        // return true is an antipattern, but required by the interface
+        return true;
     }
 
     /**
