@@ -802,13 +802,12 @@ contract PublicFundraisingTest is Test {
     /*
         try to unpause after delay has passed
     */
-    function testFailUnpauseAfterDelay() public {
+    function testUnpauseAfterDelay() public {
         uint256 time = block.timestamp;
         vm.warp(time);
         vm.prank(owner);
         raise.pause();
         assertTrue(raise.paused());
-        assertTrue(raise.coolDownStart() == time);
         vm.warp(time + raise.delay());
         vm.prank(owner);
         raise.unpause();
@@ -817,14 +816,15 @@ contract PublicFundraisingTest is Test {
     /*
         try to unpause after more than 1 day has passed
     */
-    function testUnpauseAfterDelayAnd1Sec() public {
-        uint256 time = block.timestamp;
+    function testUnpauseAfterPause() public {
+        uint256 time = 200 days;
+        uint256 coolDownStart = raise.coolDownStart();
         vm.warp(time);
         vm.prank(owner);
         raise.pause();
         assertTrue(raise.paused());
-        assertTrue(raise.coolDownStart() == time);
-        vm.warp(time + raise.delay() + 1 seconds);
+        assertTrue(raise.coolDownStart() == coolDownStart, "coolDownStart should not change with pause");
+        vm.warp(time + 1 seconds);
         vm.prank(owner);
         raise.unpause();
     }
@@ -848,7 +848,6 @@ contract PublicFundraisingTest is Test {
         vm.prank(owner);
         raise.pause();
         assertTrue(raise.paused(), "raise should be paused");
-        assertTrue(raise.coolDownStart() == startTime, "coolDownStart should be startTime");
         vm.warp(startTime + changeDelay);
         vm.prank(owner);
         raise.setMaxAmountOfTokenToBeSold(700);
@@ -870,7 +869,6 @@ contract PublicFundraisingTest is Test {
         vm.prank(owner);
         raise.pause();
         assertTrue(raise.paused());
-        assertTrue(raise.coolDownStart() == time);
         vm.warp(time + 2 hours);
         vm.prank(owner);
         raise.setMaxAmountOfTokenToBeSold(700);
@@ -901,7 +899,6 @@ contract PublicFundraisingTest is Test {
         vm.prank(owner);
         raise.pause();
         assertTrue(raise.paused(), "raise should be paused");
-        assertTrue(raise.coolDownStart() == startTime, "coolDownStart should be startTime");
         vm.warp(startTime + changeDelay);
         vm.prank(owner);
         raise.setCurrencyReceiver(newCurrencyReceiver);
@@ -923,7 +920,6 @@ contract PublicFundraisingTest is Test {
         vm.prank(owner);
         raise.pause();
         assertTrue(raise.paused());
-        assertTrue(raise.coolDownStart() == time);
         vm.warp(time + 2 hours);
         vm.prank(owner);
         raise.setCurrencyReceiver(paymentTokenProvider);
@@ -955,7 +951,6 @@ contract PublicFundraisingTest is Test {
         vm.prank(owner);
         raise.pause();
         assertTrue(raise.paused(), "raise should be paused");
-        assertTrue(raise.coolDownStart() == startTime, "coolDownStart should be startTime");
         vm.warp(startTime + changeDelay);
         vm.prank(owner);
         raise.setMinAmountPerBuyer(newMinAmountPerBuyer);
@@ -977,7 +972,6 @@ contract PublicFundraisingTest is Test {
         vm.prank(owner);
         raise.pause();
         assertTrue(raise.paused());
-        assertTrue(raise.coolDownStart() == time);
         vm.warp(time + 2 hours);
         vm.prank(owner);
         raise.setMinAmountPerBuyer(700);
@@ -1008,7 +1002,6 @@ contract PublicFundraisingTest is Test {
         vm.prank(owner);
         raise.pause();
         assertTrue(raise.paused(), "raise should be paused");
-        assertTrue(raise.coolDownStart() == startTime, "coolDownStart should be startTime");
         vm.warp(startTime + changeDelay);
         vm.prank(owner);
         raise.setMaxAmountPerBuyer(newMaxAmountPerBuyer);
@@ -1030,7 +1023,6 @@ contract PublicFundraisingTest is Test {
         vm.prank(owner);
         raise.pause();
         assertTrue(raise.paused());
-        assertTrue(raise.coolDownStart() == time);
         vm.warp(time + 2 hours);
         vm.prank(owner);
         raise.setMaxAmountPerBuyer(2 * minAmountPerBuyer);
@@ -1081,7 +1073,6 @@ contract PublicFundraisingTest is Test {
         vm.prank(owner);
         raise.pause();
         assertTrue(raise.paused(), "raise should be paused");
-        assertTrue(raise.coolDownStart() == startTime, "coolDownStart should be startTime");
         vm.warp(startTime + changeDelay);
         vm.prank(owner);
         raise.setCurrencyAndTokenPrice(paymentToken, newTokenPrice);
@@ -1103,7 +1094,6 @@ contract PublicFundraisingTest is Test {
         vm.prank(owner);
         raise.pause();
         assertTrue(raise.paused());
-        assertTrue(raise.coolDownStart() == time);
         vm.warp(time + 2 hours);
         vm.prank(owner);
         raise.setCurrencyAndTokenPrice(paymentToken, 700);
