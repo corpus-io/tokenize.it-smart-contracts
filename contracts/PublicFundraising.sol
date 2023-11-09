@@ -216,7 +216,8 @@ contract PublicFundraising is
      */
     function buy(uint256 _amount, address _tokenReceiver) public whenNotPaused nonReentrant {
         // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
-        uint256 currencyAmount = calculateCurrencyAmountFromTokenAmount(_amount);
+        uint256 currencyAmount = Math.ceilDiv(_amount * getPrice(), 10 ** token.decimals());
+
         IFeeSettingsV2 feeSettings = token.feeSettings();
         uint256 fee = feeSettings.publicFundraisingFee(currencyAmount);
         if (fee != 0) {
@@ -227,21 +228,6 @@ contract PublicFundraising is
         _checkAndDeliver(_amount, _tokenReceiver);
 
         emit TokensBought(_msgSender(), _amount, currencyAmount);
-    }
-
-    /// calculate token amount from currency amount and price. Must be rounded down anyway, so the normal
-    // integer math is fine.
-    function calculateTokenAmountFromCurrencyAmount(uint256 _currencyAmount) public view returns (uint256) {
-        return (_currencyAmount * 10 ** token.decimals()) / getPrice();
-    }
-
-    function calculateCurrencyAmountFromTokenAmount(uint256 _tokenAmount) public view returns (uint256) {
-        return Math.ceilDiv(_tokenAmount * getPrice(), 10 ** token.decimals());
-    }
-
-    function findMaxAmount(uint256 _minAmount) external view returns (uint256) {
-        uint256 currencyAmount = calculateCurrencyAmountFromTokenAmount(_minAmount);
-        return (calculateTokenAmountFromCurrencyAmount(currencyAmount));
     }
 
     function onTokenTransfer(
@@ -258,7 +244,7 @@ contract PublicFundraising is
         } else {
             tokenReceiver = _from;
         }
-        uint256 amount = calculateTokenAmountFromCurrencyAmount(_currencyAmount);
+        uint256 amount = (_currencyAmount * 10 ** token.decimals()) / getPrice();
 
         // move payment to currencyReceiver and feeCollector
         (uint256 fee, address feeCollector) = _getFeeAndFeeReceiver(_currencyAmount);
