@@ -81,7 +81,8 @@ contract PublicFundraisingTest is Test {
                 price,
                 maxAmountOfTokenToBeSold,
                 paymentToken,
-                token
+                token,
+                0
             )
         );
 
@@ -143,7 +144,8 @@ contract PublicFundraisingTest is Test {
                 _price,
                 _maxMintAmount,
                 maliciousPaymentToken,
-                _token
+                _token,
+                0
             )
         );
 

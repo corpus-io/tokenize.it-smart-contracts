@@ -113,7 +113,8 @@ contract MainnetCurrencies is Test {
                 _price,
                 maxAmountOfTokenToBeSold,
                 _currency,
-                token
+                token,
+                0
             )
         );
 

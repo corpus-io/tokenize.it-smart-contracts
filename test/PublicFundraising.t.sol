@@ -47,6 +47,8 @@ contract PublicFundraisingTest is Test {
     uint256 public constant maxAmountPerBuyer = maxAmountOfTokenToBeSold / 2; // 10 token
     uint256 public constant minAmountPerBuyer = maxAmountOfTokenToBeSold / 200; // 0.1 token
 
+    uint256 public constant autoPauseDate = 12859023;
+
     function setUp() public {
         list = new AllowList();
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 100);
@@ -81,7 +83,8 @@ contract PublicFundraisingTest is Test {
                 price,
                 maxAmountOfTokenToBeSold,
                 paymentToken,
-                token
+                token,
+                0
             )
         );
 
@@ -113,7 +116,8 @@ contract PublicFundraisingTest is Test {
             price,
             maxAmountOfTokenToBeSold,
             paymentToken,
-            token
+            token,
+            0
         );
 
         // owner and all settings are 0
@@ -138,16 +142,19 @@ contract PublicFundraisingTest is Test {
                 price,
                 maxAmountOfTokenToBeSold,
                 paymentToken,
-                token
+                token,
+                autoPauseDate
             )
         );
         assertTrue(_raise.owner() == address(this));
         assertTrue(_raise.currencyReceiver() == receiver);
         assertTrue(_raise.minAmountPerBuyer() == minAmountPerBuyer);
         assertTrue(_raise.maxAmountPerBuyer() == maxAmountPerBuyer);
+        assertTrue(_raise.maxAmountOfTokenToBeSold() == maxAmountOfTokenToBeSold);
         assertTrue(_raise.priceBase() == price);
         assertTrue(_raise.currency() == paymentToken);
         assertTrue(_raise.token() == token);
+        assertTrue(_raise.autoPauseDate() == autoPauseDate);
     }
 
     function testConstructorWithAddress0() public {
@@ -163,7 +170,8 @@ contract PublicFundraisingTest is Test {
                 price,
                 maxAmountOfTokenToBeSold,
                 paymentToken,
-                token
+                token,
+                0
             )
         );
 
@@ -178,7 +186,8 @@ contract PublicFundraisingTest is Test {
             price,
             maxAmountOfTokenToBeSold,
             paymentToken,
-            token
+            token,
+            0
         );
 
         vm.expectRevert("currencyReceiver can not be zero address");
@@ -192,7 +201,8 @@ contract PublicFundraisingTest is Test {
             price,
             maxAmountOfTokenToBeSold,
             paymentToken,
-            token
+            token,
+            0
         );
 
         vm.expectRevert("currency can not be zero address");
@@ -206,7 +216,8 @@ contract PublicFundraisingTest is Test {
             price,
             maxAmountOfTokenToBeSold,
             IERC20(address(0)),
-            token
+            token,
+            0
         );
 
         vm.expectRevert("token can not be zero address");
@@ -220,7 +231,8 @@ contract PublicFundraisingTest is Test {
             price,
             maxAmountOfTokenToBeSold,
             paymentToken,
-            Token(address(0))
+            Token(address(0)),
+            0
         );
     }
 
@@ -269,7 +281,8 @@ contract PublicFundraisingTest is Test {
                 _price,
                 _maxMintAmount,
                 maliciousPaymentToken,
-                _token
+                _token,
+                0
             )
         );
 
@@ -1126,7 +1139,8 @@ contract PublicFundraisingTest is Test {
                 _price,
                 UINT256_MAX,
                 paymentToken,
-                token
+                token,
+                0
             )
         );
 
@@ -1173,7 +1187,8 @@ contract PublicFundraisingTest is Test {
                 _price,
                 _tokenBuyAmount,
                 paymentToken,
-                token
+                token,
+                0
             )
         );
 
@@ -1208,6 +1223,86 @@ contract PublicFundraisingTest is Test {
         assertTrue(raise.owner() == newOwner);
     }
 
+    function testAutoPauseActivation(uint256 _autoPauseDate, uint256 testDate) public {
+        vm.assume(testDate > 1 days + 1);
+        vm.assume(_autoPauseDate > 1);
+        uint256 tokenBuyAmount = 5 * 10 ** token.decimals();
+        uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * raise.priceBase(), 10 ** 18);
+
+        vm.startPrank(owner);
+        raise.pause();
+        raise.setAutoPauseDate(_autoPauseDate);
+        vm.warp(1 days + 10);
+        raise.unpause();
+        vm.stopPrank();
+
+        vm.warp(testDate);
+
+        // log block.timestamp and autoPauseDate
+        console.log("block.timestamp: ", block.timestamp);
+        console.log("autoPauseDate: ", _autoPauseDate);
+
+        if (testDate > _autoPauseDate) {
+            vm.expectRevert("Pausing contract because of auto-pause date");
+            vm.prank(buyer);
+            raise.buy(tokenBuyAmount, buyer);
+        } else {
+            vm.prank(buyer);
+            vm.expectEmit(true, true, true, true, address(raise));
+            emit TokensBought(buyer, tokenBuyAmount, costInPaymentToken);
+            raise.buy(tokenBuyAmount, buyer);
+        }
+    }
+
+    function testAutoPauseInConstructor(uint256 _autoPauseDate, uint256 testDate) public {
+        vm.assume(_autoPauseDate > 0);
+        PublicFundraising _raise = PublicFundraising(
+            factory.createPublicFundraisingClone(
+                0,
+                trustedForwarder,
+                address(this),
+                payable(receiver),
+                minAmountPerBuyer,
+                maxAmountPerBuyer,
+                price,
+                maxAmountOfTokenToBeSold,
+                paymentToken,
+                token,
+                _autoPauseDate
+            )
+        );
+
+        vm.warp(testDate);
+
+        uint256 tokenBuyAmount = 5 * 10 ** token.decimals();
+        uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * raise.priceBase(), 10 ** 18);
+
+        // log test date, auto pause date and block.timestamp
+        console.log("testDate: ", testDate);
+        console.log("autoPauseDate: ", _autoPauseDate);
+        console.log("block.timestamp: ", block.timestamp);
+
+        if (testDate > _autoPauseDate) {
+            // auto-pause should trigger
+            vm.startPrank(buyer);
+            paymentToken.approve(address(_raise), type(uint256).max);
+            vm.expectRevert("Pausing contract because of auto-pause date");
+            _raise.buy(tokenBuyAmount, buyer);
+            vm.stopPrank();
+        } else {
+            // auto-pause should not trigger
+            vm.prank(admin);
+            token.increaseMintingAllowance(address(_raise), maxAmountOfTokenToBeSold);
+
+            vm.startPrank(buyer);
+            paymentToken.approve(address(_raise), type(uint256).max);
+            vm.expectEmit(true, true, true, true, address(_raise));
+            emit TokensBought(buyer, tokenBuyAmount, costInPaymentToken);
+            _raise.buy(tokenBuyAmount, buyer);
+            vm.stopPrank();
+        }
+    }
+
     function testMaxAmountFixed() public {
         uint256 _price = 7 * 10 ** paymentTokenDecimals; // 7 payment tokens per token
         PublicFundraising _raise = PublicFundraising(
@@ -1221,7 +1316,8 @@ contract PublicFundraisingTest is Test {
                 _price,
                 maxAmountOfTokenToBeSold,
                 paymentToken,
-                token
+                token,
+                0
             )
         );
 
@@ -1264,7 +1360,8 @@ contract PublicFundraisingTest is Test {
                 _price,
                 maxAmountOfTokenToBeSold,
                 paymentToken,
-                token
+                token,
+                0
             )
         );
 
