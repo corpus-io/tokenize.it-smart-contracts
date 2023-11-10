@@ -28,6 +28,19 @@ contract tokenTest is Test {
 
     uint256 requirements = 0;
 
+    // these are defined globally to make some tests work in spite of compiler limitations
+    bytes32 public constant exampleRawSalt = 0x00000000;
+    address public constant exampleTrustedForwarder = address(52);
+    address public constant exampleOwner = address(53);
+    address public constant exampleCurrencyReceiver = address(54);
+    uint256 public constant exampleMinAmountPerBuyer = 1;
+    uint256 public constant exampleMaxAmountPerBuyer = type(uint256).max;
+    uint256 public constant exampleTokenPrice = 1;
+    uint256 public constant exampleMaxAmountOfTokenToBeSold = 82398479821374;
+    IERC20 public constant exampleCurrency = IERC20(address(1));
+    Token public constant exampleToken = Token(address(2));
+    uint256 public constant exampleAutoPauseDate = 0;
+
     event RequirementsChanged(uint256 newRequirements);
 
     function setUp() public {
@@ -121,29 +134,24 @@ contract tokenTest is Test {
         Token _token,
         uint256 _autoPauseDate
     ) public {
-        bytes32 _rawSalt = 0x00000000;
-        address _trustedForwarder = address(52);
-        address _owner = address(53);
-        address _currencyReceiver = address(54);
-        uint256 _minAmountPerBuyer = 1;
         vm.assume(address(_currency) != address(0));
         vm.assume(address(_token) != address(0));
-        vm.assume(_minAmountPerBuyer > 0);
-        vm.assume(_maxAmountPerBuyer >= _minAmountPerBuyer);
+        vm.assume(exampleMinAmountPerBuyer > 0);
+        vm.assume(_maxAmountPerBuyer >= exampleMinAmountPerBuyer);
         vm.assume(_tokenPrice > 0);
         vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
 
         // create new clone factory so we can use the local forwarder
-        fundraisingImplementation = new PublicFundraising(_trustedForwarder);
+        fundraisingImplementation = new PublicFundraising(exampleTrustedForwarder);
         fundraisingFactory = new PublicFundraisingCloneFactory(address(fundraisingImplementation));
 
         bytes32 salt = keccak256(
             abi.encodePacked(
-                _rawSalt,
-                _trustedForwarder,
-                _owner,
-                _currencyReceiver,
-                _minAmountPerBuyer,
+                exampleRawSalt,
+                exampleTrustedForwarder,
+                exampleOwner,
+                exampleCurrencyReceiver,
+                exampleMinAmountPerBuyer,
                 _maxAmountPerBuyer,
                 _tokenPrice,
                 _maxAmountOfTokenToBeSold,
@@ -156,11 +164,11 @@ contract tokenTest is Test {
         address expected1 = fundraisingFactory.predictCloneAddress(salt);
 
         address actual = fundraisingFactory.createPublicFundraisingClone(
-            _rawSalt,
-            _trustedForwarder,
-            _owner,
-            _currencyReceiver,
-            _minAmountPerBuyer,
+            exampleRawSalt,
+            exampleTrustedForwarder,
+            exampleOwner,
+            exampleCurrencyReceiver,
+            exampleMinAmountPerBuyer,
             _maxAmountPerBuyer,
             _tokenPrice,
             _maxAmountOfTokenToBeSold,
@@ -178,12 +186,6 @@ contract tokenTest is Test {
         address _currencyReceiver,
         uint256 _minAmountPerBuyer
     ) public {
-        uint256 _maxAmountPerBuyer = type(uint256).max;
-        uint256 _tokenPrice = 1;
-        uint256 _maxAmountOfTokenToBeSold = 82398479821374;
-        IERC20 _currency = IERC20(address(1));
-        Token _token = Token(address(2));
-        uint256 _autoPauseDate = 0;
         vm.assume(_trustedForwarder != address(0));
         vm.assume(_owner != address(0));
         vm.assume(_currencyReceiver != address(0));
@@ -200,12 +202,12 @@ contract tokenTest is Test {
                 _owner,
                 _currencyReceiver,
                 _minAmountPerBuyer,
-                _maxAmountPerBuyer,
-                _tokenPrice,
-                _maxAmountOfTokenToBeSold,
-                _currency,
-                _token,
-                _autoPauseDate
+                exampleMaxAmountPerBuyer,
+                exampleTokenPrice,
+                exampleMaxAmountOfTokenToBeSold,
+                exampleCurrency,
+                exampleToken,
+                exampleAutoPauseDate
             )
         );
 
@@ -217,12 +219,12 @@ contract tokenTest is Test {
             _owner,
             _currencyReceiver,
             _minAmountPerBuyer,
-            _maxAmountPerBuyer,
-            _tokenPrice,
-            _maxAmountOfTokenToBeSold,
-            _currency,
-            _token,
-            _autoPauseDate
+            exampleMaxAmountPerBuyer,
+            exampleTokenPrice,
+            exampleMaxAmountOfTokenToBeSold,
+            exampleCurrency,
+            exampleToken,
+            exampleAutoPauseDate
         );
         assertEq(expected1, actual, "address prediction failed");
     }
