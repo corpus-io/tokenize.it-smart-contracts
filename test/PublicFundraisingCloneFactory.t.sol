@@ -114,11 +114,6 @@ contract tokenTest is Test {
     }
 
     function testAddressPrediction2(
-        bytes32 _rawSalt,
-        address _trustedForwarder,
-        address _owner,
-        address _currencyReceiver,
-        uint256 _minAmountPerBuyer,
         uint256 _maxAmountPerBuyer,
         uint256 _tokenPrice,
         uint256 _maxAmountOfTokenToBeSold,
@@ -126,15 +121,73 @@ contract tokenTest is Test {
         Token _token,
         uint256 _autoPauseDate
     ) public {
-        vm.assume(_trustedForwarder != address(0));
-        vm.assume(_owner != address(0));
+        bytes32 _rawSalt = 0x00000000;
+        address _trustedForwarder = address(52);
+        address _owner = address(53);
+        address _currencyReceiver = address(54);
+        uint256 _minAmountPerBuyer = 1;
         vm.assume(address(_currency) != address(0));
         vm.assume(address(_token) != address(0));
-        vm.assume(_currencyReceiver != address(0));
         vm.assume(_minAmountPerBuyer > 0);
         vm.assume(_maxAmountPerBuyer >= _minAmountPerBuyer);
         vm.assume(_tokenPrice > 0);
         vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
+
+        // create new clone factory so we can use the local forwarder
+        fundraisingImplementation = new PublicFundraising(_trustedForwarder);
+        fundraisingFactory = new PublicFundraisingCloneFactory(address(fundraisingImplementation));
+
+        bytes32 salt = keccak256(
+            abi.encodePacked(
+                _rawSalt,
+                _trustedForwarder,
+                _owner,
+                _currencyReceiver,
+                _minAmountPerBuyer,
+                _maxAmountPerBuyer,
+                _tokenPrice,
+                _maxAmountOfTokenToBeSold,
+                _currency,
+                _token,
+                _autoPauseDate
+            )
+        );
+
+        address expected1 = fundraisingFactory.predictCloneAddress(salt);
+
+        address actual = fundraisingFactory.createPublicFundraisingClone(
+            _rawSalt,
+            _trustedForwarder,
+            _owner,
+            _currencyReceiver,
+            _minAmountPerBuyer,
+            _maxAmountPerBuyer,
+            _tokenPrice,
+            _maxAmountOfTokenToBeSold,
+            _currency,
+            _token,
+            _autoPauseDate
+        );
+        assertEq(expected1, actual, "address prediction failed");
+    }
+
+    function testAddressPrediction3(
+        bytes32 _rawSalt,
+        address _trustedForwarder,
+        address _owner,
+        address _currencyReceiver,
+        uint256 _minAmountPerBuyer
+    ) public {
+        uint256 _maxAmountPerBuyer = type(uint256).max;
+        uint256 _tokenPrice = 1;
+        uint256 _maxAmountOfTokenToBeSold = 82398479821374;
+        IERC20 _currency = IERC20(address(1));
+        Token _token = Token(address(2));
+        uint256 _autoPauseDate = 0;
+        vm.assume(_trustedForwarder != address(0));
+        vm.assume(_owner != address(0));
+        vm.assume(_currencyReceiver != address(0));
+        vm.assume(_minAmountPerBuyer > 0);
 
         // create new clone factory so we can use the local forwarder
         fundraisingImplementation = new PublicFundraising(_trustedForwarder);
