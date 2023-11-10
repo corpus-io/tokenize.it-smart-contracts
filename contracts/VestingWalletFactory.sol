@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.22;
+pragma solidity 0.8.23;
 
 // taken from https://docs.alchemy.com/docs/create2-an-alternative-to-deriving-contract-addresses
 
