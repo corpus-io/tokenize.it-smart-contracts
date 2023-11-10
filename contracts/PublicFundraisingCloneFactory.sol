@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.17;
+pragma solidity 0.8.22;
 
 import "./PublicFundraising.sol";
 import "./CloneFactory.sol";

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.17;
+pragma solidity 0.8.22;
 
 abstract contract Factory {
     /// The address of the implementation contract
