@@ -237,7 +237,7 @@ contract PublicFundraisingTest is Test {
 
     function testBuyTooMuch() public {
         uint256 tokenBuyAmount = maxAmountPerBuyer + 1;
-        uint256 costInPaymentToken = raise.calculateCurrencyAmountFromTokenAmount(tokenBuyAmount);
+        uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * raise.getPrice(), 10 ** token.decimals());
 
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
 
@@ -256,7 +256,7 @@ contract PublicFundraisingTest is Test {
         address addressForTokens = address(2);
 
         uint256 currencyAmount = price; // buy one token
-        uint256 tokenBuyAmount = raise.calculateTokenAmountFromCurrencyAmount(currencyAmount);
+        uint256 tokenBuyAmount = (currencyAmount * 10 ** token.decimals()) / raise.getPrice();
 
         vm.prank(buyer);
         paymentToken.transfer(addressWithFunds, currencyAmount);
@@ -296,7 +296,10 @@ contract PublicFundraisingTest is Test {
         address person1 = address(1);
         address person2 = address(2);
 
-        uint256 amountToSpend = raise.calculateCurrencyAmountFromTokenAmount(raise.maxAmountOfTokenToBeSold()) / 2;
+        uint256 amountToSpend = Math.ceilDiv(
+            raise.maxAmountOfTokenToBeSold() * raise.getPrice(),
+            10 ** token.decimals()
+        ) / 2;
 
         vm.prank(buyer);
         paymentToken.transfer(person1, amountToSpend);
@@ -323,7 +326,7 @@ contract PublicFundraisingTest is Test {
         vm.prank(buyer);
         paymentToken.transfer(person2, 10 ** 6);
 
-        uint256 amountToPay = raise.calculateCurrencyAmountFromTokenAmount(maxAmountPerBuyer / 2) + 1;
+        uint256 amountToPay = Math.ceilDiv((maxAmountPerBuyer / 2) * raise.getPrice(), 10 ** token.decimals()) + 1;
         bytes memory data = abi.encode(buyer);
 
         console.log("Buying first batch of tokens");
@@ -348,8 +351,8 @@ contract PublicFundraisingTest is Test {
         vm.prank(buyer);
         paymentToken.transfer(person1, availableBalance / 2);
 
-        uint256 tokenAmount1 = raise.findMaxAmount(maxAmountOfTokenToBeSold / 2);
-        uint256 tokenAmount2 = raise.findMaxAmount(maxAmountOfTokenToBeSold / 4);
+        uint256 tokenAmount1 = maxAmountOfTokenToBeSold / 2;
+        uint256 tokenAmount2 = maxAmountOfTokenToBeSold / 4;
 
         // check all entries are 0 before
         assertTrue(raise.tokensSold() == 0, "raise has sold tokens");
@@ -377,7 +380,7 @@ contract PublicFundraisingTest is Test {
 
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
 
-        uint256 currencyAmount = raise.calculateCurrencyAmountFromTokenAmount(minAmountPerBuyer / 2);
+        uint256 currencyAmount = Math.ceilDiv((minAmountPerBuyer / 2) * raise.getPrice(), 10 ** token.decimals());
 
         vm.startPrank(buyer);
         vm.expectRevert("Buyer needs to buy at least minAmount");
