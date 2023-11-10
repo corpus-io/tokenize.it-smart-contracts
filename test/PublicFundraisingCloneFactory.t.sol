@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.13;
+pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/PublicFundraisingCloneFactory.sol";
@@ -27,6 +27,19 @@ contract tokenTest is Test {
     address public constant feeSettingsAndAllowListOwner = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
 
     uint256 requirements = 0;
+
+    // these are defined globally to make some tests work in spite of compiler limitations
+    bytes32 public constant exampleRawSalt = 0x00000000;
+    address public constant exampleTrustedForwarder = address(52);
+    address public constant exampleOwner = address(53);
+    address public constant exampleCurrencyReceiver = address(54);
+    uint256 public constant exampleMinAmountPerBuyer = 1;
+    uint256 public constant exampleMaxAmountPerBuyer = type(uint256).max;
+    uint256 public constant exampleTokenPrice = 1;
+    uint256 public constant exampleMaxAmountOfTokenToBeSold = 82398479821374;
+    IERC20 public constant exampleCurrency = IERC20(address(1));
+    Token public constant exampleToken = Token(address(2));
+    uint256 public constant exampleAutoPauseDate = 0;
 
     event RequirementsChanged(uint256 newRequirements);
 
@@ -114,11 +127,6 @@ contract tokenTest is Test {
     }
 
     function testAddressPrediction2(
-        bytes32 _rawSalt,
-        address _trustedForwarder,
-        address _owner,
-        address _currencyReceiver,
-        uint256 _minAmountPerBuyer,
         uint256 _maxAmountPerBuyer,
         uint256 _tokenPrice,
         uint256 _maxAmountOfTokenToBeSold,
@@ -126,27 +134,24 @@ contract tokenTest is Test {
         Token _token,
         uint256 _autoPauseDate
     ) public {
-        vm.assume(_trustedForwarder != address(0));
-        vm.assume(_owner != address(0));
         vm.assume(address(_currency) != address(0));
         vm.assume(address(_token) != address(0));
-        vm.assume(_currencyReceiver != address(0));
-        vm.assume(_minAmountPerBuyer > 0);
-        vm.assume(_maxAmountPerBuyer >= _minAmountPerBuyer);
+        vm.assume(exampleMinAmountPerBuyer > 0);
+        vm.assume(_maxAmountPerBuyer >= exampleMinAmountPerBuyer);
         vm.assume(_tokenPrice > 0);
         vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
 
         // create new clone factory so we can use the local forwarder
-        fundraisingImplementation = new PublicFundraising(_trustedForwarder);
+        fundraisingImplementation = new PublicFundraising(exampleTrustedForwarder);
         fundraisingFactory = new PublicFundraisingCloneFactory(address(fundraisingImplementation));
 
         bytes32 salt = keccak256(
             abi.encodePacked(
-                _rawSalt,
-                _trustedForwarder,
-                _owner,
-                _currencyReceiver,
-                _minAmountPerBuyer,
+                exampleRawSalt,
+                exampleTrustedForwarder,
+                exampleOwner,
+                exampleCurrencyReceiver,
+                exampleMinAmountPerBuyer,
                 _maxAmountPerBuyer,
                 _tokenPrice,
                 _maxAmountOfTokenToBeSold,
@@ -159,17 +164,67 @@ contract tokenTest is Test {
         address expected1 = fundraisingFactory.predictCloneAddress(salt);
 
         address actual = fundraisingFactory.createPublicFundraisingClone(
-            _rawSalt,
-            _trustedForwarder,
-            _owner,
-            _currencyReceiver,
-            _minAmountPerBuyer,
+            exampleRawSalt,
+            exampleTrustedForwarder,
+            exampleOwner,
+            exampleCurrencyReceiver,
+            exampleMinAmountPerBuyer,
             _maxAmountPerBuyer,
             _tokenPrice,
             _maxAmountOfTokenToBeSold,
             _currency,
             _token,
             _autoPauseDate
+        );
+        assertEq(expected1, actual, "address prediction failed");
+    }
+
+    function testAddressPrediction3(
+        bytes32 _rawSalt,
+        address _trustedForwarder,
+        address _owner,
+        address _currencyReceiver,
+        uint256 _minAmountPerBuyer
+    ) public {
+        vm.assume(_trustedForwarder != address(0));
+        vm.assume(_owner != address(0));
+        vm.assume(_currencyReceiver != address(0));
+        vm.assume(_minAmountPerBuyer > 0);
+
+        // create new clone factory so we can use the local forwarder
+        fundraisingImplementation = new PublicFundraising(_trustedForwarder);
+        fundraisingFactory = new PublicFundraisingCloneFactory(address(fundraisingImplementation));
+
+        bytes32 salt = keccak256(
+            abi.encodePacked(
+                _rawSalt,
+                _trustedForwarder,
+                _owner,
+                _currencyReceiver,
+                _minAmountPerBuyer,
+                exampleMaxAmountPerBuyer,
+                exampleTokenPrice,
+                exampleMaxAmountOfTokenToBeSold,
+                exampleCurrency,
+                exampleToken,
+                exampleAutoPauseDate
+            )
+        );
+
+        address expected1 = fundraisingFactory.predictCloneAddress(salt);
+
+        address actual = fundraisingFactory.createPublicFundraisingClone(
+            _rawSalt,
+            _trustedForwarder,
+            _owner,
+            _currencyReceiver,
+            _minAmountPerBuyer,
+            exampleMaxAmountPerBuyer,
+            exampleTokenPrice,
+            exampleMaxAmountOfTokenToBeSold,
+            exampleCurrency,
+            exampleToken,
+            exampleAutoPauseDate
         );
         assertEq(expected1, actual, "address prediction failed");
     }
