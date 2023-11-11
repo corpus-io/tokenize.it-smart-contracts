@@ -30,19 +30,19 @@ contract VestingWalletUpgradeable is Initializable, ERC2771ContextUpgradeable, O
     event Commit(bytes32);
 
     struct VestingPlan {
-        address _token;
-        uint256 _allocation;
-        uint256 _released;
-        address _beneficiary;
-        address _manager;
-        uint64 _start;
-        uint64 _cliff;
-        uint64 _duration;
-        bool _minting;
-    }
+            address _token;
+            uint256 _allocation;
+            uint256 _released;
+            address _beneficiary;
+            address _manager;
+            uint64 _start;
+            uint64 _cliff;
+            uint64 _duration;
+            bool _minting;
+        }
 
-    mapping(uint64 => VestingPlan) public vestings;
-    mapping(bytes32 => uint64) public commitments; // value = expiration date
+    mapping (uint64 => VestingPlan) public vestings;
+    mapping (bytes32 => uint64) public commitments; // value = expiration date
     uint64 ids;
 
     constructor(address _trustedForwarder) initializer ERC2771ContextUpgradeable(_trustedForwarder) {}
@@ -89,7 +89,7 @@ contract VestingWalletUpgradeable is Initializable, ERC2771ContextUpgradeable, O
         return vestings[id]._start;
     }
 
-    /**
+   /**
      * @dev Getter for the cliff.
      */
     function cliff(uint64 id) public view virtual returns (uint64) {
@@ -127,58 +127,22 @@ contract VestingWalletUpgradeable is Initializable, ERC2771ContextUpgradeable, O
         emit Commit(hash);
     }
 
-    function reveal(
-        bytes32 hash,
-        address token,
-        uint256 allocation,
-        address beneficiary,
-        address manager,
-        uint64 start,
-        uint64 cliff,
-        uint64 duration,
-        bool minting,
-        bytes32 salt
-    ) external returns (uint64 id) {
-        require(
-            hash ==
-                keccak256(
-                    abi.encodePacked(token, allocation, beneficiary, manager, start, cliff, duration, minting, salt)
-                ),
-            "invalid-hash"
-        );
+    function reveal(bytes32 hash, address token, uint256 allocation, address beneficiary, address manager, uint64 start, uint64 cliff, uint64 duration, bool minting, bytes32 salt) external returns(uint64 id) {
+        require(hash == keccak256(abi.encodePacked(token, allocation, beneficiary, manager, start, cliff, duration, minting, salt)), "invalid-hash");
         require(commitments[hash] > 0, "commitment-not-found");
         uint64 durationOverride = duration;
-        if (commitments[hash] <= block.timestamp) {
-            // in case of a revoke
+        if (commitments[hash] <= block.timestamp) { // in case of a revoke
             durationOverride = commitments[hash] - start;
         }
         commitments[hash] = 0;
         id = _createVesting(token, allocation, beneficiary, manager, start, cliff, durationOverride, minting);
     }
 
-    function createVesting(
-        address token,
-        uint256 allocation,
-        address beneficiary,
-        address manager,
-        uint64 start,
-        uint64 cliff,
-        uint64 duration,
-        bool minting
-    ) external onlyOwner returns (uint64 id) {
+    function createVesting(address token, uint256 allocation, address beneficiary, address manager, uint64 start, uint64 cliff, uint64 duration, bool minting) external onlyOwner returns(uint64 id) {
         return _createVesting(token, allocation, beneficiary, manager, start, cliff, duration, minting);
     }
 
-    function _createVesting(
-        address token,
-        uint256 allocation,
-        address beneficiary,
-        address manager,
-        uint64 start,
-        uint64 cliff,
-        uint64 duration,
-        bool minting
-    ) internal returns (uint64 id) {
+    function _createVesting(address token, uint256 allocation, address beneficiary, address manager, uint64 start, uint64 cliff, uint64 duration, bool minting) internal returns(uint64 id) {
         require(address(token) != address(0), "AllowList must not be zero address");
         require(allocation > 0, "Allocation must be greater than zero");
         require(address(beneficiary) != address(0), "AllowList must not be zero address");
@@ -201,34 +165,33 @@ contract VestingWalletUpgradeable is Initializable, ERC2771ContextUpgradeable, O
         });
     }
 
-    function stopVesting(uint64 id) public {
+    function stopVesting(uint64 id, uint64 endingtime) public {
         require(_msgSender() == vestings[id]._manager);
-        if (vestings[id]._start + vestings[id]._cliff > uint64(block.timestamp)) {
+        require(endingtime > uint64(block.timestamp));
+        require(endingtime < vestings[id]._start + vestings[id]._duration);
+
+        if (vestings[id]._start + vestings[id]._cliff > endingtime) {
             delete vestings[id];
-        } else {
-            vestings[id]._duration = uint64(block.timestamp) - vestings[id]._start;
+        }
+        else {
+            vestings[id]._duration = endingtime - vestings[id]._start;
         }
     }
 
-    function pauseVesting(uint64 id, uint64 pauseSeconds) external returns (uint64 returnId) {
+    function pauseVesting(uint64 id, uint64 endingTime, uint64 newStartTime) external returns(uint64 returnId){
         require(_msgSender() == vestings[id]._manager);
-        uint256 allocationRemainder = allocation(id) - vestedAmount(id, uint64(block.timestamp));
-        require(allocationRemainder > 0);
-        uint64 timevested = uint64(block.timestamp) - start(id);
+        require(endingTime > uint64(block.timestamp));
+        require(endingTime < vestings[id]._start + vestings[id]._duration);
+
+        uint256 allocationRemainder = allocation(id) - vestedAmount(id, endingTime);
+        require(allocationRemainder > 0); // not necessary
+        uint64 timevested = endingTime - start(id);
         uint64 cliffRemainder = timevested > cliff(id) ? 0 : cliff(id) - timevested;
         uint64 durationRemainder = duration(id) - timevested;
-        returnId = _createVesting(
-            token(id),
-            allocationRemainder,
-            beneficiary(id),
-            manager(id),
-            uint64(block.timestamp) + pauseSeconds,
-            cliffRemainder,
-            durationRemainder,
-            minting(id)
-        );
-        stopVesting(id);
+        returnId = _createVesting(token(id), allocationRemainder, beneficiary(id), manager(id), newStartTime, cliffRemainder, durationRemainder, minting(id));
+        stopVesting(id, endingTime);
     }
+
 
     /**
      * @dev Release the tokens that have already vested.
@@ -242,9 +205,8 @@ contract VestingWalletUpgradeable is Initializable, ERC2771ContextUpgradeable, O
         emit ERC20Released(token(id), amount);
         if (minting(id)) {
             MintLike(token(id)).mint(beneficiary(id), amount);
-        } else {
-            SafeERC20Upgradeable.safeTransfer(IERC20Upgradeable(token(id)), beneficiary(id), amount);
         }
+        else {SafeERC20Upgradeable.safeTransfer(IERC20Upgradeable(token(id)), beneficiary(id), amount);}
     }
 
     /**
@@ -258,6 +220,15 @@ contract VestingWalletUpgradeable is Initializable, ERC2771ContextUpgradeable, O
         } else {
             return (allocation(id) * (timestamp - vestings[id]._start)) / vestings[id]._duration;
         }
+    }
+
+    /**
+    * @dev Changes the beneficiary to a new one. Only callable by current beneficiary, or the manager one year after the vesting's plan end.
+    */
+    function changeBeneficiary(uint64 id, address newBeneficiary) external {
+        require(_msgSender() == beneficiary(id) || (_msgSender() == manager(id) && uint64(block.timestamp) > start(id) + cliff(id) + 365 days));
+        require(newBeneficiary != address(0), "Beneficiary must not be zero address");
+        vestings[id]._beneficiary = newBeneficiary;
     }
 
     /**
@@ -281,3 +252,4 @@ contract VestingWalletUpgradeable is Initializable, ERC2771ContextUpgradeable, O
         return ERC2771ContextUpgradeable._msgData();
     }
 }
+
