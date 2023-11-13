@@ -18,7 +18,6 @@ struct VestingPlan {
     uint256 allocation;
     uint256 released;
     address beneficiary;
-    address manager;
     uint64 start;
     uint64 cliff;
     uint64 duration;
@@ -35,6 +34,10 @@ struct VestingPlan {
 contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable {
     event ERC20Released(address indexed token, uint256 amount);
     event Commit(bytes32);
+    event Revoke(bytes32);
+    event VestingCreated(uint64 id);
+    event ManagerAdded(address manager);
+    event ManagerRemoved(address manager);
 
     uint64 public constant TIME_HORIZON = 20 * 365 days; // 20 years
 
@@ -57,6 +60,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     function initialize(address owner) public initializer {
         __Ownable_init();
         transferOwnership(owner);
+        managers[owner] = true;
     }
 
     /**
@@ -85,13 +89,6 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
      */
     function beneficiary(uint64 id) public view virtual returns (address) {
         return vestings[id].beneficiary;
-    }
-
-    /**
-     * @dev Getter for the manager address.
-     */
-    function manager(uint64 id) public view virtual returns (address) {
-        return vestings[id].manager;
     }
 
     /**
@@ -129,12 +126,12 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         return vestedAmount(id, uint64(block.timestamp)) - released(id);
     }
 
-    function commit(bytes32 hash) external onlyOwner {
+    function commit(bytes32 hash) external onlyManager {
         commitments[hash] = type(uint64).max;
         emit Commit(hash);
     }
 
-    function revoke(bytes32 hash, uint64 endVestingTime) external onlyOwner {
+    function revoke(bytes32 hash, uint64 endVestingTime) external onlyManager {
         require(endVestingTime > block.timestamp);
         commitments[hash] = endVestingTime;
         emit Commit(hash);
@@ -145,7 +142,6 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         address _token,
         uint256 _allocation,
         address _beneficiary,
-        address _manager,
         uint64 _start,
         uint64 _cliff,
         uint64 _duration,
@@ -155,17 +151,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         require(
             hash ==
                 keccak256(
-                    abi.encodePacked(
-                        _token,
-                        _allocation,
-                        _beneficiary,
-                        _manager,
-                        _start,
-                        _cliff,
-                        _duration,
-                        _minting,
-                        salt
-                    )
+                    abi.encodePacked(_token, _allocation, _beneficiary, _start, _cliff, _duration, _minting, salt)
                 ),
             "invalid-hash"
         );
@@ -173,27 +159,25 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         require(_start < commitments[hash]);
         uint64 durationOverride = _start + _duration < commitments[hash] ? _duration : commitments[hash] - _start; // handle case of a revoke
         commitments[hash] = 0;
-        id = _createVesting(_token, _allocation, _beneficiary, _manager, _start, _cliff, durationOverride, _minting);
+        id = _createVesting(_token, _allocation, _beneficiary, _start, _cliff, durationOverride, _minting);
     }
 
     function createVesting(
         address _token,
         uint256 _allocation,
         address _beneficiary,
-        address _manager,
         uint64 _start,
         uint64 _cliff,
         uint64 _duration,
         bool _minting
-    ) external onlyOwner returns (uint64 id) {
-        return _createVesting(_token, _allocation, _beneficiary, _manager, _start, _cliff, _duration, _minting);
+    ) external onlyManager returns (uint64 id) {
+        return _createVesting(_token, _allocation, _beneficiary, _start, _cliff, _duration, _minting);
     }
 
     function _createVesting(
         address _token,
         uint256 _allocation,
         address _beneficiary,
-        address _manager,
         uint64 _start,
         uint64 _cliff,
         uint64 _duration,
@@ -202,7 +186,6 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         require(address(_token) != address(0), "Token must not be zero address");
         require(_allocation > 0, "Allocation must be greater than zero");
         require(address(_beneficiary) != address(0), "Beneficiary must not be zero address");
-        require(address(_manager) != address(0), "Manager must not be zero address");
         require(
             _start >= block.timestamp - TIME_HORIZON && _start <= block.timestamp + TIME_HORIZON,
             "Start must be reasonable"
@@ -216,7 +199,6 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
             allocation: _allocation,
             released: 0,
             beneficiary: _beneficiary,
-            manager: _manager,
             start: _start,
             cliff: _cliff,
             duration: _duration,
@@ -224,8 +206,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         });
     }
 
-    function stopVesting(uint64 id, uint64 endTime) public {
-        require(_msgSender() == vestings[id].manager);
+    function stopVesting(uint64 id, uint64 endTime) public onlyManager {
         require(endTime > uint64(block.timestamp));
         require(endTime < vestings[id].start + vestings[id].duration);
 
@@ -236,9 +217,8 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         }
     }
 
-    function pauseVesting(uint64 id, uint64 endTime, uint64 newStartTime) external returns (uint64) {
+    function pauseVesting(uint64 id, uint64 endTime, uint64 newStartTime) external onlyManager returns (uint64) {
         VestingPlan memory vesting = vestings[id];
-        require(_msgSender() == vesting.manager);
         require(endTime > uint64(block.timestamp));
         require(endTime < vesting.start + vesting.duration);
 
@@ -256,7 +236,6 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
                 vesting.token,
                 allocationRemainder,
                 vesting.beneficiary,
-                vesting.manager,
                 newStartTime,
                 cliffRemainder,
                 durationRemainder,
@@ -303,10 +282,25 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     function changeBeneficiary(uint64 id, address newBeneficiary) external {
         require(
             _msgSender() == beneficiary(id) ||
-                (_msgSender() == manager(id) && uint64(block.timestamp) > start(id) + duration(id) + 365 days)
+                (managers[_msgSender()] && uint64(block.timestamp) > start(id) + duration(id) + 365 days)
         );
         require(newBeneficiary != address(0), "Beneficiary must not be zero address");
         vestings[id].beneficiary = newBeneficiary;
+    }
+
+    function addManager(address _manager) external onlyOwner {
+        managers[_manager] = true;
+        emit ManagerAdded(_manager);
+    }
+
+    function removeManager(address _manager) external onlyOwner {
+        managers[_manager] = false;
+        emit ManagerRemoved(_manager);
+    }
+
+    modifier onlyManager() {
+        require(managers[_msgSender()], "Caller is not a manager");
+        _;
     }
 
     /**
