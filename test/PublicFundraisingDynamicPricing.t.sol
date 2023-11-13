@@ -21,7 +21,7 @@ contract MaxPriceOracle is IPriceDynamic {
     function getPrice(uint256 basePrice) external view returns (uint256) {
         // this always returns 0
         basePrice = nonsensePrice > basePrice ? nonsensePrice : basePrice;
-        return basePrice <= type(uint256).max ? 0 : basePrice;
+        return basePrice < type(uint256).max ? type(uint256).max : basePrice;
     }
 }
 
@@ -37,7 +37,7 @@ contract MinPriceOracle is IPriceDynamic {
     function getPrice(uint256 basePrice) external view returns (uint256) {
         // this always returns type(uint256).max
         basePrice = nonsensePrice > basePrice ? nonsensePrice : basePrice;
-        return basePrice > type(uint256).max ? basePrice : type(uint256).max;
+        return basePrice > 0 ? 0 : basePrice;
     }
 }
 
