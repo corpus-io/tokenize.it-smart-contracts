@@ -33,7 +33,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         uint64 start;
         uint64 cliff;
         uint64 duration;
-        bool minting;
+        bool isMintable;
     }
 
     mapping(uint64 => VestingPlan) public vestings;
@@ -115,8 +115,8 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     /**
      * @dev Getter for type of withdraw. Minting == true mean that tokens are minted form the token contract. False means the tokens need to be held by the vesting contract directly.
      */
-    function minting(uint64 id) public view virtual returns (bool) {
-        return vestings[id].minting;
+    function isMintable(uint64 id) public view virtual returns (bool) {
+        return vestings[id].isMintable;
     }
 
     /**
@@ -196,10 +196,10 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         uint64 _duration,
         bool _minting
     ) internal returns (uint64 id) {
-        require(address(_token) != address(0), "AllowList must not be zero address");
+        require(address(_token) != address(0), "Token must not be zero address");
         require(_allocation > 0, "Allocation must be greater than zero");
-        require(address(_beneficiary) != address(0), "AllowList must not be zero address");
-        require(address(_manager) != address(0), "AllowList must not be zero address");
+        require(address(_beneficiary) != address(0), "Beneficiary must not be zero address");
+        require(address(_manager) != address(0), "Manager must not be zero address");
         require(_start > block.timestamp && _start < block.timestamp + 20 * 365 days, "Start must be reasonable");
         require(_cliff > 0 && _cliff < 20 * 365 days, "Cliff must be reasonable");
         require(_duration > 0 && _duration < 20 * 365 days, "Duration must be reasonable");
@@ -214,19 +214,19 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
             start: _start,
             cliff: _cliff,
             duration: _duration,
-            minting: _minting
+            isMintable: _minting
         });
     }
 
-    function stopVesting(uint64 id, uint64 endingtime) public {
+    function stopVesting(uint64 id, uint64 endTime) public {
         require(_msgSender() == vestings[id].manager);
-        require(endingtime > uint64(block.timestamp));
-        require(endingtime < vestings[id].start + vestings[id].duration);
+        require(endTime > uint64(block.timestamp));
+        require(endTime < vestings[id].start + vestings[id].duration);
 
-        if (vestings[id].start + vestings[id].cliff > endingtime) {
+        if (vestings[id].start + vestings[id].cliff > endTime) {
             delete vestings[id];
         } else {
-            vestings[id].duration = endingtime - vestings[id].start;
+            vestings[id].duration = endTime - vestings[id].start;
         }
     }
 
@@ -254,7 +254,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
                 newStartTime,
                 cliffRemainder,
                 durationRemainder,
-                vesting.minting
+                vesting.isMintable
             );
     }
 
@@ -268,23 +268,26 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         uint256 amount = releasable(id);
         vestings[id].released += amount;
         emit ERC20Released(token(id), amount);
-        if (minting(id)) {
+        if (isMintable(id)) {
             ERC20Mintable(token(id)).mint(beneficiary(id), amount);
         } else {
             SafeERC20Upgradeable.safeTransfer(IERC20Upgradeable(token(id)), beneficiary(id), amount);
         }
     }
 
+    // Todo: add relase(id, amount) function
+
     /**
      * @dev Calculates the amount of tokens that has already vested. Default implementation is a linear vesting curve.
      */
     function vestedAmount(uint64 id, uint64 timestamp) public view virtual returns (uint256) {
-        if (timestamp < vestings[id].start + vestings[id].cliff) {
+        VestingPlan memory vesting = vestings[id];
+        if (timestamp < vesting.start + vesting.cliff) {
             return 0;
-        } else if (timestamp > vestings[id].start + vestings[id].duration) {
-            return allocation(id);
+        } else if (timestamp > vesting.start + vesting.duration) {
+            return vesting.allocation;
         } else {
-            return (allocation(id) * (timestamp - vestings[id].start)) / vestings[id].duration;
+            return (vesting.allocation * (timestamp - vesting.start)) / vesting.duration;
         }
     }
 
