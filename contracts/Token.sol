@@ -122,7 +122,9 @@ contract Token is
      * @notice Constructor a token logic contract that can be used by clones. It does not initialize state variables properly, so the resulting contract will not be functional.
      * @param _trustedForwarder trusted forwarder for the ERC2771Context constructor - used for meta-transactions. OpenGSN v2 Forwarder should be used.
      */
-    constructor(address _trustedForwarder) initializer ERC2771ContextUpgradeable(_trustedForwarder) {}
+    constructor(address _trustedForwarder) ERC2771ContextUpgradeable(_trustedForwarder) {
+        _disableInitializers();
+    }
 
     /**
      * @notice Constructor for the token.
