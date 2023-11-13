@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 // derived from OpenZeppelin Contracts (last updated v4.9.0) (finance/VestingWallet.sol)
 /// @author cjentzsch, malteish
-pragma solidity ^0.8.0;
+
+pragma solidity 0.8.23;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
@@ -14,7 +15,6 @@ interface ERC20Mintable {
 }
 
 struct VestingPlan {
-    address token;
     uint256 allocation;
     uint256 released;
     address beneficiary;
@@ -40,7 +40,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     event ManagerRemoved(address manager);
 
     uint64 public constant TIME_HORIZON = 20 * 365 days; // 20 years
-
+    address public token;
     mapping(address => bool) public managers; // managers can create vestings
     mapping(uint64 => VestingPlan) public vestings;
     mapping(bytes32 => uint64) public commitments; // value = maximum end date of vesting
@@ -57,17 +57,13 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         _disableInitializers();
     }
 
-    function initialize(address owner) public initializer {
+    function initialize(address owner, address _token) public initializer {
+        require(owner != address(0), "Owner must not be zero address");
+        require(_token != address(0), "Token must not be zero address");
         __Ownable_init();
         transferOwnership(owner);
         managers[owner] = true;
-    }
-
-    /**
-     * @dev Getter for the token address.
-     */
-    function token(uint64 id) public view virtual returns (address) {
-        return vestings[id].token;
+        token = _token;
     }
 
     /**
@@ -139,7 +135,6 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
 
     function reveal(
         bytes32 hash,
-        address _token,
         uint256 _allocation,
         address _beneficiary,
         uint64 _start,
@@ -149,21 +144,17 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         bytes32 salt
     ) external returns (uint64 id) {
         require(
-            hash ==
-                keccak256(
-                    abi.encodePacked(_token, _allocation, _beneficiary, _start, _cliff, _duration, _minting, salt)
-                ),
+            hash == keccak256(abi.encodePacked(_allocation, _beneficiary, _start, _cliff, _duration, _minting, salt)),
             "invalid-hash"
         );
         require(commitments[hash] > 0, "commitment-not-found");
         require(_start < commitments[hash]);
         uint64 durationOverride = _start + _duration < commitments[hash] ? _duration : commitments[hash] - _start; // handle case of a revoke
         commitments[hash] = 0;
-        id = _createVesting(_token, _allocation, _beneficiary, _start, _cliff, durationOverride, _minting);
+        id = _createVesting(_allocation, _beneficiary, _start, _cliff, durationOverride, _minting);
     }
 
     function createVesting(
-        address _token,
         uint256 _allocation,
         address _beneficiary,
         uint64 _start,
@@ -171,11 +162,10 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         uint64 _duration,
         bool _minting
     ) external onlyManager returns (uint64 id) {
-        return _createVesting(_token, _allocation, _beneficiary, _start, _cliff, _duration, _minting);
+        return _createVesting(_allocation, _beneficiary, _start, _cliff, _duration, _minting);
     }
 
     function _createVesting(
-        address _token,
         uint256 _allocation,
         address _beneficiary,
         uint64 _start,
@@ -183,7 +173,6 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         uint64 _duration,
         bool _minting
     ) internal returns (uint64 id) {
-        require(address(_token) != address(0), "Token must not be zero address");
         require(_allocation > 0, "Allocation must be greater than zero");
         require(address(_beneficiary) != address(0), "Beneficiary must not be zero address");
         require(
@@ -195,7 +184,6 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
 
         id = ids++;
         vestings[id] = VestingPlan({
-            token: _token,
             allocation: _allocation,
             released: 0,
             beneficiary: _beneficiary,
@@ -233,7 +221,6 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         // create new vesting
         return
             _createVesting(
-                vesting.token,
                 allocationRemainder,
                 vesting.beneficiary,
                 newStartTime,
@@ -252,11 +239,11 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         require(_msgSender() == beneficiary(id), "Only beneficiary can release tokens");
         uint256 amount = releasable(id);
         vestings[id].released += amount;
-        emit ERC20Released(token(id), amount);
+        emit ERC20Released(token, amount);
         if (isMintable(id)) {
-            ERC20Mintable(token(id)).mint(beneficiary(id), amount);
+            ERC20Mintable(token).mint(beneficiary(id), amount);
         } else {
-            SafeERC20Upgradeable.safeTransfer(IERC20Upgradeable(token(id)), beneficiary(id), amount);
+            SafeERC20Upgradeable.safeTransfer(IERC20Upgradeable(token), beneficiary(id), amount);
         }
     }
 

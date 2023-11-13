@@ -23,7 +23,7 @@ contract VestingCloneFactoryTest is Test {
 
         factory = new VestingCloneFactory(address(implementation));
 
-        vesting = Vesting(factory.createVestingClone(0, trustedForwarder, owner));
+        vesting = Vesting(factory.createVestingClone(0, trustedForwarder, owner, address(token)));
     }
 
     function testSwitchOwner(address _owner, address newOwner) public {
@@ -32,7 +32,7 @@ contract VestingCloneFactoryTest is Test {
         vm.assume(newOwner != address(0));
         vm.assume(newOwner != _owner);
         vm.assume(_owner != address(this));
-        Vesting vest = Vesting(factory.createVestingClone(0, trustedForwarder, _owner));
+        Vesting vest = Vesting(factory.createVestingClone(0, trustedForwarder, _owner, address(token)));
         assertEq(vest.owner(), _owner, "owner not set");
 
         vm.prank(_owner);
@@ -42,7 +42,7 @@ contract VestingCloneFactoryTest is Test {
     }
 
     function testOnlyOwnerCanCommit(address rando, bytes32 hash) public {
-        Vesting vest = Vesting(factory.createVestingClone(0, trustedForwarder, address(this)));
+        Vesting vest = Vesting(factory.createVestingClone(0, trustedForwarder, address(this), address(token)));
         vm.assume(rando != address(0));
         vm.assume(rando != address(this));
 
@@ -55,26 +55,27 @@ contract VestingCloneFactoryTest is Test {
         vest.commit(hash);
     }
 
-    function testOnlyOwnerCanCreate(address _owner, address rando) public {
-        vm.assume(rando != address(0));
-        vm.assume(rando != address(this));
+    function testOnlyOwnerCanCreate(address _owner, address _rando, address _token) public {
+        vm.assume(_rando != address(0));
+        vm.assume(_rando != address(this));
         vm.assume(_owner != address(0));
         vm.assume(_owner != address(this));
-        vm.assume(_owner != rando);
+        vm.assume(_owner != _rando);
         vm.assume(_owner != trustedForwarder);
+        vm.assume(_token != address(0));
 
-        Vesting vest = Vesting(factory.createVestingClone(0, trustedForwarder, _owner));
-        vm.assume(rando != address(0));
-        vm.assume(rando != address(this));
+        Vesting vest = Vesting(factory.createVestingClone(0, trustedForwarder, _owner, _token));
+        vm.assume(_rando != address(0));
+        vm.assume(_rando != address(this));
 
         // rando cannot create
-        vm.prank(rando);
+        vm.prank(_rando);
         vm.expectRevert("Caller is not a manager");
-        vest.createVesting(address(5), 100, address(7), 1, 20 days, 40 days, false);
+        vest.createVesting(100, address(7), 1, 20 days, 40 days, false);
 
         // owner can create
         vm.prank(_owner);
-        vest.createVesting(address(5), 100, address(7), 1, 20 days, 40 days, false);
+        vest.createVesting(100, address(7), 1, 20 days, 40 days, false);
     }
 
     function testCreateMintableVest(address beneficiary, address rando) public {
@@ -85,7 +86,7 @@ contract VestingCloneFactoryTest is Test {
         uint256 amount = 10 ** 18;
 
         vm.prank(owner);
-        uint64 id = vesting.createVesting(address(token), amount, beneficiary, 0, 0, 100 days, true);
+        uint64 id = vesting.createVesting(amount, beneficiary, 0, 0, 100 days, true);
 
         assertEq(vesting.beneficiary(id), beneficiary);
         assertEq(vesting.allocation(id), amount);
