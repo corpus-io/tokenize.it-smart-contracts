@@ -223,27 +223,32 @@ contract VestingWalletUpgradeable is Initializable, ERC2771ContextUpgradeable, O
         }
     }
 
-    function pauseVesting(uint64 id, uint64 endTime, uint64 newStartTime) external returns (uint64 returnId) {
-        require(_msgSender() == vestings[id].manager);
+    function pauseVesting(uint64 id, uint64 endTime, uint64 newStartTime) external returns (uint64) {
+        VestingPlan memory vesting = vestings[id];
+        require(_msgSender() == vesting.manager);
         require(endTime > uint64(block.timestamp));
-        require(endTime < vestings[id].start + vestings[id].duration);
+        require(endTime < vesting.start + vesting.duration);
 
         uint256 allocationRemainder = allocation(id) - vestedAmount(id, endTime);
         uint64 timeVested = endTime - start(id);
         uint64 cliffRemainder = timeVested > cliff(id) ? 0 : cliff(id) - timeVested;
         uint64 durationRemainder = duration(id) - timeVested;
-        
-        returnId = _createVesting(
-            _token = token(id);,
-            allocationRemainder,
-            beneficiary(id),
-            manager(id),
-            newStartTime,
-            cliffRemainder,
-            durationRemainder,
-            minting(id)
-        );
+
+        // stop old vesting
         stopVesting(id, endTime);
+
+        // create new vesting
+        return
+            _createVesting(
+                vesting.token,
+                allocationRemainder,
+                vesting.beneficiary,
+                vesting.manager,
+                newStartTime,
+                cliffRemainder,
+                durationRemainder,
+                vesting.minting
+            );
     }
 
     /**
