@@ -5,13 +5,13 @@ import "../lib/forge-std/src/Test.sol";
 import "../contracts/VestingCloneFactory.sol";
 
 contract VestingCloneFactoryTest is Test {
-    VestingWalletUpgradeable implementation;
+    Vesting implementation;
     VestingCloneFactory factory;
 
     address trustedForwarder = address(1);
 
     function setUp() public {
-        implementation = new VestingWalletUpgradeable(trustedForwarder);
+        implementation = new Vesting(trustedForwarder);
 
         factory = new VestingCloneFactory(address(implementation));
     }
@@ -19,7 +19,7 @@ contract VestingCloneFactoryTest is Test {
     function testAddressPrediction(bytes32 _salt, address _trustedForwarder, address _owner) public {
         vm.assume(_trustedForwarder != address(0));
         vm.assume(_owner != address(0));
-        VestingWalletUpgradeable _implementation = new VestingWalletUpgradeable(_trustedForwarder);
+        Vesting _implementation = new Vesting(_trustedForwarder);
         VestingCloneFactory _factory = new VestingCloneFactory(address(_implementation));
 
         bytes32 salt = keccak256(abi.encodePacked(_salt, _trustedForwarder, _owner));
@@ -32,7 +32,7 @@ contract VestingCloneFactoryTest is Test {
     }
 
     function testSecondDeploymentFails(bytes32 _salt, address _owner) public {
-        vm.assume(_onwer != address(0));
+        vm.assume(_owner != address(0));
 
         factory.createVestingClone(_salt, trustedForwarder, _owner);
 
@@ -43,9 +43,7 @@ contract VestingCloneFactoryTest is Test {
     function testInitialization(bytes32 _salt, address _owner) public {
         vm.assume(_owner != address(0));
 
-        VestingWalletUpgradeable clone = VestingWalletUpgradeable(
-            factory.createVestingClone(_salt, trustedForwarder, _owner)
-        );
+        Vesting clone = Vesting(factory.createVestingClone(_salt, trustedForwarder, _owner));
 
         // test constructor arguments are used
         assertEq(clone.owner(), _owner, "name not set");
@@ -55,6 +53,6 @@ contract VestingCloneFactoryTest is Test {
 
         // test contract can not be initialized again
         vm.expectRevert("Initializable: contract is already initialized");
-        clone.initialize(feeSettings, admin, allowList, requirements, "testToken", "TEST");
+        clone.initialize(_owner);
     }
 }

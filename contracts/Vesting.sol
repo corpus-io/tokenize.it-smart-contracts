@@ -20,7 +20,7 @@ interface ERC20Mintable {
  *
  * @custom:storage-size 52
  */
-contract VestingWalletUpgradeable is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable {
+contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable {
     event ERC20Released(address indexed token, uint256 amount);
     event Commit(bytes32);
 

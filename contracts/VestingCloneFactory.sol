@@ -16,7 +16,7 @@ contract VestingCloneFactory is CloneFactory {
     ) external returns (address) {
         bytes32 salt = keccak256(abi.encodePacked(_rawSalt, _trustedForwarder, _owner));
         address clone = Clones.cloneDeterministic(implementation, salt);
-        VestingWalletUpgradeable vesting = VestingWalletUpgradeable(clone);
+        Vesting vesting = Vesting(clone);
         require(vesting.isTrustedForwarder(_trustedForwarder), "VestingCloneFactory: Unexpected trustedForwarder");
         vesting.initialize(_owner);
         emit NewClone(clone);
@@ -29,7 +29,7 @@ contract VestingCloneFactory is CloneFactory {
         address _owner
     ) external view returns (address) {
         require(
-            VestingWalletUpgradeable(implementation).isTrustedForwarder(_trustedForwarder),
+            Vesting(implementation).isTrustedForwarder(_trustedForwarder),
             "VestingCloneFactory: Unexpected trustedForwarder"
         );
         bytes32 salt = keccak256(abi.encodePacked(_rawSalt, _trustedForwarder, _owner));
