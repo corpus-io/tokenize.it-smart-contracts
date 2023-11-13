@@ -28,6 +28,10 @@ contract VestingCloneFactory is CloneFactory {
         address _trustedForwarder,
         address _owner
     ) external view returns (address) {
+        require(
+            VestingWalletUpgradeable(implementation).isTrustedForwarder(_trustedForwarder),
+            "VestingCloneFactory: Unexpected trustedForwarder"
+        );
         bytes32 salt = keccak256(abi.encodePacked(_rawSalt, _trustedForwarder, _owner));
         return Clones.predictDeterministicAddress(implementation, salt);
     }

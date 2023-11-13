@@ -47,13 +47,13 @@ contract VestingWalletUpgradeable is Initializable, ERC2771ContextUpgradeable, O
      */
     uint256[48] private __gap;
 
-    constructor(address _trustedForwarder) initializer ERC2771ContextUpgradeable(_trustedForwarder) {
+    constructor(address trustedForwarder) ERC2771ContextUpgradeable(trustedForwarder) {
         _disableInitializers();
     }
 
-    function initialize(address _owner) public initializer {
+    function initialize(address owner) public initializer {
         __Ownable_init();
-        transferOwnership(_owner);
+        transferOwnership(owner);
     }
 
     /**
