@@ -82,78 +82,98 @@ contract VestingCloneFactoryTest is Test {
         vm.assume(beneficiary != address(0));
         vm.assume(rando != address(0));
         vm.assume(rando != beneficiary);
+        vm.assume(beneficiary != trustedForwarder);
 
         uint256 amount = 10 ** 18;
 
-        vm.prank(owner);
-        uint64 id = vesting.createVesting(amount, beneficiary, 0, 0, 100 days, true);
+        vm.startPrank(owner);
+        uint64 id = vesting.createVesting(amount, beneficiary, implementation.TIME_HORIZON(), 0, 100 days, true);
+        vm.stopPrank();
 
         assertEq(vesting.beneficiary(id), beneficiary);
         assertEq(vesting.allocation(id), amount);
         assertEq(vesting.released(id), 0);
-        assertEq(vesting.start(id), 0);
+        assertEq(vesting.start(id), implementation.TIME_HORIZON());
         assertEq(vesting.cliff(id), 0);
         assertEq(vesting.duration(id), 100 days);
         assertEq(vesting.isMintable(id), true, "Vesting plan not mintable");
 
         assertEq(token.balanceOf(beneficiary), 0);
 
+        // rando can not release tokens
         vm.warp(block.timestamp + 10 days);
-
-        // rando can not mint tokens
         vm.prank(rando);
         vm.expectRevert("Only beneficiary can release tokens");
         vesting.release(id);
 
-        // vm.warp(block.timestamp + 70 days);
+        // beneficiary can release tokens
+        vm.warp(block.timestamp + 70 days);
+        vm.prank(beneficiary);
+        vesting.release(id);
 
-        // vm.prank(rando);
-        // vesting.vest(id, type(uint256).max);
-        // (usr, bgn, clf, fin, mgr, , tot, rxd) = vesting.awards(id);
-        // assertEq(usr, beneficiary);
-        // assertEq(uint256(bgn), block.timestamp - 80 days);
-        // assertEq(uint256(fin), block.timestamp + 20 days);
-        // assertEq(uint256(tot), 100 * amount);
-        // assertEq(uint256(rxd), 80 * amount);
-        // assertEq(token.balanceOf(beneficiary), 80 * amount);
+        assertEq(vesting.released(id), 8e17, "released amount is wrong");
+        assertEq(token.balanceOf(beneficiary), 8e17, "beneficiary balance is wrong");
     }
 
-    // function testPauseBeforeCliffLocal(address _usr) public {
-    //     vm.assume(_usr != address(0));
+    function testPauseBeforeCliff(address _usr) public {
+        vm.assume(_usr != address(0));
 
-    //     ERC20MintableByAnyone gem = new ERC20MintableByAnyone("gem", "GEM");
+        uint256 amount = 70e18;
+        uint64 start = implementation.TIME_HORIZON() + 2 * 365 days;
+        uint64 duration = 2 * 365 days;
+        uint64 cliff = 1 * 365 days;
+        uint64 pauseStart = start + 90 days;
+        uint64 pauseEnd = start + 1 * 365 days;
 
-    //     DssVestMintable mVest = new DssVestMintable(address(forwarder), address(gem), 10 ** 18);
+        vm.prank(owner);
+        uint64 id = vesting.createVesting(amount, _usr, start, cliff, duration, false);
+        token.mint(address(vesting), amount);
 
-    //     uint256 id = mVest.create(_usr, total, startOfTime, duration, eta, address(0));
+        assertEq(id, 0, "ids don't start at 0");
 
-    //     vm.warp(startOfTime + 1);
+        // log vestings total amount
+        console.log("total amount", vesting.allocation(id));
+        console.log("ids", vesting.ids());
 
-    //     uint256 newId = mVest.pause(id, pauseStart, pauseEnd);
+        vm.warp(start + 20 days);
 
-    //     // make sure old id is yanked by setting tot to 0 because it is inside cliff still
-    //     (address usr, uint48 bgn, uint48 clf, uint48 fin, , , uint128 tot, ) = mVest.awards(id);
-    //     assertEq(usr, _usr, "user is not the same");
-    //     assertEq(uint256(bgn), startOfTime, "start is wrong");
-    //     assertEq(uint256(fin), pauseStart, "finish is wrong");
-    //     assertEq(uint256(tot), 0, "total is wrong");
+        vm.startPrank(owner);
+        uint64 newId = vesting.pauseVesting(id, pauseStart, pauseEnd);
+        vm.stopPrank();
+        assertEq(newId, 1, "ids don't increase by 1");
 
-    //     // make sure new id has proper values
-    //     (usr, bgn, clf, fin, , , tot, ) = mVest.awards(newId);
-    //     assertEq(usr, _usr, "new user is not the same");
-    //     assertEq(uint256(bgn), pauseEnd - 3, "new start is wrong"); // because 3 days of cliff had already passed
-    //     assertEq(uint256(clf), pauseEnd + 7, "new cliff is wrong"); // because 7 days of cliff remain
-    //     assertEq(uint256(tot), total, "new total is wrong");
-    //     assertEq(uint256(fin), pauseEnd + 97, "new end is wrong"); // because pause started after 3 days
+        console.log("total amount", vesting.allocation(id));
+        // allocation new id
+        console.log("total amount new id", vesting.allocation(newId));
+        console.log("ids", vesting.ids());
 
-    //     // go to end of vestings and claim all. It must match the total
-    //     vm.warp(pauseEnd + 100);
-    //     vm.startPrank(_usr);
-    //     mVest.vest(newId, type(uint256).max);
-    //     mVest.vest(id, type(uint256).max);
+        // make sure old vesting is deleted
+        assertEq(vesting.allocation(id), 0, "old total is wrong");
+        assertEq(vesting.released(id), 0, "old released is wrong");
+        assertEq(vesting.beneficiary(id), address(0), "old beneficiary is not deleted");
+        assertEq(vesting.start(id), 0, "old start is wrong");
+        assertEq(vesting.cliff(id), 0, "old cliff is wrong");
+        assertEq(vesting.duration(id), 0, "old duration is wrong");
+        assertEq(vesting.isMintable(id), false, "old mintable is wrong");
 
-    //     assertEq(gem.balanceOf(_usr), total, "balance is wrong");
-    // }
+        // make sure new id has proper values
+        assertEq(vesting.allocation(newId), amount, "total is wrong");
+        assertEq(vesting.released(newId), 0, "released is wrong");
+        assertEq(vesting.beneficiary(newId), _usr, "beneficiary is not deleted");
+        assertEq(vesting.start(newId), pauseEnd, "start is wrong");
+        assertEq(vesting.cliff(newId), cliff - 90 days, "cliff is wrong");
+        assertEq(vesting.duration(newId), duration - 90 days, "duration is wrong");
+        assertEq(vesting.isMintable(newId), false, "mintable is wrong");
+
+        // go to end of vestings and claim all. It must match the total
+        vm.warp(pauseEnd + duration);
+        vm.startPrank(_usr);
+        vesting.release(newId);
+
+        assertEq(token.balanceOf(_usr), amount, "balance is wrong");
+
+        vm.stopPrank();
+    }
 
     // function testPauseAfterCliffLocal(address _usr, uint256 pauseAfter, uint256 pauseDuration) public {
     //     vm.assume(_usr != address(0));

@@ -5,7 +5,6 @@
 pragma solidity 0.8.23;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -201,6 +200,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         if (vestings[id].start + vestings[id].cliff > endTime) {
             delete vestings[id];
         } else {
+            vestings[id].allocation = vestedAmount(id, endTime);
             vestings[id].duration = endTime - vestings[id].start;
         }
     }
@@ -212,7 +212,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
 
         uint256 allocationRemainder = allocation(id) - vestedAmount(id, endTime);
         uint64 timeVested = endTime - start(id);
-        uint64 cliffRemainder = timeVested > cliff(id) ? 0 : cliff(id) - timeVested;
+        uint64 cliffRemainder = timeVested >= cliff(id) ? 0 : cliff(id) - timeVested;
         uint64 durationRemainder = duration(id) - timeVested;
 
         // stop old vesting
