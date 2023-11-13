@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 // derived from OpenZeppelin Contracts (last updated v4.9.0) (finance/VestingWallet.sol)
+/// @author cjentzsch, malteish
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
@@ -8,7 +9,7 @@ import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-interface MintLike {
+interface ERC20Mintable {
     function mint(address, uint256) external;
 }
 
@@ -24,20 +25,27 @@ contract VestingWalletUpgradeable is Initializable, ERC2771ContextUpgradeable, O
     event Commit(bytes32);
 
     struct VestingPlan {
-        address _token;
-        uint256 _allocation;
-        uint256 _released;
-        address _beneficiary;
-        address _manager;
-        uint64 _start;
-        uint64 _cliff;
-        uint64 _duration;
-        bool _minting;
+        address token;
+        uint256 allocation;
+        uint256 released;
+        address beneficiary;
+        address manager;
+        uint64 start;
+        uint64 cliff;
+        uint64 duration;
+        bool minting;
     }
 
     mapping(uint64 => VestingPlan) public vestings;
     mapping(bytes32 => uint64) public commitments; // value = expiration date
     uint64 public ids;
+
+    /**
+     * @dev This empty reserved space is put in place to allow future versions to add new
+     * variables without shifting down storage in the inheritance chain.
+     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     */
+    uint256[48] private __gap;
 
     constructor(address _trustedForwarder) initializer ERC2771ContextUpgradeable(_trustedForwarder) {}
 
@@ -45,63 +53,63 @@ contract VestingWalletUpgradeable is Initializable, ERC2771ContextUpgradeable, O
      * @dev Getter for the token address.
      */
     function token(uint64 id) public view virtual returns (address) {
-        return vestings[id]._token;
+        return vestings[id].token;
     }
 
     /**
      * @dev Getter for the allocation.
      */
     function allocation(uint64 id) public view virtual returns (uint256) {
-        return vestings[id]._allocation;
+        return vestings[id].allocation;
     }
 
     /**
      * @dev Amount of tokens already released
      */
     function released(uint64 id) public view virtual returns (uint256) {
-        return vestings[id]._released;
+        return vestings[id].released;
     }
 
     /**
      * @dev Getter for the beneficiary address.
      */
     function beneficiary(uint64 id) public view virtual returns (address) {
-        return vestings[id]._beneficiary;
+        return vestings[id].beneficiary;
     }
 
     /**
      * @dev Getter for the manager address.
      */
     function manager(uint64 id) public view virtual returns (address) {
-        return vestings[id]._manager;
+        return vestings[id].manager;
     }
 
     /**
      * @dev Getter for the start timestamp.
      */
     function start(uint64 id) public view virtual returns (uint64) {
-        return vestings[id]._start;
+        return vestings[id].start;
     }
 
     /**
      * @dev Getter for the cliff.
      */
     function cliff(uint64 id) public view virtual returns (uint64) {
-        return vestings[id]._cliff;
+        return vestings[id].cliff;
     }
 
     /**
      * @dev Getter for the vesting duration.
      */
     function duration(uint64 id) public view virtual returns (uint64) {
-        return vestings[id]._duration;
+        return vestings[id].duration;
     }
 
     /**
      * @dev Getter for type of withdraw. Minting == true mean that tokens are minted form the token contract. False means the tokens need to be held by the vesting contract directly.
      */
     function minting(uint64 id) public view virtual returns (bool) {
-        return vestings[id]._minting;
+        return vestings[id].minting;
     }
 
     /**
@@ -124,99 +132,109 @@ contract VestingWalletUpgradeable is Initializable, ERC2771ContextUpgradeable, O
 
     function reveal(
         bytes32 hash,
-        address token,
-        uint256 allocation,
-        address beneficiary,
-        address manager,
-        uint64 start,
-        uint64 cliff,
-        uint64 duration,
-        bool minting,
+        address _token,
+        uint256 _allocation,
+        address _beneficiary,
+        address _manager,
+        uint64 _start,
+        uint64 _cliff,
+        uint64 _duration,
+        bool _minting,
         bytes32 salt
     ) external returns (uint64 id) {
         require(
             hash ==
                 keccak256(
-                    abi.encodePacked(token, allocation, beneficiary, manager, start, cliff, duration, minting, salt)
+                    abi.encodePacked(
+                        _token,
+                        _allocation,
+                        _beneficiary,
+                        _manager,
+                        _start,
+                        _cliff,
+                        _duration,
+                        _minting,
+                        salt
+                    )
                 ),
             "invalid-hash"
         );
         require(commitments[hash] > 0, "commitment-not-found");
-        require(start < commitments[hash]);
-        uint64 durationOverride = start + duration < commitments[hash] ? duration : commitments[hash] - start; // handle case of a revoke
+        require(_start < commitments[hash]);
+        uint64 durationOverride = _start + _duration < commitments[hash] ? _duration : commitments[hash] - _start; // handle case of a revoke
         commitments[hash] = 0;
-        id = _createVesting(token, allocation, beneficiary, manager, start, cliff, durationOverride, minting);
+        id = _createVesting(_token, _allocation, _beneficiary, _manager, _start, _cliff, durationOverride, _minting);
     }
 
     function createVesting(
-        address token,
-        uint256 allocation,
-        address beneficiary,
-        address manager,
-        uint64 start,
-        uint64 cliff,
-        uint64 duration,
-        bool minting
+        address _token,
+        uint256 _allocation,
+        address _beneficiary,
+        address _manager,
+        uint64 _start,
+        uint64 _cliff,
+        uint64 _duration,
+        bool _minting
     ) external onlyOwner returns (uint64 id) {
-        return _createVesting(token, allocation, beneficiary, manager, start, cliff, duration, minting);
+        return _createVesting(_token, _allocation, _beneficiary, _manager, _start, _cliff, _duration, _minting);
     }
 
     function _createVesting(
-        address token,
-        uint256 allocation,
-        address beneficiary,
-        address manager,
-        uint64 start,
-        uint64 cliff,
-        uint64 duration,
-        bool minting
+        address _token,
+        uint256 _allocation,
+        address _beneficiary,
+        address _manager,
+        uint64 _start,
+        uint64 _cliff,
+        uint64 _duration,
+        bool _minting
     ) internal returns (uint64 id) {
-        require(address(token) != address(0), "AllowList must not be zero address");
-        require(allocation > 0, "Allocation must be greater than zero");
-        require(address(beneficiary) != address(0), "AllowList must not be zero address");
-        require(address(manager) != address(0), "AllowList must not be zero address");
-        require(start > block.timestamp && start < block.timestamp + 20 * 365 days, "Start must be reasonable");
-        require(cliff > 0 && cliff < 20 * 365 days, "Cliff must be reasonable");
-        require(duration > 0 && duration < 20 * 365 days, "Duration must be reasonable");
+        require(address(_token) != address(0), "AllowList must not be zero address");
+        require(_allocation > 0, "Allocation must be greater than zero");
+        require(address(_beneficiary) != address(0), "AllowList must not be zero address");
+        require(address(_manager) != address(0), "AllowList must not be zero address");
+        require(_start > block.timestamp && _start < block.timestamp + 20 * 365 days, "Start must be reasonable");
+        require(_cliff > 0 && _cliff < 20 * 365 days, "Cliff must be reasonable");
+        require(_duration > 0 && _duration < 20 * 365 days, "Duration must be reasonable");
 
         id = ids++;
         vestings[id] = VestingPlan({
-            _token: token,
-            _allocation: allocation,
-            _released: 0,
-            _beneficiary: beneficiary,
-            _manager: manager,
-            _start: start,
-            _cliff: cliff,
-            _duration: duration,
-            _minting: minting
+            token: _token,
+            allocation: _allocation,
+            released: 0,
+            beneficiary: _beneficiary,
+            manager: _manager,
+            start: _start,
+            cliff: _cliff,
+            duration: _duration,
+            minting: _minting
         });
     }
 
     function stopVesting(uint64 id, uint64 endingtime) public {
-        require(_msgSender() == vestings[id]._manager);
+        require(_msgSender() == vestings[id].manager);
         require(endingtime > uint64(block.timestamp));
-        require(endingtime < vestings[id]._start + vestings[id]._duration);
+        require(endingtime < vestings[id].start + vestings[id].duration);
 
-        if (vestings[id]._start + vestings[id]._cliff > endingtime) {
+        if (vestings[id].start + vestings[id].cliff > endingtime) {
             delete vestings[id];
         } else {
-            vestings[id]._duration = endingtime - vestings[id]._start;
+            vestings[id].duration = endingtime - vestings[id].start;
         }
     }
 
-    function pauseVesting(uint64 id, uint64 endingTime, uint64 newStartTime) external returns (uint64 returnId) {
-        require(_msgSender() == vestings[id]._manager);
-        require(endingTime > uint64(block.timestamp));
-        require(endingTime < vestings[id]._start + vestings[id]._duration);
+    function pauseVesting(uint64 id, uint64 endTime, uint64 newStartTime) external returns (uint64 returnId) {
+        require(_msgSender() == vestings[id].manager);
+        require(endTime > uint64(block.timestamp));
+        require(endTime < vestings[id].start + vestings[id].duration);
 
-        uint256 allocationRemainder = allocation(id) - vestedAmount(id, endingTime);
-        require(allocationRemainder > 0); // not necessary
-        uint64 timevested = endingTime - start(id);
-        uint64 cliffRemainder = timevested > cliff(id) ? 0 : cliff(id) - timevested;
-        uint64 durationRemainder = duration(id) - timevested;
+        uint256 allocationRemainder = allocation(id) - vestedAmount(id, endTime);
+        uint64 timeVested = endTime - start(id);
+        uint64 cliffRemainder = timeVested > cliff(id) ? 0 : cliff(id) - timeVested;
+        uint64 durationRemainder = duration(id) - timeVested;
+        
         returnId = _createVesting(
-            token(id),
+            _token = token(id);,
             allocationRemainder,
             beneficiary(id),
             manager(id),
@@ -225,7 +243,7 @@ contract VestingWalletUpgradeable is Initializable, ERC2771ContextUpgradeable, O
             durationRemainder,
             minting(id)
         );
-        stopVesting(id, endingTime);
+        stopVesting(id, endTime);
     }
 
     /**
@@ -236,10 +254,10 @@ contract VestingWalletUpgradeable is Initializable, ERC2771ContextUpgradeable, O
     function release(uint64 id) public virtual {
         require(_msgSender() == beneficiary(id));
         uint256 amount = releasable(id);
-        vestings[id]._released += amount;
+        vestings[id].released += amount;
         emit ERC20Released(token(id), amount);
         if (minting(id)) {
-            MintLike(token(id)).mint(beneficiary(id), amount);
+            ERC20Mintable(token(id)).mint(beneficiary(id), amount);
         } else {
             SafeERC20Upgradeable.safeTransfer(IERC20Upgradeable(token(id)), beneficiary(id), amount);
         }
@@ -249,12 +267,12 @@ contract VestingWalletUpgradeable is Initializable, ERC2771ContextUpgradeable, O
      * @dev Calculates the amount of tokens that has already vested. Default implementation is a linear vesting curve.
      */
     function vestedAmount(uint64 id, uint64 timestamp) public view virtual returns (uint256) {
-        if (timestamp < vestings[id]._start + vestings[id]._cliff) {
+        if (timestamp < vestings[id].start + vestings[id].cliff) {
             return 0;
-        } else if (timestamp > vestings[id]._start + vestings[id]._duration) {
+        } else if (timestamp > vestings[id].start + vestings[id].duration) {
             return allocation(id);
         } else {
-            return (allocation(id) * (timestamp - vestings[id]._start)) / vestings[id]._duration;
+            return (allocation(id) * (timestamp - vestings[id].start)) / vestings[id].duration;
         }
     }
 
@@ -267,15 +285,8 @@ contract VestingWalletUpgradeable is Initializable, ERC2771ContextUpgradeable, O
                 (_msgSender() == manager(id) && uint64(block.timestamp) > start(id) + duration(id) + 365 days)
         );
         require(newBeneficiary != address(0), "Beneficiary must not be zero address");
-        vestings[id]._beneficiary = newBeneficiary;
+        vestings[id].beneficiary = newBeneficiary;
     }
-
-    /**
-     * @dev This empty reserved space is put in place to allow future versions to add new
-     * variables without shifting down storage in the inheritance chain.
-     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
-     */
-    uint256[48] private __gap;
 
     /**
      * @dev both ContextUpgradeable and ERC2771ContextUpgradeable have a _msgSender() function, so we need to override and select which one to use.
