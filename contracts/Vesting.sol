@@ -13,6 +13,18 @@ interface ERC20Mintable {
     function mint(address, uint256) external;
 }
 
+struct VestingPlan {
+    address token;
+    uint256 allocation;
+    uint256 released;
+    address beneficiary;
+    address manager;
+    uint64 start;
+    uint64 cliff;
+    uint64 duration;
+    bool isMintable;
+}
+
 /**
  * @title Vesting
  * @dev This contract handles the vesting ERC20 tokens for a set of beneficiaries. Custody of multiple tokens
@@ -24,20 +36,11 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     event ERC20Released(address indexed token, uint256 amount);
     event Commit(bytes32);
 
-    struct VestingPlan {
-        address token;
-        uint256 allocation;
-        uint256 released;
-        address beneficiary;
-        address manager;
-        uint64 start;
-        uint64 cliff;
-        uint64 duration;
-        bool isMintable;
-    }
+    uint64 public constant TIME_HORIZON = 20 * 365 days; // 20 years
 
+    mapping(address => bool) public managers; // managers can create vestings
     mapping(uint64 => VestingPlan) public vestings;
-    mapping(bytes32 => uint64) public commitments; // value = expiration date
+    mapping(bytes32 => uint64) public commitments; // value = maximum end date of vesting
     uint64 public ids;
 
     /**
@@ -200,9 +203,12 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         require(_allocation > 0, "Allocation must be greater than zero");
         require(address(_beneficiary) != address(0), "Beneficiary must not be zero address");
         require(address(_manager) != address(0), "Manager must not be zero address");
-        require(_start > block.timestamp && _start < block.timestamp + 20 * 365 days, "Start must be reasonable");
-        require(_cliff > 0 && _cliff < 20 * 365 days, "Cliff must be reasonable");
-        require(_duration > 0 && _duration < 20 * 365 days, "Duration must be reasonable");
+        require(
+            _start >= block.timestamp - TIME_HORIZON && _start <= block.timestamp + TIME_HORIZON,
+            "Start must be reasonable"
+        );
+        require(_cliff >= 0 && _cliff <= TIME_HORIZON, "Cliff must be reasonable");
+        require(_duration > 0 && _duration <= TIME_HORIZON, "Duration must be reasonable");
 
         id = ids++;
         vestings[id] = VestingPlan({
@@ -264,7 +270,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
      * Emits a {ERC20Released} event.
      */
     function release(uint64 id) public virtual {
-        require(_msgSender() == beneficiary(id));
+        require(_msgSender() == beneficiary(id), "Only beneficiary can release tokens");
         uint256 amount = releasable(id);
         vestings[id].released += amount;
         emit ERC20Released(token(id), amount);
