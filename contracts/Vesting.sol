@@ -227,8 +227,8 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     }
 
     function stopVesting(uint64 id, uint64 endTime) public onlyManager {
-        require(endTime > uint64(block.timestamp));
-        require(endTime < vestings[id].start + vestings[id].duration);
+        require(endTime > uint64(block.timestamp), "endTime must be in the future");
+        require(endTime < vestings[id].start + vestings[id].duration, "endTime must be before vesting end");
 
         if (vestings[id].start + vestings[id].cliff > endTime) {
             delete vestings[id];

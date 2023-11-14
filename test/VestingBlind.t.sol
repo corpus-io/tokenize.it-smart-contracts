@@ -23,6 +23,7 @@ contract VestingBlindTest is Test {
     address beneficiary = address(7);
     bytes32 salt = 0;
     bool isMintable = true; // we mostly check mintable stuff
+    uint64 start = 30 * 365 days;
 
     function setUp() public {
         implementation = new Vesting(trustedForwarder);
@@ -358,72 +359,93 @@ contract VestingBlindTest is Test {
         assertTrue(token.balanceOf(beneficiary) == _allocation, "balance is not equal to total");
     }
 
-    // function testRevokeAndYankBehaveEqual(uint64 _duration, uint64 _cliff, uint128 _allocation, uint64 revokeAfter) public {
-    //     // uint128 _allocation = 8127847e18;
-    //     uint64 _start = 60 * 365 days;
-    //     bytes32 _salt = 0;
+    function testRevokeAndYankBehaveEqual(
+        uint64 _duration,
+        uint64 _cliff,
+        uint256 _allocation,
+        uint64 revokeAfter
+    ) public {
+        address _beneficiaryCreate = address(23);
+        vm.assume(_allocation > 0);
+        vm.assume(type(uint256).max / _allocation > revokeAfter); // prevent overflow
+        vm.assume(_duration < vesting.TIME_HORIZON());
+        vm.assume(revokeAfter > 0);
+        vm.assume(_cliff < vesting.TIME_HORIZON());
+        vm.assume(revokeAfter < _duration);
+        vm.assume(_cliff < _duration);
+        vm.assume(checkLimits(_allocation, beneficiary, start, _cliff, _duration, vesting, block.timestamp));
+        bytes32 hash = keccak256(
+            abi.encodePacked(_allocation, beneficiary, start, _cliff, _duration, isMintable, salt)
+        );
 
-    //     vm.assume(revokeAfter < type(uint24).max && revokeAfter > 0);
-    //     vm.assume(_cliff < type(uint24).max);
-    //     vm.assume(_duration < type(uint24).max && _duration > 0);
-    //     vm.assume(_allocation > 0);
-    //     vm.assume(type(uint256).max / _allocation > revokeAfter); // prevent overflow
-    //     vm.assume(checkLimits(usr, _allocation, _start, _duration, _cliff, DssVest(vesting), block.timestamp));
-    //     bytes32 hash = keccak256(
-    //         abi.encodePacked(usrCommit, uint256(_allocation), uint256(_start), uint256(_duration), uint256(_cliff), owner, _salt)
-    //     );
+        // commit to a vesting plan
+        assertTrue(vesting.commitments(hash) == 0, "commitment already exists");
+        vm.prank(owner);
+        vesting.commit(hash);
+        assertTrue(vesting.commitments(hash) > 0, "commitment does not exist");
 
-    //     // commit to a vesting plan
-    //     assertTrue(vesting.commitments(hash) == false, "commitment already exists");
-    //     vm.prank(owner);
-    //     vesting.commit(hash);
-    //     assertTrue(vesting.commitments(hash) > 0, "commitment does not exist");
+        // create a vesting plan with the same parameters but a different receiver
+        vm.prank(owner);
+        uint64 createId = vesting.createVesting(_allocation, _beneficiaryCreate, start, _cliff, _duration, isMintable);
 
-    //     // create a vesting plan with the same parameters but a different receiver
-    //     vm.prank(owner);
-    //     uint256 planId = vesting.create(usrCreate, _allocation, _start, _duration, _cliff, owner);
+        // revoke the commitment
+        vm.warp(start);
+        uint64 end = start + revokeAfter;
+        vm.prank(owner);
+        vm.expectEmit(true, true, true, true, address(vesting));
+        emit Revoke(hash, end);
+        vesting.revoke(hash, end);
 
-    //     // revoke the commitment
-    //     vm.warp(_start);
-    //     uint256 end = _start + revokeAfter;
-    //     vm.prank(owner);
-    //     vm.expectEmit(true, true, true, true, address(vesting));
-    //     emit Revoke(hash, end);
-    //     vesting.revoke(hash, end);
+        // log end and createId
+        console.log("end: ", end);
+        console.log("createId: ", createId);
 
-    //     // yank the vesting plan
-    //     vm.prank(owner);
-    //     vesting.yank(planId, end);
+        // yank the vesting plan
+        vm.prank(owner);
+        vesting.stopVesting(createId, end);
 
-    //     // fast forowner to the end of the vesting period
-    //     vm.warp(uint256(_start) + uint256(_duration) + 1);
+        // fast forward to the end of the vesting period
+        vm.warp(uint256(start) + uint256(_duration) + 1);
 
-    //     vm.prank(usrCreate);
-    //     vesting.vest(planId);
-    //     console.log("usrCreate balance: ", gem.balanceOf(usrCreate));
+        if (vesting.allocation(createId) == 0) {
+            // two options take us here:
+            // 1. stop and revoke happened before cliff, the vesting plan has been deleted
+            // 2. plan still exists, but allocation is 0 duration is too short.
+            console.log("User gets no tokens, so claim must fail");
+            vm.prank(beneficiary);
+            vm.expectRevert(); // "DssVest/no-vest-total-amount" or "DssVest/commitment-revoked-before-cliff"
+            vesting.revealAndRelease(hash, _allocation, beneficiary, start, _cliff, _duration, isMintable, salt);
+            // assure no vesting plan has been created
+            assertTrue(vesting.ids() == createId + 1, "a vesting plan has been created");
+        } else {
+            console.log("User gets tokens");
+            vm.prank(_beneficiaryCreate);
+            vesting.release(createId);
+            console.log("usrCreate balance: ", token.balanceOf(_beneficiaryCreate));
+            vm.prank(beneficiary);
+            uint64 commitId = vesting.revealAndRelease(
+                hash,
+                _allocation,
+                beneficiary,
+                start,
+                _cliff,
+                _duration,
+                isMintable,
+                salt
+            );
 
-    //     if (gem.balanceOf(usrCreate) == 0) {
-    //         console.log("User gets no tokens, so claim must fail");
-    //         vm.prank(usrCommit);
-    //         vm.expectRevert(); // "DssVest/no-vest-total-amount" or "DssVest/commitment-revoked-before-cliff"
-    //         vesting.revealAndRelease(hash, usrCommit, _allocation, _start, _duration, _cliff, owner, _salt);
-    //         // assure no vesting plan has been created
-    //         assertTrue(vesting.ids() == planId, "a vesting plan has been created");
-    //     } else {
-    //         console.log("User gets tokens");
-    //         vm.prank(usrCommit);
-    //         vesting.revealAndRelease(hash, usrCommit, _allocation, _start, _duration, _cliff, owner, _salt);
-
-    //         console.log("usrCommit balance: ", gem.balanceOf(usrCommit));
-    //         // check correct execution
-    //         assertTrue(vesting.commitments(hash) == false, "commitment still exists");
-    //         assertTrue(vesting.commitments(hash) == _start + revokeAfter, "revocation not correct");
-    //         assertTrue(vesting.ids() == planId + 1, "no vesting plan has been created");
-    //         assertTrue(vesting.accrued(1) == gem.balanceOf(usrCreate), "accrued is not new total");
-    //         assertTrue(vesting.unpaid(1) == 0, "unpaid is not 0");
-    //         assertTrue(gem.balanceOf(usrCommit) == gem.balanceOf(usrCreate), "balance is not equal to new total");
-    //     }
-    // }
+            console.log("usrCommit balance: ", token.balanceOf(beneficiary));
+            // check correct execution
+            assertTrue(vesting.commitments(hash) == 0, "commitment still exists");
+            assertTrue(vesting.ids() == createId + 2, "no vesting plan has been created");
+            assertTrue(vesting.released(commitId) == token.balanceOf(_beneficiaryCreate), "accrued is not new total");
+            assertTrue(vesting.releasable(commitId) == 0, "unpaid is not 0");
+            assertTrue(
+                token.balanceOf(beneficiary) == token.balanceOf(_beneficiaryCreate),
+                "balance is not equal to new total"
+            );
+        }
+    }
 
     function testClaimWithModifiedData(
         address _beneficiary,
@@ -467,90 +489,6 @@ contract VestingBlindTest is Test {
         vm.expectRevert("invalid-hash");
         vesting.reveal(hash, _allocation2, _beneficiary, _start, _cliff, _duration, isMintable, _salt);
     }
-
-    // function testClaimAndVest(
-    //     address _beneficiary,
-    //     uint128 _allocation,
-    //     uint64 _start,
-    //     uint64 _duration,
-    //     uint64 _cliff,
-    //     address _mgr,
-    //     bytes32 _salt,
-    //     address _rando
-    // ) public {
-    //     vm.assume(checkLimits(_beneficiary, _allocation, _start, _cliff, _duration, DssVest(vesting), block.timestamp));
-    //     vm.assume(_rando != address(0) && _rando != _beneficiary && _rando != address(forownerer));
-    //     bytes32 hash = keccak256(
-    //         abi.encodePacked(
-    //             _beneficiary,
-    //             uint256(_allocation),
-    //             uint256(_start),
-    //             uint256(_duration),
-    //             uint256(_cliff),
-    //             _mgr,
-    //             _salt
-    //         )
-    //     );
-
-    //     // commit
-    //     assertTrue(vesting.commitments(hash) == false, "commitment already exists");
-    //     vm.expectEmit(true, true, true, true, address(vesting));
-    //     emit Commit(hash);
-    //     vm.prank(owner);
-    //     vesting.commit(hash);
-    //     assertTrue(vesting.commitments(hash) > 0, "commitment does not exist");
-
-    //     // ensure state is as expected before claiming
-    //     assertTrue(gem.balanceOf(_beneficiary) == 0, "balance is not 0");
-    //     assertTrue(vesting.ids() == 0, "id is not 0");
-    //     assertEq(vesting.commitments(hash), true, "commitment does not exist");
-
-    //     // 3rd parties can not claim and vest because vests are restricted by default
-    //     vm.prank(_rando);
-    //     vm.expectRevert("DssVest/only-user-can-claim");
-    //     vesting.revealAndRelease(hash, _beneficiary, _allocation, _start, _duration, _cliff, _mgr, _salt);
-
-    //     // claim
-    //     vm.prank(_beneficiary);
-    //     uint256 id = vesting.revealAndRelease(hash, _beneficiary, _allocation, _start, _duration, _cliff, _mgr, _salt);
-
-    //     // ensure state changed as expected during claim
-    //     assertEq(id, 1, "id is not 1");
-    //     assertEq(vesting.unpaid(id), 0, "unpaid is not 0");
-    //     assertEq(vesting.commitments(hash), false, "commitment not deleted");
-    //     // before or after cliff is important
-    //     if (block.timestamp > _start + _cliff) {
-    //         console.log("After cliff");
-    //         assertEq(vesting.accrued(id), gem.balanceOf(_beneficiary), "accrued is not equal to paid");
-    //         checkVestingPlanDetails(
-    //             id,
-    //             _beneficiary,
-    //             _allocation,
-    //             _start,
-    //             _duration,
-    //             _cliff,
-    //             _mgr,
-    //             vesting.accrued(id)
-    //         );
-    //     } else {
-    //         console.log("Before cliff");
-    //         checkVestingPlanDetails(id, _beneficiary, _allocation, _start, _duration, _cliff, _mgr, 0);
-    //         assertEq(0, gem.balanceOf(_beneficiary), "payout before cliff");
-    //     }
-
-    //     // claiming again must fail
-    //     vm.expectRevert("DssVest/commitment-not-found");
-    //     vm.prank(_beneficiary);
-    //     vesting.revealAndRelease(hash, _beneficiary, _allocation, _start, _duration, _cliff, _mgr, _salt);
-
-    //     // warp time till end of vesting and vest everything
-    //     vm.warp(_start + _duration + 1);
-    //     vm.prank(_beneficiary);
-    //     vesting.vest(id);
-    //     assertEq(vesting.unpaid(id), 0, "unpaid is not 0");
-    //     assertEq(vesting.accrued(id), _allocation, "accrued is not equal to total");
-    //     assertEq(token.balanceOf(_beneficiary), _allocation, "balance is not equal to total");
-    // }
 
     function checkLimits(
         uint256 _allocation,
