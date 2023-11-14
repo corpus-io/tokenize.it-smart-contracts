@@ -5,7 +5,7 @@ import "../lib/forge-std/src/Test.sol";
 import "../contracts/VestingCloneFactory.sol";
 import "./resources/ERC20MintableByAnyone.sol";
 
-contract VestingCloneFactoryTest is Test {
+contract VestingTest is Test {
     Vesting implementation;
     VestingCloneFactory factory;
 
@@ -16,6 +16,7 @@ contract VestingCloneFactoryTest is Test {
     Vesting vesting;
 
     address trustedForwarder = address(1);
+    address platformAdmin = address(2);
 
     function setUp() public {
         implementation = new Vesting(trustedForwarder);
@@ -177,7 +178,8 @@ contract VestingCloneFactoryTest is Test {
 
     function testPauseAfterCliff(address _beneficiary, uint64 pauseAfter, uint64 pauseDuration) public {
         vm.assume(_beneficiary != address(0));
-        pauseAfter = (pauseAfter % 355 days) + 365 days;
+        vm.assume(_beneficiary != trustedForwarder);
+        pauseAfter = (pauseAfter % 364 days);
         pauseDuration = (pauseDuration % (10 * 365 days)) + 1;
 
         uint256 amount = 70e18;
@@ -187,11 +189,16 @@ contract VestingCloneFactoryTest is Test {
         uint64 pauseStart = start + cliff + pauseAfter;
         uint64 pauseEnd = pauseStart + pauseDuration;
 
+        console.log("vesting end", start + duration);
+        console.log("pause start", pauseStart);
+
+        vm.startPrank(owner);
         uint64 id = vesting.createVesting(amount, _beneficiary, start, cliff, duration, true);
 
         vm.warp(start + 3);
 
         uint64 newId = vesting.pauseVesting(id, pauseStart, pauseEnd);
+        vm.stopPrank();
 
         // make sure old vesting is updated
         assertEq(vesting.allocation(id), (amount * (pauseStart - start)) / duration, "old total is wrong");
@@ -212,12 +219,24 @@ contract VestingCloneFactoryTest is Test {
         assertEq(vesting.duration(newId), duration - vesting.duration(id), "duration is wrong");
         assertEq(vesting.isMintable(newId), true, "mintable is wrong");
 
+        console.log("old id beneficial", vesting.beneficiary(id));
+        console.log("new id beneficial", vesting.beneficiary(newId));
+
         // go to end of vestings and claim all. It must match the total
         vm.warp(pauseEnd + duration);
         vm.startPrank(_beneficiary);
         vesting.release(id);
         vesting.release(newId);
+        vm.stopPrank();
+
+        console.log("new id beneficial", vesting.beneficiary(newId));
 
         assertEq(token.balanceOf(_beneficiary), amount, "balance is wrong");
+    }
+
+    function testNoWrongManagers(address rando) public {
+        vm.assume(rando != address(owner));
+
+        assertFalse(vesting.managers(rando), "rando is a manager");
     }
 }

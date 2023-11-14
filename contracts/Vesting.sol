@@ -208,8 +208,9 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
 
     function pauseVesting(uint64 id, uint64 endTime, uint64 newStartTime) external onlyManager returns (uint64) {
         VestingPlan memory vesting = vestings[id];
-        require(endTime > uint64(block.timestamp));
-        require(endTime < vesting.start + vesting.duration);
+        require(endTime > uint64(block.timestamp), "endTime must be in the future");
+        require(endTime < vesting.start + vesting.duration, "endTime must be before vesting end");
+        require(newStartTime > endTime, "newStartTime must be after endTime");
 
         uint256 allocationRemainder = allocation(id) - vestedAmount(id, endTime);
         uint64 timeVested = endTime - start(id);

@@ -18,6 +18,7 @@ contract VestingCloneFactoryTest is Test {
 
     function testAddressPrediction(bytes32 _salt, address _trustedForwarder, address _owner, address _token) public {
         vm.assume(_trustedForwarder != address(0));
+        vm.assume(_token != address(0));
         vm.assume(_owner != address(0));
         Vesting _implementation = new Vesting(_trustedForwarder);
         VestingCloneFactory _factory = new VestingCloneFactory(address(_implementation));
