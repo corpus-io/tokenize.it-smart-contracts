@@ -149,6 +149,6 @@ The owner of the PublicFundraising contract can pause the contract by calling `p
 
 In case there is no vesting, shares can directly be issued through minting as described when setting up a new company.
 
-For vesting the contract [DssVestMintable by makerdao](https://github.com/makerdao/dss-vest/blob/master/src/DssVest.sol) can be used. See [documentation](https://github.com/makerdao/dss-vest) for general usage information.
+For vesting the [Vesting.sol](../contracts/Vesting.sol) contract is used.
 
 The contract needs to be given a sufficient minting allowance in the company token contract by calling `increaseMintingAllowance` from an address which has the role of MintAllower.
