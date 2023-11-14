@@ -8,6 +8,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeab
 import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 interface ERC20Mintable {
     function mint(address, uint256) external;
@@ -35,14 +36,17 @@ struct VestingPlan {
  * can be given to this contract, which will release the token to the beneficiary following a given vesting schedule.
  *
  */
-contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable {
+contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
     event ERC20Released(address indexed token, uint256 amount);
     event Commit(bytes32 hash);
+    event ERC20Released(uint64 id, uint256 amount);
     event Revoke(bytes32 hash, uint64 endVestingTime);
     event Reveal(bytes32 hash, uint64 id);
     event VestingCreated(uint64 id);
+    event VestingStopped(uint64 id, uint64 endTime);
     event ManagerAdded(address manager);
     event ManagerRemoved(address manager);
+    event BeneficiaryChanged(uint64 id, address newBeneficiary);
 
     uint64 public constant TIME_HORIZON = 20 * 365 days; // 20 years
     address public token;
@@ -160,6 +164,17 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         emit Revoke(hash, end);
     }
 
+    /**
+     * Create a public transparent vesting plan from a commitment.
+     * @param hash  commitment hash
+     * @param _allocation total token amount
+     * @param _beneficiary address receiving the tokens
+     * @param _start start date
+     * @param _cliff cliff duration
+     * @param _duration total duration
+     * @param _isMintable true = tokens minted on release, false = tokens held by vesting contract
+     * @param salt salt for privacy
+     */
     function reveal(
         bytes32 hash,
         uint256 _allocation,
@@ -235,7 +250,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
             _start >= block.timestamp - TIME_HORIZON && _start <= block.timestamp + TIME_HORIZON,
             "Start must be reasonable"
         );
-        require(_cliff >= 0 && _cliff <= TIME_HORIZON, "Cliff must be reasonable");
+        require(_cliff >= 0 && _cliff <= _duration, "Cliff must be reasonable");
         require(_duration > 0 && _duration <= TIME_HORIZON, "Duration must be reasonable");
 
         id = ids++;
@@ -248,10 +263,12 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
             duration: _duration,
             isMintable: _isMintable
         });
+
+        emit VestingCreated(id);
     }
 
     function stopVesting(uint64 id, uint64 endTime) public onlyManager {
-        require(endTime > uint64(block.timestamp), "endTime must be in the future");
+        endTime = endTime < uint64(block.timestamp) ? uint64(block.timestamp) : endTime;
         require(endTime < vestings[id].start + vestings[id].duration, "endTime must be before vesting end");
 
         if (vestings[id].start + vestings[id].cliff > endTime) {
@@ -260,6 +277,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
             vestings[id].allocation = vestedAmount(id, endTime);
             vestings[id].duration = endTime - vestings[id].start;
         }
+        emit VestingStopped(id, endTime);
     }
 
     function pauseVesting(uint64 id, uint64 endTime, uint64 newStartTime) external onlyManager returns (uint64) {
@@ -303,12 +321,15 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         } else {
             SafeERC20Upgradeable.safeTransfer(IERC20Upgradeable(token), beneficiary(id), amount);
         }
+        emit ERC20Released(id, amount);
     }
 
     // Todo: add relase(id, amount) function
 
     /**
      * @dev Calculates the amount of tokens that have already vested. Implements a linear vesting curve.
+     * @notice In this context, "vested" means "belong to the beneficiary". The vested amount
+     * is also the sum of the released amount and the releasable amount.
      */
     function vestedAmount(uint64 id, uint64 timestamp) public view virtual returns (uint256) {
         VestingPlan memory vesting = vestings[id];
@@ -322,7 +343,8 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     }
 
     /**
-     * @dev Changes the beneficiary to a new one. Only callable by current beneficiary, or the manager one year after the vesting's plan end.
+     * @dev Changes the beneficiary to a new one. Only callable by current beneficiary,
+     * or the manager one year after the vesting's plan end.
      */
     function changeBeneficiary(uint64 id, address newBeneficiary) external {
         require(
@@ -331,6 +353,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         );
         require(newBeneficiary != address(0), "Beneficiary must not be zero address");
         vestings[id].beneficiary = newBeneficiary;
+        emit BeneficiaryChanged(id, newBeneficiary);
     }
 
     function addManager(address _manager) external onlyOwner {
