@@ -32,8 +32,9 @@ struct VestingPlan {
  */
 contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable {
     event ERC20Released(address indexed token, uint256 amount);
-    event Commit(bytes32);
-    event Revoke(bytes32);
+    event Commit(bytes32 hash);
+    event Revoke(bytes32 hash, uint64 endVestingTime);
+    event Reveal(bytes32 hash, uint64 id);
     event VestingCreated(uint64 id);
     event ManagerAdded(address manager);
     event ManagerRemoved(address manager);
@@ -122,14 +123,15 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     }
 
     function commit(bytes32 hash) external onlyManager {
+        require(hash != bytes32(0), "hash must not be zero");
         commitments[hash] = type(uint64).max;
         emit Commit(hash);
     }
 
     function revoke(bytes32 hash, uint64 endVestingTime) external onlyManager {
-        require(endVestingTime > block.timestamp);
+        require(endVestingTime >= block.timestamp, "endVestingTime can not be in past");
         commitments[hash] = endVestingTime;
-        emit Commit(hash);
+        emit Revoke(hash, endVestingTime);
     }
 
     function reveal(
@@ -147,11 +149,25 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
                 keccak256(abi.encodePacked(_allocation, _beneficiary, _start, _cliff, _duration, _isMintable, salt)),
             "invalid-hash"
         );
-        require(commitments[hash] > 0, "commitment-not-found");
-        require(_start < commitments[hash]);
-        uint64 durationOverride = _start + _duration < commitments[hash] ? _duration : commitments[hash] - _start; // handle case of a revoke
-        commitments[hash] = 0;
-        id = _createVesting(_allocation, _beneficiary, _start, _cliff, durationOverride, _isMintable);
+        uint64 maxEndDate = commitments[hash];
+        require(maxEndDate > 0, "commitment-not-found");
+        // if a commitment has been revoked with end date before cliff, it can never be revealed
+        require(_start + _cliff <= maxEndDate, "start-too-late");
+
+        if (_start + _duration <= maxEndDate) {
+            // the commitment has not been revoked, or the end date of the commitment is after the end of the vesting
+            // create the vesting using the original parameters
+            id = _createVesting(_allocation, _beneficiary, _start, _cliff, _duration, _isMintable);
+        } else {
+            // the commitment has been revoked with a new end date of maxEndDate
+            // we need to override the duration to be the difference between _start and maxEndDate
+            uint64 durationOverride = maxEndDate - _start;
+            uint256 allocationOverride = (_allocation * durationOverride) / _duration;
+            id = _createVesting(allocationOverride, _beneficiary, _start, _cliff, durationOverride, _isMintable);
+        }
+
+        commitments[hash] = 0; // delete commitment
+        emit Reveal(hash, id);
     }
 
     function createVesting(
