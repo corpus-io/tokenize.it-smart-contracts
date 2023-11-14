@@ -33,7 +33,7 @@ contract VestingTest is Test {
         vm.assume(newOwner != address(0));
         vm.assume(newOwner != _owner);
         vm.assume(_owner != address(this));
-        Vesting vest = Vesting(factory.createVestingClone(0, trustedForwarder, _owner, address(token)));
+        Vesting vest = Vesting(factory.createVestingClone(bytes32("1"), trustedForwarder, _owner, address(token)));
         assertEq(vest.owner(), _owner, "owner not set");
 
         vm.prank(_owner);
