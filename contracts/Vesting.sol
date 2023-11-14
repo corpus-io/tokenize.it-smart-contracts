@@ -109,7 +109,9 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     }
 
     /**
-     * @dev Getter for type of withdraw. Minting == true mean that tokens are minted form the token contract. False means the tokens need to be held by the vesting contract directly.
+     * @dev Getter for type of withdraw.
+     * isMintable == true means that tokens are minted form the token contract.
+     * False means the tokens need to be held by the vesting contract directly.
      */
     function isMintable(uint64 id) public view virtual returns (bool) {
         return vestings[id].isMintable;
@@ -143,16 +145,16 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         uint64 _duration,
         bool _isMintable,
         bytes32 salt
-    ) external returns (uint64 id) {
+    ) public returns (uint64 id) {
         require(
             hash ==
                 keccak256(abi.encodePacked(_allocation, _beneficiary, _start, _cliff, _duration, _isMintable, salt)),
             "invalid-hash"
         );
         uint64 maxEndDate = commitments[hash];
-        require(maxEndDate > 0, "commitment-not-found");
+        require(maxEndDate > 0, "invalid-hash");
         // if a commitment has been revoked with end date before cliff, it can never be revealed
-        require(_start + _cliff <= maxEndDate, "start-too-late");
+        require(_start + _cliff <= maxEndDate, "commitment revoked before cliff ended");
 
         if (_start + _duration <= maxEndDate) {
             // the commitment has not been revoked, or the end date of the commitment is after the end of the vesting
@@ -168,6 +170,20 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
 
         commitments[hash] = 0; // delete commitment
         emit Reveal(hash, id);
+    }
+
+    function revealAndRelease(
+        bytes32 hash,
+        uint256 _allocation,
+        address _beneficiary,
+        uint64 _start,
+        uint64 _cliff,
+        uint64 _duration,
+        bool _isMintable,
+        bytes32 salt
+    ) external returns (uint64 id) {
+        id = reveal(hash, _allocation, _beneficiary, _start, _cliff, _duration, _isMintable, salt);
+        release(id);
     }
 
     function createVesting(
