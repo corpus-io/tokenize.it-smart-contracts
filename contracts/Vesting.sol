@@ -14,11 +14,17 @@ interface ERC20Mintable {
 }
 
 struct VestingPlan {
+    /// the amount of tokens to be vested
     uint256 allocation;
+    /// the amount of tokens already released
     uint256 released;
+    /// the beneficiary who will receive the vested tokens
     address beneficiary;
+    /// the start time of the vesting
     uint64 start;
+    /// the cliff duration of the vesting - beneficiary gets no tokens before this duration has passed
     uint64 cliff;
+    /// the duration of the vesting - after this duration all tokens can be released
     uint64 duration;
     bool isMintable;
 }
@@ -28,7 +34,6 @@ struct VestingPlan {
  * @dev This contract handles the vesting ERC20 tokens for a set of beneficiaries. Custody of multiple tokens
  * can be given to this contract, which will release the token to the beneficiary following a given vesting schedule.
  *
- * @custom:storage-size 52
  */
 contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable {
     event ERC20Released(address indexed token, uint256 amount);
@@ -43,20 +48,24 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     address public token;
     mapping(address => bool) public managers; // managers can create vestings
     mapping(uint64 => VestingPlan) public vestings;
-    mapping(bytes32 => uint64) public commitments; // value = maximum end date of vesting
+    /// stores promises without revealing the details. value = maximum end date of vesting
+    mapping(bytes32 => uint64) public commitments;
     uint64 public ids;
 
     /**
-     * @dev This empty reserved space is put in place to allow future versions to add new
-     * variables without shifting down storage in the inheritance chain.
-     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     * This contract will be used through clones, so the constructor only initializes
+     * the logic contract.
+     * @param trustedForwarder address of the trusted forwarder that can relay ERC2771 transactions
      */
-    uint256[48] private __gap;
-
     constructor(address trustedForwarder) ERC2771ContextUpgradeable(trustedForwarder) {
         _disableInitializers();
     }
 
+    /**
+     * @dev Initializes the contract.
+     * @param owner address of the owner of the contract
+     * @param _token address of the token to be vested
+     */
     function initialize(address owner, address _token) public initializer {
         require(owner != address(0), "Owner must not be zero address");
         require(_token != address(0), "Token must not be zero address");
@@ -68,6 +77,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
 
     /**
      * @dev Getter for the allocation.
+     *
      */
     function allocation(uint64 id) public view virtual returns (uint256) {
         return vestings[id].allocation;
@@ -95,14 +105,14 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     }
 
     /**
-     * @dev Getter for the cliff.
+     * @dev Getter for the cliff duration.
      */
     function cliff(uint64 id) public view virtual returns (uint64) {
         return vestings[id].cliff;
     }
 
     /**
-     * @dev Getter for the vesting duration.
+     * @dev Getter for the total vesting duration.
      */
     function duration(uint64 id) public view virtual returns (uint64) {
         return vestings[id].duration;
@@ -111,7 +121,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     /**
      * @dev Getter for type of withdraw.
      * isMintable == true means that tokens are minted form the token contract.
-     * False means the tokens need to be held by the vesting contract directly.
+     * isMintable == false means the tokens need to be held by the vesting contract directly.
      */
     function isMintable(uint64 id) public view virtual returns (bool) {
         return vestings[id].isMintable;
@@ -124,16 +134,30 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         return vestedAmount(id, uint64(block.timestamp)) - released(id);
     }
 
+    /**
+     * Managers can commit to a vesting plan without revealing it's details.
+     * The paramters are hashed and this hash is stored in the commitments mapping.
+     * Anyone can then reveal the vesting plan by providing the parameters and the salt.
+     * @param hash commitment hash
+     */
     function commit(bytes32 hash) external onlyManager {
         require(hash != bytes32(0), "hash must not be zero");
+        // the value is interpreted as maximum end date of the vesting
+        // for real world use cases, type(uint64).max is "unlimited"
         commitments[hash] = type(uint64).max;
         emit Commit(hash);
     }
 
-    function revoke(bytes32 hash, uint64 endVestingTime) external onlyManager {
-        require(endVestingTime >= block.timestamp, "endVestingTime can not be in past");
-        commitments[hash] = endVestingTime;
-        emit Revoke(hash, endVestingTime);
+    /**
+     * Managers can revoke a commitment by providing the hash and a new latest end date.
+     * @param hash commitment hash
+     * @param end new latest end date
+     */
+    function revoke(bytes32 hash, uint64 end) external onlyManager {
+        require(commitments[hash] != 0, "invalid-hash");
+        end = uint64(block.timestamp) > end ? uint64(block.timestamp) : end;
+        commitments[hash] = end;
+        emit Revoke(hash, end);
     }
 
     function reveal(
@@ -284,7 +308,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     // Todo: add relase(id, amount) function
 
     /**
-     * @dev Calculates the amount of tokens that has already vested. Default implementation is a linear vesting curve.
+     * @dev Calculates the amount of tokens that have already vested. Implements a linear vesting curve.
      */
     function vestedAmount(uint64 id, uint64 timestamp) public view virtual returns (uint256) {
         VestingPlan memory vesting = vestings[id];
