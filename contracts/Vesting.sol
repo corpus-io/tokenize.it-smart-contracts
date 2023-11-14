@@ -139,18 +139,19 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         uint64 _start,
         uint64 _cliff,
         uint64 _duration,
-        bool _minting,
+        bool _isMintable,
         bytes32 salt
     ) external returns (uint64 id) {
         require(
-            hash == keccak256(abi.encodePacked(_allocation, _beneficiary, _start, _cliff, _duration, _minting, salt)),
+            hash ==
+                keccak256(abi.encodePacked(_allocation, _beneficiary, _start, _cliff, _duration, _isMintable, salt)),
             "invalid-hash"
         );
         require(commitments[hash] > 0, "commitment-not-found");
         require(_start < commitments[hash]);
         uint64 durationOverride = _start + _duration < commitments[hash] ? _duration : commitments[hash] - _start; // handle case of a revoke
         commitments[hash] = 0;
-        id = _createVesting(_allocation, _beneficiary, _start, _cliff, durationOverride, _minting);
+        id = _createVesting(_allocation, _beneficiary, _start, _cliff, durationOverride, _isMintable);
     }
 
     function createVesting(
@@ -159,9 +160,9 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         uint64 _start,
         uint64 _cliff,
         uint64 _duration,
-        bool _minting
+        bool _isMintable
     ) external onlyManager returns (uint64 id) {
-        return _createVesting(_allocation, _beneficiary, _start, _cliff, _duration, _minting);
+        return _createVesting(_allocation, _beneficiary, _start, _cliff, _duration, _isMintable);
     }
 
     function _createVesting(
@@ -170,7 +171,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         uint64 _start,
         uint64 _cliff,
         uint64 _duration,
-        bool _minting
+        bool _isMintable
     ) internal returns (uint64 id) {
         require(_allocation > 0, "Allocation must be greater than zero");
         require(address(_beneficiary) != address(0), "Beneficiary must not be zero address");
@@ -189,7 +190,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
             start: _start,
             cliff: _cliff,
             duration: _duration,
-            isMintable: _minting
+            isMintable: _isMintable
         });
     }
 
