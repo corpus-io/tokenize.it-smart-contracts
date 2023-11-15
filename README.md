@@ -47,7 +47,7 @@ More dev information can be found here:
    - public fundraising, which is open to everyone meeting the requirements, is done through the [PublicFundraising.sol](contracts/PublicFundraising.sol) contract
 3. Employee participation is easy:
    - direct distribution of tokens (does not need another smart contract)
-   - vesting can be realized using the [DssVest.sol](https://github.com/makerdao/dss-vest/blob/master/src/DssVest.sol) contract by MakerDao
+   - vesting can be realized using the [Vesting.sol](./contracts/Vesting.sol) contract
 
 The requirements for an address to send or receive tokens are checked against the [AllowList.sol](contracts/AllowList.sol) contract. Fees are collected according to the settings in [FeeSettings.sol](./contracts/FeeSettings.sol). Tokenize.it will deploy and manage at least one AllowList and one FeeSettings contract.
 

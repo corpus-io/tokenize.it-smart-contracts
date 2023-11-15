@@ -101,3 +101,29 @@ The following statements about the smart contracts should always be true
 - In sum, the contract will never mint more tokens to the buyers than maxAmountOfTokenToBeSold at the time of minting. This does not take into account the tokens minted to feeCollector in Token.sol.
 - All functions can be called directly or as meta transaction using ERC2771.
 - Calling a function directly or through ERC2771 yield equivalent results given equivalent inputs.
+
+## Vesting.sol
+
+- Only the owner can make an address a manager.
+- Only the owner can remove a manager.
+- Only a manager can create a vesting plan directly or commit the hash of a vesting plan.
+- Anyone can reveal the vesting plan for a hash that has been committed, if they know the corresponding parameters.
+- Revealing a vesting plan for a hash that has not been committed reverts.
+- Revealing a vesting plan for a hash that has been committed with different parameters reverts.
+- Revealing a vesting plan for a hash that has been committed with the same parameters succeeds.
+- Revealing a vesting plan for a hash that has been committed removes the commitment.
+- Once tokens from a vesting plan are releasable, they can only be released by the beneficiary.
+- Once tokens from a vesting plan are releasable, they can only be released to the beneficiary.
+- The beneficiary can only release tokens from a vesting plan if the vesting plan has been revealed.
+- The beneficiary can change the beneficiary address of a vesting plan.
+- The owner can change the beneficiary address of a vesting plan if the vesting plan has completed at least one year ago.
+- The beneficiary can release exactly `allocation` tokens after the vesting duration has passed.
+- No tokens are releasable from a plan before the cliff has passed.
+- Under no circumstance are more tokens released from a single vesting plan than `allocation`.
+- There is no way to prevent a beneficiary from releasing tokens from a vesting plan.
+- There is no way to reduce the releasable amount of tokens from a vesting plan, except by releasing them.
+- A vesting plan can only be stopped now or in the future. It can not be stopped in the past.
+- Only a manager can stop a vesting plan.
+- Stopping a vesting plan and revoking a commitment to a vesting plan are equivalent with respect to the token amount the beneficiary can release and the time the beneficiary can release them.
+- A beneficiary can never mint or withdraw more tokens than the allocation of the vesting plan.
+- Third parties can not mint or withdraw tokens from a vesting plan.

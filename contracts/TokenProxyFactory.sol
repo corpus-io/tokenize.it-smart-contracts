@@ -38,7 +38,7 @@ contract TokenProxyFactory is Factory {
         ERC1967Proxy proxy = ERC1967Proxy(payable(proxyAddress));
         //Clones.cloneDeterministic(implementation, salt);
         Token cloneToken = Token(address(proxy));
-        require(cloneToken.isTrustedForwarder(_trustedForwarder), "TokenCloneFactory: Unexpected trustedForwarder");
+        require(cloneToken.isTrustedForwarder(_trustedForwarder), "TokenProxyFactory: Unexpected trustedForwarder");
         cloneToken.initialize(_feeSettings, _admin, _allowList, _requirements, _name, _symbol);
         emit NewProxy(address(proxy));
         return address(proxy);

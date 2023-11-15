@@ -3,7 +3,7 @@ pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/PublicFundraisingCloneFactory.sol";
-import "../contracts/TokenCloneFactory.sol";
+import "../contracts/TokenProxyFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/ERC2771Helper.sol";
 
@@ -12,7 +12,7 @@ contract tokenTest is Test {
 
     AllowList allowList;
     FeeSettings feeSettings;
-    TokenCloneFactory tokenFactory;
+    TokenProxyFactory tokenFactory;
     PublicFundraising fundraisingImplementation;
     PublicFundraisingCloneFactory fundraisingFactory;
     address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
@@ -56,7 +56,7 @@ contract tokenTest is Test {
         vm.stopPrank();
 
         Token tokenImplementation = new Token(trustedForwarder);
-        tokenFactory = new TokenCloneFactory(address(tokenImplementation));
+        tokenFactory = new TokenProxyFactory(address(tokenImplementation));
 
         fundraisingImplementation = new PublicFundraising(trustedForwarder);
         fundraisingFactory = new PublicFundraisingCloneFactory(address(fundraisingImplementation));

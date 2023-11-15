@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/TokenCloneFactory.sol";
+import "../contracts/TokenProxyFactory.sol";
 import "../contracts/PublicFundraisingCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
@@ -14,7 +14,7 @@ contract PublicFundraisingTest is Test {
     FeeSettings feeSettings;
 
     Token implementation = new Token(trustedForwarder);
-    TokenCloneFactory tokenFactory = new TokenCloneFactory(address(implementation));
+    TokenProxyFactory tokenFactory = new TokenProxyFactory(address(implementation));
     Token token;
     FakePaymentToken paymentToken;
     PublicFundraisingCloneFactory fundraisingFactory;
@@ -44,7 +44,7 @@ contract PublicFundraisingTest is Test {
         feeSettings = new FeeSettings(fees, platformAdmin, platformAdmin, platformAdmin);
         vm.prank(platformAdmin);
         token = Token(
-            tokenFactory.createTokenClone(
+            tokenFactory.createTokenProxy(
                 0,
                 trustedForwarder,
                 feeSettings,
@@ -138,7 +138,7 @@ contract PublicFundraisingTest is Test {
 
         list = new AllowList();
         Token _token = Token(
-            tokenFactory.createTokenClone(
+            tokenFactory.createTokenProxy(
                 0,
                 trustedForwarder,
                 feeSettings,
@@ -255,7 +255,7 @@ contract PublicFundraisingTest is Test {
 
             list = new AllowList();
             Token _token = Token(
-                tokenFactory.createTokenClone(
+                tokenFactory.createTokenProxy(
                     0,
                     trustedForwarder,
                     feeSettings,

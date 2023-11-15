@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/TokenCloneFactory.sol";
+import "../contracts/TokenProxyFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "../contracts/PublicFundraisingCloneFactory.sol";
 import "../contracts/PriceLinearCloneFactory.sol";
@@ -11,21 +11,33 @@ import "./resources/MaliciousPaymentToken.sol";
 
 /// fixture that always returns max price
 contract MaxPriceOracle is IPriceDynamic {
-    constructor() {}
+    uint256 nonsensePrice; // this only exists to silence compiler warnings
+
+    constructor() {
+        nonsensePrice = 7;
+    }
 
     // solhint-disable-next-line
     function getPrice(uint256 basePrice) external view returns (uint256) {
-        return type(uint256).max;
+        // this always returns 0
+        basePrice = nonsensePrice > basePrice ? nonsensePrice : basePrice;
+        return basePrice < type(uint256).max ? type(uint256).max : basePrice;
     }
 }
 
 /// fixture that always returns max price
 contract MinPriceOracle is IPriceDynamic {
-    constructor() {}
+    uint256 nonsensePrice; // this only exists to silence compiler warnings
+
+    constructor() {
+        nonsensePrice = 7;
+    }
 
     // solhint-disable-next-line
     function getPrice(uint256 basePrice) external view returns (uint256) {
-        return type(uint256).min;
+        // this always returns type(uint256).max
+        basePrice = nonsensePrice > basePrice ? nonsensePrice : basePrice;
+        return basePrice > 0 ? 0 : basePrice;
     }
 }
 
@@ -42,7 +54,7 @@ contract PublicFundraisingTest is Test {
     AllowList list;
     IFeeSettingsV2 feeSettings;
 
-    TokenCloneFactory tokenCloneFactory;
+    TokenProxyFactory tokenCloneFactory;
     Token token;
     FakePaymentToken paymentToken;
     PriceLinearCloneFactory priceLinearCloneFactory;
@@ -83,9 +95,9 @@ contract PublicFundraisingTest is Test {
 
         // create token
         address tokenLogicContract = address(new Token(trustedForwarder));
-        tokenCloneFactory = new TokenCloneFactory(tokenLogicContract);
+        tokenCloneFactory = new TokenProxyFactory(tokenLogicContract);
         token = Token(
-            tokenCloneFactory.createTokenClone(
+            tokenCloneFactory.createTokenProxy(
                 0,
                 trustedForwarder,
                 feeSettings,

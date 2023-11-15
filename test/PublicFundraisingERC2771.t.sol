@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/TokenCloneFactory.sol";
+import "../contracts/TokenProxyFactory.sol";
 import "../contracts/PublicFundraisingCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
@@ -75,9 +75,9 @@ contract PublicFundraisingTest is Test {
         feeSettings = new FeeSettings(fees, admin, admin, admin);
 
         Token implementation = new Token(trustedForwarder);
-        TokenCloneFactory tokenFactory = new TokenCloneFactory(address(implementation));
+        TokenProxyFactory tokenFactory = new TokenProxyFactory(address(implementation));
         token = Token(
-            tokenFactory.createTokenClone(0, trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST")
+            tokenFactory.createTokenProxy(0, trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST")
         );
 
         ERC2771helper = new ERC2771Helper();

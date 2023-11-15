@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/TokenCloneFactory.sol";
+import "../contracts/TokenProxyFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/WrongFeeSettings.sol";
 
@@ -34,9 +34,9 @@ contract tokenTest is Test {
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
         feeSettings = new FeeSettings(fees, admin, admin, admin);
         Token implementation = new Token(trustedForwarder);
-        TokenCloneFactory tokenCloneFactory = new TokenCloneFactory(address(implementation));
+        TokenProxyFactory tokenCloneFactory = new TokenProxyFactory(address(implementation));
         token = Token(
-            tokenCloneFactory.createTokenClone(
+            tokenCloneFactory.createTokenProxy(
                 0,
                 trustedForwarder,
                 feeSettings,
