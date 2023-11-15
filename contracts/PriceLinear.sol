@@ -98,7 +98,11 @@ contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPri
     ) internal {
         require(_slopeEnumerator != 0, "slopeEnumerator can not be zero");
         require(_slopeDenominator != 0, "slopeDenominator can not be zero");
-        require(_startTimeOrBlockNumber > block.timestamp, "startTime must be in the future");
+        if (_isBlockBased) {
+            require(_startTimeOrBlockNumber > block.number, "start must be in the future");
+        } else {
+            require(_startTimeOrBlockNumber > block.timestamp, "start must be in the future");
+        }
         require(_stepDuration != 0, "stepDuration can not be zero");
         parameters = Linear({
             slopeEnumerator: _slopeEnumerator,

@@ -1215,18 +1215,25 @@ contract PublicFundraisingTest is Test {
 
     function testAutoPauseActivation(uint256 _autoPauseDate, uint256 testDate) public {
         vm.assume(testDate > 1 days + 1);
+        vm.assume(testDate < 100 * 365 days);
         vm.assume(_autoPauseDate > 1);
+        vm.assume(_autoPauseDate < 100 * 365 days);
+
+        // because of limitations in the test suite, we have to decide on a fixed date to base our warping on
+        uint256 startDate = 100 * 365 days;
+        vm.warp(startDate);
+
         uint256 tokenBuyAmount = 5 * 10 ** token.decimals();
         uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * raise.priceBase(), 10 ** 18);
 
         vm.startPrank(owner);
         raise.pause();
-        raise.setAutoPauseDate(_autoPauseDate);
-        vm.warp(1 days + 10);
+        raise.setAutoPauseDate(startDate + _autoPauseDate);
+        vm.warp(startDate + 1 days + 1);
         raise.unpause();
         vm.stopPrank();
 
-        vm.warp(testDate);
+        vm.warp(startDate + testDate);
 
         // log block.timestamp and autoPauseDate
         console.log("block.timestamp: ", block.timestamp);
