@@ -83,42 +83,42 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
      * @dev Getter for the allocation.
      *
      */
-    function allocation(uint64 id) public view virtual returns (uint256) {
+    function allocation(uint64 id) public view returns (uint256) {
         return vestings[id].allocation;
     }
 
     /**
      * @dev Amount of tokens already released
      */
-    function released(uint64 id) public view virtual returns (uint256) {
+    function released(uint64 id) public view returns (uint256) {
         return vestings[id].released;
     }
 
     /**
      * @dev Getter for the beneficiary address.
      */
-    function beneficiary(uint64 id) public view virtual returns (address) {
+    function beneficiary(uint64 id) public view returns (address) {
         return vestings[id].beneficiary;
     }
 
     /**
      * @dev Getter for the start timestamp.
      */
-    function start(uint64 id) public view virtual returns (uint64) {
+    function start(uint64 id) public view returns (uint64) {
         return vestings[id].start;
     }
 
     /**
      * @dev Getter for the cliff duration.
      */
-    function cliff(uint64 id) public view virtual returns (uint64) {
+    function cliff(uint64 id) public view returns (uint64) {
         return vestings[id].cliff;
     }
 
     /**
      * @dev Getter for the total vesting duration.
      */
-    function duration(uint64 id) public view virtual returns (uint64) {
+    function duration(uint64 id) public view returns (uint64) {
         return vestings[id].duration;
     }
 
@@ -127,14 +127,14 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
      * isMintable == true means that tokens are minted form the token contract.
      * isMintable == false means the tokens need to be held by the vesting contract directly.
      */
-    function isMintable(uint64 id) public view virtual returns (bool) {
+    function isMintable(uint64 id) public view returns (bool) {
         return vestings[id].isMintable;
     }
 
     /**
      * @dev Getter for the amount of releasable tokens.
      */
-    function releasable(uint64 id) public view virtual returns (uint256) {
+    function releasable(uint64 id) public view returns (uint256) {
         return vestedAmount(id, uint64(block.timestamp)) - released(id);
     }
 
@@ -311,9 +311,13 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
      *
      * Emits a {ERC20Released} event.
      */
-    function release(uint64 id) public virtual {
+    function release(uint64 id) public {
+        release(id, type(uint256).max);
+    }
+
+    function release(uint64 id, uint256 amount) public nonReentrant {
         require(_msgSender() == beneficiary(id), "Only beneficiary can release tokens");
-        uint256 amount = releasable(id);
+        amount = releasable(id) < amount ? releasable(id) : amount;
         vestings[id].released += amount;
         emit ERC20Released(token, amount);
         if (isMintable(id)) {
@@ -324,14 +328,12 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         emit ERC20Released(id, amount);
     }
 
-    // Todo: add relase(id, amount) function
-
     /**
      * @dev Calculates the amount of tokens that have already vested. Implements a linear vesting curve.
      * @notice In this context, "vested" means "belong to the beneficiary". The vested amount
      * is also the sum of the released amount and the releasable amount.
      */
-    function vestedAmount(uint64 id, uint64 timestamp) public view virtual returns (uint256) {
+    function vestedAmount(uint64 id, uint64 timestamp) public view returns (uint256) {
         VestingPlan memory vesting = vestings[id];
         if (timestamp < vesting.start + vesting.cliff) {
             return 0;
@@ -344,12 +346,15 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
 
     /**
      * @dev Changes the beneficiary to a new one. Only callable by current beneficiary,
-     * or the manager one year after the vesting's plan end.
+     * or the owner one year after the vesting's plan end. The owner being able to update
+     * the beneficiary address is a compromise between security and usability:
+     * If the beneficiary ever loses access to their address, the owner can update it, but only
+     * after this timeout has passed.
      */
     function changeBeneficiary(uint64 id, address newBeneficiary) external {
         require(
             _msgSender() == beneficiary(id) ||
-                (managers[_msgSender()] && uint64(block.timestamp) > start(id) + duration(id) + 365 days)
+                ((_msgSender() == owner()) && uint64(block.timestamp) > start(id) + duration(id) + 365 days)
         );
         require(newBeneficiary != address(0), "Beneficiary must not be zero address");
         vestings[id].beneficiary = newBeneficiary;
