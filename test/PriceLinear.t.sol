@@ -148,10 +148,12 @@ contract PublicFundraisingTest is Test {
     function testBlockBased() public {
         uint256 price = 1e18;
         uint32 stepWidth = 10;
-        uint256 startBlock = 5;
+        // must use fixed start block because of yul interference with the forge system
+        uint256 startBlock = 100 + 5;
         uint64 decreasePerStep = 1e9;
 
-        vm.roll(0);
+        //vm.roll(0);
+        console.log("Current block: %s", block.number);
 
         PriceLinear oracle = PriceLinear(
             priceLinearCloneFactory.createPriceLinear(
@@ -171,21 +173,25 @@ contract PublicFundraisingTest is Test {
 
         vm.roll(1 + startBlock);
         assertEq(oracle.getPrice(price), price, "Price changed at 1");
+        console.log("Current block: %s", block.number);
 
         vm.roll(9 + startBlock);
         assertEq(oracle.getPrice(price), price, "Price changed at 9");
+        console.log("Current block: %s", block.number);
 
         vm.roll(startBlock + stepWidth);
         assertEq(oracle.getPrice(price), price - decreasePerStep, "Price should have decreased by 1 step");
         console.log("Price: %s", oracle.getPrice(price));
         console.log("Increase per step: %s", decreasePerStep);
+        console.log("Block number: ", block.number);
 
         vm.roll(startBlock + stepWidth + 5);
         assertEq(oracle.getPrice(price), price - decreasePerStep, "Price should have decreased by 1 step");
         console.log("Price: %s", oracle.getPrice(price));
         console.log("Increase per step: %s", decreasePerStep);
+        console.log("Block number: ", block.number);
 
-        vm.roll(startBlock + 2 * stepWidth);
+        vm.roll(startBlock + 2 * stepWidth + 1);
         assertEq(oracle.getPrice(price), price - 2 * decreasePerStep, "Price should have decreased by 2 steps");
     }
 }
