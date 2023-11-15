@@ -4,7 +4,7 @@ The following statements about the smart contracts should always be true
 
 ## Token.sol
 
-- Only addresses with minting allowances > 0 are able to mint tokens.
+- Only addresses with minting allowances > 0 or the MINTALLOWER_ROLE are able to mint tokens.
 - An address with minting allowance can only mint tokens if the remaining allowance after the mint will be larger or equal to zero.
 - An address can only receive tokens at least one of these statements is true:
   - The address fulfills the requirements as proven by the allowList.
@@ -29,7 +29,7 @@ The following statements about the smart contracts should always be true
 - The token supports permit() as defined in EIP-2612.
 - Only the owner of feeSettings can suggest to change feeSettings to another address.
 - Only addresses with DEFAULT_ADMIN_ROLE can accept a new feeSettings contract.
-- Only addresses that implement the IFeeSettingsV1 interface can be suggested or accepted as feeSettings.
+- Only addresses that implement the IFeeSettingsV2 interface can be suggested or accepted as feeSettings.
 
 ## AllowList.sol
 
@@ -40,17 +40,13 @@ The following statements about the smart contracts should always be true
 
 ## FeeSettings.sol
 
-- TokenFeeDenominator must always be greater equal 20.
-- PublicFundraisingFeeDenominator must always be greater equal 20.
-- PrivateOfferFeeDenominator must always be greater equal 20.
+- TokenFees are always less or equal to 5%.
+- PublicFundraisingFees are always less or equal to 10%.
+- PrivateOfferFees are awlays less or equal to 5%.
 - The feeCollector can never be 0.
-- Only owner can change feeCollector, tokenFeeDenominator, publicFundraisingFeeDenominator and privateOfferFeeDenominator.
-- Changes to tokenFeeDenominator, publicFundraisingFeeDenominator and or privateOfferFeeDenominator take at least 12 weeks, if at least one of the denominators decreases (e.g. if a fee increases).
-- Setting tokenFeeDenominator, PublicFundraisingFeeDenominator and PrivateOfferFeeDenominator to UINT256_MAX is possible without delay.
-- Increasing tokenFeeDenominator, PublicFundraisingFeeDenominator or PrivateOfferFeeDenominator is possible without delay.
-- Fees for amounts less than UINT256_MAX will be 0 when the denominator is set to UINT256_MAX.
-- The Fee for an amount of UINT256_MAX will always at least 1 bit. (This is accepted behavior to reduce gas.)
-- Charging a fee higher than 5% is not possible.
+- Only owner can change feeCollector and all fee numerators and denominators.
+- Increasing fees is only possible with a delay of at least 12 weeks.
+- Decreasing fees is possible without delay.
 
 ## PrivateOffer.sol
 
@@ -98,10 +94,36 @@ The following statements about the smart contracts should always be true
 - tokenPrice can never be negative.
 - maxAmountOfTokenToBeSold can never be 0.
 - All settings can be updated when the contract is paused.
-- Pausing the contracts starts the cool down period of 24h.
 - Each setting update (re-)starts the cool down period of 24h hours.
 - The contract can only be unpaused after the cool down period has passed.
 - Only the contract owner can call pause, unpause, or the functions that update settings.
+- The contract will never sell tokens after the autoPauseDate has passed, unless autoPauseDate is 0.
 - In sum, the contract will never mint more tokens to the buyers than maxAmountOfTokenToBeSold at the time of minting. This does not take into account the tokens minted to feeCollector in Token.sol.
 - All functions can be called directly or as meta transaction using ERC2771.
 - Calling a function directly or through ERC2771 yield equivalent results given equivalent inputs.
+
+## Vesting.sol
+
+- Only the owner can make an address a manager.
+- Only the owner can remove a manager.
+- Only a manager can create a vesting plan directly or commit the hash of a vesting plan.
+- Anyone can reveal the vesting plan for a hash that has been committed, if they know the corresponding parameters.
+- Revealing a vesting plan for a hash that has not been committed reverts.
+- Revealing a vesting plan for a hash that has been committed with different parameters reverts.
+- Revealing a vesting plan for a hash that has been committed with the same parameters succeeds.
+- Revealing a vesting plan for a hash that has been committed removes the commitment.
+- Once tokens from a vesting plan are releasable, they can only be released by the beneficiary.
+- Once tokens from a vesting plan are releasable, they can only be released to the beneficiary.
+- The beneficiary can only release tokens from a vesting plan if the vesting plan has been revealed.
+- The beneficiary can change the beneficiary address of a vesting plan.
+- The owner can change the beneficiary address of a vesting plan if the vesting plan has completed at least one year ago.
+- The beneficiary can release exactly `allocation` tokens after the vesting duration has passed.
+- No tokens are releasable from a plan before the cliff has passed.
+- Under no circumstance are more tokens released from a single vesting plan than `allocation`.
+- There is no way to prevent a beneficiary from releasing tokens from a vesting plan.
+- There is no way to reduce the releasable amount of tokens from a vesting plan, except by releasing them.
+- A vesting plan can only be stopped now or in the future. It can not be stopped in the past.
+- Only a manager can stop a vesting plan.
+- Stopping a vesting plan and revoking a commitment to a vesting plan are equivalent with respect to the token amount the beneficiary can release and the time the beneficiary can release them.
+- A beneficiary can never mint or withdraw more tokens than the allocation of the vesting plan.
+- Third parties can not mint or withdraw tokens from a vesting plan.

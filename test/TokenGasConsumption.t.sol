@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/TokenCloneFactory.sol";
+import "../contracts/TokenProxyFactory.sol";
 import "../contracts/FeeSettings.sol";
 
 contract tokenTest is Test {
@@ -45,10 +45,10 @@ contract tokenTest is Test {
         vm.stopPrank();
 
         Token implementation = new Token(trustedForwarder);
-        TokenCloneFactory tokenCloneFactory = new TokenCloneFactory(address(implementation));
+        TokenProxyFactory tokenCloneFactory = new TokenProxyFactory(address(implementation));
 
         token = Token(
-            tokenCloneFactory.createTokenClone(
+            tokenCloneFactory.createTokenProxy(
                 0,
                 trustedForwarder,
                 feeSettings,

@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/TokenCloneFactory.sol";
+import "../contracts/TokenProxyFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -12,7 +12,7 @@ contract tokenTest is Test {
 
     Token token;
     Token implementation = new Token(trustedForwarder);
-    TokenCloneFactory tokenCloneFactory = new TokenCloneFactory(address(implementation));
+    TokenProxyFactory tokenCloneFactory = new TokenProxyFactory(address(implementation));
 
     AllowList allowList;
     FeeSettings feeSettings;
@@ -34,7 +34,7 @@ contract tokenTest is Test {
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
         feeSettings = new FeeSettings(fees, admin, admin, admin);
         token = Token(
-            tokenCloneFactory.createTokenClone(
+            tokenCloneFactory.createTokenProxy(
                 0,
                 trustedForwarder,
                 feeSettings,
@@ -96,14 +96,14 @@ contract tokenTest is Test {
     function testAllowList0() public {
         AllowList _noList = AllowList(address(0));
         vm.expectRevert("AllowList must not be zero address");
-        tokenCloneFactory.createTokenClone(0, trustedForwarder, feeSettings, admin, _noList, 0x0, "testToken", "TEST");
+        tokenCloneFactory.createTokenProxy(0, trustedForwarder, feeSettings, admin, _noList, 0x0, "testToken", "TEST");
     }
 
     function testFeeSettings0() public {
         FeeSettings _noFeeSettings = FeeSettings(address(0));
         console.log("fee settings address:", address(_noFeeSettings));
         vm.expectRevert();
-        tokenCloneFactory.createTokenClone(
+        tokenCloneFactory.createTokenProxy(
             0,
             trustedForwarder,
             _noFeeSettings,
@@ -117,7 +117,7 @@ contract tokenTest is Test {
 
     function testFeeSettingsNoERC165() public {
         vm.expectRevert();
-        tokenCloneFactory.createTokenClone(
+        tokenCloneFactory.createTokenProxy(
             0,
             trustedForwarder,
             FeeSettings(address(allowList)),
@@ -1055,7 +1055,7 @@ contract tokenTest is Test {
 
     function testDeployerDoesNotGetRole() public {
         Token localToken = Token(
-            tokenCloneFactory.createTokenClone(
+            tokenCloneFactory.createTokenProxy(
                 0,
                 trustedForwarder,
                 feeSettings,
