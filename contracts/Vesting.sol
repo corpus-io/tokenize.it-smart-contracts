@@ -140,7 +140,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
 
     /**
      * Managers can commit to a vesting plan without revealing it's details.
-     * The parameters are hashed and this hash and stored in the commitments mapping.
+     * The parameters are hashed and this hash is stored in the commitments mapping.
      * Anyone can then reveal the vesting plan by providing the parameters and the salt.
      * @param hash commitment hash
      */
