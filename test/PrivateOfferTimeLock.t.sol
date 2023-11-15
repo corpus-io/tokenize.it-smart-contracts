@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/TokenCloneFactory.sol";
+import "../contracts/TokenProxyFactory.sol";
 import "../contracts/PrivateOffer.sol";
 import "../contracts/PrivateOfferFactory.sol";
 import "../contracts/VestingWalletFactory.sol";
@@ -45,9 +45,9 @@ contract PrivateOfferTimeLockTest is Test {
         feeSettings = new FeeSettings(fees, admin, admin, admin);
 
         Token implementation = new Token(trustedForwarder);
-        TokenCloneFactory tokenCloneFactory = new TokenCloneFactory(address(implementation));
+        TokenProxyFactory tokenCloneFactory = new TokenProxyFactory(address(implementation));
         token = Token(
-            tokenCloneFactory.createTokenClone(
+            tokenCloneFactory.createTokenProxy(
                 0,
                 trustedForwarder,
                 feeSettings,

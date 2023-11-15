@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/TokenCloneFactory.sol";
+import "../contracts/TokenProxyFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/ERC2771Helper.sol";
@@ -81,11 +81,11 @@ contract TokenERC2771Test is Test {
     function setUpTokenWithForwarder(Forwarder forwarder) public {
         // this is part of the platform setup, but we need it here to use the correct forwarder
         Token implementation = new Token(address(forwarder));
-        TokenCloneFactory tokenCloneFactory = new TokenCloneFactory(address(implementation));
+        TokenProxyFactory tokenCloneFactory = new TokenProxyFactory(address(implementation));
 
         // deploy company token
         token = Token(
-            tokenCloneFactory.createTokenClone(
+            tokenCloneFactory.createTokenProxy(
                 0,
                 address(forwarder),
                 feeSettings,
