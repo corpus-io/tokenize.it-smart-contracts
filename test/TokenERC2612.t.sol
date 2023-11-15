@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/TokenCloneFactory.sol";
+import "../contracts/TokenProxyFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific version to avoid import error: yarn add @opengsn/contracts@2.2.5
@@ -15,7 +15,7 @@ contract TokenERC2612Test is Test {
 
     Token token;
     Token implementation;
-    TokenCloneFactory tokenCloneFactory;
+    TokenProxyFactory tokenCloneFactory;
     FakePaymentToken paymentToken;
     //Forwarder trustedForwarder;
 
@@ -81,11 +81,11 @@ contract TokenERC2612Test is Test {
         Forwarder forwarder = new Forwarder();
 
         implementation = new Token(address(forwarder));
-        tokenCloneFactory = new TokenCloneFactory(address(implementation));
+        tokenCloneFactory = new TokenProxyFactory(address(implementation));
 
         // deploy company token
         token = Token(
-            tokenCloneFactory.createTokenClone(
+            tokenCloneFactory.createTokenProxy(
                 0,
                 address(forwarder),
                 feeSettings,

@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/TokenCloneFactory.sol";
+import "../contracts/TokenProxyFactory.sol";
 import "../contracts/PublicFundraisingCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "../contracts/PrivateOfferFactory.sol";
@@ -23,7 +23,7 @@ contract CompanySetUpTest is Test {
     AllowList list;
     FeeSettings feeSettings;
     PrivateOfferFactory privateOfferFactory;
-    TokenCloneFactory tokenFactory;
+    TokenProxyFactory tokenFactory;
     Token token;
     FakePaymentToken paymentToken;
     ERC2771Helper ERC2771helper;
@@ -137,14 +137,14 @@ contract CompanySetUpTest is Test {
     function deployToken(Forwarder forwarder) public {
         // this should be part of the platform setup, but since the logic contract needs to use the same forwarder as the final token contract, we do it here.
         Token implementation = new Token(address(forwarder));
-        tokenFactory = new TokenCloneFactory(address(implementation));
+        tokenFactory = new TokenProxyFactory(address(implementation));
 
         // launch the company token. The platform deploys the contract. There is no need to transfer ownership, because the token is never controlled by the address that deployed it.
         // Instead, it is immediately controlled by the address provided in the constructor, which is the companyAdmin in this case.
 
         vm.startPrank(platformHotWallet);
         token = Token(
-            tokenFactory.createTokenClone(
+            tokenFactory.createTokenProxy(
                 0,
                 address(forwarder),
                 feeSettings,

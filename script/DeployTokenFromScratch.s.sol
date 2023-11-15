@@ -8,7 +8,7 @@ import "../contracts/FeeSettings.sol";
 import "../contracts/AllowList.sol";
 import "../contracts/PrivateOfferFactory.sol";
 import "../contracts/VestingWalletFactory.sol";
-import "../contracts/TokenCloneFactory.sol";
+import "../contracts/TokenProxyFactory.sol";
 
 contract DeployPlatform is Script {
     function setUp() public {}
@@ -57,14 +57,14 @@ contract DeployPlatform is Script {
         VestingWalletFactory vestingWalletFactory = new VestingWalletFactory();
         console.log("VestingWalletFactory deployed at: ", address(vestingWalletFactory));
 
-        console.log("Deploying TokenCloneFactory contract...");
+        console.log("Deploying TokenProxyFactory contract...");
         Token tokenLogicContract = new Token(address(1)); // use bullshit forwarder
-        TokenCloneFactory tokenCloneFactory = new TokenCloneFactory(address(tokenLogicContract));
-        console.log("TokenCloneFactory deployed at: ", address(tokenCloneFactory));
+        TokenProxyFactory tokenProxyFactory = new TokenProxyFactory(address(tokenLogicContract));
+        console.log("TokenProxyFactory deployed at: ", address(tokenProxyFactory));
 
         console.log("Deploying Token contract...");
         Token token = Token(
-            tokenCloneFactory.createTokenClone(
+            tokenProxyFactory.createTokenProxy(
                 0,
                 address(1), // use bullshit forwarder
                 feeSettings,

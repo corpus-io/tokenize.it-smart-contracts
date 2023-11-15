@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/TokenCloneFactory.sol";
+import "../contracts/TokenProxyFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/ERC2771Helper.sol";
@@ -17,7 +17,7 @@ contract TokenERC2771Test is Test {
 
     AllowList allowList;
     FeeSettings feeSettings;
-    TokenCloneFactory factory;
+    TokenProxyFactory factory;
     Token token;
     FakePaymentToken paymentToken;
     //Forwarder trustedForwarder;
@@ -82,7 +82,7 @@ contract TokenERC2771Test is Test {
         feeSettings = new FeeSettings(fees, feeCollector, feeCollector, feeCollector);
 
         Token implementation = new Token(address(forwarder));
-        factory = new TokenCloneFactory(address(implementation));
+        factory = new TokenProxyFactory(address(implementation));
 
         // deploy helper functions (only for testing with foundry)
         ERC2771helper = new ERC2771Helper();
@@ -97,7 +97,7 @@ contract TokenERC2771Test is Test {
 
         // deploy company token
         token = Token(
-            factory.createTokenClone(
+            factory.createTokenProxy(
                 0,
                 address(forwarder),
                 feeSettings,
