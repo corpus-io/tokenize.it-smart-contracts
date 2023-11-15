@@ -159,7 +159,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
      */
     function revoke(bytes32 hash, uint64 end) external onlyManager {
         require(commitments[hash] != 0, "invalid-hash");
-        // already vested tokens can not be taken away (except of buring in the token contract itself)
+        // already vested tokens can not be taken away (except of burning in the token contract itself)
         end = uint64(block.timestamp) > end ? uint64(block.timestamp) : end;
         commitments[hash] = end;
         emit Revoke(hash, end);
@@ -269,7 +269,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     }
 
     function stopVesting(uint64 id, uint64 endTime) public onlyManager {
-        // already vested tokens can not be taken away (except of buring in the token contract itself)
+        // already vested tokens can not be taken away (except of burning in the token contract itself)
         endTime = endTime < uint64(block.timestamp) ? uint64(block.timestamp) : endTime;
         require(endTime < vestings[id].start + vestings[id].duration, "endTime must be before vesting end");
 
