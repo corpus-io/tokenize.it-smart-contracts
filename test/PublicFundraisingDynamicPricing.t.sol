@@ -11,21 +11,33 @@ import "./resources/MaliciousPaymentToken.sol";
 
 /// fixture that always returns max price
 contract MaxPriceOracle is IPriceDynamic {
-    constructor() {}
+    uint256 nonsensePrice; // this only exists to silence compiler warnings
+
+    constructor() {
+        nonsensePrice = 7;
+    }
 
     // solhint-disable-next-line
     function getPrice(uint256 basePrice) external view returns (uint256) {
-        return type(uint256).max;
+        // this always returns 0
+        basePrice = nonsensePrice > basePrice ? nonsensePrice : basePrice;
+        return basePrice < type(uint256).max ? type(uint256).max : basePrice;
     }
 }
 
 /// fixture that always returns max price
 contract MinPriceOracle is IPriceDynamic {
-    constructor() {}
+    uint256 nonsensePrice; // this only exists to silence compiler warnings
+
+    constructor() {
+        nonsensePrice = 7;
+    }
 
     // solhint-disable-next-line
     function getPrice(uint256 basePrice) external view returns (uint256) {
-        return type(uint256).min;
+        // this always returns type(uint256).max
+        basePrice = nonsensePrice > basePrice ? nonsensePrice : basePrice;
+        return basePrice > 0 ? 0 : basePrice;
     }
 }
 
