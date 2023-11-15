@@ -13,13 +13,10 @@ contract VestingDemoTest is Test {
 
     TokenProxyFactory tokenFactory;
 
-    address owner = address(7);
-
-    ERC20MintableByAnyone token = new ERC20MintableByAnyone("test token", "TST");
-
     address trustedForwarder = address(1);
     address platformAdmin = address(2);
     address employee = address(3);
+    address owner = address(7);
 
     function setUp() public {
         implementation = new Vesting(trustedForwarder);
