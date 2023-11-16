@@ -246,7 +246,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         bool _isMintable
     ) internal returns (uint64 id) {
         require(_allocation > 0, "Allocation must be greater than zero");
-        require((_beneficiary != address(0), "Beneficiary must not be zero address");
+        require(_beneficiary != address(0), "Beneficiary must not be zero address");
         require(
             _start >= block.timestamp - TIME_HORIZON && _start <= block.timestamp + TIME_HORIZON,
             "Start must be reasonable"
