@@ -26,11 +26,14 @@ struct Linear {
 /**
  * @title Linear price function, with option for stepping, based on time or block count
  * @author malteish
- * @notice This contract implements a linear
+ * @notice This contract implements a linear function based on time or block count.
  * @dev The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support
  */
 contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPriceDynamic {
+    uint32 public constant COOL_DOWN_DURATION = 1 hours;
+
     Linear public parameters;
+    uint256 public coolDownStart;
 
     /**
      * This constructor creates a logic contract that is used to clone new fundraising contracts.
@@ -86,6 +89,7 @@ contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPri
             _isBlockBased,
             _isRising
         );
+        coolDownStart = block.timestamp;
     }
 
     function _updateParameters(
@@ -115,6 +119,7 @@ contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPri
     }
 
     function getPrice(uint256 basePrice) public view returns (uint256) {
+        require(coolDownStart + COOL_DOWN_DURATION < block.timestamp, "PriceLinear: cool down period not over yet");
         Linear memory _parameters = parameters;
         uint256 current = _parameters.isBlockBased ? block.number : block.timestamp;
 
