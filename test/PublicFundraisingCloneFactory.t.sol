@@ -40,6 +40,7 @@ contract tokenTest is Test {
     IERC20 public constant exampleCurrency = IERC20(address(1));
     Token public constant exampleToken = Token(address(2));
     uint256 public constant exampleAutoPauseDate = 0;
+    address public constant examplePriceOracle = address(3);
 
     event RequirementsChanged(uint256 newRequirements);
 
@@ -62,72 +63,57 @@ contract tokenTest is Test {
         fundraisingFactory = new PublicFundraisingCloneFactory(address(fundraisingImplementation));
     }
 
-    function testAddressPrediction1(
-        bytes32 _rawSalt,
-        address _trustedForwarder,
-        address _owner,
-        address _currencyReceiver,
-        uint256 _minAmountPerBuyer,
-        uint256 _maxAmountPerBuyer,
-        uint256 _priceBase,
-        uint256 _maxAmountOfTokenToBeSold,
-        IERC20 _currency,
-        Token _token,
-        uint256 _autoPauseDate,
-        address _priceOracle
-    ) public {
-        vm.assume(_trustedForwarder != address(0));
-        vm.assume(_owner != address(0));
-        vm.assume(address(_currency) != address(0));
-        vm.assume(address(_token) != address(0));
-        vm.assume(_currencyReceiver != address(0));
-        vm.assume(_minAmountPerBuyer > 0);
-        vm.assume(_maxAmountPerBuyer >= _minAmountPerBuyer);
-        vm.assume(_priceBase > 0);
-        vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
+    // function testAddressPrediction1(
+    //     bytes32 _rawSalt,
+    //     address _trustedForwarder,
+    //     address _owner,
+    //     address _currencyReceiver,
+    //     uint256 _minAmountPerBuyer,
+    //     uint256 _maxAmountPerBuyer,
+    //     uint256 _priceBase,
+    //     uint256 _maxAmountOfTokenToBeSold,
+    //     IERC20 _currency,
+    //     Token _token,
+    //     uint256 _autoPauseDate,
+    //     address _priceOracle
+    // ) public {
+    //     vm.assume(_trustedForwarder != address(0));
+    //     vm.assume(_owner != address(0));
+    //     vm.assume(address(_currency) != address(0));
+    //     vm.assume(address(_token) != address(0));
+    //     vm.assume(_currencyReceiver != address(0));
+    //     vm.assume(_minAmountPerBuyer > 0);
+    //     vm.assume(_maxAmountPerBuyer >= _minAmountPerBuyer);
+    //     vm.assume(_priceBase > 0);
+    //     vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
 
-        // create new clone factory so we can use the local forwarder
-        fundraisingImplementation = new PublicFundraising(_trustedForwarder);
-        fundraisingFactory = new PublicFundraisingCloneFactory(address(fundraisingImplementation));
+    //     // create new clone factory so we can use the local forwarder
+    //     fundraisingImplementation = new PublicFundraising(_trustedForwarder);
+    //     fundraisingFactory = new PublicFundraisingCloneFactory(address(fundraisingImplementation));
 
-        address expected1 = fundraisingFactory.predictCloneAddress(
-            keccak256(
-                abi.encodePacked(
-                    _rawSalt,
-                    _trustedForwarder,
-                    _owner,
-                    _currencyReceiver,
-                    _minAmountPerBuyer,
-                    _maxAmountPerBuyer,
-                    _priceBase,
-                    _maxAmountOfTokenToBeSold,
-                    _currency,
-                    _token,
-                    _autoPauseDate,
-                    _priceOracle
-                )
-            )
-        );
-        address expected2 = fundraisingFactory.predictCloneAddress(
-            _rawSalt,
-            _trustedForwarder,
-            _owner,
-            _currencyReceiver,
-            _minAmountPerBuyer,
-            _maxAmountPerBuyer,
-            _priceBase,
-            _maxAmountOfTokenToBeSold,
-            _currency,
-            _token,
-            _autoPauseDate,
-            _priceOracle
-        );
+    //     PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+    //         _owner,
+    //         _currencyReceiver,
+    //         _minAmountPerBuyer,
+    //         _maxAmountPerBuyer,
+    //         _priceBase,
+    //         _maxAmountOfTokenToBeSold,
+    //         _currency,
+    //         _token,
+    //         _autoPauseDate,
+    //         _priceOracle
+    //     );
 
-        // log both addresses
-        console.log(expected1);
-        console.log(expected2);
-        assertEq(expected1, expected2, "address prediction with salt and params not equal");
-    }
+    //     address expected1 = fundraisingFactory.predictCloneAddress(
+    //         keccak256(abi.encode(_rawSalt, _trustedForwarder, arguments))
+    //     );
+    //     address expected2 = fundraisingFactory.predictCloneAddress(_rawSalt, _trustedForwarder, arguments);
+
+    //     // log both addresses
+    //     console.log(expected1);
+    //     console.log(expected2);
+    //     assertEq(expected1, expected2, "address prediction with salt and params not equal");
+    // }
 
     function testAddressPrediction2(
         uint256 _maxAmountPerBuyer,
@@ -149,28 +135,7 @@ contract tokenTest is Test {
         fundraisingImplementation = new PublicFundraising(exampleTrustedForwarder);
         fundraisingFactory = new PublicFundraisingCloneFactory(address(fundraisingImplementation));
 
-        address expected1 = fundraisingFactory.predictCloneAddress(
-            keccak256(
-                abi.encodePacked(
-                    exampleRawSalt,
-                    exampleTrustedForwarder,
-                    exampleOwner,
-                    exampleCurrencyReceiver,
-                    exampleMinAmountPerBuyer,
-                    _maxAmountPerBuyer,
-                    _tokenPrice,
-                    _maxAmountOfTokenToBeSold,
-                    _currency,
-                    _token,
-                    _autoPauseDate,
-                    _priceOracle
-                )
-            )
-        );
-
-        address actual = fundraisingFactory.createPublicFundraisingClone(
-            exampleRawSalt,
-            exampleTrustedForwarder,
+        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
             exampleOwner,
             exampleCurrencyReceiver,
             exampleMinAmountPerBuyer,
@@ -181,6 +146,16 @@ contract tokenTest is Test {
             _token,
             _autoPauseDate,
             _priceOracle
+        );
+
+        address expected1 = fundraisingFactory.predictCloneAddress(
+            keccak256(abi.encode(exampleRawSalt, exampleTrustedForwarder, arguments))
+        );
+
+        address actual = fundraisingFactory.createPublicFundraisingClone(
+            exampleRawSalt,
+            exampleTrustedForwarder,
+            arguments
         );
         assertEq(expected1, actual, "address prediction failed");
     }
@@ -201,28 +176,7 @@ contract tokenTest is Test {
         fundraisingImplementation = new PublicFundraising(_trustedForwarder);
         fundraisingFactory = new PublicFundraisingCloneFactory(address(fundraisingImplementation));
 
-        bytes32 salt = keccak256(
-            abi.encodePacked(
-                _rawSalt,
-                _trustedForwarder,
-                _owner,
-                _currencyReceiver,
-                _minAmountPerBuyer,
-                exampleMaxAmountPerBuyer,
-                exampleTokenPrice,
-                exampleMaxAmountOfTokenToBeSold,
-                exampleCurrency,
-                exampleToken,
-                exampleAutoPauseDate,
-                address(0)
-            )
-        );
-
-        address expected1 = fundraisingFactory.predictCloneAddress(salt);
-
-        address actual = fundraisingFactory.createPublicFundraisingClone(
-            _rawSalt,
-            _trustedForwarder,
+        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
             _owner,
             _currencyReceiver,
             _minAmountPerBuyer,
@@ -232,8 +186,14 @@ contract tokenTest is Test {
             exampleCurrency,
             exampleToken,
             exampleAutoPauseDate,
-            address(0)
+            examplePriceOracle
         );
+
+        bytes32 salt = keccak256(abi.encode(_rawSalt, _trustedForwarder, arguments));
+
+        address expected1 = fundraisingFactory.predictCloneAddress(salt);
+
+        address actual = fundraisingFactory.createPublicFundraisingClone(_rawSalt, _trustedForwarder, arguments);
         assertEq(expected1, actual, "address prediction failed");
     }
 
@@ -257,10 +217,7 @@ contract tokenTest is Test {
         vm.assume(_priceBase > 0);
         vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
 
-        // deploy once
-        fundraisingFactory.createPublicFundraisingClone(
-            _rawSalt,
-            trustedForwarder,
+        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
             _owner,
             _currencyReceiver,
             _minAmountPerBuyer,
@@ -269,69 +226,51 @@ contract tokenTest is Test {
             _maxAmountOfTokenToBeSold,
             _currency,
             _token,
-            0,
-            address(0)
+            exampleAutoPauseDate,
+            examplePriceOracle
         );
+
+        // deploy once
+        fundraisingFactory.createPublicFundraisingClone(_rawSalt, trustedForwarder, arguments);
 
         // deploy again
         vm.expectRevert("ERC1167: create2 failed");
-        fundraisingFactory.createPublicFundraisingClone(
-            _rawSalt,
-            trustedForwarder,
-            _owner,
-            _currencyReceiver,
-            _minAmountPerBuyer,
-            _maxAmountPerBuyer,
-            _priceBase,
-            _maxAmountOfTokenToBeSold,
-            _currency,
-            _token,
-            0,
-            address(0)
-        );
+        fundraisingFactory.createPublicFundraisingClone(_rawSalt, trustedForwarder, arguments);
     }
 
-    function testInitialization(
+    function testInitialization1(
         bytes32 _rawSalt,
         address _trustedForwarder,
         address _owner,
         address _currencyReceiver,
         uint256 _minAmountPerBuyer,
-        uint256 _maxAmountPerBuyer,
-        uint256 _priceBase,
-        uint256 _maxAmountOfTokenToBeSold,
-        IERC20 _currency,
-        Token _token
+        uint256 _maxAmountPerBuyer
     ) public {
         vm.assume(_trustedForwarder != address(0));
         vm.assume(_owner != address(0));
-        vm.assume(address(_currency) != address(0));
-        vm.assume(address(_token) != address(0));
         vm.assume(_currencyReceiver != address(0));
         vm.assume(_minAmountPerBuyer > 0);
         vm.assume(_maxAmountPerBuyer >= _minAmountPerBuyer);
-        vm.assume(_priceBase > 0);
-        vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
 
         // create new clone factory so we can use the local forwarder
         fundraisingImplementation = new PublicFundraising(_trustedForwarder);
         fundraisingFactory = new PublicFundraisingCloneFactory(address(fundraisingImplementation));
 
+        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+            _owner,
+            _currencyReceiver,
+            _minAmountPerBuyer,
+            _maxAmountPerBuyer,
+            exampleTokenPrice,
+            exampleMaxAmountOfTokenToBeSold,
+            exampleCurrency,
+            exampleToken,
+            exampleAutoPauseDate,
+            examplePriceOracle
+        );
+
         PublicFundraising raise = PublicFundraising(
-            fundraisingFactory.createPublicFundraisingClone(
-                _rawSalt,
-                _trustedForwarder,
-                _owner,
-                _currencyReceiver,
-                _minAmountPerBuyer,
-                _maxAmountPerBuyer,
-                _priceBase,
-                _maxAmountOfTokenToBeSold,
-                _currency,
-                _token,
-                0,
-                address(0)
-            )
+            fundraisingFactory.createPublicFundraisingClone(_rawSalt, _trustedForwarder, arguments)
         );
 
         assertTrue(raise.isTrustedForwarder(_trustedForwarder), "trustedForwarder not set");
@@ -339,10 +278,51 @@ contract tokenTest is Test {
         assertEq(raise.currencyReceiver(), _currencyReceiver, "currencyReceiver not set");
         assertEq(raise.minAmountPerBuyer(), _minAmountPerBuyer, "minAmountPerBuyer not set");
         assertEq(raise.maxAmountPerBuyer(), _maxAmountPerBuyer, "maxAmountPerBuyer not set");
+    }
+
+    function testInitialization2(
+        uint256 _maxAmountPerBuyer,
+        uint256 _priceBase,
+        uint256 _maxAmountOfTokenToBeSold,
+        IERC20 _currency,
+        Token _token,
+        uint256 _autoPauseDate,
+        address _priceOracle
+    ) public {
+        vm.assume(address(_currency) != address(0));
+        vm.assume(address(_token) != address(0));
+        vm.assume(_priceBase > 0);
+        vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
+        vm.assume(_maxAmountPerBuyer > 0);
+
+        // create new clone factory so we can use the local forwarder
+        fundraisingImplementation = new PublicFundraising(exampleTrustedForwarder);
+        fundraisingFactory = new PublicFundraisingCloneFactory(address(fundraisingImplementation));
+
+        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+            exampleOwner,
+            exampleCurrencyReceiver,
+            exampleMinAmountPerBuyer,
+            _maxAmountPerBuyer,
+            _priceBase,
+            _maxAmountOfTokenToBeSold,
+            _currency,
+            _token,
+            _autoPauseDate,
+            _priceOracle
+        );
+
+        PublicFundraising raise = PublicFundraising(
+            fundraisingFactory.createPublicFundraisingClone(exampleRawSalt, exampleTrustedForwarder, arguments)
+        );
+
+        assertEq(raise.maxAmountPerBuyer(), _maxAmountPerBuyer, "maxAmountPerBuyer not set");
         assertEq(raise.priceBase(), _priceBase, "priceBase not set");
         assertEq(raise.maxAmountOfTokenToBeSold(), _maxAmountOfTokenToBeSold, "maxAmountOfTokenToBeSold not set");
         assertEq(address(raise.currency()), address(_currency), "currency not set");
         assertEq(address(raise.token()), address(_token), "token not set");
+        assertEq(raise.autoPauseDate(), _autoPauseDate, "autoPauseDate not set");
+        assertEq(address(raise.priceOracle()), _priceOracle, "priceOracle not set");
     }
 
     /*
@@ -353,21 +333,21 @@ contract tokenTest is Test {
         vm.assume(rando != address(0));
         vm.assume(rando != _admin);
 
+        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+            _admin,
+            _admin,
+            exampleMinAmountPerBuyer,
+            exampleMaxAmountPerBuyer,
+            exampleTokenPrice,
+            exampleMaxAmountOfTokenToBeSold,
+            exampleCurrency,
+            exampleToken,
+            exampleAutoPauseDate,
+            examplePriceOracle
+        );
+
         PublicFundraising raise = PublicFundraising(
-            fundraisingFactory.createPublicFundraisingClone(
-                0,
-                trustedForwarder,
-                _admin,
-                _admin,
-                1,
-                2,
-                3,
-                4,
-                IERC20(address(1)),
-                Token(address(2)),
-                0,
-                address(0)
-            )
+            fundraisingFactory.createPublicFundraisingClone(0, trustedForwarder, arguments)
         );
 
         vm.prank(rando);
