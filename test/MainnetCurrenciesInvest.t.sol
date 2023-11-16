@@ -102,21 +102,21 @@ contract MainnetCurrencies is Test {
         uint256 _currencyAmount = _currencyCost * 2;
 
         // set up fundraise with _currency
+
+        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+            owner,
+            payable(receiver),
+            minAmountPerBuyer,
+            maxAmountPerBuyer,
+            _price,
+            maxAmountOfTokenToBeSold,
+            _currency,
+            token,
+            0,
+            address(0)
+        );
         PublicFundraising _raise = PublicFundraising(
-            fundraisingFactory.createPublicFundraisingClone(
-                0,
-                trustedForwarder,
-                owner,
-                payable(receiver),
-                minAmountPerBuyer,
-                maxAmountPerBuyer,
-                _price,
-                maxAmountOfTokenToBeSold,
-                _currency,
-                token,
-                0,
-                address(0)
-            )
+            fundraisingFactory.createPublicFundraisingClone(0, trustedForwarder, arguments)
         );
 
         // allow raise contract to mint

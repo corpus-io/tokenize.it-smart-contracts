@@ -114,21 +114,21 @@ contract TokenERC2771Test is Test {
         PublicFundraisingCloneFactory fundraisingFactory = new PublicFundraisingCloneFactory(
             address(new PublicFundraising(address(forwarder)))
         );
+
+        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments({
+            owner: companyAdmin,
+            currencyReceiver: receiver,
+            minAmountPerBuyer: 1000 * 10 ** 18,
+            maxAmountPerBuyer: 2000 * 10 ** 18,
+            tokenPrice: 688,
+            maxAmountOfTokenToBeSold: 10 * 1000 * 10 ** 18,
+            currency: paymentToken,
+            token: token,
+            autoPauseDate: 0,
+            priceOracle: address(0)
+        });
         PublicFundraising raise = PublicFundraising(
-            fundraisingFactory.createPublicFundraisingClone(
-                0,
-                address(forwarder),
-                companyAdmin,
-                receiver,
-                1000 * 10 ** 18,
-                2000 * 10 ** 18,
-                688,
-                10 * 1000 * 10 ** 18,
-                paymentToken,
-                token,
-                0,
-                address(0)
-            )
+            fundraisingFactory.createPublicFundraisingClone(0, address(forwarder), arguments)
         );
 
         // register domainSeparator with forwarder

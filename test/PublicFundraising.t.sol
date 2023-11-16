@@ -71,23 +71,19 @@ contract PublicFundraisingTest is Test {
 
         vm.prank(owner);
         factory = new PublicFundraisingCloneFactory(address(new PublicFundraising(trustedForwarder)));
-
-        raise = PublicFundraising(
-            factory.createPublicFundraisingClone(
-                0,
-                trustedForwarder,
-                owner,
-                payable(receiver),
-                minAmountPerBuyer,
-                maxAmountPerBuyer,
-                price,
-                maxAmountOfTokenToBeSold,
-                paymentToken,
-                token,
-                0,
-                address(0)
-            )
+        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+            owner,
+            payable(receiver),
+            minAmountPerBuyer,
+            maxAmountPerBuyer,
+            price,
+            maxAmountOfTokenToBeSold,
+            paymentToken,
+            token,
+            0,
+            address(0)
         );
+        raise = PublicFundraising(factory.createPublicFundraisingClone(0, trustedForwarder, arguments));
 
         // allow raise contract to mint
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
@@ -133,21 +129,20 @@ contract PublicFundraisingTest is Test {
     }
 
     function testConstructorHappyCase() public {
+        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+            address(this),
+            payable(receiver),
+            minAmountPerBuyer,
+            maxAmountPerBuyer,
+            price,
+            maxAmountOfTokenToBeSold,
+            paymentToken,
+            token,
+            autoPauseDate,
+            address(0)
+        );
         PublicFundraising _raise = PublicFundraising(
-            factory.createPublicFundraisingClone(
-                0,
-                trustedForwarder,
-                address(this),
-                payable(receiver),
-                minAmountPerBuyer,
-                maxAmountPerBuyer,
-                price,
-                maxAmountOfTokenToBeSold,
-                paymentToken,
-                token,
-                autoPauseDate,
-                address(0)
-            )
+            factory.createPublicFundraisingClone(0, trustedForwarder, arguments)
         );
         assertTrue(_raise.owner() == address(this));
         assertTrue(_raise.currencyReceiver() == receiver);
@@ -160,88 +155,45 @@ contract PublicFundraisingTest is Test {
         assertTrue(_raise.autoPauseDate() == autoPauseDate);
     }
 
-    function testConstructorWithAddress0() public {
+    function testConstructorWith0Arguments() public {
+        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+            address(this),
+            payable(receiver),
+            minAmountPerBuyer,
+            maxAmountPerBuyer,
+            price,
+            maxAmountOfTokenToBeSold,
+            paymentToken,
+            token,
+            0,
+            address(0)
+        );
         vm.expectRevert("PublicFundraisingCloneFactory: Unexpected trustedForwarder");
-        PublicFundraising(
-            factory.createPublicFundraisingClone(
-                0,
-                address(0),
-                address(this),
-                payable(receiver),
-                minAmountPerBuyer,
-                maxAmountPerBuyer,
-                price,
-                maxAmountOfTokenToBeSold,
-                paymentToken,
-                token,
-                0,
-                address(0)
-            )
-        );
+        PublicFundraising(factory.createPublicFundraisingClone(0, address(0), arguments));
 
+        // owner 0
+        PublicFundraisingInitializerArguments memory tempArgs = clonePublicFundraisingInitializerArguments(arguments);
+        tempArgs.owner = address(0);
         vm.expectRevert("owner can not be zero address");
-        factory.createPublicFundraisingClone(
-            0,
-            trustedForwarder,
-            address(0),
-            receiver,
-            minAmountPerBuyer,
-            maxAmountPerBuyer,
-            price,
-            maxAmountOfTokenToBeSold,
-            paymentToken,
-            token,
-            0,
-            address(0)
-        );
+        factory.createPublicFundraisingClone(0, trustedForwarder, tempArgs);
 
+        // receiver 0
+        tempArgs = clonePublicFundraisingInitializerArguments(arguments);
+        tempArgs.currencyReceiver = address(0);
         vm.expectRevert("currencyReceiver can not be zero address");
-        factory.createPublicFundraisingClone(
-            0,
-            trustedForwarder,
-            address(this),
-            address(0),
-            minAmountPerBuyer,
-            maxAmountPerBuyer,
-            price,
-            maxAmountOfTokenToBeSold,
-            paymentToken,
-            token,
-            0,
-            address(0)
-        );
+        factory.createPublicFundraisingClone(0, trustedForwarder, tempArgs);
 
+        // currency 0
+        tempArgs = clonePublicFundraisingInitializerArguments(arguments);
+        tempArgs.currency = IERC20(address(0));
         vm.expectRevert("currency can not be zero address");
-        factory.createPublicFundraisingClone(
-            0,
-            trustedForwarder,
-            address(this),
-            payable(receiver),
-            minAmountPerBuyer,
-            maxAmountPerBuyer,
-            price,
-            maxAmountOfTokenToBeSold,
-            IERC20(address(0)),
-            token,
-            0,
-            address(0)
-        );
+        factory.createPublicFundraisingClone(0, trustedForwarder, tempArgs);
 
+        // token 0
+        tempArgs = clonePublicFundraisingInitializerArguments(arguments);
+        tempArgs.token = Token(address(0));
         vm.expectRevert("token can not be zero address");
-        factory.createPublicFundraisingClone(
-            0,
-            trustedForwarder,
-            address(this),
-            payable(receiver),
-            minAmountPerBuyer,
-            maxAmountPerBuyer,
-            price,
-            maxAmountOfTokenToBeSold,
-            paymentToken,
-            Token(address(0)),
-            0,
-            address(0)
-        );
+        factory.createPublicFundraisingClone(0, trustedForwarder, tempArgs);
     }
 
     /*
@@ -278,21 +230,21 @@ contract PublicFundraisingTest is Test {
         maliciousPaymentToken = new MaliciousPaymentToken(_paymentTokenAmount);
         vm.prank(owner);
 
+        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+            address(this),
+            payable(receiver),
+            1,
+            _maxMintAmount / 100,
+            _price,
+            _maxMintAmount,
+            maliciousPaymentToken,
+            _token,
+            0,
+            address(0)
+        );
+
         PublicFundraising _raise = PublicFundraising(
-            factory.createPublicFundraisingClone(
-                0,
-                trustedForwarder,
-                address(this),
-                payable(receiver),
-                1,
-                _maxMintAmount / 100,
-                _price,
-                _maxMintAmount,
-                maliciousPaymentToken,
-                _token,
-                0,
-                address(0)
-            )
+            factory.createPublicFundraisingClone(0, trustedForwarder, arguments)
         );
 
         // allow invite contract to mint
@@ -1126,23 +1078,20 @@ contract PublicFundraisingTest is Test {
         paymentToken.transfer(buyer, UINT256_MAX);
 
         // create the raise contract
-        vm.prank(owner);
-        raise = PublicFundraising(
-            factory.createPublicFundraisingClone(
-                0,
-                trustedForwarder,
-                address(this),
-                payable(receiver),
-                0,
-                UINT256_MAX,
-                _price,
-                UINT256_MAX,
-                paymentToken,
-                token,
-                0,
-                address(0)
-            )
+        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+            address(this),
+            payable(receiver),
+            0,
+            UINT256_MAX,
+            _price,
+            UINT256_MAX,
+            paymentToken,
+            token,
+            0,
+            address(0)
         );
+        vm.prank(owner);
+        raise = PublicFundraising(factory.createPublicFundraisingClone(0, trustedForwarder, arguments));
 
         // grant allowances
         vm.prank(mintAllower);
@@ -1175,23 +1124,20 @@ contract PublicFundraisingTest is Test {
         paymentToken.transfer(buyer, maxCurrencyAmount);
 
         // create the raise contract
-        vm.prank(owner);
-        raise = PublicFundraising(
-            factory.createPublicFundraisingClone(
-                0,
-                trustedForwarder,
-                address(this),
-                payable(receiver),
-                _tokenBuyAmount,
-                _tokenBuyAmount,
-                _price,
-                _tokenBuyAmount,
-                paymentToken,
-                token,
-                0,
-                address(0)
-            )
+        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+            address(this),
+            payable(receiver),
+            _tokenBuyAmount,
+            _tokenBuyAmount,
+            _price,
+            _tokenBuyAmount,
+            paymentToken,
+            token,
+            0,
+            address(0)
         );
+        vm.prank(owner);
+        raise = PublicFundraising(factory.createPublicFundraisingClone(0, trustedForwarder, arguments));
 
         // set fees to 0, otherwise extra currency is minted which causes an overflow
         Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
@@ -1264,21 +1210,20 @@ contract PublicFundraisingTest is Test {
 
     function testAutoPauseInConstructor(uint256 _autoPauseDate, uint256 testDate) public {
         vm.assume(_autoPauseDate > 0);
+        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+            address(this),
+            payable(receiver),
+            minAmountPerBuyer,
+            maxAmountPerBuyer,
+            price,
+            maxAmountOfTokenToBeSold,
+            paymentToken,
+            token,
+            _autoPauseDate,
+            address(0)
+        );
         PublicFundraising _raise = PublicFundraising(
-            factory.createPublicFundraisingClone(
-                0,
-                trustedForwarder,
-                address(this),
-                payable(receiver),
-                minAmountPerBuyer,
-                maxAmountPerBuyer,
-                price,
-                maxAmountOfTokenToBeSold,
-                paymentToken,
-                token,
-                _autoPauseDate,
-                address(0)
-            )
+            factory.createPublicFundraisingClone(0, trustedForwarder, arguments)
         );
 
         vm.warp(testDate);
@@ -1310,5 +1255,23 @@ contract PublicFundraisingTest is Test {
             _raise.buy(tokenBuyAmount, buyer);
             vm.stopPrank();
         }
+    }
+
+    function clonePublicFundraisingInitializerArguments(
+        PublicFundraisingInitializerArguments memory arguments
+    ) public pure returns (PublicFundraisingInitializerArguments memory) {
+        return
+            PublicFundraisingInitializerArguments(
+                arguments.owner,
+                arguments.currencyReceiver,
+                arguments.minAmountPerBuyer,
+                arguments.maxAmountPerBuyer,
+                arguments.tokenPrice,
+                arguments.maxAmountOfTokenToBeSold,
+                arguments.currency,
+                arguments.token,
+                arguments.autoPauseDate,
+                arguments.priceOracle
+            );
     }
 }

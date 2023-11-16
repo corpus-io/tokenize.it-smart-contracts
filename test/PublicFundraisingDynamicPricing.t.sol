@@ -111,23 +111,19 @@ contract PublicFundraisingTest is Test {
 
         // create fundraising
         factory = new PublicFundraisingCloneFactory(address(new PublicFundraising(trustedForwarder)));
-
-        raise = PublicFundraising(
-            factory.createPublicFundraisingClone(
-                0,
-                trustedForwarder,
-                companyAdmin,
-                payable(receiver),
-                minAmountPerBuyer,
-                maxAmountPerBuyer,
-                price,
-                maxAmountOfTokenToBeSold,
-                paymentToken,
-                token,
-                0,
-                address(0)
-            )
+        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+            companyAdmin,
+            payable(receiver),
+            minAmountPerBuyer,
+            maxAmountPerBuyer,
+            price,
+            maxAmountOfTokenToBeSold,
+            paymentToken,
+            token,
+            0,
+            address(0)
         );
+        raise = PublicFundraising(factory.createPublicFundraisingClone(0, trustedForwarder, arguments));
 
         vm.stopPrank();
 
