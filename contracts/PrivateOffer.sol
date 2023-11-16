@@ -36,7 +36,7 @@ contract PrivateOffer {
      * @param currencyPayer address that paid the currency
      * @param tokenReceiver address that received the tokens
      * @param tokenAmount amount of tokens that were bought
-     * @param tokenPrice price company and investor agreed on
+     * @param tokenPrice price company and investor agreed on, see docs/price.md.
      * @param currency currency used for payment
      * @param token contract of the token that was bought
      */
@@ -52,7 +52,7 @@ contract PrivateOffer {
     /**
      * @notice Contains all logic, see above.
      * @param _currencyPayer address holding the currency. Must have given sufficient allowance to this contract.
-     * @param _tokenReceiver address receiving the tokens. Must have sufficient attributes in AllowList to be able to receive tokens.
+     * @param _tokenReceiver address receiving the tokens. Must have sufficient attributes in AllowList to be able to receive tokens or the TRANSFERER role.
      * @param _currencyReceiver address receiving the payment in currency.
      * @param _tokenAmount amount of tokens to be bought.
      * @param _tokenPrice price company and investor agreed on, see docs/price.md.
@@ -73,7 +73,7 @@ contract PrivateOffer {
         require(_currencyPayer != address(0), "_currencyPayer can not be zero address");
         require(_tokenReceiver != address(0), "_tokenReceiver can not be zero address");
         require(_currencyReceiver != address(0), "_currencyReceiver can not be zero address");
-        require(_tokenPrice != 0, "_tokenPrice can not be zero");
+        require(_tokenPrice != 0, "_tokenPrice can not be zero"); // a simple mint from the token contract will do in that case
         require(block.timestamp <= _expiration, "Deal expired");
 
         // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.

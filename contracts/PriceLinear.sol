@@ -42,7 +42,7 @@ contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPri
     }
 
     /**
-     * @notice Sets up the PublicFundraising. The contract is usable immediately after deployment, but does need a minting allowance for the token.
+     * @notice Sets up the PublicFundraising. The contract is usable immediately after initialization, but does need a minting allowance for the token.
      * @dev Constructor that passes the trusted forwarder to the ERC2771Context constructor
      */
     function initialize(
@@ -126,8 +126,6 @@ contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPri
         uint256 change = (((current - _parameters.start) / _parameters.stepDuration) *
             _parameters.stepDuration *
             _parameters.slopeEnumerator) / _parameters.slopeDenominator;
-
-        //uint256 change = uint256((current - parameters.start) / parameters.stepDuration) * parameters.slopeEnumerator;
 
         // if price is rising, add change, else subtract change
         if (_parameters.isRising) {

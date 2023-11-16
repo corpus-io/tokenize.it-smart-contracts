@@ -44,6 +44,8 @@ contract Token is
     bytes32 public constant TRANSFERER_ROLE = keccak256("TRANSFERER_ROLE");
     /// @notice The role that has the ability to pause the token. Transferring, burning and minting will not be possible while the contract is paused.
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    /// @notice The role that can create snapshots of the token balances
+    bytes32 public constant SNAPSHOTCREATOR_ROLE = keccak256("SNAPSHOTCREATOR_ROLE");
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to inherit
@@ -57,8 +59,6 @@ contract Token is
      * More info at [../docs/upgradeability.md]
      */
     uint256[446] private __gap;
-    /// @notice The role that can create snapshots of the token balances
-    bytes32 public constant SNAPSHOTCREATOR_ROLE = keccak256("SNAPSHOTCREATOR_ROLE");
 
     // Map managed by tokenize.it, which assigns addresses requirements which they fulfill
     AllowList public allowList;
@@ -127,7 +127,7 @@ contract Token is
     }
 
     /**
-     * @notice Constructor for the token.
+     * @notice Initializer for the token, replaces the constructor
      * @param _feeSettings fee settings contract that determines the fee for minting tokens
      * @param _admin address of the admin. Admin will initially have all roles and can grant roles to other addresses.
      * @param _name name of the specific token, e.g. "MyGmbH Token"
@@ -147,7 +147,7 @@ contract Token is
         _grantRole(DEFAULT_ADMIN_ROLE, _admin); // except for the Transferer role, the _admin is the roles admin for all other roles
         _setRoleAdmin(TRANSFERER_ROLE, TRANSFERERADMIN_ROLE);
 
-        // grant all roles to admin for now. Can be changed later, see https://docs.openzeppelin.com/contracts/2.x/api/access#Roles
+        // grant all roles to admin for now. Can be changed later, see https://docs.openzeppelin.com/contracts/4.x/api/access#IAccessControl
         _grantRole(REQUIREMENT_ROLE, _admin);
         _grantRole(MINTALLOWER_ROLE, _admin);
         _grantRole(BURNER_ROLE, _admin);
@@ -184,7 +184,7 @@ contract Token is
 
     /**
      * @notice Change the AllowList that defines which addresses satisfy which requirements to `_allowList`.
-     * @dev An interface check is not necessary because AllowList can not brick the token like FeeSettings could.
+     * @dev An interface check is not necessary because AllowList can not break the token like FeeSettings could.
      * @param _allowList new AllowList contract
      */
     function setAllowList(AllowList _allowList) external onlyRole(DEFAULT_ADMIN_ROLE) {

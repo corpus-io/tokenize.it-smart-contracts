@@ -49,11 +49,14 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     event BeneficiaryChanged(uint64 id, address newBeneficiary);
 
     uint64 public constant TIME_HORIZON = 20 * 365 days; // 20 years
+    /// token to be vested
     address public token;
-    mapping(address => bool) public managers; // managers can create vestings
+    /// managers that can create vestings
+    mapping(address => bool) public managers;
     mapping(uint64 => VestingPlan) public vestings;
     /// stores promises without revealing the details. value = maximum end date of vesting
     mapping(bytes32 => uint64) public commitments;
+    /// total amount of vesting plans created
     uint64 public ids;
 
     /**
@@ -67,15 +70,15 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
 
     /**
      * @dev Initializes the contract.
-     * @param owner address of the owner of the contract
+     * @param _owner address of the owner of the contract
      * @param _token address of the token to be vested
      */
-    function initialize(address owner, address _token) public initializer {
-        require(owner != address(0), "Owner must not be zero address");
+    function initialize(address _owner, address _token) public initializer {
+        require(_owner != address(0), "Owner must not be zero address");
         require(_token != address(0), "Token must not be zero address");
         __Ownable_init();
-        transferOwnership(owner);
-        managers[owner] = true;
+        transferOwnership(_owner);
+        managers[_owner] = true;
         token = _token;
     }
 
@@ -83,43 +86,43 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
      * @dev Getter for the allocation.
      *
      */
-    function allocation(uint64 id) public view returns (uint256) {
-        return vestings[id].allocation;
+    function allocation(uint64 _id) public view returns (uint256) {
+        return vestings[_id].allocation;
     }
 
     /**
      * @dev Amount of tokens already released
      */
-    function released(uint64 id) public view returns (uint256) {
-        return vestings[id].released;
+    function released(uint64 _id) public view returns (uint256) {
+        return vestings[_id].released;
     }
 
     /**
      * @dev Getter for the beneficiary address.
      */
-    function beneficiary(uint64 id) public view returns (address) {
-        return vestings[id].beneficiary;
+    function beneficiary(uint64 _id) public view returns (address) {
+        return vestings[_id].beneficiary;
     }
 
     /**
      * @dev Getter for the start timestamp.
      */
-    function start(uint64 id) public view returns (uint64) {
-        return vestings[id].start;
+    function start(uint64 _id) public view returns (uint64) {
+        return vestings[_id].start;
     }
 
     /**
      * @dev Getter for the cliff duration.
      */
-    function cliff(uint64 id) public view returns (uint64) {
-        return vestings[id].cliff;
+    function cliff(uint64 _id) public view returns (uint64) {
+        return vestings[_id].cliff;
     }
 
     /**
      * @dev Getter for the total vesting duration.
      */
-    function duration(uint64 id) public view returns (uint64) {
-        return vestings[id].duration;
+    function duration(uint64 _id) public view returns (uint64) {
+        return vestings[_id].duration;
     }
 
     /**
@@ -127,71 +130,71 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
      * isMintable == true means that tokens are minted form the token contract.
      * isMintable == false means the tokens need to be held by the vesting contract directly.
      */
-    function isMintable(uint64 id) public view returns (bool) {
-        return vestings[id].isMintable;
+    function isMintable(uint64 _id) public view returns (bool) {
+        return vestings[_id].isMintable;
     }
 
     /**
      * @dev Getter for the amount of releasable tokens.
      */
-    function releasable(uint64 id) public view returns (uint256) {
-        return vestedAmount(id, uint64(block.timestamp)) - released(id);
+    function releasable(uint64 _id) public view returns (uint256) {
+        return vestedAmount(_id, uint64(block.timestamp)) - released(_id);
     }
 
     /**
      * Managers can commit to a vesting plan without revealing it's details.
      * The parameters are hashed and this hash is stored in the commitments mapping.
      * Anyone can then reveal the vesting plan by providing the parameters and the salt.
-     * @param hash commitment hash
+     * @param _hash commitment hash
      */
-    function commit(bytes32 hash) external onlyManager {
-        require(hash != bytes32(0), "hash must not be zero");
+    function commit(bytes32 _hash) external onlyManager {
+        require(_hash != bytes32(0), "hash must not be zero");
         // the value is interpreted as maximum end date of the vesting
         // for real world use cases, type(uint64).max is "unlimited"
-        commitments[hash] = type(uint64).max;
-        emit Commit(hash);
+        commitments[_hash] = type(uint64).max;
+        emit Commit(_hash);
     }
 
     /**
      * Managers can revoke a commitment by providing the hash and a new latest end date.
-     * @param hash commitment hash
-     * @param end new latest end date
+     * @param _hash commitment hash
+     * @param _end new latest end date
      */
-    function revoke(bytes32 hash, uint64 end) external onlyManager {
-        require(commitments[hash] != 0, "invalid-hash");
+    function revoke(bytes32 _hash, uint64 _end) external onlyManager {
+        require(commitments[_hash] != 0, "invalid-hash");
         // already vested tokens can not be taken away (except of burning in the token contract itself)
-        end = uint64(block.timestamp) > end ? uint64(block.timestamp) : end;
-        commitments[hash] = end;
-        emit Revoke(hash, end);
+        _end = uint64(block.timestamp) > _end ? uint64(block.timestamp) : _end;
+        commitments[_hash] = _end;
+        emit Revoke(_hash, _end);
     }
 
     /**
      * Create a public transparent vesting plan from a commitment.
-     * @param hash  commitment hash
+     * @param _hash  commitment hash
      * @param _allocation total token amount
      * @param _beneficiary address receiving the tokens
      * @param _start start date
      * @param _cliff cliff duration
      * @param _duration total duration
      * @param _isMintable true = tokens minted on release, false = tokens held by vesting contract
-     * @param salt salt for privacy
+     * @param _salt salt for privacy
      */
     function reveal(
-        bytes32 hash,
+        bytes32 _hash,
         uint256 _allocation,
         address _beneficiary,
         uint64 _start,
         uint64 _cliff,
         uint64 _duration,
         bool _isMintable,
-        bytes32 salt
+        bytes32 _salt
     ) public returns (uint64 id) {
         require(
-            hash ==
-                keccak256(abi.encodePacked(_allocation, _beneficiary, _start, _cliff, _duration, _isMintable, salt)),
+            _hash ==
+                keccak256(abi.encodePacked(_allocation, _beneficiary, _start, _cliff, _duration, _isMintable, _salt)),
             "invalid-hash"
         );
-        uint64 maxEndDate = commitments[hash];
+        uint64 maxEndDate = commitments[_hash];
         require(maxEndDate > 0, "invalid-hash");
         // if a commitment has been revoked with end date before cliff, it can never be revealed
         require(_start + _cliff <= maxEndDate, "commitment revoked before cliff ended");
@@ -208,21 +211,21 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
             id = _createVesting(allocationOverride, _beneficiary, _start, _cliff, durationOverride, _isMintable);
         }
 
-        commitments[hash] = 0; // delete commitment
-        emit Reveal(hash, id);
+        commitments[_hash] = 0; // delete commitment
+        emit Reveal(_hash, id);
     }
 
     function revealAndRelease(
-        bytes32 hash,
+        bytes32 _hash,
         uint256 _allocation,
         address _beneficiary,
         uint64 _start,
         uint64 _cliff,
         uint64 _duration,
         bool _isMintable,
-        bytes32 salt
+        bytes32 _salt
     ) external returns (uint64 id) {
-        id = reveal(hash, _allocation, _beneficiary, _start, _cliff, _duration, _isMintable, salt);
+        id = reveal(_hash, _allocation, _beneficiary, _start, _cliff, _duration, _isMintable, _salt);
         release(id);
     }
 
@@ -268,40 +271,40 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         emit VestingCreated(id);
     }
 
-    function stopVesting(uint64 id, uint64 endTime) public onlyManager {
+    function stopVesting(uint64 _id, uint64 _endTime) public onlyManager {
         // already vested tokens can not be taken away (except of burning in the token contract itself)
-        endTime = endTime < uint64(block.timestamp) ? uint64(block.timestamp) : endTime;
-        require(endTime < vestings[id].start + vestings[id].duration, "endTime must be before vesting end");
+        _endTime = _endTime < uint64(block.timestamp) ? uint64(block.timestamp) : _endTime;
+        require(_endTime < vestings[_id].start + vestings[_id].duration, "endTime must be before vesting end");
 
-        if (vestings[id].start + vestings[id].cliff > endTime) {
-            delete vestings[id];
+        if (vestings[_id].start + vestings[_id].cliff > _endTime) {
+            delete vestings[_id];
         } else {
-            vestings[id].allocation = vestedAmount(id, endTime);
-            vestings[id].duration = endTime - vestings[id].start;
+            vestings[_id].allocation = vestedAmount(_id, _endTime);
+            vestings[_id].duration = _endTime - vestings[_id].start;
         }
-        emit VestingStopped(id, endTime);
+        emit VestingStopped(_id, _endTime);
     }
 
-    function pauseVesting(uint64 id, uint64 endTime, uint64 newStartTime) external onlyManager returns (uint64) {
-        VestingPlan memory vesting = vestings[id];
-        require(endTime > uint64(block.timestamp), "endTime must be in the future");
-        require(endTime < vesting.start + vesting.duration, "endTime must be before vesting end");
-        require(newStartTime > endTime, "newStartTime must be after endTime");
+    function pauseVesting(uint64 _id, uint64 _endTime, uint64 _newStartTime) external onlyManager returns (uint64) {
+        VestingPlan memory vesting = vestings[_id];
+        require(_endTime > uint64(block.timestamp), "endTime must be in the future");
+        require(_endTime < vesting.start + vesting.duration, "endTime must be before vesting end");
+        require(_newStartTime > _endTime, "newStartTime must be after endTime");
 
-        uint256 allocationRemainder = allocation(id) - vestedAmount(id, endTime);
-        uint64 timeVested = endTime - start(id);
-        uint64 cliffRemainder = timeVested >= cliff(id) ? 0 : cliff(id) - timeVested;
-        uint64 durationRemainder = duration(id) - timeVested;
+        uint256 allocationRemainder = allocation(_id) - vestedAmount(_id, _endTime);
+        uint64 timeVested = _endTime - start(_id);
+        uint64 cliffRemainder = timeVested >= cliff(_id) ? 0 : cliff(_id) - timeVested;
+        uint64 durationRemainder = duration(_id) - timeVested;
 
         // stop old vesting
-        stopVesting(id, endTime);
+        stopVesting(_id, _endTime);
 
         // create new vesting
         return
             _createVesting(
                 allocationRemainder,
                 vesting.beneficiary,
-                newStartTime,
+                _newStartTime,
                 cliffRemainder,
                 durationRemainder,
                 vesting.isMintable
@@ -313,20 +316,20 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
      *
      * Emits a {ERC20Released} event.
      */
-    function release(uint64 id) public {
-        release(id, type(uint256).max);
+    function release(uint64 _id) public {
+        release(_id, type(uint256).max);
     }
 
-    function release(uint64 id, uint256 amount) public nonReentrant {
-        require(_msgSender() == beneficiary(id), "Only beneficiary can release tokens");
-        amount = releasable(id) < amount ? releasable(id) : amount;
-        vestings[id].released += amount;
-        if (isMintable(id)) {
-            ERC20Mintable(token).mint(beneficiary(id), amount);
+    function release(uint64 _id, uint256 _amount) public nonReentrant {
+        require(_msgSender() == beneficiary(_id), "Only beneficiary can release tokens");
+        _amount = releasable(_id) < _amount ? releasable(_id) : _amount;
+        vestings[_id].released += _amount;
+        if (isMintable(_id)) {
+            ERC20Mintable(token).mint(beneficiary(_id), _amount);
         } else {
-            SafeERC20Upgradeable.safeTransfer(IERC20Upgradeable(token), beneficiary(id), amount);
+            SafeERC20Upgradeable.safeTransfer(IERC20Upgradeable(token), beneficiary(_id), _amount);
         }
-        emit ERC20Released(id, amount);
+        emit ERC20Released(_id, _amount);
     }
 
     /**
@@ -334,14 +337,14 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
      * @notice In this context, "vested" means "belong to the beneficiary". The vested amount
      * is also the sum of the released amount and the releasable amount.
      */
-    function vestedAmount(uint64 id, uint64 timestamp) public view returns (uint256) {
-        VestingPlan memory vesting = vestings[id];
-        if (timestamp < vesting.start + vesting.cliff) {
+    function vestedAmount(uint64 _id, uint64 _timestamp) public view returns (uint256) {
+        VestingPlan memory vesting = vestings[_id];
+        if (_timestamp < vesting.start + vesting.cliff) {
             return 0;
-        } else if (timestamp > vesting.start + vesting.duration) {
+        } else if (_timestamp > vesting.start + vesting.duration) {
             return vesting.allocation;
         } else {
-            return (vesting.allocation * (timestamp - vesting.start)) / vesting.duration;
+            return (vesting.allocation * (_timestamp - vesting.start)) / vesting.duration;
         }
     }
 
@@ -352,14 +355,14 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
      * If the beneficiary ever loses access to their address, the owner can update it, but only
      * after this timeout has passed.
      */
-    function changeBeneficiary(uint64 id, address newBeneficiary) external {
+    function changeBeneficiary(uint64 _id, address _newBeneficiary) external {
         require(
-            _msgSender() == beneficiary(id) ||
-                ((_msgSender() == owner()) && uint64(block.timestamp) > start(id) + duration(id) + 365 days)
+            _msgSender() == beneficiary(_id) ||
+                ((_msgSender() == owner()) && uint64(block.timestamp) > start(_id) + duration(_id) + 365 days)
         );
-        require(newBeneficiary != address(0), "Beneficiary must not be zero address");
-        vestings[id].beneficiary = newBeneficiary;
-        emit BeneficiaryChanged(id, newBeneficiary);
+        require(_newBeneficiary != address(0), "Beneficiary must not be zero address");
+        vestings[_id].beneficiary = _newBeneficiary;
+        emit BeneficiaryChanged(_id, _newBeneficiary);
     }
 
     function addManager(address _manager) external onlyOwner {

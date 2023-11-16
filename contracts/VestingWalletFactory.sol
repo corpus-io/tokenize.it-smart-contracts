@@ -19,20 +19,20 @@ contract VestingWalletFactory {
     /**
      * @notice Deploys VestingWallet contract using create2.
      * @param   _salt salt used for privacy. Could be used for vanity addresses, too.
-     * @param   beneficiaryAddress address receiving the tokens
-     * @param   startTimestamp timestamp of when to start releasing tokens linearly
-     * @param   durationSeconds duration of the vesting period in seconds
+     * @param   _beneficiaryAddress address receiving the tokens
+     * @param   _startTimestamp timestamp of when to start releasing tokens linearly
+     * @param   _durationSeconds duration of the vesting period in seconds
      */
     function deploy(
         bytes32 _salt,
-        address beneficiaryAddress,
-        uint64 startTimestamp,
-        uint64 durationSeconds
+        address _beneficiaryAddress,
+        uint64 _startTimestamp,
+        uint64 _durationSeconds
     ) external returns (address) {
         address actualAddress = Create2.deploy(
             0,
             _salt,
-            getBytecode(beneficiaryAddress, startTimestamp, durationSeconds)
+            getBytecode(_beneficiaryAddress, _startTimestamp, _durationSeconds)
         );
 
         emit Deploy(actualAddress);
@@ -42,36 +42,36 @@ contract VestingWalletFactory {
     /**
      * @notice Computes the address of VestingWallet contract to be deployed using create2.
      * @param   _salt salt for vanity addresses
-     * @param   beneficiaryAddress address receiving the tokens
-     * @param   startTimestamp timestamp of when to start releasing tokens linearly
-     * @param   durationSeconds duration of the vesting period in seconds
+     * @param   _beneficiaryAddress address receiving the tokens
+     * @param   _startTimestamp timestamp of when to start releasing tokens linearly
+     * @param   _durationSeconds duration of the vesting period in seconds
      */
     function getAddress(
         bytes32 _salt,
-        address beneficiaryAddress,
-        uint64 startTimestamp,
-        uint64 durationSeconds
+        address _beneficiaryAddress,
+        uint64 _startTimestamp,
+        uint64 _durationSeconds
     ) external view returns (address) {
-        bytes memory bytecode = getBytecode(beneficiaryAddress, startTimestamp, durationSeconds);
+        bytes memory bytecode = getBytecode(_beneficiaryAddress, _startTimestamp, _durationSeconds);
         return Create2.computeAddress(_salt, keccak256(bytecode));
     }
 
     /**
      * @dev Generates the bytecode of the contract to be deployed, using the parameters.
-     * @param   beneficiaryAddress address receiving the tokens
-     * @param   startTimestamp timestamp of when to start releasing tokens linearly
-     * @param   durationSeconds duration of the vesting period in seconds
-     * @return bytecode of the contract to be deployed.
+     * @param  _beneficiaryAddress address receiving the tokens
+     * @param  _startTimestamp timestamp of when to start releasing tokens linearly
+     * @param  _durationSeconds duration of the vesting period in seconds
+     * @return _bytecode of the contract to be deployed.
      */
     function getBytecode(
-        address beneficiaryAddress,
-        uint64 startTimestamp,
-        uint64 durationSeconds
+        address _beneficiaryAddress,
+        uint64 _startTimestamp,
+        uint64 _durationSeconds
     ) private pure returns (bytes memory) {
         return
             abi.encodePacked(
                 type(VestingWallet).creationCode,
-                abi.encode(beneficiaryAddress, startTimestamp, durationSeconds)
+                abi.encode(_beneficiaryAddress, _startTimestamp, _durationSeconds)
             );
     }
 }

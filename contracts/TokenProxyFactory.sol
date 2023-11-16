@@ -32,11 +32,8 @@ contract TokenProxyFactory is Factory {
             _name,
             _symbol
         );
-        //bytes memory noArguments;
-        // ERC1967Proxy proxy = new ERC1967Proxy(implementation, noArguments);
         address proxyAddress = Create2.deploy(0, salt, getBytecode());
         ERC1967Proxy proxy = ERC1967Proxy(payable(proxyAddress));
-        //Clones.cloneDeterministic(implementation, salt);
         Token cloneToken = Token(address(proxy));
         require(cloneToken.isTrustedForwarder(_trustedForwarder), "TokenProxyFactory: Unexpected trustedForwarder");
         cloneToken.initialize(_feeSettings, _admin, _allowList, _requirements, _name, _symbol);
@@ -76,12 +73,7 @@ contract TokenProxyFactory is Factory {
      * @return bytecode of the contract to be deployed.
      */
     function getBytecode() private view returns (bytes memory) {
-        return
-            abi.encodePacked(
-                type(ERC1967Proxy).creationCode,
-                abi.encode(implementation, new bytes(0))
-                //abi.encode(_feeSettings, _admin, _allowList, _requirements, _name, _symbol))
-            );
+        return abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(implementation, new bytes(0)));
     }
 
     function getSalt(
