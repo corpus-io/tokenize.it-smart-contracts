@@ -118,7 +118,8 @@ contract PublicFundraisingTest is Test {
             maxAmountOfTokenToBeSold,
             paymentToken,
             token,
-            0
+            0,
+            address(0)
         );
 
         // owner and all settings are 0
@@ -144,7 +145,8 @@ contract PublicFundraisingTest is Test {
                 maxAmountOfTokenToBeSold,
                 paymentToken,
                 token,
-                autoPauseDate
+                autoPauseDate,
+                address(0)
             )
         );
         assertTrue(_raise.owner() == address(this));
@@ -172,7 +174,8 @@ contract PublicFundraisingTest is Test {
                 maxAmountOfTokenToBeSold,
                 paymentToken,
                 token,
-                0
+                0,
+                address(0)
             )
         );
 
@@ -188,7 +191,8 @@ contract PublicFundraisingTest is Test {
             maxAmountOfTokenToBeSold,
             paymentToken,
             token,
-            0
+            0,
+            address(0)
         );
 
         vm.expectRevert("currencyReceiver can not be zero address");
@@ -203,7 +207,8 @@ contract PublicFundraisingTest is Test {
             maxAmountOfTokenToBeSold,
             paymentToken,
             token,
-            0
+            0,
+            address(0)
         );
 
         vm.expectRevert("currency can not be zero address");
@@ -218,7 +223,8 @@ contract PublicFundraisingTest is Test {
             maxAmountOfTokenToBeSold,
             IERC20(address(0)),
             token,
-            0
+            0,
+            address(0)
         );
 
         vm.expectRevert("token can not be zero address");
@@ -233,7 +239,8 @@ contract PublicFundraisingTest is Test {
             maxAmountOfTokenToBeSold,
             paymentToken,
             Token(address(0)),
-            0
+            0,
+            address(0)
         );
     }
 
@@ -283,7 +290,8 @@ contract PublicFundraisingTest is Test {
                 _maxMintAmount,
                 maliciousPaymentToken,
                 _token,
-                0
+                0,
+                address(0)
             )
         );
 
@@ -1131,7 +1139,8 @@ contract PublicFundraisingTest is Test {
                 UINT256_MAX,
                 paymentToken,
                 token,
-                0
+                0,
+                address(0)
             )
         );
 
@@ -1179,7 +1188,8 @@ contract PublicFundraisingTest is Test {
                 _tokenBuyAmount,
                 paymentToken,
                 token,
-                0
+                0,
+                address(0)
             )
         );
 
@@ -1266,7 +1276,8 @@ contract PublicFundraisingTest is Test {
                 maxAmountOfTokenToBeSold,
                 paymentToken,
                 token,
-                _autoPauseDate
+                _autoPauseDate,
+                address(0)
             )
         );
 

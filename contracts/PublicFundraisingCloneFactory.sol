@@ -39,8 +39,7 @@ contract PublicFundraisingCloneFactory is CloneFactory {
                 _priceOracle
             )
         );
-        address clone = Clones.cloneDeterministic(implementation, salt);
-        PublicFundraising publicFundraising = PublicFundraising(clone);
+        PublicFundraising publicFundraising = PublicFundraising(Clones.cloneDeterministic(implementation, salt));
         require(
             publicFundraising.isTrustedForwarder(_trustedForwarder),
             "PublicFundraisingCloneFactory: Unexpected trustedForwarder"
@@ -57,8 +56,8 @@ contract PublicFundraisingCloneFactory is CloneFactory {
             _autoPauseDate,
             _priceOracle
         );
-        emit NewClone(clone);
-        return clone;
+        emit NewClone(address(publicFundraising));
+        return address(publicFundraising);
     }
 
     function predictCloneAddress(

@@ -80,7 +80,8 @@ contract PublicFundraisingTest is Test {
                 maxAmountOfTokenToBeSold,
                 paymentToken,
                 token,
-                0
+                0,
+                address(0)
             )
         );
 
@@ -166,7 +167,8 @@ contract PublicFundraisingTest is Test {
                 _maxMintAmount,
                 paymentToken,
                 _token,
-                0
+                0,
+                address(0)
             )
         );
 
@@ -283,7 +285,8 @@ contract PublicFundraisingTest is Test {
                     _maxMintAmount,
                     paymentToken,
                     _token,
-                    0
+                    0,
+                    address(0)
                 )
             );
             // allow invite contract to mint

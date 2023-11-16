@@ -73,7 +73,8 @@ contract tokenTest is Test {
         uint256 _maxAmountOfTokenToBeSold,
         IERC20 _currency,
         Token _token,
-        uint256 _autoPauseDate
+        uint256 _autoPauseDate,
+        address _priceOracle
     ) public {
         vm.assume(_trustedForwarder != address(0));
         vm.assume(_owner != address(0));
@@ -89,23 +90,24 @@ contract tokenTest is Test {
         fundraisingImplementation = new PublicFundraising(_trustedForwarder);
         fundraisingFactory = new PublicFundraisingCloneFactory(address(fundraisingImplementation));
 
-        bytes32 salt = keccak256(
-            abi.encodePacked(
-                _rawSalt,
-                _trustedForwarder,
-                _owner,
-                _currencyReceiver,
-                _minAmountPerBuyer,
-                _maxAmountPerBuyer,
-                _priceBase,
-                _maxAmountOfTokenToBeSold,
-                _currency,
-                _token,
-                _autoPauseDate
+        address expected1 = fundraisingFactory.predictCloneAddress(
+            keccak256(
+                abi.encodePacked(
+                    _rawSalt,
+                    _trustedForwarder,
+                    _owner,
+                    _currencyReceiver,
+                    _minAmountPerBuyer,
+                    _maxAmountPerBuyer,
+                    _priceBase,
+                    _maxAmountOfTokenToBeSold,
+                    _currency,
+                    _token,
+                    _autoPauseDate,
+                    _priceOracle
+                )
             )
         );
-
-        address expected1 = fundraisingFactory.predictCloneAddress(salt);
         address expected2 = fundraisingFactory.predictCloneAddress(
             _rawSalt,
             _trustedForwarder,
@@ -117,7 +119,8 @@ contract tokenTest is Test {
             _maxAmountOfTokenToBeSold,
             _currency,
             _token,
-            _autoPauseDate
+            _autoPauseDate,
+            _priceOracle
         );
 
         // log both addresses
@@ -132,7 +135,8 @@ contract tokenTest is Test {
         uint256 _maxAmountOfTokenToBeSold,
         IERC20 _currency,
         Token _token,
-        uint256 _autoPauseDate
+        uint256 _autoPauseDate,
+        address _priceOracle
     ) public {
         vm.assume(address(_currency) != address(0));
         vm.assume(address(_token) != address(0));
@@ -145,23 +149,24 @@ contract tokenTest is Test {
         fundraisingImplementation = new PublicFundraising(exampleTrustedForwarder);
         fundraisingFactory = new PublicFundraisingCloneFactory(address(fundraisingImplementation));
 
-        bytes32 salt = keccak256(
-            abi.encodePacked(
-                exampleRawSalt,
-                exampleTrustedForwarder,
-                exampleOwner,
-                exampleCurrencyReceiver,
-                exampleMinAmountPerBuyer,
-                _maxAmountPerBuyer,
-                _tokenPrice,
-                _maxAmountOfTokenToBeSold,
-                _currency,
-                _token,
-                _autoPauseDate
+        address expected1 = fundraisingFactory.predictCloneAddress(
+            keccak256(
+                abi.encodePacked(
+                    exampleRawSalt,
+                    exampleTrustedForwarder,
+                    exampleOwner,
+                    exampleCurrencyReceiver,
+                    exampleMinAmountPerBuyer,
+                    _maxAmountPerBuyer,
+                    _tokenPrice,
+                    _maxAmountOfTokenToBeSold,
+                    _currency,
+                    _token,
+                    _autoPauseDate,
+                    _priceOracle
+                )
             )
         );
-
-        address expected1 = fundraisingFactory.predictCloneAddress(salt);
 
         address actual = fundraisingFactory.createPublicFundraisingClone(
             exampleRawSalt,
@@ -174,7 +179,8 @@ contract tokenTest is Test {
             _maxAmountOfTokenToBeSold,
             _currency,
             _token,
-            _autoPauseDate
+            _autoPauseDate,
+            _priceOracle
         );
         assertEq(expected1, actual, "address prediction failed");
     }
@@ -207,7 +213,8 @@ contract tokenTest is Test {
                 exampleMaxAmountOfTokenToBeSold,
                 exampleCurrency,
                 exampleToken,
-                exampleAutoPauseDate
+                exampleAutoPauseDate,
+                address(0)
             )
         );
 
@@ -224,7 +231,8 @@ contract tokenTest is Test {
             exampleMaxAmountOfTokenToBeSold,
             exampleCurrency,
             exampleToken,
-            exampleAutoPauseDate
+            exampleAutoPauseDate,
+            address(0)
         );
         assertEq(expected1, actual, "address prediction failed");
     }
@@ -261,7 +269,8 @@ contract tokenTest is Test {
             _maxAmountOfTokenToBeSold,
             _currency,
             _token,
-            0
+            0,
+            address(0)
         );
 
         // deploy again
@@ -277,7 +286,8 @@ contract tokenTest is Test {
             _maxAmountOfTokenToBeSold,
             _currency,
             _token,
-            0
+            0,
+            address(0)
         );
     }
 
@@ -319,7 +329,8 @@ contract tokenTest is Test {
                 _maxAmountOfTokenToBeSold,
                 _currency,
                 _token,
-                0
+                0,
+                address(0)
             )
         );
 
@@ -354,7 +365,8 @@ contract tokenTest is Test {
                 4,
                 IERC20(address(1)),
                 Token(address(2)),
-                0
+                0,
+                address(0)
             )
         );
 

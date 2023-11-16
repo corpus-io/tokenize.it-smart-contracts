@@ -82,7 +82,8 @@ contract PublicFundraisingTest is Test {
                 maxAmountOfTokenToBeSold,
                 paymentToken,
                 token,
-                0
+                0,
+                address(0)
             )
         );
 
