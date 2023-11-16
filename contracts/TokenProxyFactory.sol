@@ -73,11 +73,7 @@ contract TokenProxyFactory is Factory {
      * @return bytecode of the contract to be deployed.
      */
     function getBytecode() private view returns (bytes memory) {
-        return
-            abi.encodePacked(
-                type(ERC1967Proxy).creationCode,
-                abi.encode(implementation, new bytes(0))
-            );
+        return abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(implementation, new bytes(0)));
     }
 
     function getSalt(
