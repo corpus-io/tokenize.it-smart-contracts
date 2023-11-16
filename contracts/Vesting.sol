@@ -70,7 +70,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
 
     /**
      * @dev Initializes the contract.
-     * @param owner address of the owner of the contract
+     * @param _owner address of the owner of the contract
      * @param _token address of the token to be vested
      */
     function initialize(address _owner, address _token) public initializer {
@@ -138,7 +138,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
      * @dev Getter for the amount of releasable tokens.
      */
     function releasable(uint64 _id) public view returns (uint256) {
-        return vestedAmount(_id, uint64(block.timestamp)) - released(id);
+        return vestedAmount(_id, uint64(block.timestamp)) - released(_id);
     }
 
     /**
@@ -163,7 +163,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     function revoke(bytes32 _hash, uint64 _end) external onlyManager {
         require(commitments[_hash] != 0, "invalid-hash");
         // already vested tokens can not be taken away (except of burning in the token contract itself)
-        end = uint64(block.timestamp) > _end ? uint64(block.timestamp) : _end;
+        _end = uint64(block.timestamp) > _end ? uint64(block.timestamp) : _end;
         commitments[_hash] = _end;
         emit Revoke(_hash, _end);
     }
@@ -282,7 +282,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
             vestings[_id].allocation = vestedAmount(_id, _endTime);
             vestings[_id].duration = _endTime - vestings[_id].start;
         }
-        emit VestingStopped(id, _endTime);
+        emit VestingStopped(_id, _endTime);
     }
 
     function pauseVesting(uint64 _id, uint64 _endTime, uint64 _newStartTime) external onlyManager returns (uint64) {
