@@ -52,7 +52,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     /// token to be vested
     address public token;
     /// managers that can create vestings
-    mapping(address => bool) public managers; 
+    mapping(address => bool) public managers;
     mapping(uint64 => VestingPlan) public vestings;
     /// stores promises without revealing the details. value = maximum end date of vesting
     mapping(bytes32 => uint64) public commitments;
