@@ -39,7 +39,7 @@ This is a personal investment invite allowing a particular investor (represented
 
 This contract allows everyone who has the `Transferer`-role on the `token` contract or who is certified by the allow-list to meet the requirements set in the `token` contract to buy newly issued tokens at a fixed price. The number of tokens that can be minted in this way can be limited to `maxAmountOfTokenToBeSold`, which is the maximal amount of token to be sold in this fundraising round.
 
-Furthermore, this contract can be paused by the owner to change the parameters. After any parameter change, a delay of 1 day is enforced before the contract can be unpaused again. This is to prevent frontrunning attacks.
+Furthermore, this contract can be paused by the owner to change the parameters. After any parameter change, a delay of 1 hour is enforced before the contract can be unpaused again. This is to prevent frontrunning attacks.
 
 ## Employee participation
 
