@@ -9,7 +9,7 @@ import "./interfaces/IPriceDynamic.sol";
 
 struct Linear {
     /// numerator of slope of linear function, e.g. a where slope == a/b
-    uint64 slopeEnumerator;
+    int64 slopeEnumerator;
     /// denominator of slope of linear function, , e.g. b where slope == a/b
     uint64 slopeDenominator;
     /// start time as unix timestamp or start block number
@@ -19,8 +19,6 @@ struct Linear {
     /// if 0: `stepDuration` is in seconds and `start` is an epoch
     /// if 1: `stepDuration` is in blocks and `start` is a block number
     bool isBlockBased;
-    /// if 0 price is falling, if 1 price is rising
-    bool isRising;
 }
 
 /**
@@ -50,55 +48,38 @@ contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPri
      */
     function initialize(
         address _owner,
-        uint64 _slopeEnumerator,
+        int64 _slopeEnumerator,
         uint64 _slopeDenominator,
         uint64 _startTimeOrBlockNumber,
         uint32 _stepDuration,
-        bool _isBlockBased,
-        bool _isRising
+        bool _isBlockBased
     ) external initializer {
         require(_owner != address(0), "owner can not be zero address");
         __Ownable2Step_init(); // sets msgSender() as owner
         _transferOwnership(_owner); // sets owner as owner
-        _updateParameters(
-            _slopeEnumerator,
-            _slopeDenominator,
-            _startTimeOrBlockNumber,
-            _stepDuration,
-            _isBlockBased,
-            _isRising
-        );
+        _updateParameters(_slopeEnumerator, _slopeDenominator, _startTimeOrBlockNumber, _stepDuration, _isBlockBased);
     }
 
     /**
      * Update the parameters of the linear price function
      */
     function updateParameters(
-        uint64 _slopeEnumerator,
+        int64 _slopeEnumerator,
         uint64 _slopeDenominator,
         uint64 _startTimeOrBlockNumber,
         uint32 _stepDuration,
-        bool _isBlockBased,
-        bool _isRising
+        bool _isBlockBased
     ) external onlyOwner {
-        _updateParameters(
-            _slopeEnumerator,
-            _slopeDenominator,
-            _startTimeOrBlockNumber,
-            _stepDuration,
-            _isBlockBased,
-            _isRising
-        );
+        _updateParameters(_slopeEnumerator, _slopeDenominator, _startTimeOrBlockNumber, _stepDuration, _isBlockBased);
         coolDownStart = block.timestamp;
     }
 
     function _updateParameters(
-        uint64 _slopeEnumerator,
+        int64 _slopeEnumerator,
         uint64 _slopeDenominator,
         uint64 _startTimeOrBlockNumber,
         uint32 _stepDuration,
-        bool _isBlockBased,
-        bool _isRising
+        bool _isBlockBased
     ) internal {
         require(_slopeEnumerator != 0, "slopeEnumerator can not be zero");
         require(_slopeDenominator != 0, "slopeDenominator can not be zero");
@@ -113,8 +94,7 @@ contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPri
             slopeDenominator: _slopeDenominator,
             start: _startTimeOrBlockNumber,
             stepDuration: _stepDuration,
-            isBlockBased: _isBlockBased,
-            isRising: _isRising
+            isBlockBased: _isBlockBased
         });
     }
 
@@ -127,23 +107,19 @@ contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPri
             return basePrice;
         }
 
-        /// @dev note that the division is rounded down, generating a step function if stepDuration > 1
-        uint256 change = (((current - _parameters.start) / _parameters.stepDuration) *
-            _parameters.stepDuration *
-            _parameters.slopeEnumerator) / _parameters.slopeDenominator;
-
-        //uint256 change = uint256((current - parameters.start) / parameters.stepDuration) * parameters.slopeEnumerator;
-
-        // if price is rising, add change, else subtract change
-        if (_parameters.isRising) {
-            // prevent overflow
-            if (type(uint256).max - basePrice <= change) {
-                return type(uint256).max;
-            }
-            return basePrice + change;
+        /// @dev concerning stepping: note that integer division is rounded down, generating a step function if stepDuration > 1
+        if (_parameters.slopeEnumerator < 0) {
+            // price will be reduced, check for underflow
+            uint256 change = (((current - _parameters.start) / _parameters.stepDuration) *
+                _parameters.stepDuration *
+                uint64(-_parameters.slopeEnumerator)) / _parameters.slopeDenominator;
+            return change > basePrice ? 0 : basePrice - change;
         } else {
-            // prevent underflow
-            return basePrice <= change ? 0 : basePrice - change;
+            // price will be increased, check for overflow
+            uint256 change = (((current - _parameters.start) / _parameters.stepDuration) *
+                _parameters.stepDuration *
+                uint64(_parameters.slopeEnumerator)) / _parameters.slopeDenominator;
+            return change > type(uint256).max - basePrice ? type(uint256).max : basePrice + change;
         }
     }
 

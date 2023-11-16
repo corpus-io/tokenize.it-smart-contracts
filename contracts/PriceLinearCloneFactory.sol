@@ -13,12 +13,11 @@ contract PriceLinearCloneFactory is CloneFactory {
         bytes32 _rawSalt,
         address _trustedForwarder,
         address _owner,
-        uint64 _slopeEnumerator,
+        int64 _slopeEnumerator,
         uint64 _slopeDenominator,
         uint64 _startTimeOrBlockNumber,
         uint32 _stepDuration,
-        bool _isBlockBased,
-        bool _isRising
+        bool _isBlockBased
     ) external returns (address) {
         bytes32 salt = _generateSalt(
             _rawSalt,
@@ -28,8 +27,7 @@ contract PriceLinearCloneFactory is CloneFactory {
             _slopeDenominator,
             _startTimeOrBlockNumber,
             _stepDuration,
-            _isBlockBased,
-            _isRising
+            _isBlockBased
         );
         address clone = Clones.cloneDeterministic(implementation, salt);
         PriceLinear clonePriceOracle = PriceLinear(clone);
@@ -43,8 +41,7 @@ contract PriceLinearCloneFactory is CloneFactory {
             _slopeDenominator,
             _startTimeOrBlockNumber,
             _stepDuration,
-            _isBlockBased,
-            _isRising
+            _isBlockBased
         );
         emit NewClone(clone);
         return clone;
@@ -54,12 +51,11 @@ contract PriceLinearCloneFactory is CloneFactory {
         bytes32 _rawSalt,
         address _trustedForwarder,
         address _owner,
-        uint64 _slopeEnumerator,
+        int64 _slopeEnumerator,
         uint64 _slopeDenominator,
         uint64 _startTimeOrBlockNumber,
         uint32 _stepDuration,
-        bool _isBlockBased,
-        bool _isRising
+        bool _isBlockBased
     ) external view returns (address) {
         bytes32 salt = _generateSalt(
             _rawSalt,
@@ -69,8 +65,7 @@ contract PriceLinearCloneFactory is CloneFactory {
             _slopeDenominator,
             _startTimeOrBlockNumber,
             _stepDuration,
-            _isBlockBased,
-            _isRising
+            _isBlockBased
         );
         return Clones.predictDeterministicAddress(implementation, salt);
     }
@@ -79,12 +74,11 @@ contract PriceLinearCloneFactory is CloneFactory {
         bytes32 _rawSalt,
         address _trustedForwarder,
         address _owner,
-        uint64 _slopeEnumerator,
+        int64 _slopeEnumerator,
         uint64 _slopeDenominator,
         uint64 _startTimeOrBlockNumber,
         uint32 _stepDuration,
-        bool _isBlockBased,
-        bool _isRising
+        bool _isBlockBased
     ) internal pure returns (bytes32) {
         return
             keccak256(
@@ -96,8 +90,7 @@ contract PriceLinearCloneFactory is CloneFactory {
                     _slopeDenominator,
                     _startTimeOrBlockNumber,
                     _stepDuration,
-                    _isBlockBased,
-                    _isRising
+                    _isBlockBased
                 )
             );
     }

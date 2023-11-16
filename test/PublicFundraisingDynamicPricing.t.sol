@@ -164,8 +164,7 @@ contract PublicFundraisingTest is Test {
                 1,
                 uint64(startTime),
                 1,
-                false,
-                true
+                false
             )
         );
 
