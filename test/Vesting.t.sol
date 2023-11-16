@@ -46,6 +46,7 @@ contract VestingTest is Test {
         Vesting vest = Vesting(factory.createVestingClone(0, trustedForwarder, address(this), address(token)));
         vm.assume(rando != address(0));
         vm.assume(rando != address(this));
+        vm.assume(hash != bytes32(0));
 
         // rando cannot commit
         vm.prank(rando);

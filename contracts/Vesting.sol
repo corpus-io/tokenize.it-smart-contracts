@@ -27,6 +27,7 @@ struct VestingPlan {
     uint64 cliff;
     /// the duration of the vesting - after this duration all tokens can be released
     uint64 duration;
+    /// if true, the token can be claimed through minting, otherwise the tokens are owned by the contract and can be transferred
     bool isMintable;
 }
 
@@ -37,7 +38,6 @@ struct VestingPlan {
  *
  */
 contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
-    event ERC20Released(address indexed token, uint256 amount);
     event Commit(bytes32 hash);
     event ERC20Released(uint64 id, uint256 amount);
     event Revoke(bytes32 hash, uint64 endVestingTime);
@@ -140,7 +140,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
 
     /**
      * Managers can commit to a vesting plan without revealing it's details.
-     * The paramters are hashed and this hash is stored in the commitments mapping.
+     * The parameters are hashed and this hash is stored in the commitments mapping.
      * Anyone can then reveal the vesting plan by providing the parameters and the salt.
      * @param hash commitment hash
      */
@@ -159,6 +159,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
      */
     function revoke(bytes32 hash, uint64 end) external onlyManager {
         require(commitments[hash] != 0, "invalid-hash");
+        // already vested tokens can not be taken away (except of burning in the token contract itself)
         end = uint64(block.timestamp) > end ? uint64(block.timestamp) : end;
         commitments[hash] = end;
         emit Revoke(hash, end);
@@ -245,7 +246,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         bool _isMintable
     ) internal returns (uint64 id) {
         require(_allocation > 0, "Allocation must be greater than zero");
-        require(address(_beneficiary) != address(0), "Beneficiary must not be zero address");
+        require(_beneficiary != address(0), "Beneficiary must not be zero address");
         require(
             _start >= block.timestamp - TIME_HORIZON && _start <= block.timestamp + TIME_HORIZON,
             "Start must be reasonable"
@@ -268,6 +269,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     }
 
     function stopVesting(uint64 id, uint64 endTime) public onlyManager {
+        // already vested tokens can not be taken away (except of burning in the token contract itself)
         endTime = endTime < uint64(block.timestamp) ? uint64(block.timestamp) : endTime;
         require(endTime < vestings[id].start + vestings[id].duration, "endTime must be before vesting end");
 
@@ -319,7 +321,6 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         require(_msgSender() == beneficiary(id), "Only beneficiary can release tokens");
         amount = releasable(id) < amount ? releasable(id) : amount;
         vestings[id].released += amount;
-        emit ERC20Released(token, amount);
         if (isMintable(id)) {
             ERC20Mintable(token).mint(beneficiary(id), amount);
         } else {
