@@ -14,18 +14,18 @@ Tokenize.it will collect fees from it's users. There are 3 types of users and 2 
   1.  currencies (WETH, WBTC, USDC, EUROC, EURe)
   2.  tokens of companies
 
-Fees are collected during investments and token minting. They are paid both in the investment currency (-> see publicFundraisingFeeDenominator and privateOfferFeeDenominator in [FeeSettings.sol](../contracts/FeeSettings.sol)) and the token minted (-> see tokenFeeDenominator in [FeeSettings.sol](../contracts/FeeSettings.sol)).
+Fees are collected during investments and token minting. They are paid both in the investment currency (-> see `publicFundraisingFee()` and `privateOfferFee()` in [FeeSettings.sol](../contracts/FeeSettings.sol)) and the token minted (-> see `tokenFee` in [FeeSettings.sol](../contracts/FeeSettings.sol)).
 
 **Example**:
 Investor buys X tokens for Y USDC through the PublicFundraising contract.
 
 - X tokens are minted to the investor
-- X/tokenFeeDenominator tokens are minted to the feeCollector
-- So the company mints a total of X + X/tokenFeeDenominator tokens in this transaction
+- X\*tokenFeeNumerator/tokenFeeDenominator tokens are minted to the feeCollector
+- So the company mints a total of X + X\*tokenFeeNumerator/tokenFeeDenominator tokens in this transaction
 - Investor pays Y USDC
-- Y/publicFundraisingFeeDenominator USDC goes to the feeCollector
-- So the company receives Y - Y/publicFundraisingFeeDenominator USDC in this transaction
-- In total, the company minted X + X/tokenFeeDenominator tokens and received Y - Y/publicFundraisingFeeDenominator USDC. It paid fees both in token and currency.
+- Y\*publicFundraisingFeeNumerator/publicFundraisingFeeDenominator USDC goes to the feeCollector
+- So the company receives Y - Y\*publicFundraisingFeeNumerator/publicFundraisingFeeDenominator USDC in this transaction
+- In total, the company minted X + X\*tokenFeeNumerator/tokenFeeDenominator tokens and received Y - Y\*publicFundraisingFeeNumerator/publicFundraisingFeeDenominator USDC. It paid fees both in token and currency.
 - The investor pays Y USDC for X tokens, like they expected. They did not pay fees.
 
 ### Interpretation
@@ -71,25 +71,25 @@ Tokenize.it will deploy and manage at least one [fee settings contract](../contr
   - `publicFundraisingFeeCollector()`
   - `privateOfferFeeCollector()`
 
-These values can be changed by tokenize.it. Fee changes are subject to a delay of at least 12 weeks.
+These values can be changed by tokenize.it. Fee increases are subject to a delay of at least 12 weeks.
 
 All fees are calculated as follows:
 
 ```solidity
-fee = amount / feeDenominator
+fee = amount * feeNumerator / feeDenominator
 ```
 
 ### Token contracts
 
 - Each [token contract](../contracts/Token.sol) is connected to a [fee settings contract](../contracts/FeeSettings.sol).
-- When X tokens are minted, the fee is X/tokenFeeDenominator tokens. These are minted ON TOP of the X tokens requested, and are transferred to the feeCollector.
+- When X tokens are minted, the fee is X\*tokenFeeNumerator/tokenFeeDenominator tokens. These are minted ON TOP of the X tokens requested, and are transferred to the feeCollector.
 - The fee settings contract used by token can be changed only by the owner of the current fee settings contract in collaboration with the token's DEFAULT_ADMIN_ROLE.
 
 ### Investment contracts
 
 - The investment contracts [PrivateOffer](../contracts/PrivateOffer.sol) and [PublicFundraising](../contracts/PublicFundraising.sol) both access the fee setting through the token contracts they are connected to.
-- PublicFundraising: When Y currency is paid, the fee is Y/publicFundraisingFeeDenominator. This fee is DEDUCTED from the Y currency paid and transferred to the feeCollector.
-- PrivateOffer: When Y currency is paid, the fee is Y/privateOfferFeeDenominator. This fee is DEDUCTED from the Y currency paid and transferred to the feeCollector.
+- PublicFundraising: When Y currency is paid, the fee is Y\*publicFundraisingFeeNumerator/publicFundraisingFeeDenominator. This fee is DEDUCTED from the Y currency paid and transferred to the feeCollector.
+- PrivateOffer: When Y currency is paid, the fee is Y\*privateOfferFeeNumerator/privateOfferFeeDenominator. This fee is DEDUCTED from the Y currency paid and transferred to the feeCollector.
 
 ## Discounts
 
@@ -103,7 +103,7 @@ The new FeeSettings contract can provide reduced fees, for example 0.5% instead 
 
 If the discount should only be valid for a certain duration, the platform can update the parameters of the FeeSettings contract after the discount period has ended. The new parameters can be the same as those of the old FeeSettings contract. In this case, the founders would not benefit from a discount anymore.
 
-If the platform wants to encourage the founders to switch back to the old FeeSettings contract, it can do so by increasing the fees in the new contract beyond the settings in the old one and proposing a switch back to the old contract. The founders can then accept the switch back to the old contract and benefit from the lower fees again.
+If the platform wants to encourage the founders to switch back to the old FeeSettings contract, it can do so by increasing the fees in the new contract beyond the settings in the old one and proposing a switch back to the old contract. The founders can then accept the switch back to the old contract and benefit from the standard fees instead of increased fees.
 
 ### Off-chain discounts
 

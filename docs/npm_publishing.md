@@ -1,6 +1,6 @@
 # Publishing to npm
 
-The smart contracts are published to npm as a package. The package name is `@tokenizeit/contracts`. This makes it easy to use the contracts in other projects.
+The smart contracts are published to npm as a package. The package name is `@tokenizeit/contracts`. This makes it easy to use the contracts in other projects (e.g. in our web app).
 
 Currently, no automated publishing is set up. Publishing is done manually. To publish a new version, follow these steps:
 

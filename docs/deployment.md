@@ -4,13 +4,17 @@
 
 The platform-related contracts are:
 
-- AllowList.sol
-- FeeSettings.sol
-- PrivateOfferFactory.sol
+1. [allowList](../contracts/AllowList.sol)
+2. [feeSettings](../contracts/FeeSettings.sol)
+3. [TokenFactory](../contracts/TokenProxyFactory.sol)
+4. [PrivateOfferFactory](../contracts/PrivateOfferFactory.sol)
+5. [PublicFundraisingFactory](../contracts/PublicFundraisingCloneFactory.sol)
+6. [VestingFactory](../contracts/VestingCloneFactory.sol)
+7. [PriceLinearFactory](../contracts/PriceLinearCloneFactory.sol) or other dynamic pricing factories
 
-Currently, there is no need for them to be deployed automatically. Instead, deployment can be done with foundry. For some background, review the [foundry book's chapter on deployments](https://book.getfoundry.sh/forge/deploying).
+Some of them can be deployed manually. A script is provided to automate some of the deployment steps though. It can quickly be adapted to deploy more or less of these contracts.
 
-Deploy these contracts like this:
+The script is called like this:
 
 ```bash
 source .env
@@ -36,12 +40,12 @@ Note:
 The company-related contracts are:
 
 - Token.sol
-- ContinuousInvestment.sol
+- PublicFundraising.sol
 - PrivateOffer.sol
 
 They are deployed through the web app.
 
-For development purposes, the contracts can be deployed like this:
+For development purposes, the contracts can be deployed by adapting this script and executing it:
 
 ```bash
 forge script script/DeployToken.s.sol --rpc-url $GOERLI_RPC_URL  --verify --broadcast
@@ -54,7 +58,7 @@ If the forwarder has not been deployed yet, e.g. when working in a testing envir
 
 ## Contract Verification
 
-As long as automatic verification is not implemented, the contracts need to be verified manually. This can be done using hardhat or foundry. Sometimes one or the other works better.
+As the web app does not automatically verify the contracts (with etherscan or other services), this needs to be done manually. Use hardhat or foundry for this purpose. Sometimes one or the other works better.
 
 ### hardhat
 

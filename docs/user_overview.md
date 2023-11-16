@@ -8,10 +8,11 @@
 Let's assume that there will be one (1) platform, many (**X**) companies and many (Y) investors. This leads to the following number of deployments for each contract:
 | contract | number of deployments | admin | reason |
 |----|----|----|---|
+| all factories | 1 | --- | the factories help to deploy to deterministic addresses and save gas through cloning or proxies |
 | AllowList | 1 | platform | used by all companies |
 | FeeSettings | 1 | platform | used by all companies |
-| PrivateOfferFactory | 1 | --- | helps to deploy PrivateOffer to deterministic address, can be used by all PrivateOffers |
 | Token | X | company | represents a specific companies shares |
+| Vesting | X | company | allows company to vest tokens over a period of time |
 | PublicFundraising | X | company | most companies will want raise funds from all eligible investors |
 | PrivateOffer | >X | --- | most companies will extend special investment offers to specific investors, or receive these from investors |
 
@@ -29,17 +30,17 @@ Which addresses are able to receive or send the tokens can be limited through th
 
 When tokens are minted, [fees are charged](fees.md).
 
-## Fundraising
+## Investing
 
 When investments are processed, [fees are charged](fees.md).
 
-### Open fundraising
+### Public investments
 
-The founder can offer shares at a certain price to the public. If they want to do so, the platform deploys a PublicFundraising contract and transfers ownership to the founder.
+The founder can offer tokens at a certain price to the public. If they want to do so, the platform deploys a PublicFundraising contract and transfers ownership to the founder.
 
 Afterwards, the founder grants a token minting allowance to the PublicFundraising contract, enabling it to mint shares.
 
-In order to buy tokens, investors must grant an allowance in payment currency and execute the deal() function. This will transfer the payment to the receiver selected by the founder and mint tokens to the investor.
+In order to buy tokens, investors must grant an allowance in payment currency and execute the deal() function. This will transfer the payment to the receiver selected by the founder and mint tokens to the investor. Alternatively, the investor can send the payment directly to the contract using the `TransferAndCall` standard.
 
 The fundraising can be stopped or paused by the founder. When it is paused, conditions like price or minimum amount can be updated.
 
@@ -55,9 +56,13 @@ Founder and investor have to agree on the deal in 3 ways before the contract can
 - founder grants token minting allowance to contract's address
 - investor grants payment allowance to contract's address
 
-Once these steps have been taken completed, the platform executes the deal by deploying the contract. Again, all ethereum transaction fees are paid by the platform.
+Once these steps have been completed, the platform executes the deal by deploying the contract. Again, all ethereum transaction fees are paid by the platform.
 
 # Services
+
+## Legal templates
+
+While tokenize.it does not provide legal council, it will provide templates for legal documents that are needed for the process of creating company tokens and raising funds. These templates will be provided in the web app.
 
 ## Transaction fees
 
