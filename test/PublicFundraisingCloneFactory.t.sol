@@ -342,6 +342,8 @@ contract tokenTest is Test {
 
         assertEq(raise.maxAmountPerBuyer(), _maxAmountPerBuyer, "maxAmountPerBuyer not set");
         assertEq(raise.priceBase(), _priceBase, "priceBase not set");
+        assertEq(raise.priceMin(), _priceMin, "priceMin not set");
+        assertEq(raise.priceMax(), _priceMax, "priceMax not set");
         assertEq(raise.maxAmountOfTokenToBeSold(), _maxAmountOfTokenToBeSold, "maxAmountOfTokenToBeSold not set");
         assertEq(address(raise.currency()), address(_currency), "currency not set");
         assertEq(address(raise.token()), address(_token), "token not set");
