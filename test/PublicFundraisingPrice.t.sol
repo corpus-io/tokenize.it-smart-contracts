@@ -70,22 +70,22 @@ contract PublicFundraisingTest is Test {
         vm.prank(owner);
         factory = new PublicFundraisingCloneFactory(address(new PublicFundraising(trustedForwarder)));
 
-        raise = PublicFundraising(
-            factory.createPublicFundraisingClone(
-                0,
-                trustedForwarder,
-                owner,
-                payable(receiver),
-                minAmountPerBuyer,
-                maxAmountPerBuyer,
-                price,
-                maxAmountOfTokenToBeSold,
-                paymentToken,
-                token,
-                0,
-                address(0)
-            )
+        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+            owner,
+            payable(receiver),
+            minAmountPerBuyer,
+            maxAmountPerBuyer,
+            price,
+            price,
+            price,
+            maxAmountOfTokenToBeSold,
+            paymentToken,
+            token,
+            0,
+            address(0)
         );
+
+        raise = PublicFundraising(factory.createPublicFundraisingClone(0, trustedForwarder, arguments));
 
         // allow raise contract to mint
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
