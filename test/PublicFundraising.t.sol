@@ -106,16 +106,18 @@ contract PublicFundraisingTest is Test {
         // try to initialize
         vm.expectRevert("Initializable: contract is already initialized");
         _logic.initialize(
-            address(this),
-            payable(receiver),
-            minAmountPerBuyer,
-            maxAmountPerBuyer,
-            price,
-            maxAmountOfTokenToBeSold,
-            paymentToken,
-            token,
-            0,
-            address(0)
+            PublicFundraisingInitializerArguments(
+                address(this),
+                payable(receiver),
+                minAmountPerBuyer,
+                maxAmountPerBuyer,
+                price,
+                maxAmountOfTokenToBeSold,
+                paymentToken,
+                token,
+                0,
+                address(0)
+            )
         );
 
         // owner and all settings are 0

@@ -6,20 +6,6 @@ import "./PublicFundraising.sol";
 import "./CloneFactory.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
-/// this struct is used to circumvent the stack too deep error that occurs when passing too many arguments to a function
-struct PublicFundraisingInitializerArguments {
-    address owner;
-    address currencyReceiver;
-    uint256 minAmountPerBuyer;
-    uint256 maxAmountPerBuyer;
-    uint256 tokenPrice;
-    uint256 maxAmountOfTokenToBeSold;
-    IERC20 currency;
-    Token token;
-    uint256 autoPauseDate;
-    address priceOracle;
-}
-
 contract PublicFundraisingCloneFactory is CloneFactory {
     constructor(address _implementation) CloneFactory(_implementation) {}
 
@@ -34,18 +20,7 @@ contract PublicFundraisingCloneFactory is CloneFactory {
             publicFundraising.isTrustedForwarder(_trustedForwarder),
             "PublicFundraisingCloneFactory: Unexpected trustedForwarder"
         );
-        publicFundraising.initialize(
-            _arguments.owner,
-            _arguments.currencyReceiver,
-            _arguments.minAmountPerBuyer,
-            _arguments.maxAmountPerBuyer,
-            _arguments.tokenPrice,
-            _arguments.maxAmountOfTokenToBeSold,
-            _arguments.currency,
-            _arguments.token,
-            _arguments.autoPauseDate,
-            _arguments.priceOracle
-        );
+        publicFundraising.initialize(_arguments);
         emit NewClone(address(publicFundraising));
         return address(publicFundraising);
     }
