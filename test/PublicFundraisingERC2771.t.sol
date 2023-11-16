@@ -22,6 +22,8 @@ contract PublicFundraisingTest is Test {
     //Forwarder trustedForwarder;
     ERC2771Helper ERC2771helper;
 
+    PublicFundraisingInitializerArguments arguments;
+
     // copied from openGSN IForwarder
     struct ForwardRequest {
         address from;
@@ -94,28 +96,28 @@ contract PublicFundraisingTest is Test {
 
         tokenBuyAmount = 5 * 10 ** token.decimals();
         costInPaymentToken = (tokenBuyAmount * price) / 10 ** 18;
+
+        arguments = PublicFundraisingInitializerArguments(
+            address(this),
+            payable(receiver),
+            minAmountPerBuyer,
+            maxAmountPerBuyer,
+            price,
+            0,
+            0,
+            maxAmountOfTokenToBeSold,
+            paymentToken,
+            token,
+            0,
+            address(0)
+        );
     }
 
     function buyWithERC2771(Forwarder forwarder) public {
         vm.prank(owner);
         fundraisingFactory = new PublicFundraisingCloneFactory(address(new PublicFundraising(address(forwarder))));
 
-        raise = PublicFundraising(
-            fundraisingFactory.createPublicFundraisingClone(
-                0,
-                address(forwarder),
-                address(this),
-                payable(receiver),
-                minAmountPerBuyer,
-                maxAmountPerBuyer,
-                price,
-                maxAmountOfTokenToBeSold,
-                paymentToken,
-                token,
-                0,
-                address(0)
-            )
-        );
+        raise = PublicFundraising(fundraisingFactory.createPublicFundraisingClone(0, address(forwarder), arguments));
 
         // allow raise contract to mint
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
