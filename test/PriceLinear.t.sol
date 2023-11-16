@@ -17,11 +17,12 @@ contract PublicFundraisingTest is Test {
     }
 
     function testPriceRises(uint256 price, uint256 someTime) public {
-        uint256 startTime = 3;
+        vm.warp(1 days);
+
+        uint256 startTime = 3 + 1 days;
         uint256 plannedChange = 42e9;
         vm.assume(price < type(uint256).max - plannedChange);
         vm.assume(someTime < type(uint256).max - startTime);
-        vm.warp(0);
 
         PriceLinear oracle = PriceLinear(
             priceLinearCloneFactory.createPriceLinear(
@@ -37,7 +38,7 @@ contract PublicFundraisingTest is Test {
             )
         );
 
-        vm.warp(1);
+        vm.warp(startTime - 1);
         assertEq(oracle.getPrice(price), price, "Price changed before start time");
 
         vm.warp(startTime);
@@ -58,12 +59,12 @@ contract PublicFundraisingTest is Test {
     }
 
     function testStepping() public {
+        vm.warp(1 days);
+
         uint256 price = 1e18;
         uint32 stepWidth = 10;
-        uint256 startTime = 5;
+        uint256 startTime = 5 + 1 days;
         uint64 increasePerStep = 1e9;
-
-        vm.warp(0);
 
         PriceLinear oracle = PriceLinear(
             priceLinearCloneFactory.createPriceLinear(
@@ -102,12 +103,12 @@ contract PublicFundraisingTest is Test {
     }
 
     function testDecrease() public {
+        vm.warp(1 days);
+
         uint256 price = 1e18;
         uint32 stepWidth = 10;
-        uint256 startTime = 5;
+        uint256 startTime = 5 + 1 days;
         uint64 decreasePerStep = 1e9;
-
-        vm.warp(0);
 
         PriceLinear oracle = PriceLinear(
             priceLinearCloneFactory.createPriceLinear(
@@ -146,6 +147,7 @@ contract PublicFundraisingTest is Test {
     }
 
     function testBlockBased() public {
+        vm.warp(1 days);
         uint256 price = 1e18;
         uint32 stepWidth = 10;
         // must use fixed start block because of yul interference with the forge system
