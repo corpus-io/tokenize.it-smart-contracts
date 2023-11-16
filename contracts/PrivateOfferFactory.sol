@@ -24,7 +24,7 @@ contract PrivateOfferFactory {
      * @param _tokenReceiver address receiving the tokens
      * @param _currencyReceiver address receiving the currency
      * @param _tokenAmount amount of tokens to be minted
-     * @param _tokenPrice price of one token in currency
+     * @param _tokenPrice price of one token in currency, see docs/price.md.
      * @param _expiration timestamp after which the contract is no longer valid
      * @param _currency address of the currency
      * @param _token address of the token

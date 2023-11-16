@@ -20,7 +20,7 @@ import "./interfaces/IPriceDynamic.sol";
  *      The currency the offer is denominated in is set at creation time and can be updated later.
  *      The contract can be paused at any time by the owner, which will prevent any new deals from being made. Then, changes to the contract can be made, like changing the currency, price or requirements.
  *      The contract can be unpaused after "delay", which will allow new deals to be made again.
- *      A company will create only one PublicFundraising contract for their token (or one for each currency if they want to accept multiple currencies).
+ *      A company will create only one PublicFundraising contract for their token.
  * @dev The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support
  */
 contract PublicFundraising is
@@ -94,8 +94,15 @@ contract PublicFundraising is
      * @param currencyAmount Amount of currency paid
      */
     event TokensBought(address indexed buyer, uint256 tokenAmount, uint256 currencyAmount);
-
+    /**
+     * @notice Dynamic pricing got activiated using `priceOracle` with `priceMin`as the minimum price, and `priceMax` as the maximum price.
+     * @param priceOracle Oracle providing the current price through the `getPrice` function.
+     * @param priceMin minimal price
+     * @param priceMax maximal price
+     */
     event DynamicPricingActivated(address priceOracle, uint256 priceMin, uint256 priceMax);
+    /// @notice Dynamic pricing has been deactivated and priceBase is used
+    event DynamicPricingDeactivated();
 
     /**
      * This constructor creates a logic contract that is used to clone new fundraising contracts.
@@ -107,8 +114,7 @@ contract PublicFundraising is
     }
 
     /**
-     * @notice Sets up the PublicFundraising. The contract is usable immediately after deployment, but does need a minting allowance for the token.
-     * @dev Constructor that passes the trusted forwarder to the ERC2771Context constructor
+     * @notice Sets up the PublicFundraising. The contract is usable immediately after being initialized, but does need a minting allowance for the token.
      * @param _owner Owner of the contract
      * @param _currencyReceiver address that receives the payment (in currency) when tokens are bought
      * @param _minAmountPerBuyer smallest amount of tokens a buyer is allowed to buy when buying for the first time
@@ -150,8 +156,6 @@ contract PublicFundraising is
         );
         require(_tokenPrice != 0, "_tokenPrice needs to be a non-zero amount");
         require(_maxAmountOfTokenToBeSold != 0, "_maxAmountOfTokenToBeSold needs to be larger than zero");
-
-        // after creating the contract, it needs a minting allowance (in the token contract)
     }
 
     function activateDynamicPricing(
@@ -172,6 +176,9 @@ contract PublicFundraising is
 
     function deactivateDynamicPricing() external onlyOwner whenPaused {
         priceOracle = IPriceDynamic(address(0));
+        coolDownStart = block.timestamp;
+
+        emit DynamicPricingDeactivated();
     }
 
     function getPrice() public view returns (uint256) {
@@ -190,11 +197,7 @@ contract PublicFundraising is
             "Total amount of bought tokens needs to be lower than or equal to maxAmount"
         );
 
-        // auto pause
         if (autoPauseDate != 0 && block.timestamp > autoPauseDate) {
-            _pause();
-            // auto-pause has triggered, reset it so it will not trigger again if the owner unpauses the contract
-            autoPauseDate = 0;
             revert("Pausing contract because of auto-pause date");
         }
 
@@ -219,9 +222,9 @@ contract PublicFundraising is
         uint256 currencyAmount = Math.ceilDiv(_amount * getPrice(), 10 ** token.decimals());
 
         IFeeSettingsV2 feeSettings = token.feeSettings();
-        uint256 fee = feeSettings.publicFundraisingFee(currencyAmount);
+        (uint256 fee, address feeCollector) = _getFeeAndFeeReceiver(currencyAmount);
         if (fee != 0) {
-            currency.safeTransferFrom(_msgSender(), feeSettings.publicFundraisingFeeCollector(), fee);
+            currency.safeTransferFrom(_msgSender(), feeCollector, fee);
         }
 
         currency.safeTransferFrom(_msgSender(), currencyReceiver, currencyAmount - fee);
@@ -230,17 +233,18 @@ contract PublicFundraising is
         emit TokensBought(_msgSender(), _amount, currencyAmount);
     }
 
+    /// ERC 677 compatibility - TransferAndCall
     function onTokenTransfer(
         address _from,
         uint256 _currencyAmount,
-        bytes calldata data
+        bytes calldata _data
     ) external whenNotPaused nonReentrant returns (bool) {
         require(_msgSender() == address(currency), "only the currency contract can call this function");
 
         // if a recipient address was provided in data, use it as receiver. Otherwise, use _from as receiver.
         address tokenReceiver;
-        if (data.length == 32) {
-            tokenReceiver = abi.decode(data, (address));
+        if (_data.length == 32) {
+            tokenReceiver = abi.decode(_data, (address));
         } else {
             tokenReceiver = _from;
         }
@@ -298,6 +302,7 @@ contract PublicFundraising is
      * @param _tokenPrice new tokenPrice
      */
     function setCurrencyAndTokenPrice(IERC20 _currency, uint256 _tokenPrice) external onlyOwner whenPaused {
+        require(address(_currency) != address(0), "currency can not be zero address");
         require(_tokenPrice != 0, "_tokenPrice needs to be a non-zero amount");
         priceBase = _tokenPrice;
         currency = _currency;
