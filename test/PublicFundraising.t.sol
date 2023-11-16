@@ -846,7 +846,7 @@ contract PublicFundraisingTest is Test {
         uint32 changeDelay,
         uint32 attemptUnpauseDelay
     ) public {
-        uint256 unpauseDelay = raise.delay();
+        uint256 unpauseDelay = 1 hours;
         vm.assume(startTime < type(uint128).max / 2);
         vm.assume(startTime > 0);
         vm.assume(changeDelay > 0);

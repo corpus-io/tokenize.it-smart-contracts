@@ -32,8 +32,8 @@ contract PublicFundraising is
     using SafeERC20 for IERC20;
 
     /// @notice Minimum waiting time between pause or parameter change and unpause.
-    /// @dev delay is calculated from pause or parameter change to unpause.
-    uint256 public constant delay = 1 days;
+    /// @dev delay is calculated from parameter change to unpause.
+    uint256 public constant delay = 1 hours;
 
     /// address that receives the currency when tokens are bought
     address public currencyReceiver;
