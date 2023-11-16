@@ -47,7 +47,7 @@ contract PublicFundraisingTest is Test {
     uint256 public constant maxAmountPerBuyer = maxAmountOfTokenToBeSold / 2; // 10 token
     uint256 public constant minAmountPerBuyer = maxAmountOfTokenToBeSold / 200; // 0.1 token
 
-    uint256 public constant autoPauseDate = 12859023;
+    uint256 public constant lastBuyDate = 12859023;
 
     function setUp() public {
         list = new AllowList();
@@ -143,7 +143,7 @@ contract PublicFundraisingTest is Test {
                 maxAmountOfTokenToBeSold,
                 paymentToken,
                 token,
-                autoPauseDate
+                lastBuyDate
             )
         );
         assertTrue(_raise.owner() == address(this));
@@ -154,7 +154,7 @@ contract PublicFundraisingTest is Test {
         assertTrue(_raise.priceBase() == price);
         assertTrue(_raise.currency() == paymentToken);
         assertTrue(_raise.token() == token);
-        assertTrue(_raise.autoPauseDate() == autoPauseDate);
+        assertTrue(_raise.lastBuyDate() == lastBuyDate);
     }
 
     function testConstructorWithAddress0() public {
@@ -1213,11 +1213,11 @@ contract PublicFundraisingTest is Test {
         assertTrue(raise.owner() == newOwner);
     }
 
-    function testAutoPauseActivation(uint256 _autoPauseDate, uint256 testDate) public {
+    function testOfferExpiration(uint256 _lastBuyDate, uint256 testDate) public {
         vm.assume(testDate > 1 days + 1);
         vm.assume(testDate < 100 * 365 days);
-        vm.assume(_autoPauseDate > 1);
-        vm.assume(_autoPauseDate < 100 * 365 days);
+        vm.assume(_lastBuyDate > 1);
+        vm.assume(_lastBuyDate < 100 * 365 days);
 
         // because of limitations in the test suite, we have to decide on a fixed date to base our warping on
         uint256 startDate = 100 * 365 days;
@@ -1228,19 +1228,19 @@ contract PublicFundraisingTest is Test {
 
         vm.startPrank(owner);
         raise.pause();
-        raise.setAutoPauseDate(startDate + _autoPauseDate);
+        raise.setLastBuyDate(startDate + _lastBuyDate);
         vm.warp(startDate + 1 days + 1);
         raise.unpause();
         vm.stopPrank();
 
         vm.warp(startDate + testDate);
 
-        // log block.timestamp and autoPauseDate
+        // log block.timestamp and lastBuyDate
         console.log("block.timestamp: ", block.timestamp);
-        console.log("autoPauseDate: ", _autoPauseDate);
+        console.log("lastBuyDate: ", _lastBuyDate);
 
-        if (testDate > _autoPauseDate) {
-            vm.expectRevert("Pausing contract because of auto-pause date");
+        if (testDate > _lastBuyDate) {
+            vm.expectRevert("Last buy date has passed: not selling tokens anymore.");
             vm.prank(buyer);
             raise.buy(tokenBuyAmount, buyer);
         } else {
@@ -1251,8 +1251,8 @@ contract PublicFundraisingTest is Test {
         }
     }
 
-    function testAutoPauseInConstructor(uint256 _autoPauseDate, uint256 testDate) public {
-        vm.assume(_autoPauseDate > 0);
+    function testOfferExpirationDateSetInConstructor(uint256 _lastBuyDate, uint256 testDate) public {
+        vm.assume(_lastBuyDate > 0);
         PublicFundraising _raise = PublicFundraising(
             factory.createPublicFundraisingClone(
                 0,
@@ -1265,7 +1265,7 @@ contract PublicFundraisingTest is Test {
                 maxAmountOfTokenToBeSold,
                 paymentToken,
                 token,
-                _autoPauseDate
+                _lastBuyDate
             )
         );
 
@@ -1276,14 +1276,14 @@ contract PublicFundraisingTest is Test {
 
         // log test date, auto pause date and block.timestamp
         console.log("testDate: ", testDate);
-        console.log("autoPauseDate: ", _autoPauseDate);
+        console.log("lastBuyDate: ", _lastBuyDate);
         console.log("block.timestamp: ", block.timestamp);
 
-        if (testDate > _autoPauseDate) {
+        if (testDate > _lastBuyDate) {
             // auto-pause should trigger
             vm.startPrank(buyer);
             paymentToken.approve(address(_raise), type(uint256).max);
-            vm.expectRevert("Pausing contract because of auto-pause date");
+            vm.expectRevert("Last buy date has passed: not selling tokens anymore.");
             _raise.buy(tokenBuyAmount, buyer);
             vm.stopPrank();
         } else {

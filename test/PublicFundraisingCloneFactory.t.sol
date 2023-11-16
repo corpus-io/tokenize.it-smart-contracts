@@ -39,7 +39,7 @@ contract tokenTest is Test {
     uint256 public constant exampleMaxAmountOfTokenToBeSold = 82398479821374;
     IERC20 public constant exampleCurrency = IERC20(address(1));
     Token public constant exampleToken = Token(address(2));
-    uint256 public constant exampleAutoPauseDate = 0;
+    uint256 public constant exampleLastBuyDate = 0;
 
     event RequirementsChanged(uint256 newRequirements);
 
@@ -73,7 +73,7 @@ contract tokenTest is Test {
         uint256 _maxAmountOfTokenToBeSold,
         IERC20 _currency,
         Token _token,
-        uint256 _autoPauseDate
+        uint256 _lastBuyDate
     ) public {
         vm.assume(_trustedForwarder != address(0));
         vm.assume(_owner != address(0));
@@ -101,7 +101,7 @@ contract tokenTest is Test {
                 _maxAmountOfTokenToBeSold,
                 _currency,
                 _token,
-                _autoPauseDate
+                _lastBuyDate
             )
         );
 
@@ -117,7 +117,7 @@ contract tokenTest is Test {
             _maxAmountOfTokenToBeSold,
             _currency,
             _token,
-            _autoPauseDate
+            _lastBuyDate
         );
 
         // log both addresses
@@ -132,7 +132,7 @@ contract tokenTest is Test {
         uint256 _maxAmountOfTokenToBeSold,
         IERC20 _currency,
         Token _token,
-        uint256 _autoPauseDate
+        uint256 _lastBuyDate
     ) public {
         vm.assume(address(_currency) != address(0));
         vm.assume(address(_token) != address(0));
@@ -157,7 +157,7 @@ contract tokenTest is Test {
                 _maxAmountOfTokenToBeSold,
                 _currency,
                 _token,
-                _autoPauseDate
+                _lastBuyDate
             )
         );
 
@@ -174,7 +174,7 @@ contract tokenTest is Test {
             _maxAmountOfTokenToBeSold,
             _currency,
             _token,
-            _autoPauseDate
+            _lastBuyDate
         );
         assertEq(expected1, actual, "address prediction failed");
     }
@@ -207,7 +207,7 @@ contract tokenTest is Test {
                 exampleMaxAmountOfTokenToBeSold,
                 exampleCurrency,
                 exampleToken,
-                exampleAutoPauseDate
+                exampleLastBuyDate
             )
         );
 
@@ -224,7 +224,7 @@ contract tokenTest is Test {
             exampleMaxAmountOfTokenToBeSold,
             exampleCurrency,
             exampleToken,
-            exampleAutoPauseDate
+            exampleLastBuyDate
         );
         assertEq(expected1, actual, "address prediction failed");
     }

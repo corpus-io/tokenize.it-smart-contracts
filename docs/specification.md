@@ -97,7 +97,7 @@ The following statements about the smart contracts should always be true
 - Each setting update (re-)starts the cool down period of 24h hours.
 - The contract can only be unpaused after the cool down period has passed.
 - Only the contract owner can call pause, unpause, or the functions that update settings.
-- The contract will never sell tokens after the autoPauseDate has passed, unless autoPauseDate is 0.
+- The contract will never sell tokens after the lastBuyDate has passed, unless lastBuyDate is 0.
 - In sum, the contract will never mint more tokens to the buyers than maxAmountOfTokenToBeSold at the time of minting. This does not take into account the tokens minted to feeCollector in Token.sol.
 - All functions can be called directly or as meta transaction using ERC2771.
 - Calling a function directly or through ERC2771 yield equivalent results given equivalent inputs.
