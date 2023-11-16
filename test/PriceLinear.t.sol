@@ -6,6 +6,7 @@ import "../contracts/PriceLinearCloneFactory.sol";
 
 contract PublicFundraisingTest is Test {
     PriceLinearCloneFactory priceLinearCloneFactory;
+    PriceLinear oracle;
 
     address public constant companyAdmin = address(1);
     address public trustedForwarder = address(2);
@@ -14,16 +15,31 @@ contract PublicFundraisingTest is Test {
         // set up price oracle factory
         PriceLinear priceLinearLogicContract = new PriceLinear(trustedForwarder);
         priceLinearCloneFactory = new PriceLinearCloneFactory(address(priceLinearLogicContract));
+
+        oracle = PriceLinear(
+            priceLinearCloneFactory.createPriceLinear(
+                bytes32(uint256(0)),
+                trustedForwarder,
+                companyAdmin,
+                1,
+                1,
+                uint64(block.timestamp + 1),
+                1,
+                false,
+                true
+            )
+        );
     }
 
     function testPriceRises(uint256 price, uint256 someTime) public {
-        uint256 startTime = 3;
+        vm.warp(1 days);
+
+        uint256 startTime = 3 + 1 days;
         uint256 plannedChange = 42e9;
         vm.assume(price < type(uint256).max - plannedChange);
         vm.assume(someTime < type(uint256).max - startTime);
-        vm.warp(0);
 
-        PriceLinear oracle = PriceLinear(
+        PriceLinear _oracle = PriceLinear(
             priceLinearCloneFactory.createPriceLinear(
                 bytes32(uint256(0)),
                 trustedForwarder,
@@ -37,35 +53,35 @@ contract PublicFundraisingTest is Test {
             )
         );
 
-        vm.warp(1);
-        assertEq(oracle.getPrice(price), price, "Price changed before start time");
+        vm.warp(startTime - 1);
+        assertEq(_oracle.getPrice(price), price, "Price changed before start time");
 
         vm.warp(startTime);
-        assertEq(oracle.getPrice(price), price, "Price changed already at start time");
+        assertEq(_oracle.getPrice(price), price, "Price changed already at start time");
 
         vm.warp(startTime + 1);
-        assertEq(oracle.getPrice(price), price + 1, "Price should have increased by 1");
+        assertEq(_oracle.getPrice(price), price + 1, "Price should have increased by 1");
 
         vm.warp(startTime + plannedChange);
-        assertEq(oracle.getPrice(price), price + plannedChange, "Price should have increased by 42e9");
+        assertEq(_oracle.getPrice(price), price + plannedChange, "Price should have increased by 42e9");
 
         vm.warp(startTime + someTime);
         if (type(uint256).max - (startTime + someTime) > price) {
-            assertEq(oracle.getPrice(price), someTime + price, "Price should have increased by someTime");
+            assertEq(_oracle.getPrice(price), someTime + price, "Price should have increased by someTime");
         } else {
-            assertEq(oracle.getPrice(price), type(uint256).max, "Price should have increased to max");
+            assertEq(_oracle.getPrice(price), type(uint256).max, "Price should have increased to max");
         }
     }
 
     function testStepping() public {
+        vm.warp(1 days);
+
         uint256 price = 1e18;
         uint32 stepWidth = 10;
-        uint256 startTime = 5;
+        uint256 startTime = 5 + 1 days;
         uint64 increasePerStep = 1e9;
 
-        vm.warp(0);
-
-        PriceLinear oracle = PriceLinear(
+        PriceLinear _oracle = PriceLinear(
             priceLinearCloneFactory.createPriceLinear(
                 bytes32(uint256(0)),
                 trustedForwarder,
@@ -79,37 +95,37 @@ contract PublicFundraisingTest is Test {
             )
         );
 
-        assertEq(oracle.getPrice(price), price, "Price changed before start time");
+        assertEq(_oracle.getPrice(price), price, "Price changed before start time");
 
         vm.warp(1 + startTime);
-        assertEq(oracle.getPrice(price), price, "Price changed at 1");
+        assertEq(_oracle.getPrice(price), price, "Price changed at 1");
 
         vm.warp(9 + startTime);
-        assertEq(oracle.getPrice(price), price, "Price changed at 9");
+        assertEq(_oracle.getPrice(price), price, "Price changed at 9");
 
         vm.warp(startTime + stepWidth);
-        assertEq(oracle.getPrice(price), price + increasePerStep, "Price should have increased by 1 step");
-        console.log("Price: %s", oracle.getPrice(price));
+        assertEq(_oracle.getPrice(price), price + increasePerStep, "Price should have increased by 1 step");
+        console.log("Price: %s", _oracle.getPrice(price));
         console.log("Increase per step: %s", increasePerStep);
 
         vm.warp(startTime + stepWidth + 5);
-        assertEq(oracle.getPrice(price), price + increasePerStep, "Price should have increased by 1 step");
-        console.log("Price: %s", oracle.getPrice(price));
+        assertEq(_oracle.getPrice(price), price + increasePerStep, "Price should have increased by 1 step");
+        console.log("Price: %s", _oracle.getPrice(price));
         console.log("Increase per step: %s", increasePerStep);
 
         vm.warp(startTime + 2 * stepWidth);
-        assertEq(oracle.getPrice(price), price + 2 * increasePerStep, "Price should have increased by 2 steps");
+        assertEq(_oracle.getPrice(price), price + 2 * increasePerStep, "Price should have increased by 2 steps");
     }
 
     function testDecrease() public {
+        vm.warp(1 days);
+
         uint256 price = 1e18;
         uint32 stepWidth = 10;
-        uint256 startTime = 5;
+        uint256 startTime = 5 + 1 days;
         uint64 decreasePerStep = 1e9;
 
-        vm.warp(0);
-
-        PriceLinear oracle = PriceLinear(
+        PriceLinear _oracle = PriceLinear(
             priceLinearCloneFactory.createPriceLinear(
                 bytes32(uint256(0)),
                 trustedForwarder,
@@ -123,29 +139,30 @@ contract PublicFundraisingTest is Test {
             )
         );
 
-        assertEq(oracle.getPrice(price), price, "Price changed before start time");
+        assertEq(_oracle.getPrice(price), price, "Price changed before start time");
 
         vm.warp(1 + startTime);
-        assertEq(oracle.getPrice(price), price, "Price changed at 1");
+        assertEq(_oracle.getPrice(price), price, "Price changed at 1");
 
         vm.warp(9 + startTime);
-        assertEq(oracle.getPrice(price), price, "Price changed at 9");
+        assertEq(_oracle.getPrice(price), price, "Price changed at 9");
 
         vm.warp(startTime + stepWidth);
-        assertEq(oracle.getPrice(price), price - decreasePerStep, "Price should have decreased by 1 step");
-        console.log("Price: %s", oracle.getPrice(price));
+        assertEq(_oracle.getPrice(price), price - decreasePerStep, "Price should have decreased by 1 step");
+        console.log("Price: %s", _oracle.getPrice(price));
         console.log("Increase per step: %s", decreasePerStep);
 
         vm.warp(startTime + stepWidth + 5);
-        assertEq(oracle.getPrice(price), price - decreasePerStep, "Price should have decreased by 1 step");
-        console.log("Price: %s", oracle.getPrice(price));
+        assertEq(_oracle.getPrice(price), price - decreasePerStep, "Price should have decreased by 1 step");
+        console.log("Price: %s", _oracle.getPrice(price));
         console.log("Increase per step: %s", decreasePerStep);
 
         vm.warp(startTime + 2 * stepWidth);
-        assertEq(oracle.getPrice(price), price - 2 * decreasePerStep, "Price should have decreased by 2 steps");
+        assertEq(_oracle.getPrice(price), price - 2 * decreasePerStep, "Price should have decreased by 2 steps");
     }
 
     function testBlockBased() public {
+        vm.warp(1 days);
         uint256 price = 1e18;
         uint32 stepWidth = 10;
         // must use fixed start block because of yul interference with the forge system
@@ -155,7 +172,7 @@ contract PublicFundraisingTest is Test {
         //vm.roll(0);
         console.log("Current block: %s", block.number);
 
-        PriceLinear oracle = PriceLinear(
+        PriceLinear _oracle = PriceLinear(
             priceLinearCloneFactory.createPriceLinear(
                 bytes32(uint256(0)),
                 trustedForwarder,
@@ -169,29 +186,103 @@ contract PublicFundraisingTest is Test {
             )
         );
 
-        assertEq(oracle.getPrice(price), price, "Price changed before start time");
+        assertEq(_oracle.getPrice(price), price, "Price changed before start time");
 
         vm.roll(1 + startBlock);
-        assertEq(oracle.getPrice(price), price, "Price changed at 1");
+        assertEq(_oracle.getPrice(price), price, "Price changed at 1");
         console.log("Current block: %s", block.number);
 
         vm.roll(9 + startBlock);
-        assertEq(oracle.getPrice(price), price, "Price changed at 9");
+        assertEq(_oracle.getPrice(price), price, "Price changed at 9");
         console.log("Current block: %s", block.number);
 
         vm.roll(startBlock + stepWidth);
-        assertEq(oracle.getPrice(price), price - decreasePerStep, "Price should have decreased by 1 step");
-        console.log("Price: %s", oracle.getPrice(price));
+        assertEq(_oracle.getPrice(price), price - decreasePerStep, "Price should have decreased by 1 step");
+        console.log("Price: %s", _oracle.getPrice(price));
         console.log("Increase per step: %s", decreasePerStep);
         console.log("Block number: ", block.number);
 
         vm.roll(startBlock + stepWidth + 5);
-        assertEq(oracle.getPrice(price), price - decreasePerStep, "Price should have decreased by 1 step");
-        console.log("Price: %s", oracle.getPrice(price));
+        assertEq(_oracle.getPrice(price), price - decreasePerStep, "Price should have decreased by 1 step");
+        console.log("Price: %s", _oracle.getPrice(price));
         console.log("Increase per step: %s", decreasePerStep);
         console.log("Block number: ", block.number);
 
         vm.roll(startBlock + 2 * stepWidth + 1);
-        assertEq(oracle.getPrice(price), price - 2 * decreasePerStep, "Price should have decreased by 2 steps");
+        assertEq(_oracle.getPrice(price), price - 2 * decreasePerStep, "Price should have decreased by 2 steps");
+    }
+
+    function testUpdateParameters(
+        uint64 _slopeEnumerator,
+        uint64 _slopeDenominator,
+        uint64 _startTimeOrBlockNumber,
+        uint32 _stepDuration,
+        bool _isBlockBased,
+        bool _isRising
+    ) public {
+        vm.warp(1 days);
+
+        vm.assume(_slopeEnumerator != 0);
+        vm.assume(_slopeDenominator != 0);
+        if (_isBlockBased) {
+            vm.assume(_startTimeOrBlockNumber > block.number);
+        } else {
+            vm.assume(_startTimeOrBlockNumber > block.timestamp);
+        }
+        vm.assume(_stepDuration != 0);
+
+        assertEq(oracle.coolDownStart(), 0, "coolDownStart should be 0");
+
+        // update parameters
+        vm.prank(companyAdmin);
+        oracle.updateParameters(
+            _slopeEnumerator,
+            _slopeDenominator,
+            _startTimeOrBlockNumber,
+            _stepDuration,
+            _isBlockBased,
+            _isRising
+        );
+
+        assertEq(oracle.coolDownStart(), block.timestamp, "coolDownStart should be block.timestamp");
+
+        (
+            uint64 currentSlopeEnumerator,
+            uint64 currentSlopeDenominator,
+            uint64 currentStartTimeOrBlockNumber,
+            uint32 currentStepDuration,
+            bool currentIsBlockBased,
+            bool currentIsRising
+        ) = oracle.parameters();
+
+        assertEq(currentSlopeEnumerator, _slopeEnumerator, "slopeEnumerator should be _slopeEnumerator");
+        assertEq(currentSlopeDenominator, _slopeDenominator, "slopeDenominator should be _slopeDenominator");
+        assertEq(currentStartTimeOrBlockNumber, _startTimeOrBlockNumber, "start should be _startTimeOrBlockNumber");
+        assertEq(currentStepDuration, _stepDuration, "stepDuration should be _stepDuration");
+        assertEq(currentIsBlockBased, _isBlockBased, "isBlockBased should be _isBlockBased");
+        assertEq(currentIsRising, _isRising, "isRising should be _isRising");
+    }
+
+    function testOnlyOwnerCanUpdateParameters(address rando) public {
+        vm.assume(rando != companyAdmin);
+        vm.assume(rando != address(0));
+        vm.prank(rando);
+        vm.expectRevert("Ownable: caller is not the owner");
+        oracle.updateParameters(1, 1, 1, 1, false, true);
+    }
+
+    function testRevertsBeforeCoolDownEnd(uint32 testDelay) public {
+        vm.warp(1 days);
+        testDelay = testDelay % 1 hours; // test delay is less than 1 hour
+
+        vm.prank(companyAdmin);
+        oracle.updateParameters(1, 1, uint64(block.timestamp + 1), 1, false, true);
+
+        vm.warp(block.timestamp + testDelay);
+        vm.expectRevert("PriceLinear: cool down period not over yet");
+        oracle.getPrice(7e18);
+
+        vm.warp(block.timestamp + testDelay + 1 hours + 1); // this is definitely after the cool down period
+        oracle.getPrice(7e18);
     }
 }
