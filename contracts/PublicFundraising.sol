@@ -133,7 +133,8 @@ contract PublicFundraising is
         uint256 _maxAmountOfTokenToBeSold,
         IERC20 _currency,
         Token _token,
-        uint256 _autoPauseDate
+        uint256 _autoPauseDate,
+        address _priceOracle
     ) external initializer {
         require(_owner != address(0), "owner can not be zero address");
         __Ownable2Step_init(); // sets msgSender() as owner
@@ -147,6 +148,7 @@ contract PublicFundraising is
         currency = _currency;
         token = _token;
         autoPauseDate = _autoPauseDate;
+        priceOracle = IPriceDynamic(_priceOracle);
         require(_currencyReceiver != address(0), "currencyReceiver can not be zero address");
         require(address(_currency) != address(0), "currency can not be zero address");
         require(address(_token) != address(0), "token can not be zero address");
