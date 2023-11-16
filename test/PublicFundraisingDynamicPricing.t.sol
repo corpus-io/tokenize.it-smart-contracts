@@ -117,6 +117,8 @@ contract PublicFundraisingTest is Test {
             minAmountPerBuyer,
             maxAmountPerBuyer,
             price,
+            price,
+            price,
             maxAmountOfTokenToBeSold,
             paymentToken,
             token,

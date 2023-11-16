@@ -24,6 +24,10 @@ struct PublicFundraisingInitializerArguments {
     uint256 maxAmountPerBuyer;
     /// price of a token, expressed as amount of bits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2*10^6 ).
     uint256 tokenPrice;
+    /// smallest price the contract will accept from a dynamic pricing oracle
+    uint256 priceMin;
+    /// largest price the contract will accept from a dynamic pricing oracle
+    uint256 priceMax;
     /// total amount of tokens that can be minted through this contract
     uint256 maxAmountOfTokenToBeSold;
     /// currency used to pay for the token mint. Must be ERC20, so ether can only be used as wrapped ether (WETH)
@@ -146,15 +150,6 @@ contract PublicFundraising is
         __Ownable2Step_init(); // sets msgSender() as owner
         _transferOwnership(_arguments.owner); // sets owner as owner
 
-        currencyReceiver = _arguments.currencyReceiver;
-        minAmountPerBuyer = _arguments.minAmountPerBuyer;
-        maxAmountPerBuyer = _arguments.maxAmountPerBuyer;
-        priceBase = _arguments.tokenPrice;
-        maxAmountOfTokenToBeSold = _arguments.maxAmountOfTokenToBeSold;
-        currency = _arguments.currency;
-        token = _arguments.token;
-        autoPauseDate = _arguments.autoPauseDate;
-        priceOracle = IPriceDynamic(_arguments.priceOracle);
         require(_arguments.currencyReceiver != address(0), "currencyReceiver can not be zero address");
         require(address(_arguments.currency) != address(0), "currency can not be zero address");
         require(address(_arguments.token) != address(0), "token can not be zero address");
@@ -164,6 +159,22 @@ contract PublicFundraising is
         );
         require(_arguments.tokenPrice != 0, "_tokenPrice needs to be a non-zero amount");
         require(_arguments.maxAmountOfTokenToBeSold != 0, "_maxAmountOfTokenToBeSold needs to be larger than zero");
+
+        currencyReceiver = _arguments.currencyReceiver;
+        minAmountPerBuyer = _arguments.minAmountPerBuyer;
+        maxAmountPerBuyer = _arguments.maxAmountPerBuyer;
+        priceBase = _arguments.tokenPrice;
+        priceMin = _arguments.priceMin;
+        priceMax = _arguments.priceMax;
+        maxAmountOfTokenToBeSold = _arguments.maxAmountOfTokenToBeSold;
+        currency = _arguments.currency;
+        token = _arguments.token;
+        autoPauseDate = _arguments.autoPauseDate;
+
+        // price oracle activation is optional
+        if (_arguments.priceOracle != address(0)) {
+            _activateDynamicPricing(IPriceDynamic(_arguments.priceOracle), _arguments.priceMin, _arguments.priceMax);
+        }
     }
 
     function activateDynamicPricing(
@@ -171,11 +182,17 @@ contract PublicFundraising is
         uint256 _priceMin,
         uint256 _priceMax
     ) external onlyOwner whenPaused {
+        _activateDynamicPricing(_priceOracle, _priceMin, _priceMax);
+        coolDownStart = block.timestamp;
+        emit DynamicPricingActivated(address(_priceOracle), _priceMin, _priceMax);
+    }
+
+    function _activateDynamicPricing(IPriceDynamic _priceOracle, uint256 _priceMin, uint256 _priceMax) internal {
         require(address(_priceOracle) != address(0), "_priceOracle can not be zero address");
         priceOracle = _priceOracle;
-        require(_priceMin <= priceBase, "_priceMin needs to be smaller or equal to priceBase");
+        require(_priceMin <= priceBase, "priceMin needs to be smaller or equal to priceBase");
         priceMin = _priceMin;
-        require(priceBase <= _priceMax, "_priceMax needs to be larger or equal to priceBase");
+        require(priceBase <= _priceMax, "priceMax needs to be larger or equal to priceBase");
         priceMax = _priceMax;
         coolDownStart = block.timestamp;
 

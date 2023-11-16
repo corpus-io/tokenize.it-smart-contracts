@@ -77,6 +77,8 @@ contract PublicFundraisingTest is Test {
             minAmountPerBuyer,
             maxAmountPerBuyer,
             price,
+            price,
+            price,
             maxAmountOfTokenToBeSold,
             paymentToken,
             token,
@@ -112,6 +114,8 @@ contract PublicFundraisingTest is Test {
                 minAmountPerBuyer,
                 maxAmountPerBuyer,
                 price,
+                price,
+                price,
                 maxAmountOfTokenToBeSold,
                 paymentToken,
                 token,
@@ -136,6 +140,8 @@ contract PublicFundraisingTest is Test {
             payable(receiver),
             minAmountPerBuyer,
             maxAmountPerBuyer,
+            price,
+            price,
             price,
             maxAmountOfTokenToBeSold,
             paymentToken,
@@ -164,6 +170,8 @@ contract PublicFundraisingTest is Test {
             minAmountPerBuyer,
             maxAmountPerBuyer,
             price,
+            price,
+            price,
             maxAmountOfTokenToBeSold,
             paymentToken,
             token,
@@ -183,6 +191,19 @@ contract PublicFundraisingTest is Test {
         tempArgs = clonePublicFundraisingInitializerArguments(arguments);
         tempArgs.currencyReceiver = address(0);
         vm.expectRevert("currencyReceiver can not be zero address");
+        factory.createPublicFundraisingClone(0, trustedForwarder, tempArgs);
+
+        // max price 0
+        tempArgs = clonePublicFundraisingInitializerArguments(arguments);
+        tempArgs.priceMax = 0;
+        tempArgs.priceOracle = address(3);
+        vm.expectRevert("priceMax needs to be larger or equal to priceBase");
+        factory.createPublicFundraisingClone(0, trustedForwarder, tempArgs);
+
+        // min price too high
+        tempArgs.priceMax = price;
+        tempArgs.priceMin = price + 1;
+        vm.expectRevert("priceMin needs to be smaller or equal to priceBase");
         factory.createPublicFundraisingClone(0, trustedForwarder, tempArgs);
 
         // currency 0
@@ -237,6 +258,8 @@ contract PublicFundraisingTest is Test {
             payable(receiver),
             1,
             _maxMintAmount / 100,
+            _price,
+            _price,
             _price,
             _maxMintAmount,
             maliciousPaymentToken,
@@ -1086,6 +1109,8 @@ contract PublicFundraisingTest is Test {
             0,
             UINT256_MAX,
             _price,
+            _price,
+            _price,
             UINT256_MAX,
             paymentToken,
             token,
@@ -1131,6 +1156,8 @@ contract PublicFundraisingTest is Test {
             payable(receiver),
             _tokenBuyAmount,
             _tokenBuyAmount,
+            _price,
+            _price,
             _price,
             _tokenBuyAmount,
             paymentToken,
@@ -1218,6 +1245,8 @@ contract PublicFundraisingTest is Test {
             minAmountPerBuyer,
             maxAmountPerBuyer,
             price,
+            price,
+            price,
             maxAmountOfTokenToBeSold,
             paymentToken,
             token,
@@ -1269,6 +1298,8 @@ contract PublicFundraisingTest is Test {
                 arguments.minAmountPerBuyer,
                 arguments.maxAmountPerBuyer,
                 arguments.tokenPrice,
+                arguments.priceMin,
+                arguments.priceMax,
                 arguments.maxAmountOfTokenToBeSold,
                 arguments.currency,
                 arguments.token,

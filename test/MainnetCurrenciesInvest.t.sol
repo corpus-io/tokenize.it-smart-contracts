@@ -109,6 +109,8 @@ contract MainnetCurrencies is Test {
             minAmountPerBuyer,
             maxAmountPerBuyer,
             _price,
+            _price,
+            _price,
             maxAmountOfTokenToBeSold,
             _currency,
             token,

@@ -121,6 +121,8 @@ contract TokenERC2771Test is Test {
             minAmountPerBuyer: 1000 * 10 ** 18,
             maxAmountPerBuyer: 2000 * 10 ** 18,
             tokenPrice: 688,
+            priceMin: 688,
+            priceMax: 688,
             maxAmountOfTokenToBeSold: 10 * 1000 * 10 ** 18,
             currency: paymentToken,
             token: token,

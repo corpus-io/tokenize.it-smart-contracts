@@ -35,7 +35,9 @@ contract tokenTest is Test {
     address public constant exampleCurrencyReceiver = address(54);
     uint256 public constant exampleMinAmountPerBuyer = 1;
     uint256 public constant exampleMaxAmountPerBuyer = type(uint256).max;
-    uint256 public constant exampleTokenPrice = 1;
+    uint256 public constant exampleTokenPrice = 2;
+    uint256 public constant exampleMinTokenPrice = 1;
+    uint256 public constant exampleMaxTokenPrice = type(uint256).max;
     uint256 public constant exampleMaxAmountOfTokenToBeSold = 82398479821374;
     IERC20 public constant exampleCurrency = IERC20(address(1));
     Token public constant exampleToken = Token(address(2));
@@ -118,6 +120,8 @@ contract tokenTest is Test {
     function testAddressPrediction2(
         uint256 _maxAmountPerBuyer,
         uint256 _tokenPrice,
+        uint256 _tokenPriceMin,
+        uint256 _tokenPriceMax,
         uint256 _maxAmountOfTokenToBeSold,
         IERC20 _currency,
         Token _token,
@@ -129,6 +133,8 @@ contract tokenTest is Test {
         vm.assume(exampleMinAmountPerBuyer > 0);
         vm.assume(_maxAmountPerBuyer >= exampleMinAmountPerBuyer);
         vm.assume(_tokenPrice > 0);
+        vm.assume(_tokenPriceMin <= _tokenPrice);
+        vm.assume(_tokenPriceMax >= _tokenPrice);
         vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
 
         // create new clone factory so we can use the local forwarder
@@ -141,6 +147,8 @@ contract tokenTest is Test {
             exampleMinAmountPerBuyer,
             _maxAmountPerBuyer,
             _tokenPrice,
+            _tokenPriceMin,
+            _tokenPriceMax,
             _maxAmountOfTokenToBeSold,
             _currency,
             _token,
@@ -182,6 +190,8 @@ contract tokenTest is Test {
             _minAmountPerBuyer,
             exampleMaxAmountPerBuyer,
             exampleTokenPrice,
+            exampleMinTokenPrice,
+            exampleMaxTokenPrice,
             exampleMaxAmountOfTokenToBeSold,
             exampleCurrency,
             exampleToken,
@@ -204,6 +214,8 @@ contract tokenTest is Test {
         uint256 _minAmountPerBuyer,
         uint256 _maxAmountPerBuyer,
         uint256 _priceBase,
+        uint256 _tokenPriceMin,
+        uint256 _tokenPriceMax,
         uint256 _maxAmountOfTokenToBeSold,
         IERC20 _currency,
         Token _token
@@ -215,6 +227,8 @@ contract tokenTest is Test {
         vm.assume(_minAmountPerBuyer > 0);
         vm.assume(_maxAmountPerBuyer >= _minAmountPerBuyer);
         vm.assume(_priceBase > 0);
+        vm.assume(_tokenPriceMin <= _priceBase);
+        vm.assume(_tokenPriceMax >= _priceBase);
         vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
 
         PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
@@ -223,6 +237,8 @@ contract tokenTest is Test {
             _minAmountPerBuyer,
             _maxAmountPerBuyer,
             _priceBase,
+            _tokenPriceMin,
+            _tokenPriceMax,
             _maxAmountOfTokenToBeSold,
             _currency,
             _token,
@@ -262,6 +278,8 @@ contract tokenTest is Test {
             _minAmountPerBuyer,
             _maxAmountPerBuyer,
             exampleTokenPrice,
+            exampleMinTokenPrice,
+            exampleMaxTokenPrice,
             exampleMaxAmountOfTokenToBeSold,
             exampleCurrency,
             exampleToken,
@@ -283,6 +301,8 @@ contract tokenTest is Test {
     function testInitialization2(
         uint256 _maxAmountPerBuyer,
         uint256 _priceBase,
+        uint256 _priceMin,
+        uint256 _priceMax,
         uint256 _maxAmountOfTokenToBeSold,
         IERC20 _currency,
         Token _token,
@@ -292,6 +312,8 @@ contract tokenTest is Test {
         vm.assume(address(_currency) != address(0));
         vm.assume(address(_token) != address(0));
         vm.assume(_priceBase > 0);
+        vm.assume(_priceMin <= _priceBase);
+        vm.assume(_priceMax >= _priceBase);
         vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
         vm.assume(_maxAmountPerBuyer > 0);
 
@@ -305,6 +327,8 @@ contract tokenTest is Test {
             exampleMinAmountPerBuyer,
             _maxAmountPerBuyer,
             _priceBase,
+            _priceMin,
+            _priceMax,
             _maxAmountOfTokenToBeSold,
             _currency,
             _token,
@@ -339,6 +363,8 @@ contract tokenTest is Test {
             exampleMinAmountPerBuyer,
             exampleMaxAmountPerBuyer,
             exampleTokenPrice,
+            exampleMinTokenPrice,
+            exampleMaxTokenPrice,
             exampleMaxAmountOfTokenToBeSold,
             exampleCurrency,
             exampleToken,
