@@ -198,21 +198,22 @@ contract CompanySetUpTest is Test {
         vm.prank(platformHotWallet);
         fundraisingFactory = new PublicFundraisingCloneFactory(address(new PublicFundraising(address(forwarder))));
 
-        raise = PublicFundraising(
-            fundraisingFactory.createPublicFundraisingClone(
-                0,
-                address(forwarder),
-                companyAdmin,
-                companyCurrencyReceiver,
-                minAmountPerBuyer,
-                maxAmountPerBuyer,
-                price,
-                maxAmountOfTokenToBeSold,
-                paymentToken,
-                token,
-                0
-            )
+        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+            companyAdmin,
+            companyCurrencyReceiver,
+            minAmountPerBuyer,
+            maxAmountPerBuyer,
+            price,
+            price,
+            price,
+            maxAmountOfTokenToBeSold,
+            paymentToken,
+            token,
+            0,
+            address(0)
         );
+
+        raise = PublicFundraising(fundraisingFactory.createPublicFundraisingClone(0, address(forwarder), arguments));
 
         // the company admin can now enable the fundraising campaign by granting it a token minting allowance.
         // Because the company admin does not hold eth, they will use a meta transaction to call the function.

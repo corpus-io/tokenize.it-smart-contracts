@@ -103,7 +103,8 @@ factory.createPublicFundraisingClone(
         uint256 _maxAmountOfTokenToBeSold,
         IERC20 _currency,
         Token _token,
-        uint256 _lastBuyDate
+        uint256 _lastBuyDate,
+        address _priceOracle
     )
 ```
 
@@ -122,6 +123,7 @@ factory.createPublicFundraisingClone(
 
 - `_token` : address of the token deployed when creating the new company
 - `_lastBuyDate` : Unix timestamp at which the fundraising will stop selling tokens automatically. This is to ensure the fundraising can not be forgotten to be stopped when regulations require it.
+- `_priceOracle` : address of the price oracle contract. The price oracle can influence the price of the token. It is used to implement dynamic pricing. If no dynamic pricing is used, this can be set to 0x0.
 
 The contract needs to be given a minting allowance in the company token contract by calling `increaseMintingAllowance` from an address which has the role of the MintAllower. The allowance should be set to `_maxAmountOfTokenToBeSold` tokens.
 
