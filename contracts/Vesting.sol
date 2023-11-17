@@ -297,7 +297,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         require(_allocation > 0, "Allocation must be greater than zero");
         require(_beneficiary != address(0), "Beneficiary must not be zero address");
 
-        id = ids++;
+        id = ++ids;
         vestings[id] = VestingPlan({
             allocation: _allocation,
             released: 0,

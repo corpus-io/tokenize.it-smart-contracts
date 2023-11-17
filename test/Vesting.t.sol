@@ -119,6 +119,7 @@ contract VestingTest is Test {
 
     function testPauseBeforeCliff(address _beneficiary) public {
         vm.assume(_beneficiary != address(0));
+        vm.assume(_beneficiary != trustedForwarder);
 
         uint256 amount = 70e18;
         uint64 start = implementation.TIME_HORIZON() + 2 * 365 days;
@@ -131,7 +132,7 @@ contract VestingTest is Test {
         uint64 id = vesting.createVesting(amount, _beneficiary, start, cliff, duration, false);
         token.mint(address(vesting), amount);
 
-        assertEq(id, 0, "ids don't start at 0");
+        assertEq(id, 1, "ids don't start at 1");
 
         // log vestings total amount
         console.log("total amount", vesting.allocation(id));
@@ -142,7 +143,7 @@ contract VestingTest is Test {
         vm.startPrank(owner);
         uint64 newId = vesting.pauseVesting(id, pauseStart, pauseEnd);
         vm.stopPrank();
-        assertEq(newId, 1, "ids don't increase by 1");
+        assertEq(newId, 2, "ids don't increase by 1");
 
         console.log("total amount", vesting.allocation(id));
         // allocation new id

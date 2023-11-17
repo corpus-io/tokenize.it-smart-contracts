@@ -115,10 +115,10 @@ contract VestingBlindTest is Test {
 
         // reveal
         vm.expectEmit(true, true, true, true, address(vesting));
-        emit Reveal(hash, 0);
+        emit Reveal(hash, 1);
         vm.prank(_rando);
         uint64 id = vesting.reveal(hash, _allocation, _beneficiary, _start, _cliff, _duration, _isMintable, _salt);
-        assertEq(id, 0, "id is not 0");
+        assertEq(id, 1, "id is not 1");
 
         checkVestingPlanDetails(id, _beneficiary, _allocation, _start, _duration, _cliff, _isMintable, vesting);
 
@@ -167,10 +167,10 @@ contract VestingBlindTest is Test {
 
         // revealAndRelease
         vm.expectEmit(true, true, true, true, address(vesting));
-        emit Reveal(hash, 0);
+        emit Reveal(hash, 1);
         vm.prank(_rando);
         uint64 id = vesting.reveal(hash, _allocation, _beneficiary, _start, _cliff, _duration, _isMintable, _salt);
-        assertEq(id, 0, "id is not 0");
+        assertEq(id, 1, "id is not 1");
 
         if (_maxReleaseAmount > _allocation) {
             assertEq(token.balanceOf(_beneficiary), _allocation, "balance is not equal to total");
@@ -220,7 +220,7 @@ contract VestingBlindTest is Test {
         // warp till end of vesting and claim
         vm.warp(_start + _cliff + _duration + 1);
         vm.expectEmit(true, true, true, true, address(vesting));
-        emit Reveal(hash, 0);
+        emit Reveal(hash, 1);
         uint64 id = vesting.reveal(
             hash,
             commitmentAllocation,
@@ -231,7 +231,7 @@ contract VestingBlindTest is Test {
             _isMintable,
             _salt
         );
-        assertEq(id, 0, "id is not 0");
+        assertEq(id, 1, "id is not 1");
 
         checkVestingPlanDetails(id, beneficiary, realAllocation, _start, 1.5 * 365 days, _cliff, _isMintable, vesting);
 
@@ -496,7 +496,7 @@ contract VestingBlindTest is Test {
                 type(uint256).max
             );
             // assure no vesting plan has been created
-            assertTrue(vesting.ids() == createId + 1, "a vesting plan has been created");
+            assertTrue(vesting.ids() == createId, "a vesting plan has been created");
         } else {
             console.log("User gets tokens");
             vm.prank(_beneficiaryCreate);
@@ -518,7 +518,7 @@ contract VestingBlindTest is Test {
             console.log("usrCommit balance: ", token.balanceOf(beneficiary));
             // check correct execution
             assertTrue(vesting.commitments(hash) == 0, "commitment still exists");
-            assertTrue(vesting.ids() == createId + 2, "no vesting plan has been created");
+            assertTrue(vesting.ids() == createId + 1, "no vesting plan has been created");
             assertTrue(vesting.released(commitId) == token.balanceOf(_beneficiaryCreate), "accrued is not new total");
             assertTrue(vesting.releasable(commitId) == 0, "unpaid is not 0");
             assertTrue(
