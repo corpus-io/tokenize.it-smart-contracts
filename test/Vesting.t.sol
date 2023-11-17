@@ -5,7 +5,30 @@ import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/VestingCloneFactory.sol";
 import "./resources/ERC20MintableByAnyone.sol";
 
+function checkLimits(
+    uint256 _allocation,
+    address _beneficiary,
+    uint64 _start,
+    uint64 _cliff,
+    uint64 _duration,
+    Vesting _vesting,
+    uint256 _timestamp,
+    address _trustedForwarder
+) view returns (bool valid) {
+    valid =
+        _beneficiary != address(0) &&
+        _beneficiary != address(_trustedForwarder) &&
+        _allocation != 0 &&
+        _start > _timestamp - _vesting.TIME_HORIZON() + 1 &&
+        _start < _timestamp + _vesting.TIME_HORIZON() - 1 &&
+        _duration < _vesting.TIME_HORIZON() &&
+        _duration >= _cliff &&
+        _duration > 0;
+}
+
 contract VestingTest is Test {
+    event BeneficiaryChanged(uint64 id, address newBeneficiary);
+
     Vesting implementation;
     VestingCloneFactory factory;
 
@@ -17,6 +40,12 @@ contract VestingTest is Test {
 
     address trustedForwarder = address(1);
     address platformAdmin = address(2);
+    address beneficiary = address(3);
+
+    uint256 exampleAmount = type(uint256).max / 1e25;
+    uint64 exampleStart;
+    uint64 exampleDuration = 10 * 365 days; // 10 years
+    uint64 exampleCliff = 1 * 365 days; // 1 year
 
     function setUp() public {
         implementation = new Vesting(trustedForwarder);
@@ -25,6 +54,8 @@ contract VestingTest is Test {
         factory = new VestingCloneFactory(address(implementation));
 
         vesting = Vesting(factory.createVestingClone(0, trustedForwarder, owner, address(token)));
+
+        exampleStart = implementation.TIME_HORIZON() + 2 * 365 days;
     }
 
     function testSwitchOwner(address _owner, address newOwner) public {
@@ -80,19 +111,19 @@ contract VestingTest is Test {
         vest.createVesting(100, address(7), 1, 20 days, 40 days, false);
     }
 
-    function testCreateMintableVest(address beneficiary, address rando) public {
-        vm.assume(beneficiary != address(0));
+    function testCreateMintableVest(address _beneficiary, address rando) public {
+        vm.assume(_beneficiary != address(0));
         vm.assume(rando != address(0));
-        vm.assume(rando != beneficiary);
-        vm.assume(beneficiary != trustedForwarder);
+        vm.assume(rando != _beneficiary);
+        vm.assume(_beneficiary != trustedForwarder);
 
         uint256 amount = 10 ** 18;
 
         vm.startPrank(owner);
-        uint64 id = vesting.createVesting(amount, beneficiary, implementation.TIME_HORIZON(), 0, 100 days, true);
+        uint64 id = vesting.createVesting(amount, _beneficiary, implementation.TIME_HORIZON(), 0, 100 days, true);
         vm.stopPrank();
 
-        assertEq(vesting.beneficiary(id), beneficiary);
+        assertEq(vesting.beneficiary(id), _beneficiary);
         assertEq(vesting.allocation(id), amount);
         assertEq(vesting.released(id), 0);
         assertEq(vesting.start(id), implementation.TIME_HORIZON());
@@ -100,7 +131,7 @@ contract VestingTest is Test {
         assertEq(vesting.duration(id), 100 days);
         assertEq(vesting.isMintable(id), true, "Vesting plan not mintable");
 
-        assertEq(token.balanceOf(beneficiary), 0);
+        assertEq(token.balanceOf(_beneficiary), 0);
 
         // rando can not release tokens
         vm.warp(block.timestamp + 10 days);
@@ -110,11 +141,11 @@ contract VestingTest is Test {
 
         // beneficiary can release tokens
         vm.warp(block.timestamp + 70 days);
-        vm.prank(beneficiary);
+        vm.prank(_beneficiary);
         vesting.release(id);
 
         assertEq(vesting.released(id), 8e17, "released amount is wrong");
-        assertEq(token.balanceOf(beneficiary), 8e17, "beneficiary balance is wrong");
+        assertEq(token.balanceOf(_beneficiary), 8e17, "beneficiary balance is wrong");
     }
 
     function testPauseBeforeCliff(address _beneficiary) public {
@@ -240,5 +271,99 @@ contract VestingTest is Test {
         vm.assume(rando != address(owner));
 
         assertFalse(vesting.managers(rando), "rando is a manager");
+    }
+
+    function testReleasable(uint64 testAfter) public {
+        testAfter = (testAfter % exampleDuration);
+
+        vm.startPrank(owner);
+        uint64 id = vesting.createVesting(
+            exampleAmount,
+            beneficiary,
+            exampleStart,
+            exampleCliff,
+            exampleDuration,
+            true
+        );
+        vm.stopPrank();
+
+        // check releasable after 5 years
+        uint256 releasable = vesting.releasable(id, uint64(exampleStart + 5 * 365 days));
+        assertEq(releasable, exampleAmount / 2, "releasable amount is wrong");
+
+        // check releasable after duration
+        releasable = vesting.releasable(id, uint64(exampleStart + exampleDuration));
+        assertEq(releasable, exampleAmount, "releasable amount is wrong");
+
+        // check releasable before cliff
+        releasable = vesting.releasable(id, uint64(exampleStart + exampleCliff - 1));
+        assertEq(releasable, 0, "releasable amount is wrong");
+
+        // check releasable after cliff
+        releasable = vesting.releasable(id, uint64(exampleStart + exampleCliff));
+        assertEq(releasable, exampleAmount / 10, "releasable amount is wrong");
+
+        // check releasable after testAfter
+        releasable = vesting.releasable(id, uint64(exampleStart + testAfter));
+        vm.warp(exampleStart + testAfter);
+        uint256 releasable2 = vesting.releasable(id);
+        assertEq(releasable, releasable2, "releasable functions disagree");
+        vm.prank(beneficiary);
+        vesting.release(id);
+        assertEq(token.balanceOf(beneficiary), releasable, "released amount is different from releasable");
+    }
+
+    function testChangeBeneficiary(uint64 changeAfter, address rando) public {
+        changeAfter = ((changeAfter % exampleDuration) * 2);
+        vm.assume(rando != address(0));
+        vm.assume(rando != trustedForwarder);
+        vm.assume(rando != beneficiary);
+        vm.assume(rando != owner);
+
+        vm.startPrank(owner);
+        uint64 id = vesting.createVesting(
+            exampleAmount,
+            beneficiary,
+            exampleStart,
+            exampleCliff,
+            exampleDuration,
+            true
+        );
+        vm.stopPrank();
+
+        assertEq(vesting.beneficiary(id), beneficiary, "beneficiary not correct");
+
+        vm.warp(exampleStart + changeAfter);
+        // rando can never change beneficiary
+        vm.prank(rando);
+        vm.expectRevert("Only beneficiary can change beneficiary, or owner 1 year after vesting end");
+        vesting.changeBeneficiary(id, rando);
+        assertEq(vesting.beneficiary(id), beneficiary, "rando changed beneficiary");
+
+        // even beneficiary can never set beneficiary to 0
+        vm.prank(beneficiary);
+        vm.expectRevert("Beneficiary must not be zero address");
+        vesting.changeBeneficiary(id, address(0));
+        assertEq(vesting.beneficiary(id), beneficiary, "beneficiary should not have changed!");
+
+        // beneficiary can always change beneficiary, which emits an event
+        vm.prank(beneficiary);
+        vm.expectEmit(true, true, true, true, address(vesting));
+        emit BeneficiaryChanged(id, rando);
+        vesting.changeBeneficiary(id, rando);
+        assertEq(vesting.beneficiary(id), rando, "beneficiary not changed");
+
+        if (changeAfter > exampleDuration + 365 days) {
+            // owner can change beneficiary after 1 year
+            vm.prank(owner);
+            vesting.changeBeneficiary(id, beneficiary);
+            assertEq(vesting.beneficiary(id), beneficiary, "owner could not change beneficiary");
+        } else {
+            // owner can not change beneficiary before 1 year
+            vm.prank(owner);
+            vm.expectRevert("Only beneficiary can change beneficiary, or owner 1 year after vesting end");
+            vesting.changeBeneficiary(id, beneficiary);
+            assertEq(vesting.beneficiary(id), rando, "owner changed beneficiary too early");
+        }
     }
 }

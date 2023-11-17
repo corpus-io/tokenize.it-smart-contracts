@@ -427,7 +427,8 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     function changeBeneficiary(uint64 _id, address _newBeneficiary) external {
         require(
             _msgSender() == beneficiary(_id) ||
-                ((_msgSender() == owner()) && uint64(block.timestamp) > start(_id) + duration(_id) + 365 days)
+                ((_msgSender() == owner()) && uint64(block.timestamp) > start(_id) + duration(_id) + 365 days),
+            "Only beneficiary can change beneficiary, or owner 1 year after vesting end"
         );
         require(_newBeneficiary != address(0), "Beneficiary must not be zero address");
         vestings[_id].beneficiary = _newBeneficiary;
