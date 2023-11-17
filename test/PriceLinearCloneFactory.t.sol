@@ -15,20 +15,6 @@ contract PriceLinearCloneFactoryTest is Test {
         // set up price oracle factory
         PriceLinear priceLinearLogicContract = new PriceLinear(trustedForwarder);
         factory = new PriceLinearCloneFactory(address(priceLinearLogicContract));
-
-        oracle = PriceLinear(
-            factory.createPriceLinearClone(
-                bytes32(uint256(0)),
-                trustedForwarder,
-                companyAdmin,
-                1,
-                1,
-                uint64(block.timestamp + 1),
-                1,
-                false,
-                true
-            )
-        );
     }
 
     function testAddressPrediction(
@@ -87,5 +73,37 @@ contract PriceLinearCloneFactoryTest is Test {
             _isRising
         );
         assertEq(expected1, actual, "address prediction failed");
+    }
+
+    function testWrongForwarderFails(address _wrongTrustedForwarder) public {
+        vm.assume(_wrongTrustedForwarder != trustedForwarder);
+        vm.assume(_wrongTrustedForwarder != address(0));
+
+        // using a different trustedForwarder should fail
+        vm.expectRevert("PriceLinearCloneFactory: Unexpected trustedForwarder");
+        factory.createPriceLinearClone(
+            bytes32(uint256(0)),
+            _wrongTrustedForwarder,
+            companyAdmin,
+            1,
+            1,
+            uint64(block.timestamp + 1),
+            1,
+            false,
+            true
+        );
+
+        // using the correct trustedForwarder should succeed
+        factory.createPriceLinearClone(
+            bytes32(uint256(2)),
+            trustedForwarder,
+            companyAdmin,
+            1,
+            1,
+            uint64(block.timestamp + 1),
+            1,
+            false,
+            true
+        );
     }
 }
