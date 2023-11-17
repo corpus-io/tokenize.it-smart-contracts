@@ -5,6 +5,8 @@ import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "../contracts/factories/CrowdinvestingCloneFactory.sol";
+import "../contracts/factories/PriceLinearCloneFactory.sol";
+import "../contracts/PriceLinear.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
 
@@ -17,7 +19,7 @@ contract CrowdinvestingTest is Test {
     event TokensBought(address indexed buyer, uint256 tokenAmount, uint256 currencyAmount);
 
     CrowdinvestingCloneFactory factory;
-    Crowdinvesting raise;
+    Crowdinvesting crowdinvesting;
     AllowList list;
     IFeeSettingsV2 feeSettings;
 
@@ -27,7 +29,8 @@ contract CrowdinvestingTest is Test {
     Token token;
     FakePaymentToken paymentToken;
 
-    MaliciousPaymentToken maliciousPaymentToken;
+    PriceLinear priceLinearLogicContract = new PriceLinear(trustedForwarder);
+    PriceLinearCloneFactory priceLinearCloneFactory = new PriceLinearCloneFactory(address(priceLinearLogicContract));
 
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant buyer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
@@ -41,7 +44,9 @@ contract CrowdinvestingTest is Test {
     uint8 public constant paymentTokenDecimals = 6;
     uint256 public constant paymentTokenAmount = 1000 * 10 ** paymentTokenDecimals;
 
-    uint256 public constant price = 7 * 10 ** paymentTokenDecimals; // 7 payment tokens per token
+    uint256 public constant price = 7 * 10 ** paymentTokenDecimals;
+    uint256 public constant priceMin = 1 * 10 ** paymentTokenDecimals;
+    uint256 public constant priceMax = 1000 * 10 ** paymentTokenDecimals;
 
     uint256 public constant maxAmountOfTokenToBeSold = 20 * 10 ** 18; // 20 token
     uint256 public constant maxAmountPerBuyer = maxAmountOfTokenToBeSold / 2; // 10 token
@@ -85,7 +90,7 @@ contract CrowdinvestingTest is Test {
             address(0)
         );
 
-        raise = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
+        crowdinvesting = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
 
         // allow raise contract to mint
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
@@ -93,10 +98,132 @@ contract CrowdinvestingTest is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.increaseMintingAllowance(address(raise), maxAmountOfTokenToBeSold);
+        token.increaseMintingAllowance(address(crowdinvesting), maxAmountOfTokenToBeSold);
 
         // give raise contract allowance
         vm.prank(buyer);
-        paymentToken.approve(address(raise), paymentTokenAmount);
+        paymentToken.approve(address(crowdinvesting), paymentTokenAmount);
+    }
+
+    function testActivateDynamicPricingAndEnforceMaxPrice(
+        uint64 totalPriceIncrease,
+        uint64 duration,
+        uint64 startDate,
+        uint64 testDate
+    ) public {
+        vm.assume(totalPriceIncrease > 0);
+        vm.assume(duration > 0);
+        vm.assume(startDate > 1 hours + 1);
+        vm.assume(testDate > 0);
+        // create oracle
+        vm.warp(1 hours + 1); // otherwise, price linear thinks it has to cool down
+        PriceLinear priceLinear = PriceLinear(
+            priceLinearCloneFactory.createPriceLinear(
+                0,
+                trustedForwarder,
+                owner,
+                totalPriceIncrease,
+                duration,
+                startDate,
+                1,
+                false,
+                true
+            )
+        );
+        // check cooldown start
+        assertEq(crowdinvesting.coolDownStart(), 0, "Cooldown start not set correctly");
+
+        // activate dynamic pricing
+        vm.startPrank(owner);
+        crowdinvesting.pause();
+        crowdinvesting.activateDynamicPricing(priceLinear, priceMin, priceMax);
+        assertEq(crowdinvesting.coolDownStart(), block.timestamp, "Cooldown start not set correctly");
+
+        vm.warp(block.timestamp + crowdinvesting.delay() + 1);
+        crowdinvesting.unpause();
+        vm.stopPrank();
+
+        // check dynamic pricing
+        if (block.timestamp < startDate) {
+            console.log("Start date not reached yet: ", startDate);
+            console.log("Current price: ", crowdinvesting.getPrice());
+            assertEq(crowdinvesting.getPrice(), price, "Price should not have changed yet");
+        } else {
+            console.log("Current price: ", crowdinvesting.getPrice());
+            console.log("Max price: ", priceMax);
+            console.log("price plus increase: ", price + totalPriceIncrease);
+            assertTrue(crowdinvesting.getPrice() <= priceMax, "Price too high!");
+            assertTrue(crowdinvesting.getPrice() >= priceMin, "Price too low!");
+        }
+
+        // check if the price actually changed
+        vm.warp(uint256(startDate) + duration);
+        console.log("Current price: ", crowdinvesting.getPrice());
+        assertTrue(crowdinvesting.getPrice() > price, "Price should have changed!");
+    }
+
+    function testActivateDynamicPricingOnDeployAndEnforceMinPrice(
+        uint64 totalPriceChange,
+        uint64 duration,
+        uint64 startDate,
+        uint64 testDate
+    ) public {
+        vm.assume(totalPriceChange > 0);
+        vm.assume(duration > 0);
+        vm.assume(startDate > 1 hours + 1);
+        vm.assume(testDate > 0);
+
+        // create oracle
+        vm.warp(1 hours + 1); // otherwise, price linear thinks it has to cool down
+        PriceLinear priceLinear = PriceLinear(
+            priceLinearCloneFactory.createPriceLinear(
+                0,
+                trustedForwarder,
+                owner,
+                totalPriceChange,
+                duration,
+                startDate,
+                1,
+                false,
+                false // price will fall
+            )
+        );
+
+        CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
+            owner,
+            payable(receiver),
+            minAmountPerBuyer,
+            maxAmountPerBuyer,
+            price,
+            priceMin,
+            priceMax,
+            maxAmountOfTokenToBeSold,
+            paymentToken,
+            token,
+            0,
+            address(priceLinear)
+        );
+
+        crowdinvesting = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
+
+        // check dynamic pricing
+        if (block.timestamp < startDate) {
+            // price can not change before start date
+            console.log("Start date not reached yet: ", startDate);
+            console.log("Current price: ", crowdinvesting.getPrice());
+            assertEq(crowdinvesting.getPrice(), price, "Price should not have changed yet");
+        } else {
+            // price can never exceed bounds
+            console.log("Current price: ", crowdinvesting.getPrice());
+            console.log("Min price: ", priceMin);
+            console.log("price plus increase: ", price + totalPriceChange);
+            assertTrue(crowdinvesting.getPrice() >= priceMin, "Price too low!");
+            assertTrue(crowdinvesting.getPrice() <= priceMax, "Price too high!");
+        }
+
+        // check if the price actually changed
+        vm.warp(uint256(startDate) + duration);
+        console.log("Current price: ", crowdinvesting.getPrice());
+        assertTrue(crowdinvesting.getPrice() < price, "Price should have changed!");
     }
 }
