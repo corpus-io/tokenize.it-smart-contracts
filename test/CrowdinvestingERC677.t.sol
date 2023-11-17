@@ -17,7 +17,7 @@ contract CrowdinvestingTest is Test {
     event TokensBought(address indexed buyer, uint256 tokenAmount, uint256 currencyAmount);
 
     CrowdinvestingCloneFactory factory;
-    Crowdinvesting raise;
+    Crowdinvesting crowdinvesting;
     AllowList list;
     IFeeSettingsV2 feeSettings;
 
@@ -85,19 +85,19 @@ contract CrowdinvestingTest is Test {
             address(0)
         );
 
-        raise = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
+        crowdinvesting = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
 
-        // allow raise contract to mint
+        // allow crowdinvesting contract to mint
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.increaseMintingAllowance(address(raise), maxAmountOfTokenToBeSold);
+        token.increaseMintingAllowance(address(crowdinvesting), maxAmountOfTokenToBeSold);
 
-        // give raise contract allowance
+        // give crowdinvesting contract allowance
         vm.prank(buyer);
-        paymentToken.approve(address(raise), paymentTokenAmount);
+        paymentToken.approve(address(crowdinvesting), paymentTokenAmount);
     }
 
     /*
@@ -148,7 +148,9 @@ contract CrowdinvestingTest is Test {
             0,
             address(0)
         );
-        Crowdinvesting _raise = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
+        Crowdinvesting _crowdinvesting = Crowdinvesting(
+            factory.createCrowdinvestingClone(0, trustedForwarder, arguments)
+        );
 
         // allow invite contract to mint
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
@@ -156,7 +158,10 @@ contract CrowdinvestingTest is Test {
         vm.prank(admin);
         _token.grantRole(roleMintAllower, mintAllower);
         vm.startPrank(mintAllower);
-        _token.increaseMintingAllowance(address(_raise), _maxMintAmount - token.mintingAllowance(address(_raise)));
+        _token.increaseMintingAllowance(
+            address(_crowdinvesting),
+            _maxMintAmount - token.mintingAllowance(address(_crowdinvesting))
+        );
         vm.stopPrank();
 
         // mint _paymentToken for buyer
@@ -165,33 +170,33 @@ contract CrowdinvestingTest is Test {
         assertTrue(maliciousPaymentToken.balanceOf(buyer) == _paymentTokenAmount);
 
         // set exploitTarget
-        maliciousPaymentToken.setExploitTarget(address(_raise), 3, _maxMintAmount / 200000);
+        maliciousPaymentToken.setExploitTarget(address(_crowdinvesting), 3, _maxMintAmount / 200000);
 
         // give invite contract allowance
         vm.prank(buyer);
-        maliciousPaymentToken.approve(address(_raise), _paymentTokenAmount);
+        maliciousPaymentToken.approve(address(_crowdinvesting), _paymentTokenAmount);
 
         // run actual test
         assertTrue(maliciousPaymentToken.balanceOf(buyer) == _paymentTokenAmount);
         uint256 buyAmount = _maxMintAmount / 100000;
         vm.prank(buyer);
         vm.expectRevert("ReentrancyGuard: reentrant call");
-        _raise.buy(buyAmount, buyer);
+        _crowdinvesting.buy(buyAmount, buyer);
     }
 
     function testERC677BuyHappyCase(uint256 tokenBuyAmount) public {
         // uint256 tokenBuyAmount = 10 ** token.decimals(); // buy one token
-        vm.assume(tokenBuyAmount >= raise.minAmountPerBuyer());
-        vm.assume(tokenBuyAmount <= raise.maxAmountPerBuyer());
-        uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * raise.priceBase(), 10 ** 18);
+        vm.assume(tokenBuyAmount >= crowdinvesting.minAmountPerBuyer());
+        vm.assume(tokenBuyAmount <= crowdinvesting.maxAmountPerBuyer());
+        uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * crowdinvesting.priceBase(), 10 ** 18);
         vm.assume(costInPaymentToken <= paymentToken.balanceOf(buyer));
 
-        uint256 realTokenBuyAmount = (costInPaymentToken * 10 ** token.decimals()) / raise.getPrice();
+        uint256 realTokenBuyAmount = (costInPaymentToken * 10 ** token.decimals()) / crowdinvesting.getPrice();
 
         // log tokenBuyAmount and costInPaymentToken and price, realTokenBuyAmount
         console.log("tokenBuyAmount: ", tokenBuyAmount);
         console.log("costInPaymentToken: ", costInPaymentToken);
-        console.log("tokenPrice: ", raise.getPrice());
+        console.log("tokenPrice: ", crowdinvesting.getPrice());
         console.log("realTokenBuyAmount: ", realTokenBuyAmount);
         // log price from realTokenBuyAmount and costInPaymentToken
         console.log(
@@ -204,9 +209,9 @@ contract CrowdinvestingTest is Test {
         FeeSettings localFeeSettings = FeeSettings(address(token.feeSettings()));
 
         vm.prank(buyer);
-        // vm.expectEmit(true, true, true, true, address(raise));
+        // vm.expectEmit(true, true, true, true, address(crowdinvesting));
         // emit TokensBought(buyer, tokenBuyAmount, costInPaymentToken);
-        paymentToken.transferAndCall(address(raise), costInPaymentToken, new bytes(0));
+        paymentToken.transferAndCall(address(crowdinvesting), costInPaymentToken, new bytes(0));
 
         // log token holdings of buyer
         console.log("buyer token balance: ", token.balanceOf(buyer));
@@ -229,27 +234,27 @@ contract CrowdinvestingTest is Test {
             token.balanceOf(token.feeSettings().tokenFeeCollector()) >= localFeeSettings.tokenFee(tokenBuyAmount),
             "fee collector has collected fee in tokens"
         );
-        assertTrue(raise.tokensSold() == realTokenBuyAmount, "raise has sold wrong amount of tokens");
+        assertTrue(crowdinvesting.tokensSold() == realTokenBuyAmount, "crowdinvesting has sold wrong amount of tokens");
         assertTrue(
-            raise.tokensBought(buyer) == realTokenBuyAmount,
-            "raise has stored wrong amount of tokens for buyer"
+            crowdinvesting.tokensBought(buyer) == realTokenBuyAmount,
+            "crowdinvesting has stored wrong amount of tokens for buyer"
         );
     }
 
     function testBuyTooMuch() public {
         uint256 tokenBuyAmount = maxAmountPerBuyer + 1;
-        uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * raise.getPrice(), 10 ** token.decimals());
+        uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * crowdinvesting.getPrice(), 10 ** token.decimals());
 
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
 
         vm.prank(buyer);
         vm.expectRevert("Total amount of bought tokens needs to be lower than or equal to maxAmount");
-        paymentToken.transferAndCall(address(raise), costInPaymentToken, new bytes(0));
+        paymentToken.transferAndCall(address(crowdinvesting), costInPaymentToken, new bytes(0));
         assertTrue(paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore);
         assertTrue(token.balanceOf(buyer) == 0);
         assertTrue(paymentToken.balanceOf(receiver) == 0);
-        assertTrue(raise.tokensSold() == 0);
-        assertTrue(raise.tokensBought(buyer) == 0);
+        assertTrue(crowdinvesting.tokensSold() == 0);
+        assertTrue(crowdinvesting.tokensBought(buyer) == 0);
     }
 
     function testBuyAndMintToDifferentAddress() public {
@@ -257,13 +262,13 @@ contract CrowdinvestingTest is Test {
         address addressForTokens = address(2);
 
         uint256 currencyAmount = price; // buy one token
-        uint256 tokenBuyAmount = (currencyAmount * 10 ** token.decimals()) / raise.getPrice();
+        uint256 tokenBuyAmount = (currencyAmount * 10 ** token.decimals()) / crowdinvesting.getPrice();
 
         vm.prank(buyer);
         paymentToken.transfer(addressWithFunds, currencyAmount);
 
         vm.prank(addressWithFunds);
-        paymentToken.approve(address(raise), paymentTokenAmount);
+        paymentToken.approve(address(crowdinvesting), paymentTokenAmount);
 
         // check state before
         assertTrue(paymentToken.balanceOf(addressWithFunds) == currencyAmount, "addressWithFunds has no funds");
@@ -277,7 +282,7 @@ contract CrowdinvestingTest is Test {
         console.log("bytes lenght: ", data.length);
 
         vm.startPrank(addressWithFunds);
-        paymentToken.transferAndCall(address(raise), currencyAmount, data);
+        paymentToken.transferAndCall(address(crowdinvesting), currencyAmount, data);
         vm.stopPrank();
 
         // log token holdings of addressForTokens
@@ -298,7 +303,7 @@ contract CrowdinvestingTest is Test {
         address person2 = address(2);
 
         uint256 amountToSpend = Math.ceilDiv(
-            raise.maxAmountOfTokenToBeSold() * raise.getPrice(),
+            crowdinvesting.maxAmountOfTokenToBeSold() * crowdinvesting.getPrice(),
             10 ** token.decimals()
         ) / 2;
 
@@ -308,12 +313,12 @@ contract CrowdinvestingTest is Test {
         paymentToken.transfer(person2, amountToSpend);
 
         vm.prank(buyer);
-        paymentToken.transferAndCall(address(raise), amountToSpend, new bytes(0));
+        paymentToken.transferAndCall(address(crowdinvesting), amountToSpend, new bytes(0));
         vm.prank(person1);
-        paymentToken.transferAndCall(address(raise), amountToSpend, new bytes(0));
+        paymentToken.transferAndCall(address(crowdinvesting), amountToSpend, new bytes(0));
         vm.prank(person2);
         vm.expectRevert("Not enough tokens to sell left");
-        paymentToken.transferAndCall(address(raise), amountToSpend, new bytes(0));
+        paymentToken.transferAndCall(address(crowdinvesting), amountToSpend, new bytes(0));
     }
 
     function testMultipleAddressesBuyForOneReceiver() public {
@@ -327,20 +332,23 @@ contract CrowdinvestingTest is Test {
         vm.prank(buyer);
         paymentToken.transfer(person2, 10 ** 6);
 
-        uint256 amountToPay = Math.ceilDiv((maxAmountPerBuyer / 2) * raise.getPrice(), 10 ** token.decimals()) + 1;
+        uint256 amountToPay = Math.ceilDiv(
+            (maxAmountPerBuyer / 2) * crowdinvesting.getPrice(),
+            10 ** token.decimals()
+        ) + 1;
         bytes memory data = abi.encode(buyer);
 
         console.log("Buying first batch of tokens");
 
         vm.startPrank(buyer);
-        paymentToken.transferAndCall(address(raise), amountToPay, data);
+        paymentToken.transferAndCall(address(crowdinvesting), amountToPay, data);
         vm.stopPrank();
 
         console.log("Buying second batch of tokens");
 
         vm.startPrank(person1);
         vm.expectRevert("Total amount of bought tokens needs to be lower than or equal to maxAmount");
-        paymentToken.transferAndCall(address(raise), amountToPay, data);
+        paymentToken.transferAndCall(address(crowdinvesting), amountToPay, data);
         vm.stopPrank();
     }
 
@@ -356,19 +364,22 @@ contract CrowdinvestingTest is Test {
         uint256 tokenAmount2 = maxAmountOfTokenToBeSold / 4;
 
         // check all entries are 0 before
-        assertTrue(raise.tokensSold() == 0, "raise has sold tokens");
-        assertTrue(raise.tokensBought(buyer) == 0, "buyer has bought tokens");
-        assertTrue(raise.tokensBought(person1) == 0, "person1 has bought tokens");
+        assertTrue(crowdinvesting.tokensSold() == 0, "crowdinvesting has sold tokens");
+        assertTrue(crowdinvesting.tokensBought(buyer) == 0, "buyer has bought tokens");
+        assertTrue(crowdinvesting.tokensBought(person1) == 0, "person1 has bought tokens");
 
         vm.prank(buyer);
-        raise.buy(tokenAmount1, buyer);
+        crowdinvesting.buy(tokenAmount1, buyer);
         vm.prank(buyer);
-        raise.buy(tokenAmount2, person1);
+        crowdinvesting.buy(tokenAmount2, person1);
 
         // check all entries are correct after
-        assertTrue(raise.tokensSold() == tokenAmount1 + tokenAmount2, "raise has sold wrong amount of tokens");
-        assertTrue(raise.tokensBought(buyer) == tokenAmount1);
-        assertTrue(raise.tokensBought(person1) == tokenAmount2);
+        assertTrue(
+            crowdinvesting.tokensSold() == tokenAmount1 + tokenAmount2,
+            "crowdinvesting has sold wrong amount of tokens"
+        );
+        assertTrue(crowdinvesting.tokensBought(buyer) == tokenAmount1);
+        assertTrue(crowdinvesting.tokensBought(person1) == tokenAmount2);
         assertTrue(token.balanceOf(buyer) == tokenAmount1);
         assertTrue(token.balanceOf(person1) == tokenAmount2);
     }
@@ -381,15 +392,18 @@ contract CrowdinvestingTest is Test {
 
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
 
-        uint256 currencyAmount = Math.ceilDiv((minAmountPerBuyer / 2) * raise.getPrice(), 10 ** token.decimals());
+        uint256 currencyAmount = Math.ceilDiv(
+            (minAmountPerBuyer / 2) * crowdinvesting.getPrice(),
+            10 ** token.decimals()
+        );
 
         vm.startPrank(buyer);
         vm.expectRevert("Buyer needs to buy at least minAmount");
-        paymentToken.transferAndCall(address(raise), currencyAmount, new bytes(0));
+        paymentToken.transferAndCall(address(crowdinvesting), currencyAmount, new bytes(0));
         assertTrue(paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore);
         assertTrue(token.balanceOf(buyer) == 0);
         assertTrue(paymentToken.balanceOf(receiver) == 0);
-        assertTrue(raise.tokensSold() == 0);
-        assertTrue(raise.tokensBought(buyer) == 0);
+        assertTrue(crowdinvesting.tokensSold() == 0);
+        assertTrue(crowdinvesting.tokensBought(buyer) == 0);
     }
 }

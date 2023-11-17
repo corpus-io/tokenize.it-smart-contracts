@@ -17,7 +17,7 @@ contract CrowdinvestingTest is Test {
     event TokensBought(address indexed buyer, uint256 tokenAmount, uint256 currencyAmount);
 
     CrowdinvestingCloneFactory factory;
-    Crowdinvesting raise;
+    Crowdinvesting crowdinvesting;
     AllowList list;
     IFeeSettingsV2 feeSettings;
 
@@ -85,18 +85,18 @@ contract CrowdinvestingTest is Test {
             address(0)
         );
 
-        raise = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
+        crowdinvesting = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
 
-        // allow raise contract to mint
+        // allow crowdinvesting contract to mint
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.increaseMintingAllowance(address(raise), maxAmountOfTokenToBeSold);
+        token.increaseMintingAllowance(address(crowdinvesting), maxAmountOfTokenToBeSold);
 
-        // give raise contract allowance
+        // give crowdinvesting contract allowance
         vm.prank(buyer);
-        paymentToken.approve(address(raise), paymentTokenAmount);
+        paymentToken.approve(address(crowdinvesting), paymentTokenAmount);
     }
 }

@@ -19,7 +19,7 @@ contract CompanySetUpTest is Test {
     using ECDSA for bytes32; // for verify with var.recover()
 
     CrowdinvestingCloneFactory fundraisingFactory;
-    Crowdinvesting raise;
+    Crowdinvesting crowdinvesting;
     AllowList list;
     FeeSettings feeSettings;
     PrivateOfferFactory privateOfferFactory;
@@ -213,7 +213,7 @@ contract CompanySetUpTest is Test {
             address(0)
         );
 
-        raise = Crowdinvesting(fundraisingFactory.createCrowdinvestingClone(0, address(forwarder), arguments));
+        crowdinvesting = Crowdinvesting(fundraisingFactory.createCrowdinvestingClone(0, address(forwarder), arguments));
 
         // the company admin can now enable the fundraising campaign by granting it a token minting allowance.
         // Because the company admin does not hold eth, they will use a meta transaction to call the function.
@@ -223,7 +223,7 @@ contract CompanySetUpTest is Test {
         // build request
         bytes memory payload = abi.encodeWithSelector(
             token.increaseMintingAllowance.selector,
-            address(raise),
+            address(crowdinvesting),
             maxAmountOfTokenToBeSold
         );
 
@@ -259,17 +259,17 @@ contract CompanySetUpTest is Test {
 
         console.log("signing address: ", request.from);
 
-        // check the raise contract has no allowance yet
-        assertTrue(token.mintingAllowance(address(raise)) == 0);
+        // check the crowdinvesting contract has no allowance yet
+        assertTrue(token.mintingAllowance(address(crowdinvesting)) == 0);
         // If the platform has received the signature, it can now execute the meta transaction.
         vm.prank(platformHotWallet);
         forwarder.execute(request, domainSeparator, requestType, suffixData, signature);
 
         console.log("Forwarder address: ", address(forwarder));
-        console.log("allowance set to: ", token.mintingAllowance(address(raise)));
+        console.log("allowance set to: ", token.mintingAllowance(address(crowdinvesting)));
 
-        // check the raise contract has a mintingAllowance now now
-        assertTrue(token.mintingAllowance(address(raise)) == maxAmountOfTokenToBeSold);
+        // check the crowdinvesting contract has a mintingAllowance now now
+        assertTrue(token.mintingAllowance(address(crowdinvesting)) == maxAmountOfTokenToBeSold);
 
         // ----------------------
         // company and fundraising campaign are set up. Now the investor can buy tokens. This requires 2 meta transactions:
@@ -284,7 +284,7 @@ contract CompanySetUpTest is Test {
             abi.encode(
                 keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"),
                 investor,
-                address(raise),
+                address(crowdinvesting),
                 costInPaymentToken,
                 paymentToken.nonces(investor),
                 block.timestamp + 1 hours
@@ -305,13 +305,13 @@ contract CompanySetUpTest is Test {
         require(ecrecover(eip2612Data.dataHash, v, r, s) == investor, "ERC20Permit: invalid _BIG signature");
 
         // check allowance is 0 before permit
-        assertTrue(paymentToken.allowance(investor, address(raise)) == 0);
+        assertTrue(paymentToken.allowance(investor, address(crowdinvesting)) == 0);
 
         vm.prank(platformHotWallet);
-        paymentToken.permit(investor, address(raise), costInPaymentToken, block.timestamp + 1 hours, v, r, s);
+        paymentToken.permit(investor, address(crowdinvesting), costInPaymentToken, block.timestamp + 1 hours, v, r, s);
 
         // check allowance is set after permit
-        assertTrue(paymentToken.allowance(investor, address(raise)) == costInPaymentToken);
+        assertTrue(paymentToken.allowance(investor, address(crowdinvesting)) == costInPaymentToken);
 
         // now buy tokens using EIP-2771
         /*
@@ -319,11 +319,11 @@ contract CompanySetUpTest is Test {
         */
 
         // build request
-        payload = abi.encodeWithSelector(raise.buy.selector, tokenBuyAmount, investorColdWallet);
+        payload = abi.encodeWithSelector(crowdinvesting.buy.selector, tokenBuyAmount, investorColdWallet);
 
         request = IForwarder.ForwardRequest({
             from: investor,
-            to: address(raise),
+            to: address(crowdinvesting),
             value: 0,
             gas: 1000000,
             nonce: forwarder.getNonce(investor),

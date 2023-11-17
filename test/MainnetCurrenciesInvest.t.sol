@@ -101,7 +101,7 @@ contract MainnetCurrencies is Test {
         uint256 _currencyCost = (amountOfTokenToBuy * _price) / 10 ** token.decimals();
         uint256 _currencyAmount = _currencyCost * 2;
 
-        // set up fundraise with _currency
+        // set up fundcrowdinvesting with _currency
 
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             owner,
@@ -117,25 +117,25 @@ contract MainnetCurrencies is Test {
             0,
             address(0)
         );
-        Crowdinvesting _raise = Crowdinvesting(
+        Crowdinvesting _crowdinvesting = Crowdinvesting(
             fundraisingFactory.createCrowdinvestingClone(0, trustedForwarder, arguments)
         );
 
-        // allow raise contract to mint
+        // allow crowdinvesting contract to mint
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.increaseMintingAllowance(address(_raise), maxAmountOfTokenToBeSold);
+        token.increaseMintingAllowance(address(_crowdinvesting), maxAmountOfTokenToBeSold);
 
         // give the buyer funds
         //console.log("buyer's balance: ", _currency.balanceOf(buyer));
         helper.writeERC20Balance(buyer, address(_currency), _currencyAmount);
         //console.log("buyer's balance: ", _currency.balanceOf(buyer));
 
-        // give raise contract a currency allowance
+        // give crowdinvesting contract a currency allowance
         vm.prank(buyer);
-        _currency.approve(address(_raise), _currencyCost);
+        _currency.approve(address(_crowdinvesting), _currencyCost);
 
         // make sure buyer has no tokens before and receiver has no _currency before
         assertEq(token.balanceOf(buyer), 0);
@@ -145,7 +145,7 @@ contract MainnetCurrencies is Test {
 
         // buy tokens
         vm.prank(buyer);
-        _raise.buy(maxAmountPerBuyer, buyer);
+        _crowdinvesting.buy(maxAmountPerBuyer, buyer);
 
         // check buyer has tokens and receiver has _currency afterwards
         assertEq(token.balanceOf(buyer), amountOfTokenToBuy, "buyer has tokens");

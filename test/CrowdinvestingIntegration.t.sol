@@ -9,7 +9,7 @@ import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
 
 contract CrowdinvestingTest is Test {
-    Crowdinvesting raise;
+    Crowdinvesting crowdinvesting;
     AllowList list;
     FeeSettings feeSettings;
 
@@ -83,19 +83,19 @@ contract CrowdinvestingTest is Test {
             address(0)
         );
 
-        raise = Crowdinvesting(fundraisingFactory.createCrowdinvestingClone(0, trustedForwarder, arguments));
+        crowdinvesting = Crowdinvesting(fundraisingFactory.createCrowdinvestingClone(0, trustedForwarder, arguments));
 
-        // allow raise contract to mint
+        // allow crowdinvesting contract to mint
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
         vm.prank(companyOwner);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.increaseMintingAllowance(address(raise), maxAmountOfTokenToBeSold);
+        token.increaseMintingAllowance(address(crowdinvesting), maxAmountOfTokenToBeSold);
 
-        // give raise contract allowance
+        // give crowdinvesting contract allowance
         vm.prank(investor);
-        paymentToken.approve(address(raise), paymentTokenAmount);
+        paymentToken.approve(address(crowdinvesting), paymentTokenAmount);
     }
 
     /*
@@ -170,7 +170,7 @@ contract CrowdinvestingTest is Test {
             address(0)
         );
 
-        Crowdinvesting _raise = Crowdinvesting(
+        Crowdinvesting _crowdinvesting = Crowdinvesting(
             fundraisingFactory.createCrowdinvestingClone(0, trustedForwarder, arguments)
         );
 
@@ -180,7 +180,7 @@ contract CrowdinvestingTest is Test {
         vm.prank(companyOwner);
         _token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        _token.increaseMintingAllowance(address(_raise), _maxMintAmount);
+        _token.increaseMintingAllowance(address(_crowdinvesting), _maxMintAmount);
 
         // mint _paymentToken for buyer
         vm.prank(paymentTokenProvider);
@@ -189,7 +189,7 @@ contract CrowdinvestingTest is Test {
 
         // give invite contract allowance
         vm.prank(investor);
-        paymentToken.approve(address(_raise), _paymentTokenAmount);
+        paymentToken.approve(address(_crowdinvesting), _paymentTokenAmount);
 
         // run actual test
 
@@ -199,7 +199,7 @@ contract CrowdinvestingTest is Test {
         assertTrue(paymentToken.balanceOf(investor) == _paymentTokenAmount);
         // they should be able to buy 33 CT for 999 FPT
         vm.prank(investor);
-        _raise.buy(tokenAmount, investor);
+        _crowdinvesting.buy(tokenAmount, investor);
         // buyer should have 10 FPT left
         assertTrue(paymentToken.balanceOf(investor) == 10 * 10 ** _paymentTokenDecimals);
         // buyer should have the 33 CT they bought
@@ -289,7 +289,7 @@ contract CrowdinvestingTest is Test {
                 address(0)
             );
 
-            Crowdinvesting _raise = Crowdinvesting(
+            Crowdinvesting _crowdinvesting = Crowdinvesting(
                 fundraisingFactory.createCrowdinvestingClone(0, trustedForwarder, arguments)
             );
             // allow invite contract to mint
@@ -298,7 +298,7 @@ contract CrowdinvestingTest is Test {
             vm.prank(companyOwner);
             _token.grantRole(roleMintAllower, mintAllower);
             vm.prank(mintAllower);
-            _token.increaseMintingAllowance(address(_raise), _maxMintAmount);
+            _token.increaseMintingAllowance(address(_crowdinvesting), _maxMintAmount);
 
             // mint _paymentToken for buyer
             vm.prank(paymentTokenProvider);
@@ -307,7 +307,7 @@ contract CrowdinvestingTest is Test {
 
             // give invite contract allowance
             vm.prank(investor);
-            paymentToken.approve(address(_raise), _paymentTokenAmount);
+            paymentToken.approve(address(_crowdinvesting), _paymentTokenAmount);
 
             // run actual test
 
@@ -317,7 +317,7 @@ contract CrowdinvestingTest is Test {
             assertTrue(paymentToken.balanceOf(investor) == _paymentTokenAmount);
             // they should be able to buy 33 CT for 999 FPT
             vm.prank(investor);
-            _raise.buy(tokenAmount, investor);
+            _crowdinvesting.buy(tokenAmount, investor);
             // buyer should have 10 FPT left
             assertTrue(paymentToken.balanceOf(investor) == 10 * 10 ** _paymentTokenDecimals);
             // buyer should have the 33 CT they bought
