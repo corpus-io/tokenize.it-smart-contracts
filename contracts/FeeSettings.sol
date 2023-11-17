@@ -254,9 +254,11 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      * @param _currencyAmount The amount of currency to calculate the fee for
      * @return The fee
      */
-    function crowdinvestingFee(
-        uint256 _currencyAmount
-    ) external view override(IFeeSettingsV1, IFeeSettingsV2) returns (uint256) {
+    function crowdinvestingFee(uint256 _currencyAmount) external view override(IFeeSettingsV2) returns (uint256) {
+        return _crowdinvestingFee(_currencyAmount);
+    }
+
+    function _crowdinvestingFee(uint256 _currencyAmount) internal view returns (uint256) {
         return (_currencyAmount * crowdinvestingFeeNumerator) / crowdinvestingFeeDenominator;
     }
 
@@ -266,9 +268,11 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      * @param _currencyAmount The amount of currency to calculate the fee for
      * @return The fee
      */
-    function privateOfferFee(
-        uint256 _currencyAmount
-    ) external view override(IFeeSettingsV1, IFeeSettingsV2) returns (uint256) {
+    function privateOfferFee(uint256 _currencyAmount) external view override(IFeeSettingsV2) returns (uint256) {
+        return _privateOfferFee(_currencyAmount);
+    }
+
+    function _privateOfferFee(uint256 _currencyAmount) internal view returns (uint256) {
         return (_currencyAmount * privateOfferFeeNumerator) / privateOfferFeeDenominator;
     }
 
@@ -301,5 +305,15 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      */
     function feeCollector() external view override(IFeeSettingsV1) returns (address) {
         return tokenFeeCollector;
+    }
+
+    function continuousFundraisingFee(
+        uint256 _currencyAmount
+    ) external view override(IFeeSettingsV1) returns (uint256) {
+        return _crowdinvestingFee(_currencyAmount);
+    }
+
+    function personalInviteFee(uint256 _currencyAmount) external view override(IFeeSettingsV1) returns (uint256) {
+        return _privateOfferFee(_currencyAmount);
     }
 }
