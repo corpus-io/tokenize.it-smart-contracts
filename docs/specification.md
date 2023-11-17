@@ -41,7 +41,7 @@ The following statements about the smart contracts should always be true
 ## FeeSettings.sol
 
 - TokenFees are always less or equal to 5%.
-- PublicFundraisingFees are always less or equal to 10%.
+- CrowdinvestingFees are always less or equal to 10%.
 - PrivateOfferFees are awlays less or equal to 5%.
 - The feeCollector can never be 0.
 - Only owner can change feeCollector and all fee numerators and denominators.
@@ -73,10 +73,10 @@ The following statements about the smart contracts should always be true
 - Given equal inputs, getAddress() returns the same address regardless of msg.sender.
 - Deploy() returns the address the PrivateOffer contract was deployed to.
 
-## PublicFundraising.sol
+## Crowdinvesting.sol
 
 - The buy function can be executed many times.
-- To execute the buy function, the buyer must have granted the publicFundraising contract a sufficient allowance in currency.
+- To execute the buy function, the buyer must have granted the crowdinvesting contract a sufficient allowance in currency.
 - The buy can only be paid for in currency.
 - During the buy, the fee is deducted from the payment and the remaining payment is immediately transferred to the receiver.
 - During the buy, the fee is immediately transferred to the feeCollector.

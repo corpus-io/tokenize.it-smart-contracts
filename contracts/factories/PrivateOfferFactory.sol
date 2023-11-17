@@ -5,7 +5,7 @@ pragma solidity 0.8.23;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/utils/Create2.sol";
-import "../contracts/PrivateOffer.sol";
+import "../PrivateOffer.sol";
 
 /**
  * @title PrivateOfferFactory

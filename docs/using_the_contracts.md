@@ -8,7 +8,7 @@ Tokenize.it has already deployed these contracts:
 2. [feeSettings](../contracts/FeeSettings.sol)
 3. [TokenFactory](../contracts/TokenProxyFactory.sol)
 4. [PrivateOfferFactory](../contracts/PrivateOfferFactory.sol)
-5. [PublicFundraisingFactory](../contracts/PublicFundraisingCloneFactory.sol)
+5. [CrowdinvestingFactory](../contracts/CrowdinvestingCloneFactory.sol)
 6. [VestingFactory](../contracts/VestingCloneFactory.sol)
 7. [PriceLinearFactory](../contracts/PriceLinearCloneFactory.sol) or other dynamic pricing factories
 
@@ -87,12 +87,12 @@ The investment is executed during deployment of the contract. Therefore, three s
 
 Once these steps have been completed, the Private Offer contract can be deployed by anyone (either of the two parties or a third party) with [CREATE2](https://docs.openzeppelin.com/cli/2.8/deploying-with-create2), through the Private Offer Factory's deploy() function.
 
-## Public Fundraising / Starting on open round
+## Crowdinvesting / Starting an open round
 
-Deploy the [contract](../contracts/PublicFundraising.sol) using the factory.
+Deploy the [contract](../contracts/Crowdinvesting.sol) using the factory.
 
 ```solidity
-factory.createPublicFundraisingClone(
+factory.createCrowdinvestingClone(
         bytes32 _rawSalt,
         address _trustedForwarder,
         address _owner,
@@ -130,9 +130,9 @@ The contract needs to be given a minting allowance in the company token contract
 An investor can buy tokens by calling the `buy(uint _amount)` function.
 `_amount` ist the amount of tokens they are buying, in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate).
 
-The investor needs to give a sufficient allowance in the currency contract to the PublicFundraising contract for the deal to be successful.
+The investor needs to give a sufficient allowance in the currency contract to the Crowdinvesting contract for the deal to be successful.
 
-The owner of the PublicFundraising contract can pause the contract by calling `pause()`, which stops further buys. When paused, parameters of the fundraising can be changed. Each parameter change (re-)starts a cool down period of 24 hours. Only after this cool down period has passed can the fundraising be unpaused by calling `unpause()`. This is to ensure an investor can know the conditions that currently apply before investing (e.g. frontrunning a buy with a price increase is not possible).
+The owner of the Crowdinvesting contract can pause the contract by calling `pause()`, which stops further buys. When paused, parameters of the fundraising can be changed. Each parameter change (re-)starts a cool down period of 24 hours. Only after this cool down period has passed can the fundraising be unpaused by calling `unpause()`. This is to ensure an investor can know the conditions that currently apply before investing (e.g. frontrunning a buy with a price increase is not possible).
 
 # Employee participation with or without vesting
 

@@ -2,9 +2,9 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/PriceLinearCloneFactory.sol";
+import "../contracts/factories/PriceLinearCloneFactory.sol";
 
-contract PublicFundraisingTest is Test {
+contract CrowdinvestingTest is Test {
     PriceLinearCloneFactory priceLinearCloneFactory;
     PriceLinear oracle;
 

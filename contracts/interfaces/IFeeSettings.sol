@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 interface IFeeSettingsV1 {
     function tokenFee(uint256) external view returns (uint256);
 
-    function publicFundraisingFee(uint256) external view returns (uint256);
+    function crowdinvestingFee(uint256) external view returns (uint256);
 
     function privateOfferFee(uint256) external view returns (uint256);
 
@@ -22,9 +22,9 @@ interface IFeeSettingsV2 {
 
     function tokenFeeCollector() external view returns (address);
 
-    function publicFundraisingFee(uint256) external view returns (uint256);
+    function crowdinvestingFee(uint256) external view returns (uint256);
 
-    function publicFundraisingFeeCollector() external view returns (address);
+    function crowdinvestingFeeCollector() external view returns (address);
 
     function privateOfferFee(uint256) external view returns (uint256);
 
@@ -38,8 +38,8 @@ interface IFeeSettingsV2 {
 struct Fees {
     uint32 tokenFeeNumerator;
     uint32 tokenFeeDenominator;
-    uint32 publicFundraisingFeeNumerator;
-    uint32 publicFundraisingFeeDenominator;
+    uint32 crowdinvestingFeeNumerator;
+    uint32 crowdinvestingFeeDenominator;
     uint32 privateOfferFeeNumerator;
     uint32 privateOfferFeeDenominator;
     uint64 time;

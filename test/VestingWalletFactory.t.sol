@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/VestingWalletFactory.sol";
+import "../contracts/factories/VestingWalletFactory.sol";
 import "./resources/FakePaymentToken.sol";
 
 contract VestingWalletFactoryTest is Test {

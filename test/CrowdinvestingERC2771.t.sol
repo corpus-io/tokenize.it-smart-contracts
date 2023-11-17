@@ -2,18 +2,18 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/TokenProxyFactory.sol";
-import "../contracts/PublicFundraisingCloneFactory.sol";
+import "../contracts/factories/TokenProxyFactory.sol";
+import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/ERC2771Helper.sol";
 import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific version to avoid import error: yarn add @opengsn/contracts@2.2.5
 
-contract PublicFundraisingTest is Test {
+contract CrowdinvestingTest is Test {
     using ECDSA for bytes32; // for verify with var.recover()
 
-    PublicFundraisingCloneFactory fundraisingFactory;
-    PublicFundraising raise;
+    CrowdinvestingCloneFactory fundraisingFactory;
+    Crowdinvesting raise;
     AllowList list;
     FeeSettings feeSettings;
 
@@ -22,7 +22,7 @@ contract PublicFundraisingTest is Test {
     //Forwarder trustedForwarder;
     ERC2771Helper ERC2771helper;
 
-    PublicFundraisingInitializerArguments arguments;
+    CrowdinvestingInitializerArguments arguments;
 
     // copied from openGSN IForwarder
     struct ForwardRequest {
@@ -97,7 +97,7 @@ contract PublicFundraisingTest is Test {
         tokenBuyAmount = 5 * 10 ** token.decimals();
         costInPaymentToken = (tokenBuyAmount * price) / 10 ** 18;
 
-        arguments = PublicFundraisingInitializerArguments(
+        arguments = CrowdinvestingInitializerArguments(
             address(this),
             payable(receiver),
             minAmountPerBuyer,
@@ -115,9 +115,9 @@ contract PublicFundraisingTest is Test {
 
     function buyWithERC2771(Forwarder forwarder) public {
         vm.prank(owner);
-        fundraisingFactory = new PublicFundraisingCloneFactory(address(new PublicFundraising(address(forwarder))));
+        fundraisingFactory = new CrowdinvestingCloneFactory(address(new Crowdinvesting(address(forwarder))));
 
-        raise = PublicFundraising(fundraisingFactory.createPublicFundraisingClone(0, address(forwarder), arguments));
+        raise = Crowdinvesting(fundraisingFactory.createCrowdinvestingClone(0, address(forwarder), arguments));
 
         // allow raise contract to mint
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();

@@ -2,13 +2,13 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/TokenProxyFactory.sol";
+import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/FeeSettings.sol";
-import "../contracts/PublicFundraisingCloneFactory.sol";
+import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
 
-contract PublicFundraisingTest is Test {
+contract CrowdinvestingTest is Test {
     event CurrencyReceiverChanged(address indexed);
     event MinAmountPerBuyerChanged(uint256);
     event MaxAmountPerBuyerChanged(uint256);
@@ -16,8 +16,8 @@ contract PublicFundraisingTest is Test {
     event MaxAmountOfTokenToBeSoldChanged(uint256);
     event TokensBought(address indexed buyer, uint256 tokenAmount, uint256 currencyAmount);
 
-    PublicFundraisingCloneFactory factory;
-    PublicFundraising raise;
+    CrowdinvestingCloneFactory factory;
+    Crowdinvesting raise;
     AllowList list;
     IFeeSettingsV2 feeSettings;
 
@@ -68,9 +68,9 @@ contract PublicFundraisingTest is Test {
         assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
 
         vm.prank(owner);
-        factory = new PublicFundraisingCloneFactory(address(new PublicFundraising(trustedForwarder)));
+        factory = new CrowdinvestingCloneFactory(address(new Crowdinvesting(trustedForwarder)));
 
-        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+        CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             owner,
             receiver,
             minAmountPerBuyer,
@@ -85,7 +85,7 @@ contract PublicFundraisingTest is Test {
             address(0)
         );
 
-        raise = PublicFundraising(factory.createPublicFundraisingClone(0, trustedForwarder, arguments));
+        raise = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
 
         // allow raise contract to mint
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
@@ -134,7 +134,7 @@ contract PublicFundraisingTest is Test {
         maliciousPaymentToken = new MaliciousPaymentToken(_paymentTokenAmount);
         vm.prank(owner);
 
-        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+        CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             owner,
             receiver,
             minAmountPerBuyer,
@@ -148,9 +148,7 @@ contract PublicFundraisingTest is Test {
             0,
             address(0)
         );
-        PublicFundraising _raise = PublicFundraising(
-            factory.createPublicFundraisingClone(0, trustedForwarder, arguments)
-        );
+        Crowdinvesting _raise = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
 
         // allow invite contract to mint
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
@@ -219,12 +217,12 @@ contract PublicFundraisingTest is Test {
         assertTrue(token.balanceOf(buyer) == realTokenBuyAmount, "buyer has wrong token amount");
         assertTrue(
             paymentToken.balanceOf(receiver) ==
-                costInPaymentToken - localFeeSettings.publicFundraisingFee(costInPaymentToken),
+                costInPaymentToken - localFeeSettings.crowdinvestingFee(costInPaymentToken),
             "receiver has payment tokens"
         );
         assertTrue(
-            paymentToken.balanceOf(token.feeSettings().publicFundraisingFeeCollector()) ==
-                localFeeSettings.publicFundraisingFee(costInPaymentToken),
+            paymentToken.balanceOf(token.feeSettings().crowdinvestingFeeCollector()) ==
+                localFeeSettings.crowdinvestingFee(costInPaymentToken),
             "fee collector has collected fee in payment tokens"
         );
         assertTrue(

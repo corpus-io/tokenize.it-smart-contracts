@@ -14,7 +14,7 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
     /// max token fee is 5%
     uint32 public constant MAX_TOKEN_FEE_NUMERATOR = 1;
     uint32 public constant MAX_TOKEN_FEE_DENOMINATOR = 20;
-    /// max public fundraising fee is 10%
+    /// max crowdinvesting fee is 10%
     uint32 public constant MAX_CONTINUOUS_FUNDRAISING_FEE_NUMERATOR = 1;
     uint32 public constant MAX_CONTINUOUS_FUNDRAISING_FEE_DENOMINATOR = 10;
     /// max private offer fee is 5%
@@ -26,10 +26,10 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
     /// Denominator to calculate fees paid in Token.sol.
     uint32 public tokenFeeDenominator;
 
-    /// Numerator to calculate fees paid in PublicFundraising.sol.
-    uint32 public publicFundraisingFeeNumerator;
-    /// Denominator to calculate fees paid in PublicFundraising.sol.
-    uint32 public publicFundraisingFeeDenominator;
+    /// Numerator to calculate fees paid in Crowdinvesting.sol.
+    uint32 public crowdinvestingFeeNumerator;
+    /// Denominator to calculate fees paid in Crowdinvesting.sol.
+    uint32 public crowdinvestingFeeDenominator;
 
     /// Numerator to calculate fees paid in PrivateOffer.sol.
     uint32 public privateOfferFeeNumerator;
@@ -38,8 +38,8 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
 
     /// address the token fees have to be paid to
     address public tokenFeeCollector;
-    /// address the public fundraising fees have to be paid to
-    address public publicFundraisingFeeCollector;
+    /// address the crowdinvesting fees have to be paid to
+    address public crowdinvestingFeeCollector;
 
     /// address the private offer fees have to be paid to
     address public privateOfferFeeCollector;
@@ -51,16 +51,16 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      * @notice Fee factors have been changed
      * @param tokenFeeNumerator a in fraction a/b that defines the fee paid in Token: fee = amount * a / b
      * @param tokenFeeDenominator b in fraction a/b that defines the fee paid in Token: fee = amount * a / b
-     * @param publicFundraisingFeeNumerator a in fraction a/b that defines the fee paid in currency for public fundraising: fee = amount * a / b
-     * @param publicFundraisingFeeDenominator b in fraction a/b that defines the fee paid in currency for public fundraising: fee = amount * a / b
+     * @param crowdinvestingFeeNumerator a in fraction a/b that defines the fee paid in currency for crowdinvesting: fee = amount * a / b
+     * @param crowdinvestingFeeDenominator b in fraction a/b that defines the fee paid in currency for crowdinvesting: fee = amount * a / b
      * @param privateOfferFeeNumerator a in fraction a/b that defines the fee paid in currency for private offers: fee = amount * a / b
      * @param privateOfferFeeDenominator b in fraction a/b that defines the fee paid in currency for private offers: fee = amount * a / b
      */
     event SetFee(
         uint32 tokenFeeNumerator,
         uint32 tokenFeeDenominator,
-        uint32 publicFundraisingFeeNumerator,
-        uint32 publicFundraisingFeeDenominator,
+        uint32 crowdinvestingFeeNumerator,
+        uint32 crowdinvestingFeeDenominator,
         uint32 privateOfferFeeNumerator,
         uint32 privateOfferFeeDenominator
     );
@@ -71,7 +71,7 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      */
     event FeeCollectorsChanged(
         address indexed newFeeCollector,
-        address indexed newPublicFundraisingFeeCollector,
+        address indexed newCrowdinvestingFeeCollector,
         address indexed newPrivateOfferFeeCollector
     );
 
@@ -85,26 +85,26 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      * @notice Initializes the contract with the given fee denominators and fee collector
      * @param _fees The initial fee denominators
      * @param _tokenFeeCollector The initial fee collector
-     * @param _publicFundraisingFeeCollector The initial public fundraising fee collector
+     * @param _crowdinvestingFeeCollector The initial crowdinvesting fee collector
      * @param _privateOfferFeeCollector The initial private offer fee collector
      */
     constructor(
         Fees memory _fees,
         address _tokenFeeCollector,
-        address _publicFundraisingFeeCollector,
+        address _crowdinvestingFeeCollector,
         address _privateOfferFeeCollector
     ) {
         checkFeeLimits(_fees);
         tokenFeeNumerator = _fees.tokenFeeNumerator;
         tokenFeeDenominator = _fees.tokenFeeDenominator;
-        publicFundraisingFeeNumerator = _fees.publicFundraisingFeeNumerator;
-        publicFundraisingFeeDenominator = _fees.publicFundraisingFeeDenominator;
+        crowdinvestingFeeNumerator = _fees.crowdinvestingFeeNumerator;
+        crowdinvestingFeeDenominator = _fees.crowdinvestingFeeDenominator;
         privateOfferFeeNumerator = _fees.privateOfferFeeNumerator;
         privateOfferFeeDenominator = _fees.privateOfferFeeDenominator;
         require(_tokenFeeCollector != address(0), "Fee collector cannot be 0x0");
         tokenFeeCollector = _tokenFeeCollector;
-        require(_publicFundraisingFeeCollector != address(0), "Fee collector cannot be 0x0");
-        publicFundraisingFeeCollector = _publicFundraisingFeeCollector;
+        require(_crowdinvestingFeeCollector != address(0), "Fee collector cannot be 0x0");
+        crowdinvestingFeeCollector = _crowdinvestingFeeCollector;
         require(_privateOfferFeeCollector != address(0), "Fee collector cannot be 0x0");
         privateOfferFeeCollector = _privateOfferFeeCollector;
     }
@@ -126,10 +126,10 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
                 tokenFeeDenominator
             ) ||
             _isFractionAGreater(
-                _fees.publicFundraisingFeeNumerator,
-                _fees.publicFundraisingFeeDenominator,
-                publicFundraisingFeeNumerator,
-                publicFundraisingFeeDenominator
+                _fees.crowdinvestingFeeNumerator,
+                _fees.crowdinvestingFeeDenominator,
+                crowdinvestingFeeNumerator,
+                crowdinvestingFeeDenominator
             ) ||
             _isFractionAGreater(
                 _fees.privateOfferFeeNumerator,
@@ -151,15 +151,15 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
         require(block.timestamp >= proposedFees.time, "Fee change must be executed after the change time");
         tokenFeeNumerator = proposedFees.tokenFeeNumerator;
         tokenFeeDenominator = proposedFees.tokenFeeDenominator;
-        publicFundraisingFeeNumerator = proposedFees.publicFundraisingFeeNumerator;
-        publicFundraisingFeeDenominator = proposedFees.publicFundraisingFeeDenominator;
+        crowdinvestingFeeNumerator = proposedFees.crowdinvestingFeeNumerator;
+        crowdinvestingFeeDenominator = proposedFees.crowdinvestingFeeDenominator;
         privateOfferFeeNumerator = proposedFees.privateOfferFeeNumerator;
         privateOfferFeeDenominator = proposedFees.privateOfferFeeDenominator;
         emit SetFee(
             tokenFeeNumerator,
             tokenFeeDenominator,
-            publicFundraisingFeeNumerator,
-            publicFundraisingFeeDenominator,
+            crowdinvestingFeeNumerator,
+            crowdinvestingFeeDenominator,
             privateOfferFeeNumerator,
             privateOfferFeeDenominator
         );
@@ -172,16 +172,16 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      */
     function setFeeCollectors(
         address _tokenFeeCollector,
-        address _publicFundraisingFeeCollector,
+        address _crowdinvestingFeeCollector,
         address _personalOfferFeeCollector
     ) external onlyOwner {
         require(_tokenFeeCollector != address(0), "Fee collector cannot be 0x0");
         tokenFeeCollector = _tokenFeeCollector;
-        require(_publicFundraisingFeeCollector != address(0), "Fee collector cannot be 0x0");
-        publicFundraisingFeeCollector = _publicFundraisingFeeCollector;
+        require(_crowdinvestingFeeCollector != address(0), "Fee collector cannot be 0x0");
+        crowdinvestingFeeCollector = _crowdinvestingFeeCollector;
         require(_personalOfferFeeCollector != address(0), "Fee collector cannot be 0x0");
         privateOfferFeeCollector = _personalOfferFeeCollector;
-        emit FeeCollectorsChanged(_tokenFeeCollector, _publicFundraisingFeeCollector, _personalOfferFeeCollector);
+        emit FeeCollectorsChanged(_tokenFeeCollector, _crowdinvestingFeeCollector, _personalOfferFeeCollector);
     }
 
     /**
@@ -207,7 +207,7 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
     function checkFeeLimits(Fees memory _fees) internal pure {
         require(
             _fees.tokenFeeDenominator > 0 &&
-                _fees.publicFundraisingFeeDenominator > 0 &&
+                _fees.crowdinvestingFeeDenominator > 0 &&
                 _fees.privateOfferFeeDenominator > 0,
             "Denominator cannot be 0"
         );
@@ -222,12 +222,12 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
         );
         require(
             !_isFractionAGreater(
-                _fees.publicFundraisingFeeNumerator,
-                _fees.publicFundraisingFeeDenominator,
+                _fees.crowdinvestingFeeNumerator,
+                _fees.crowdinvestingFeeDenominator,
                 MAX_CONTINUOUS_FUNDRAISING_FEE_NUMERATOR,
                 MAX_CONTINUOUS_FUNDRAISING_FEE_DENOMINATOR
             ),
-            "PublicFundraising fee must be equal or less 10%"
+            "Crowdinvesting fee must be equal or less 10%"
         );
         require(
             !_isFractionAGreater(
@@ -249,15 +249,15 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
     }
 
     /**
-     * @notice Calculates the fee for a given currency amount in PublicFundraising.sol
+     * @notice Calculates the fee for a given currency amount in Crowdinvesting.sol
      * @dev will wrongly return 1 if denominator and amount are both uint256 max
      * @param _currencyAmount The amount of currency to calculate the fee for
      * @return The fee
      */
-    function publicFundraisingFee(
+    function crowdinvestingFee(
         uint256 _currencyAmount
     ) external view override(IFeeSettingsV1, IFeeSettingsV2) returns (uint256) {
-        return (_currencyAmount * publicFundraisingFeeNumerator) / publicFundraisingFeeDenominator;
+        return (_currencyAmount * crowdinvestingFeeNumerator) / crowdinvestingFeeDenominator;
     }
 
     /**
