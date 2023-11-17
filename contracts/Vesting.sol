@@ -149,6 +149,13 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     }
 
     /**
+     * @dev Amount of tokens that could be released at a given time.
+     */
+    function releasable(uint64 _id, uint64 _time) public view returns (uint256) {
+        return vestedAmount(_id, _time) - released(_id);
+    }
+
+    /**
      * Managers can commit to a vesting plan without revealing its details.
      * The parameters are hashed and this hash is stored in the commitments mapping.
      * Anyone can then reveal the vesting plan by providing the parameters and the salt.
