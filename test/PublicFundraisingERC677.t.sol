@@ -70,21 +70,22 @@ contract PublicFundraisingTest is Test {
         vm.prank(owner);
         factory = new PublicFundraisingCloneFactory(address(new PublicFundraising(trustedForwarder)));
 
-        raise = PublicFundraising(
-            factory.createPublicFundraisingClone(
-                0,
-                trustedForwarder,
-                owner,
-                payable(receiver),
-                minAmountPerBuyer,
-                maxAmountPerBuyer,
-                price,
-                maxAmountOfTokenToBeSold,
-                paymentToken,
-                token,
-                0
-            )
+        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+            owner,
+            receiver,
+            minAmountPerBuyer,
+            maxAmountPerBuyer,
+            price,
+            0,
+            0,
+            maxAmountOfTokenToBeSold,
+            paymentToken,
+            token,
+            0,
+            address(0)
         );
+
+        raise = PublicFundraising(factory.createPublicFundraisingClone(0, trustedForwarder, arguments));
 
         // allow raise contract to mint
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
@@ -133,20 +134,22 @@ contract PublicFundraisingTest is Test {
         maliciousPaymentToken = new MaliciousPaymentToken(_paymentTokenAmount);
         vm.prank(owner);
 
+        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+            owner,
+            receiver,
+            minAmountPerBuyer,
+            maxAmountPerBuyer,
+            _price,
+            0,
+            0,
+            _maxMintAmount,
+            maliciousPaymentToken,
+            _token,
+            0,
+            address(0)
+        );
         PublicFundraising _raise = PublicFundraising(
-            factory.createPublicFundraisingClone(
-                0,
-                trustedForwarder,
-                address(this),
-                payable(receiver),
-                1,
-                _maxMintAmount / 100,
-                _price,
-                _maxMintAmount,
-                maliciousPaymentToken,
-                _token,
-                0
-            )
+            factory.createPublicFundraisingClone(0, trustedForwarder, arguments)
         );
 
         // allow invite contract to mint

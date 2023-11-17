@@ -68,21 +68,22 @@ contract PublicFundraisingTest is Test {
 
         fundraisingFactory = new PublicFundraisingCloneFactory(address(new PublicFundraising(trustedForwarder)));
 
-        raise = PublicFundraising(
-            fundraisingFactory.createPublicFundraisingClone(
-                0,
-                trustedForwarder,
-                address(this),
-                payable(receiver),
-                minAmountPerBuyer,
-                maxAmountPerBuyer,
-                price,
-                maxAmountOfTokenToBeSold,
-                paymentToken,
-                token,
-                0
-            )
+        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+            address(this),
+            payable(receiver),
+            minAmountPerBuyer,
+            maxAmountPerBuyer,
+            price,
+            price,
+            price,
+            maxAmountOfTokenToBeSold,
+            paymentToken,
+            token,
+            0,
+            address(0)
         );
+
+        raise = PublicFundraising(fundraisingFactory.createPublicFundraisingClone(0, trustedForwarder, arguments));
 
         // allow raise contract to mint
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
@@ -154,20 +155,23 @@ contract PublicFundraisingTest is Test {
         paymentToken = new FakePaymentToken(_paymentTokenAmount, _paymentTokenDecimals);
         vm.prank(companyOwner);
 
+        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+            address(this),
+            payable(receiver),
+            1,
+            _maxMintAmount / 100,
+            _price,
+            _price,
+            _price,
+            _maxMintAmount,
+            paymentToken,
+            _token,
+            0,
+            address(0)
+        );
+
         PublicFundraising _raise = PublicFundraising(
-            fundraisingFactory.createPublicFundraisingClone(
-                0,
-                trustedForwarder,
-                address(this),
-                payable(receiver),
-                1,
-                _maxMintAmount / 100,
-                _price,
-                _maxMintAmount,
-                paymentToken,
-                _token,
-                0
-            )
+            fundraisingFactory.createPublicFundraisingClone(0, trustedForwarder, arguments)
         );
 
         // allow invite contract to mint
@@ -271,20 +275,23 @@ contract PublicFundraisingTest is Test {
             paymentToken = new FakePaymentToken(_paymentTokenAmount, _paymentTokenDecimals);
             vm.prank(companyOwner);
 
+            PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+                address(this),
+                payable(receiver),
+                1,
+                _maxMintAmount / 100,
+                _price,
+                _price,
+                _price,
+                _maxMintAmount,
+                paymentToken,
+                _token,
+                0,
+                address(0)
+            );
+
             PublicFundraising _raise = PublicFundraising(
-                fundraisingFactory.createPublicFundraisingClone(
-                    0,
-                    trustedForwarder,
-                    address(this),
-                    payable(receiver),
-                    1,
-                    _maxMintAmount / 100,
-                    _price,
-                    _maxMintAmount,
-                    paymentToken,
-                    _token,
-                    0
-                )
+                fundraisingFactory.createPublicFundraisingClone(0, trustedForwarder, arguments)
             );
             // allow invite contract to mint
             bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
