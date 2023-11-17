@@ -1237,8 +1237,8 @@ contract PublicFundraisingTest is Test {
         }
     }
 
-    function testAutoPauseInConstructor(uint256 _autoPauseDate, uint256 testDate) public {
-        vm.assume(_autoPauseDate > 0);
+    function testAutoPauseInConstructor(uint256 _lastBuyDate, uint256 testDate) public {
+        vm.assume(_lastBuyDate > 0);
         PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
             address(this),
             payable(receiver),
@@ -1250,7 +1250,7 @@ contract PublicFundraisingTest is Test {
             maxAmountOfTokenToBeSold,
             paymentToken,
             token,
-            _autoPauseDate,
+            _lastBuyDate,
             address(0)
         );
         PublicFundraising _raise = PublicFundraising(

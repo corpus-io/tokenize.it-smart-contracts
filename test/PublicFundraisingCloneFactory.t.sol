@@ -152,7 +152,7 @@ contract tokenTest is Test {
             _maxAmountOfTokenToBeSold,
             _currency,
             _token,
-            _autoPauseDate,
+            _lastBuyDate,
             _priceOracle
         );
 
@@ -242,7 +242,7 @@ contract tokenTest is Test {
             _maxAmountOfTokenToBeSold,
             _currency,
             _token,
-            exampleAutoPauseDate,
+            exampleLastBuyDate,
             examplePriceOracle
         );
 
@@ -283,7 +283,7 @@ contract tokenTest is Test {
             exampleMaxAmountOfTokenToBeSold,
             exampleCurrency,
             exampleToken,
-            exampleAutoPauseDate,
+            exampleLastBuyDate,
             examplePriceOracle
         );
 
@@ -306,7 +306,7 @@ contract tokenTest is Test {
         uint256 _maxAmountOfTokenToBeSold,
         IERC20 _currency,
         Token _token,
-        uint256 _autoPauseDate,
+        uint256 _lastBuyDate,
         address _priceOracle
     ) public {
         vm.assume(address(_currency) != address(0));
@@ -332,7 +332,7 @@ contract tokenTest is Test {
             _maxAmountOfTokenToBeSold,
             _currency,
             _token,
-            _autoPauseDate,
+            _lastBuyDate,
             _priceOracle
         );
 
@@ -347,7 +347,7 @@ contract tokenTest is Test {
         assertEq(raise.maxAmountOfTokenToBeSold(), _maxAmountOfTokenToBeSold, "maxAmountOfTokenToBeSold not set");
         assertEq(address(raise.currency()), address(_currency), "currency not set");
         assertEq(address(raise.token()), address(_token), "token not set");
-        assertEq(raise.autoPauseDate(), _autoPauseDate, "autoPauseDate not set");
+        assertEq(raise.lastBuyDate(), _lastBuyDate, "autoPauseDate not set");
         assertEq(address(raise.priceOracle()), _priceOracle, "priceOracle not set");
     }
 
@@ -370,7 +370,7 @@ contract tokenTest is Test {
             exampleMaxAmountOfTokenToBeSold,
             exampleCurrency,
             exampleToken,
-            exampleAutoPauseDate,
+            exampleLastBuyDate,
             examplePriceOracle
         );
 
