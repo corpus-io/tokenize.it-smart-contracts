@@ -35,7 +35,7 @@ struct PublicFundraisingInitializerArguments {
     /// token to be minted
     Token token;
     /// last date when the contract will sell tokens. If set to 0, the contract will not auto-pause
-    uint256 autoPauseDate;
+    uint256 lastBuyDate;
     /// dynamic pricing oracle, which can implement various pricing strategies
     address priceOracle;
 }
@@ -96,9 +96,9 @@ contract PublicFundraising is
     /// This mapping keeps track of how much each buyer has bought, in order to enforce maxAmountPerBuyer
     mapping(address => uint256) public tokensBought;
 
-    /// During every buy, the autoPauseDate is checked. If it is in the past, the contract is paused.
-    /// @dev setting this to 0 disables the auto-pause feature
-    uint256 public autoPauseDate;
+    /// During every buy, the lastBuyDate is checked. If it is in the past, the buy is rejected.
+    /// @dev setting this to 0 disables this feature.
+    uint256 public lastBuyDate;
 
     /// @notice CurrencyReceiver has been changed to `newCurrencyReceiver`
     /// @param newCurrencyReceiver address that receives the payment (in currency) when tokens are bought
@@ -169,7 +169,7 @@ contract PublicFundraising is
         maxAmountOfTokenToBeSold = _arguments.maxAmountOfTokenToBeSold;
         currency = _arguments.currency;
         token = _arguments.token;
-        autoPauseDate = _arguments.autoPauseDate;
+        lastBuyDate = _arguments.lastBuyDate;
 
         // price oracle activation is optional
         if (_arguments.priceOracle != address(0)) {
@@ -222,8 +222,8 @@ contract PublicFundraising is
             "Total amount of bought tokens needs to be lower than or equal to maxAmount"
         );
 
-        if (autoPauseDate != 0 && block.timestamp > autoPauseDate) {
-            revert("Pausing contract because of auto-pause date");
+        if (lastBuyDate != 0 && block.timestamp > lastBuyDate) {
+            revert("Last buy date has passed: not selling tokens anymore.");
         }
 
         tokensSold += _amount;
@@ -346,8 +346,8 @@ contract PublicFundraising is
     }
 
     /// set auto pause date
-    function setAutoPauseDate(uint256 _autoPauseDate) external onlyOwner whenPaused {
-        autoPauseDate = _autoPauseDate;
+    function setLastBuyDate(uint256 _lastBuyDate) external onlyOwner whenPaused {
+        lastBuyDate = _lastBuyDate;
         coolDownStart = block.timestamp;
     }
 
