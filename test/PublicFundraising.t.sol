@@ -1237,7 +1237,7 @@ contract PublicFundraisingTest is Test {
         }
     }
 
-    function testAutoPauseInConstructor(uint256 _lastBuyDate, uint256 testDate) public {
+    function testLastBuyDateInConstructor(uint256 _lastBuyDate, uint256 testDate) public {
         vm.assume(_lastBuyDate > 0);
         PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
             address(this),
@@ -1303,7 +1303,7 @@ contract PublicFundraisingTest is Test {
                 arguments.maxAmountOfTokenToBeSold,
                 arguments.currency,
                 arguments.token,
-                arguments.autoPauseDate,
+                arguments.lastBuyDate,
                 arguments.priceOracle
             );
     }

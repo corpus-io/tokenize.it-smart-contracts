@@ -126,7 +126,7 @@ contract TokenERC2771Test is Test {
             maxAmountOfTokenToBeSold: 10 * 1000 * 10 ** 18,
             currency: paymentToken,
             token: token,
-            autoPauseDate: 0,
+            lastBuyDate: 0,
             priceOracle: address(0)
         });
         PublicFundraising raise = PublicFundraising(

@@ -35,7 +35,7 @@ struct PublicFundraisingInitializerArguments {
     /// token to be minted
     Token token;
     /// last date when the contract will sell tokens. If set to 0, the contract will not auto-pause
-    uint256 autoPauseDate;
+    uint256 lastBuyDate;
     /// dynamic pricing oracle, which can implement various pricing strategies
     address priceOracle;
 }
@@ -169,7 +169,7 @@ contract PublicFundraising is
         maxAmountOfTokenToBeSold = _arguments.maxAmountOfTokenToBeSold;
         currency = _arguments.currency;
         token = _arguments.token;
-        lastBuyDate = _arguments.autoPauseDate;
+        lastBuyDate = _arguments.lastBuyDate;
 
         // price oracle activation is optional
         if (_arguments.priceOracle != address(0)) {
