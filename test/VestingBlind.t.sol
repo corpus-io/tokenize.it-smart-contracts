@@ -276,7 +276,17 @@ contract VestingBlindTest is Test {
             console.log("newTot is 0");
             vm.prank(beneficiary);
             //vm.expectRevert(); // todo: this path is never used. why?
-            vesting.revealAndRelease(hash, _allocation, beneficiary, _start, _cliff, _duration, isMintable, salt);
+            vesting.revealAndRelease(
+                hash,
+                _allocation,
+                beneficiary,
+                _start,
+                _cliff,
+                _duration,
+                isMintable,
+                salt,
+                type(uint256).max
+            );
             // assure no vesting plan has been created
             assertTrue(vesting.ids() == 0, "a vesting plan has been created");
         } else {
@@ -290,7 +300,8 @@ contract VestingBlindTest is Test {
                 _cliff,
                 _duration,
                 isMintable,
-                salt
+                salt,
+                type(uint256).max
             );
             // check correct execution
             assertTrue(vesting.commitments(hash) == 0, "revocation not correct");
@@ -349,7 +360,8 @@ contract VestingBlindTest is Test {
             _cliff,
             _duration,
             isMintable,
-            _salt
+            _salt,
+            type(uint256).max
         );
         // check correct execution
         assertTrue(vesting.commitments(hash) == 0, "commitment still exists");
@@ -414,7 +426,17 @@ contract VestingBlindTest is Test {
             console.log("User gets no tokens, so claim must fail");
             vm.prank(beneficiary);
             vm.expectRevert();
-            vesting.revealAndRelease(hash, _allocation, beneficiary, start, _cliff, _duration, isMintable, salt);
+            vesting.revealAndRelease(
+                hash,
+                _allocation,
+                beneficiary,
+                start,
+                _cliff,
+                _duration,
+                isMintable,
+                salt,
+                type(uint256).max
+            );
             // assure no vesting plan has been created
             assertTrue(vesting.ids() == createId + 1, "a vesting plan has been created");
         } else {
@@ -431,7 +453,8 @@ contract VestingBlindTest is Test {
                 _cliff,
                 _duration,
                 isMintable,
-                salt
+                salt,
+                type(uint256).max
             );
 
             console.log("usrCommit balance: ", token.balanceOf(beneficiary));
