@@ -499,7 +499,7 @@ contract FeeSettingsTest is Test {
         assertEq(
             _feeSettings.supportsInterface(type(IFeeSettingsV2).interfaceId),
             true,
-            "IFeeSettingsV1 not supported"
+            "IFeeSettingsV2 not supported"
         );
     }
 
