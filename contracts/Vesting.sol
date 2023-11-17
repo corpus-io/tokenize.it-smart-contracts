@@ -266,6 +266,14 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         uint64 _duration,
         bool _isMintable
     ) external onlyManager returns (uint64 id) {
+        /// @dev The checks for resonable start, cliff and duration only apply when creating a vesting plan transparently.
+        /// Otherwise, revealing after 20+ years would not be possible.
+        require(
+            _start >= block.timestamp - TIME_HORIZON && _start <= block.timestamp + TIME_HORIZON,
+            "Start must be reasonable"
+        );
+        require(_cliff >= 0 && _cliff <= _duration, "Cliff must be reasonable");
+        require(_duration > 0 && _duration <= TIME_HORIZON, "Duration must be reasonable");
         return _createVesting(_allocation, _beneficiary, _start, _cliff, _duration, _isMintable);
     }
 
@@ -288,12 +296,6 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     ) internal returns (uint64 id) {
         require(_allocation > 0, "Allocation must be greater than zero");
         require(_beneficiary != address(0), "Beneficiary must not be zero address");
-        require(
-            _start >= block.timestamp - TIME_HORIZON && _start <= block.timestamp + TIME_HORIZON,
-            "Start must be reasonable"
-        );
-        require(_cliff >= 0 && _cliff <= _duration, "Cliff must be reasonable");
-        require(_duration > 0 && _duration <= TIME_HORIZON, "Duration must be reasonable");
 
         id = ids++;
         vestings[id] = VestingPlan({

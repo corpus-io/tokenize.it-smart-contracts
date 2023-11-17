@@ -131,6 +131,64 @@ contract VestingBlindTest is Test {
         vesting.reveal(hash, _allocation, _beneficiary, _start, _cliff, _duration, _isMintable, _salt);
     }
 
+    function testRevealAndRelease(
+        address _beneficiary,
+        uint256 _allocation,
+        uint64 _start,
+        uint64 _duration,
+        uint64 _cliff,
+        bytes32 _salt,
+        bool _isMintable,
+        address _rando,
+        uint256 _maxReleaseAmount
+    ) public {
+        vm.assume(checkLimits(_allocation, _beneficiary, _start, _cliff, _duration, vesting, block.timestamp));
+        vm.assume(_rando != address(0));
+        bytes32 hash = keccak256(
+            abi.encodePacked(_allocation, _beneficiary, _start, _cliff, _duration, _isMintable, _salt)
+        );
+
+        _maxReleaseAmount = 0;
+
+        // commit
+        assertTrue(vesting.commitments(hash) == 0, "commitment already exists");
+        vm.expectEmit(true, true, true, true, address(vesting));
+        emit Commit(hash);
+        vm.prank(owner);
+        vesting.commit(hash);
+        assertTrue(vesting.commitments(hash) > 0, "commitment does not exist");
+
+        // mint tokens if necessary
+        if (!_isMintable) {
+            token.mint(address(vesting), _maxReleaseAmount);
+        }
+
+        vm.warp(_start + _cliff + _duration + 1); // go to end of vesting period
+
+        // revealAndRelease
+        vm.expectEmit(true, true, true, true, address(vesting));
+        emit Reveal(hash, 0);
+        vm.prank(_rando);
+        uint64 id = vesting.reveal(hash, _allocation, _beneficiary, _start, _cliff, _duration, _isMintable, _salt);
+        assertEq(id, 0, "id is not 0");
+
+        if (_maxReleaseAmount > _allocation) {
+            assertEq(token.balanceOf(_beneficiary), _allocation, "balance is not equal to total");
+        } else {
+            assertEq(token.balanceOf(_beneficiary), _maxReleaseAmount, "balance is not equal to amount");
+        }
+
+        checkVestingPlanDetails(id, _beneficiary, _allocation, _start, _duration, _cliff, _isMintable, vesting);
+
+        // make sure the commitment is deleted
+        assertTrue(vesting.commitments(hash) == 0, "commitment still exists");
+
+        // make sure a second creation fails
+        vm.expectRevert("invalid-hash");
+        vm.prank(_rando);
+        vesting.reveal(hash, _allocation, _beneficiary, _start, _cliff, _duration, _isMintable, _salt);
+    }
+
     function testClaimAfterRevoke() public {
         uint256 commitmentAllocation = 100;
         uint256 realAllocation = 75;
