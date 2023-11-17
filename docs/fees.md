@@ -14,18 +14,18 @@ Tokenize.it will collect fees from it's users. There are 3 types of users and 2 
   1.  currencies (WETH, WBTC, USDC, EUROC, EURe)
   2.  tokens of companies
 
-Fees are collected during investments and token minting. They are paid both in the investment currency (-> see `publicFundraisingFee()` and `privateOfferFee()` in [FeeSettings.sol](../contracts/FeeSettings.sol)) and the token minted (-> see `tokenFee` in [FeeSettings.sol](../contracts/FeeSettings.sol)).
+Fees are collected during investments and token minting. They are paid both in the investment currency (-> see `crowdinvestingFee()` and `privateOfferFee()` in [FeeSettings.sol](../contracts/FeeSettings.sol)) and the token minted (-> see `tokenFee` in [FeeSettings.sol](../contracts/FeeSettings.sol)).
 
 **Example**:
-Investor buys X tokens for Y USDC through the PublicFundraising contract.
+Investor buys X tokens for Y USDC through the Crowdinvesting contract.
 
 - X tokens are minted to the investor
 - X\*tokenFeeNumerator/tokenFeeDenominator tokens are minted to the feeCollector
 - So the company mints a total of X + X\*tokenFeeNumerator/tokenFeeDenominator tokens in this transaction
 - Investor pays Y USDC
-- Y\*publicFundraisingFeeNumerator/publicFundraisingFeeDenominator USDC goes to the feeCollector
-- So the company receives Y - Y\*publicFundraisingFeeNumerator/publicFundraisingFeeDenominator USDC in this transaction
-- In total, the company minted X + X\*tokenFeeNumerator/tokenFeeDenominator tokens and received Y - Y\*publicFundraisingFeeNumerator/publicFundraisingFeeDenominator USDC. It paid fees both in token and currency.
+- Y\*crowdinvestingFeeNumerator/crowdinvestingFeeDenominator USDC goes to the feeCollector
+- So the company receives Y - Y\*crowdinvestingFeeNumerator/crowdinvestingFeeDenominator USDC in this transaction
+- In total, the company minted X + X\*tokenFeeNumerator/tokenFeeDenominator tokens and received Y - Y\*crowdinvestingFeeNumerator/crowdinvestingFeeDenominator USDC. It paid fees both in token and currency.
 - The investor pays Y USDC for X tokens, like they expected. They did not pay fees.
 
 ### Interpretation
@@ -42,7 +42,7 @@ Maximum fees are:
 
 - 5% of tokens minted
 - 5% of currency paid when using PrivateOffer
-- 10% of currency paid when using PublicFundraising
+- 10% of currency paid when using Crowdinvesting
 
 ## Fee collectors
 
@@ -64,11 +64,11 @@ Tokenize.it will deploy and manage at least one [fee settings contract](../contr
 
 - fee calculation:
   - `tokenFee(uint256 tokenBuyAmount)`
-  - `publicFundraisingFee(uint256 paymentAmount)`
+  - `crowdinvestingFee(uint256 paymentAmount)`
   - `privateOfferFee(uint256 paymentAmount)`
 - feeCollector addresses
   - `tokenFeeCollector()`
-  - `publicFundraisingFeeCollector()`
+  - `crowdinvestingFeeCollector()`
   - `privateOfferFeeCollector()`
 
 These values can be changed by tokenize.it. Fee increases are subject to a delay of at least 12 weeks.
@@ -87,8 +87,8 @@ fee = amount * feeNumerator / feeDenominator
 
 ### Investment contracts
 
-- The investment contracts [PrivateOffer](../contracts/PrivateOffer.sol) and [PublicFundraising](../contracts/PublicFundraising.sol) both access the fee setting through the token contracts they are connected to.
-- PublicFundraising: When Y currency is paid, the fee is Y\*publicFundraisingFeeNumerator/publicFundraisingFeeDenominator. This fee is DEDUCTED from the Y currency paid and transferred to the feeCollector.
+- The investment contracts [PrivateOffer](../contracts/PrivateOffer.sol) and [Crowdinvesting](../contracts/Crowdinvesting.sol) both access the fee setting through the token contracts they are connected to.
+- Crowdinvesting: When Y currency is paid, the fee is Y\*crowdinvestingFeeNumerator/crowdinvestingFeeDenominator. This fee is DEDUCTED from the Y currency paid and transferred to the feeCollector.
 - PrivateOffer: When Y currency is paid, the fee is Y\*privateOfferFeeNumerator/privateOfferFeeDenominator. This fee is DEDUCTED from the Y currency paid and transferred to the feeCollector.
 
 ## Discounts

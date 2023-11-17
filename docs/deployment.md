@@ -8,7 +8,7 @@ The platform-related contracts are:
 2. [feeSettings](../contracts/FeeSettings.sol)
 3. [TokenFactory](../contracts/TokenProxyFactory.sol)
 4. [PrivateOfferFactory](../contracts/PrivateOfferFactory.sol)
-5. [PublicFundraisingFactory](../contracts/PublicFundraisingCloneFactory.sol)
+5. [CrowdinvestingFactory](../contracts/CrowdinvestingCloneFactory.sol)
 6. [VestingFactory](../contracts/VestingCloneFactory.sol)
 7. [PriceLinearFactory](../contracts/PriceLinearCloneFactory.sol) or other dynamic pricing factories
 
@@ -40,7 +40,7 @@ Note:
 The company-related contracts are:
 
 - Token.sol
-- PublicFundraising.sol
+- Crowdinvesting.sol
 - PrivateOffer.sol
 
 They are deployed through the web app.
@@ -62,7 +62,7 @@ As the web app does not automatically verify the contracts (with etherscan or ot
 
 ### hardhat
 
-The PublicFundraising contract can be verified like this:
+The Crowdinvesting contract can be verified like this:
 
 ```
 yarn hardhat verify --network goerli 0x29b659E948616815FADCD013f6BfC767da1BDe83 0x0445d09A1917196E1DC12EdB7334C70c1FfB1623 0xA1e28D1f17b7Da62d10fbFaFCA98Fa406D759ce2 10000000000000000000 50000000000000000000 1000000 100000000000000000000 0x07865c6E87B9F70255377e024ace6630C1Eaa37F 0xc1C74cbD565D16E0cCe9C5DCf7683368DE4E35e2

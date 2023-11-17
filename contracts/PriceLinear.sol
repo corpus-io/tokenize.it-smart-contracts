@@ -45,7 +45,7 @@ contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPri
     }
 
     /**
-     * @notice Sets up the PublicFundraising. The contract is usable immediately after initialization, but does need a minting allowance for the token.
+     * @notice Sets up the Crowdinvesting. The contract is usable immediately after initialization, but does need a minting allowance for the token.
      * @dev Constructor that passes the trusted forwarder to the ERC2771Context constructor
      */
     function initialize(

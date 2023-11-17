@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/factories/PublicFundraisingCloneFactory.sol";
+import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/ERC2771Helper.sol";
@@ -13,8 +13,8 @@ contract tokenTest is Test {
     AllowList allowList;
     FeeSettings feeSettings;
     TokenProxyFactory tokenFactory;
-    PublicFundraising fundraisingImplementation;
-    PublicFundraisingCloneFactory fundraisingFactory;
+    Crowdinvesting fundraisingImplementation;
+    CrowdinvestingCloneFactory fundraisingFactory;
     address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant requirer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
@@ -61,8 +61,8 @@ contract tokenTest is Test {
         Token tokenImplementation = new Token(trustedForwarder);
         tokenFactory = new TokenProxyFactory(address(tokenImplementation));
 
-        fundraisingImplementation = new PublicFundraising(trustedForwarder);
-        fundraisingFactory = new PublicFundraisingCloneFactory(address(fundraisingImplementation));
+        fundraisingImplementation = new Crowdinvesting(trustedForwarder);
+        fundraisingFactory = new CrowdinvestingCloneFactory(address(fundraisingImplementation));
     }
 
     // function testAddressPrediction1(
@@ -90,10 +90,10 @@ contract tokenTest is Test {
     //     vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
 
     //     // create new clone factory so we can use the local forwarder
-    //     fundraisingImplementation = new PublicFundraising(_trustedForwarder);
-    //     fundraisingFactory = new PublicFundraisingCloneFactory(address(fundraisingImplementation));
+    //     fundraisingImplementation = new Crowdinvesting(_trustedForwarder);
+    //     fundraisingFactory = new CrowdinvestingCloneFactory(address(fundraisingImplementation));
 
-    //     PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+    //     CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
     //         _owner,
     //         _currencyReceiver,
     //         _minAmountPerBuyer,
@@ -138,10 +138,10 @@ contract tokenTest is Test {
         vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
 
         // create new clone factory so we can use the local forwarder
-        fundraisingImplementation = new PublicFundraising(exampleTrustedForwarder);
-        fundraisingFactory = new PublicFundraisingCloneFactory(address(fundraisingImplementation));
+        fundraisingImplementation = new Crowdinvesting(exampleTrustedForwarder);
+        fundraisingFactory = new CrowdinvestingCloneFactory(address(fundraisingImplementation));
 
-        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+        CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             exampleOwner,
             exampleCurrencyReceiver,
             exampleMinAmountPerBuyer,
@@ -160,7 +160,7 @@ contract tokenTest is Test {
             keccak256(abi.encode(exampleRawSalt, exampleTrustedForwarder, arguments))
         );
 
-        address actual = fundraisingFactory.createPublicFundraisingClone(
+        address actual = fundraisingFactory.createCrowdinvestingClone(
             exampleRawSalt,
             exampleTrustedForwarder,
             arguments
@@ -181,10 +181,10 @@ contract tokenTest is Test {
         vm.assume(_minAmountPerBuyer > 0);
 
         // create new clone factory so we can use the local forwarder
-        fundraisingImplementation = new PublicFundraising(_trustedForwarder);
-        fundraisingFactory = new PublicFundraisingCloneFactory(address(fundraisingImplementation));
+        fundraisingImplementation = new Crowdinvesting(_trustedForwarder);
+        fundraisingFactory = new CrowdinvestingCloneFactory(address(fundraisingImplementation));
 
-        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+        CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             _owner,
             _currencyReceiver,
             _minAmountPerBuyer,
@@ -203,7 +203,7 @@ contract tokenTest is Test {
 
         address expected1 = fundraisingFactory.predictCloneAddress(salt);
 
-        address actual = fundraisingFactory.createPublicFundraisingClone(_rawSalt, _trustedForwarder, arguments);
+        address actual = fundraisingFactory.createCrowdinvestingClone(_rawSalt, _trustedForwarder, arguments);
         assertEq(expected1, actual, "address prediction failed");
     }
 
@@ -231,7 +231,7 @@ contract tokenTest is Test {
         vm.assume(_tokenPriceMax >= _priceBase);
         vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
 
-        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+        CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             _owner,
             _currencyReceiver,
             _minAmountPerBuyer,
@@ -247,11 +247,11 @@ contract tokenTest is Test {
         );
 
         // deploy once
-        fundraisingFactory.createPublicFundraisingClone(_rawSalt, trustedForwarder, arguments);
+        fundraisingFactory.createCrowdinvestingClone(_rawSalt, trustedForwarder, arguments);
 
         // deploy again
         vm.expectRevert("ERC1167: create2 failed");
-        fundraisingFactory.createPublicFundraisingClone(_rawSalt, trustedForwarder, arguments);
+        fundraisingFactory.createCrowdinvestingClone(_rawSalt, trustedForwarder, arguments);
     }
 
     function testInitialization1(
@@ -269,10 +269,10 @@ contract tokenTest is Test {
         vm.assume(_maxAmountPerBuyer >= _minAmountPerBuyer);
 
         // create new clone factory so we can use the local forwarder
-        fundraisingImplementation = new PublicFundraising(_trustedForwarder);
-        fundraisingFactory = new PublicFundraisingCloneFactory(address(fundraisingImplementation));
+        fundraisingImplementation = new Crowdinvesting(_trustedForwarder);
+        fundraisingFactory = new CrowdinvestingCloneFactory(address(fundraisingImplementation));
 
-        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+        CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             _owner,
             _currencyReceiver,
             _minAmountPerBuyer,
@@ -287,8 +287,8 @@ contract tokenTest is Test {
             examplePriceOracle
         );
 
-        PublicFundraising raise = PublicFundraising(
-            fundraisingFactory.createPublicFundraisingClone(_rawSalt, _trustedForwarder, arguments)
+        Crowdinvesting raise = Crowdinvesting(
+            fundraisingFactory.createCrowdinvestingClone(_rawSalt, _trustedForwarder, arguments)
         );
 
         assertTrue(raise.isTrustedForwarder(_trustedForwarder), "trustedForwarder not set");
@@ -318,10 +318,10 @@ contract tokenTest is Test {
         vm.assume(_maxAmountPerBuyer > 0);
 
         // create new clone factory so we can use the local forwarder
-        fundraisingImplementation = new PublicFundraising(exampleTrustedForwarder);
-        fundraisingFactory = new PublicFundraisingCloneFactory(address(fundraisingImplementation));
+        fundraisingImplementation = new Crowdinvesting(exampleTrustedForwarder);
+        fundraisingFactory = new CrowdinvestingCloneFactory(address(fundraisingImplementation));
 
-        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+        CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             exampleOwner,
             exampleCurrencyReceiver,
             exampleMinAmountPerBuyer,
@@ -336,8 +336,8 @@ contract tokenTest is Test {
             _priceOracle
         );
 
-        PublicFundraising raise = PublicFundraising(
-            fundraisingFactory.createPublicFundraisingClone(exampleRawSalt, exampleTrustedForwarder, arguments)
+        Crowdinvesting raise = Crowdinvesting(
+            fundraisingFactory.createCrowdinvestingClone(exampleRawSalt, exampleTrustedForwarder, arguments)
         );
 
         assertEq(raise.maxAmountPerBuyer(), _maxAmountPerBuyer, "maxAmountPerBuyer not set");
@@ -359,7 +359,7 @@ contract tokenTest is Test {
         vm.assume(rando != address(0));
         vm.assume(rando != _admin);
 
-        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+        CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             _admin,
             _admin,
             exampleMinAmountPerBuyer,
@@ -374,8 +374,8 @@ contract tokenTest is Test {
             examplePriceOracle
         );
 
-        PublicFundraising raise = PublicFundraising(
-            fundraisingFactory.createPublicFundraisingClone(0, trustedForwarder, arguments)
+        Crowdinvesting raise = Crowdinvesting(
+            fundraisingFactory.createCrowdinvestingClone(0, trustedForwarder, arguments)
         );
 
         vm.prank(rando);

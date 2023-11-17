@@ -4,11 +4,11 @@ pragma solidity 0.8.23;
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/FeeSettings.sol";
-import "../contracts/factories/PublicFundraisingCloneFactory.sol";
+import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
 
-contract PublicFundraisingTest is Test {
+contract CrowdinvestingTest is Test {
     event CurrencyReceiverChanged(address indexed);
     event MinAmountPerBuyerChanged(uint256);
     event MaxAmountPerBuyerChanged(uint256);
@@ -16,8 +16,8 @@ contract PublicFundraisingTest is Test {
     event MaxAmountOfTokenToBeSoldChanged(uint256);
     event TokensBought(address indexed buyer, uint256 tokenAmount, uint256 currencyAmount);
 
-    PublicFundraisingCloneFactory factory;
-    PublicFundraising raise;
+    CrowdinvestingCloneFactory factory;
+    Crowdinvesting raise;
     AllowList list;
     IFeeSettingsV2 feeSettings;
 
@@ -68,9 +68,9 @@ contract PublicFundraisingTest is Test {
         assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
 
         vm.prank(owner);
-        factory = new PublicFundraisingCloneFactory(address(new PublicFundraising(trustedForwarder)));
+        factory = new CrowdinvestingCloneFactory(address(new Crowdinvesting(trustedForwarder)));
 
-        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+        CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             owner,
             payable(receiver),
             minAmountPerBuyer,
@@ -85,7 +85,7 @@ contract PublicFundraisingTest is Test {
             address(0)
         );
 
-        raise = PublicFundraising(factory.createPublicFundraisingClone(0, trustedForwarder, arguments));
+        raise = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
 
         // allow raise contract to mint
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();

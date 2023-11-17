@@ -47,7 +47,7 @@ contract TokenERC2771Test is Test {
     address public constant feeCollector = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
 
     uint32 public constant tokenFeeDenominator = 100;
-    uint32 public constant publicFundraisingFeeDenominator = 50;
+    uint32 public constant crowdinvestingFeeDenominator = 50;
     uint32 public constant privateOfferFeeDenominator = 70;
 
     bytes32 domainSeparator;
@@ -66,7 +66,7 @@ contract TokenERC2771Test is Test {
             1,
             tokenFeeDenominator,
             1,
-            publicFundraisingFeeDenominator,
+            crowdinvestingFeeDenominator,
             1,
             privateOfferFeeDenominator,
             0

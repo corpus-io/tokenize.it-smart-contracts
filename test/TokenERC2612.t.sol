@@ -49,7 +49,7 @@ contract TokenERC2612Test is Test {
 
     uint32 public constant tokenFeeNumerator = 0;
     uint32 public constant tokenFeeDenominator = 1;
-    uint32 public constant publicFundraisingFeeDenominator = 50;
+    uint32 public constant crowdinvestingFeeDenominator = 50;
     uint32 public constant privateOfferFeeDenominator = 70;
 
     uint256 public constant tokenMintAmount = UINT256_MAX - 1; // -1 to avoid overflow caused by fee mint
@@ -69,7 +69,7 @@ contract TokenERC2612Test is Test {
             tokenFeeNumerator,
             tokenFeeDenominator,
             1,
-            publicFundraisingFeeDenominator,
+            crowdinvestingFeeDenominator,
             1,
             privateOfferFeeDenominator,
             0

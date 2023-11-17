@@ -13,7 +13,7 @@ Let's assume that there will be one (1) platform, many (**X**) companies and man
 | FeeSettings | 1 | platform | used by all companies |
 | Token | X | company | represents a specific companies shares |
 | Vesting | X | company | allows company to vest tokens over a period of time |
-| PublicFundraising | X | company | most companies will want raise funds from all eligible investors |
+| Crowdinvesting | X | company | most companies will want raise funds from all eligible investors |
 | PrivateOffer | >X | --- | most companies will extend special investment offers to specific investors, or receive these from investors |
 
 # Example work flow: creating company and raising funds
@@ -36,9 +36,9 @@ When investments are processed, [fees are charged](fees.md).
 
 ### Public investments
 
-The founder can offer tokens at a certain price to the public. If they want to do so, the platform deploys a PublicFundraising contract and transfers ownership to the founder.
+The founder can offer tokens at a certain price to the public. If they want to do so, the platform deploys a Crowdinvesting contract and transfers ownership to the founder.
 
-Afterwards, the founder grants a token minting allowance to the PublicFundraising contract, enabling it to mint shares.
+Afterwards, the founder grants a token minting allowance to the Crowdinvesting contract, enabling it to mint shares.
 
 In order to buy tokens, investors must grant an allowance in payment currency and execute the deal() function. This will transfer the payment to the receiver selected by the founder and mint tokens to the investor. Alternatively, the investor can send the payment directly to the contract using the `TransferAndCall` standard.
 

@@ -3,13 +3,13 @@ pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
-import "../contracts/factories/PublicFundraisingCloneFactory.sol";
+import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
 
-contract PublicFundraisingTest is Test {
-    PublicFundraising raise;
+contract CrowdinvestingTest is Test {
+    Crowdinvesting raise;
     AllowList list;
     FeeSettings feeSettings;
 
@@ -17,7 +17,7 @@ contract PublicFundraisingTest is Test {
     TokenProxyFactory tokenFactory = new TokenProxyFactory(address(implementation));
     Token token;
     FakePaymentToken paymentToken;
-    PublicFundraisingCloneFactory fundraisingFactory;
+    CrowdinvestingCloneFactory fundraisingFactory;
 
     address public constant platformAdmin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant investor = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
@@ -66,9 +66,9 @@ contract PublicFundraisingTest is Test {
 
         vm.prank(companyOwner);
 
-        fundraisingFactory = new PublicFundraisingCloneFactory(address(new PublicFundraising(trustedForwarder)));
+        fundraisingFactory = new CrowdinvestingCloneFactory(address(new Crowdinvesting(trustedForwarder)));
 
-        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+        CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             address(this),
             payable(receiver),
             minAmountPerBuyer,
@@ -83,7 +83,7 @@ contract PublicFundraisingTest is Test {
             address(0)
         );
 
-        raise = PublicFundraising(fundraisingFactory.createPublicFundraisingClone(0, trustedForwarder, arguments));
+        raise = Crowdinvesting(fundraisingFactory.createCrowdinvestingClone(0, trustedForwarder, arguments));
 
         // allow raise contract to mint
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
@@ -101,15 +101,15 @@ contract PublicFundraisingTest is Test {
     /*
     set up with FakePaymentToken which has variable decimals to make sure that doesn't break anything
     */
-    function feeCalculation(uint32 tokenFeeDenominator, uint32 publicFundraisingFeeDenominator) public {
+    function feeCalculation(uint32 tokenFeeDenominator, uint32 crowdinvestingFeeDenominator) public {
         // apply fees for test
         Fees memory fees = Fees(
             1,
             tokenFeeDenominator,
             1,
-            publicFundraisingFeeDenominator,
+            crowdinvestingFeeDenominator,
             1,
-            publicFundraisingFeeDenominator,
+            crowdinvestingFeeDenominator,
             uint64(block.timestamp + 13 weeks)
         );
         vm.prank(platformAdmin);
@@ -155,7 +155,7 @@ contract PublicFundraisingTest is Test {
         paymentToken = new FakePaymentToken(_paymentTokenAmount, _paymentTokenDecimals);
         vm.prank(companyOwner);
 
-        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+        CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             address(this),
             payable(receiver),
             1,
@@ -170,8 +170,8 @@ contract PublicFundraisingTest is Test {
             address(0)
         );
 
-        PublicFundraising _raise = PublicFundraising(
-            fundraisingFactory.createPublicFundraisingClone(0, trustedForwarder, arguments)
+        Crowdinvesting _raise = Crowdinvesting(
+            fundraisingFactory.createCrowdinvestingClone(0, trustedForwarder, arguments)
         );
 
         // allow invite contract to mint
@@ -207,8 +207,7 @@ contract PublicFundraisingTest is Test {
         // receiver should have the 990 FPT that were paid, minus the fee
 
         uint currencyAmount = 990 * 10 ** _paymentTokenDecimals;
-        uint256 currencyFee = currencyAmount /
-            FeeSettings(address(token.feeSettings())).publicFundraisingFeeDenominator();
+        uint256 currencyFee = currencyAmount / FeeSettings(address(token.feeSettings())).crowdinvestingFeeDenominator();
         assertTrue(
             paymentToken.balanceOf(receiver) == currencyAmount - currencyFee,
             "receiver has wrong amount of currency"
@@ -231,10 +230,10 @@ contract PublicFundraisingTest is Test {
         feeCalculation(type(uint32).max, type(uint32).max);
     }
 
-    function testVariousFees(uint32 tokenFeeDenominator, uint32 publicFundraisingFeeDenominator) public {
+    function testVariousFees(uint32 tokenFeeDenominator, uint32 crowdinvestingFeeDenominator) public {
         vm.assume(tokenFeeDenominator >= 20);
-        vm.assume(publicFundraisingFeeDenominator >= 20);
-        feeCalculation(tokenFeeDenominator, publicFundraisingFeeDenominator);
+        vm.assume(crowdinvestingFeeDenominator >= 20);
+        feeCalculation(tokenFeeDenominator, crowdinvestingFeeDenominator);
     }
 
     /*
@@ -275,7 +274,7 @@ contract PublicFundraisingTest is Test {
             paymentToken = new FakePaymentToken(_paymentTokenAmount, _paymentTokenDecimals);
             vm.prank(companyOwner);
 
-            PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+            CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
                 address(this),
                 payable(receiver),
                 1,
@@ -290,8 +289,8 @@ contract PublicFundraisingTest is Test {
                 address(0)
             );
 
-            PublicFundraising _raise = PublicFundraising(
-                fundraisingFactory.createPublicFundraisingClone(0, trustedForwarder, arguments)
+            Crowdinvesting _raise = Crowdinvesting(
+                fundraisingFactory.createCrowdinvestingClone(0, trustedForwarder, arguments)
             );
             // allow invite contract to mint
             bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
@@ -326,7 +325,7 @@ contract PublicFundraisingTest is Test {
             // receiver should have the 990 FPT that were paid, minus the fee
             uint currencyAmount = 990 * 10 ** _paymentTokenDecimals;
             uint256 currencyFee = currencyAmount /
-                FeeSettings(address(token.feeSettings())).publicFundraisingFeeDenominator();
+                FeeSettings(address(token.feeSettings())).crowdinvestingFeeDenominator();
             assertTrue(
                 paymentToken.balanceOf(receiver) == currencyAmount - currencyFee,
                 "receiver has wrong amount of currency"
