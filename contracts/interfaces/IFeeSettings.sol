@@ -6,9 +6,9 @@ import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 interface IFeeSettingsV1 {
     function tokenFee(uint256) external view returns (uint256);
 
-    function crowdinvestingFee(uint256) external view returns (uint256);
+    function continuousFundraisingFee(uint256) external view returns (uint256);
 
-    function privateOfferFee(uint256) external view returns (uint256);
+    function personalInviteFee(uint256) external view returns (uint256);
 
     function feeCollector() external view returns (address);
 
