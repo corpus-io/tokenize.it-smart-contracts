@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/PriceLinearCloneFactory.sol";
 
-contract CrowdinvestingTest is Test {
+contract PriceLinearTest is Test {
     PriceLinearCloneFactory priceLinearCloneFactory;
     PriceLinear oracle;
 
@@ -17,7 +17,7 @@ contract CrowdinvestingTest is Test {
         priceLinearCloneFactory = new PriceLinearCloneFactory(address(priceLinearLogicContract));
 
         oracle = PriceLinear(
-            priceLinearCloneFactory.createPriceLinear(
+            priceLinearCloneFactory.createPriceLinearClone(
                 bytes32(uint256(0)),
                 trustedForwarder,
                 companyAdmin,
@@ -40,7 +40,7 @@ contract CrowdinvestingTest is Test {
         vm.assume(someTime < type(uint256).max - startTime);
 
         PriceLinear _oracle = PriceLinear(
-            priceLinearCloneFactory.createPriceLinear(
+            priceLinearCloneFactory.createPriceLinearClone(
                 bytes32(uint256(0)),
                 trustedForwarder,
                 companyAdmin,
@@ -82,7 +82,7 @@ contract CrowdinvestingTest is Test {
         uint64 increasePerStep = 1e9;
 
         PriceLinear _oracle = PriceLinear(
-            priceLinearCloneFactory.createPriceLinear(
+            priceLinearCloneFactory.createPriceLinearClone(
                 bytes32(uint256(0)),
                 trustedForwarder,
                 companyAdmin,
@@ -126,7 +126,7 @@ contract CrowdinvestingTest is Test {
         uint64 decreasePerStep = 1e9;
 
         PriceLinear _oracle = PriceLinear(
-            priceLinearCloneFactory.createPriceLinear(
+            priceLinearCloneFactory.createPriceLinearClone(
                 bytes32(uint256(0)),
                 trustedForwarder,
                 companyAdmin,
@@ -173,7 +173,7 @@ contract CrowdinvestingTest is Test {
         console.log("Current block: %s", block.number);
 
         PriceLinear _oracle = PriceLinear(
-            priceLinearCloneFactory.createPriceLinear(
+            priceLinearCloneFactory.createPriceLinearClone(
                 bytes32(uint256(0)),
                 trustedForwarder,
                 companyAdmin,

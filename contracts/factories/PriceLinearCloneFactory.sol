@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/proxy/Clones.sol";
 contract PriceLinearCloneFactory is CloneFactory {
     constructor(address _implementation) CloneFactory(_implementation) {}
 
-    function createPriceLinear(
+    function createPriceLinearClone(
         bytes32 _rawSalt,
         address _trustedForwarder,
         address _owner,
