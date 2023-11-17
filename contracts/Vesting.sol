@@ -326,13 +326,13 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     function stopVesting(uint64 _id, uint64 _endTime) public onlyManager {
         // already vested tokens can not be taken away (except of burning in the token contract itself)
         _endTime = _endTime < uint64(block.timestamp) ? uint64(block.timestamp) : _endTime;
-        require(_endTime < vestings[_id].start + vestings[_id].duration, "endTime must be before vesting end");
+        require(_endTime < start(_id) + duration(_id), "endTime must be before vesting end");
 
-        if (vestings[_id].start + vestings[_id].cliff > _endTime) {
+        if (start(_id) + cliff(_id) > _endTime) {
             delete vestings[_id];
         } else {
             vestings[_id].allocation = vestedAmount(_id, _endTime);
-            vestings[_id].duration = _endTime - vestings[_id].start;
+            vestings[_id].duration = _endTime - start(_id);
         }
         emit VestingStopped(_id, _endTime);
     }
