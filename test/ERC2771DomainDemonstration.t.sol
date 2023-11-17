@@ -2,11 +2,11 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/TokenProxyFactory.sol";
+import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/ERC2771Helper.sol";
-import "../contracts/PublicFundraisingCloneFactory.sol";
+import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 
 import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific version to avoid import error: yarn add @opengsn/contracts@2.2.5
 
@@ -53,7 +53,7 @@ contract TokenERC2771Test is Test {
     address public constant feeCollector = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
 
     uint32 public constant tokenFeeDenominator = 100;
-    uint32 public constant publicFundraisingFeeDenominator = 50;
+    uint32 public constant crowdinvestingFeeDenominator = 50;
     uint32 public constant privateOfferFeeDenominator = 70;
 
     bytes32 domainSeparator;
@@ -73,7 +73,7 @@ contract TokenERC2771Test is Test {
             1,
             tokenFeeDenominator,
             1,
-            publicFundraisingFeeDenominator,
+            crowdinvestingFeeDenominator,
             1,
             privateOfferFeeDenominator,
             0
@@ -111,11 +111,11 @@ contract TokenERC2771Test is Test {
 
         // deploy fundraising
         paymentToken = new FakePaymentToken(6 * 10 ** 18, 18);
-        PublicFundraisingCloneFactory fundraisingFactory = new PublicFundraisingCloneFactory(
-            address(new PublicFundraising(address(forwarder)))
+        CrowdinvestingCloneFactory fundraisingFactory = new CrowdinvestingCloneFactory(
+            address(new Crowdinvesting(address(forwarder)))
         );
 
-        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments({
+        CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments({
             owner: companyAdmin,
             currencyReceiver: receiver,
             minAmountPerBuyer: 1000 * 10 ** 18,
@@ -129,8 +129,8 @@ contract TokenERC2771Test is Test {
             lastBuyDate: 0,
             priceOracle: address(0)
         });
-        PublicFundraising raise = PublicFundraising(
-            fundraisingFactory.createPublicFundraisingClone(0, address(forwarder), arguments)
+        Crowdinvesting raise = Crowdinvesting(
+            fundraisingFactory.createCrowdinvestingClone(0, address(forwarder), arguments)
         );
 
         // register domainSeparator with forwarder
@@ -237,7 +237,7 @@ contract TokenERC2771Test is Test {
         );
 
         /*
-         * update settings on public fundraising
+         * update settings on crowdinvesting
          */
 
         // build request

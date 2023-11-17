@@ -13,7 +13,7 @@ import "./Token.sol";
 import "./interfaces/IPriceDynamic.sol";
 
 /// this struct is used to circumvent the stack too deep error that occurs when passing too many arguments to a function
-struct PublicFundraisingInitializerArguments {
+struct CrowdinvestingInitializerArguments {
     /// Owner of the contract
     address owner;
     /// address that receives the payment (in currency) when tokens are bought
@@ -41,17 +41,17 @@ struct PublicFundraisingInitializerArguments {
 }
 
 /**
- * @title PublicFundraising
+ * @title Crowdinvesting
  * @author malteish, cjentzsch
  * @notice This contract represents the offer to buy an amount of tokens at a preset price. It can be used by anyone and there is no limit to the number of times it can be used.
  *      The buyer can decide how many tokens to buy, but has to buy at least minAmount and can buy at most maxAmount.
  *      The currency the offer is denominated in is set at creation time and can be updated later.
  *      The contract can be paused at any time by the owner, which will prevent any new deals from being made. Then, changes to the contract can be made, like changing the currency, price or requirements.
  *      The contract can be unpaused after "delay", which will allow new deals to be made again.
- *      A company will create only one PublicFundraising contract for their token.
+ *      A company will create only one Crowdinvesting contract for their token.
  * @dev The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support
  */
-contract PublicFundraising is
+contract Crowdinvesting is
     ERC2771ContextUpgradeable,
     Ownable2StepUpgradeable,
     PausableUpgradeable,
@@ -142,10 +142,10 @@ contract PublicFundraising is
     }
 
     /**
-     * @notice Sets up the PublicFundraising. The contract is usable immediately after being initialized, but does need a minting allowance for the token.
+     * @notice Sets up the Crowdinvesting. The contract is usable immediately after being initialized, but does need a minting allowance for the token.
      * @param _arguments Struct containing all arguments for the initializer
      */
-    function initialize(PublicFundraisingInitializerArguments memory _arguments) external initializer {
+    function initialize(CrowdinvestingInitializerArguments memory _arguments) external initializer {
         require(_arguments.owner != address(0), "owner can not be zero address");
         __Ownable2Step_init(); // sets msgSender() as owner
         _transferOwnership(_arguments.owner); // sets owner as owner
@@ -234,7 +234,7 @@ contract PublicFundraising is
 
     function _getFeeAndFeeReceiver(uint256 _currencyAmount) internal view returns (uint256, address) {
         IFeeSettingsV2 feeSettings = token.feeSettings();
-        return (feeSettings.publicFundraisingFee(_currencyAmount), feeSettings.publicFundraisingFeeCollector());
+        return (feeSettings.crowdinvestingFee(_currencyAmount), feeSettings.crowdinvestingFeeCollector());
     }
 
     /**

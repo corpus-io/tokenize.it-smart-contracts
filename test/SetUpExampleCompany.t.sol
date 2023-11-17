@@ -2,10 +2,10 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/TokenProxyFactory.sol";
-import "../contracts/PublicFundraisingCloneFactory.sol";
+import "../contracts/factories/TokenProxyFactory.sol";
+import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
-import "../contracts/PrivateOfferFactory.sol";
+import "../contracts/factories/PrivateOfferFactory.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/ERC2771Helper.sol";
 import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific version to avoid import error: yarn add @opengsn/contracts@2.2.5
@@ -18,8 +18,8 @@ import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific versi
 contract CompanySetUpTest is Test {
     using ECDSA for bytes32; // for verify with var.recover()
 
-    PublicFundraisingCloneFactory fundraisingFactory;
-    PublicFundraising raise;
+    CrowdinvestingCloneFactory fundraisingFactory;
+    Crowdinvesting raise;
     AllowList list;
     FeeSettings feeSettings;
     PrivateOfferFactory privateOfferFactory;
@@ -196,9 +196,9 @@ contract CompanySetUpTest is Test {
         // after setting up their company, the company admin might want to launch a fundraising campaign. They choose all settings in the web, but the contract
         // will be deployed by the platform.
         vm.prank(platformHotWallet);
-        fundraisingFactory = new PublicFundraisingCloneFactory(address(new PublicFundraising(address(forwarder))));
+        fundraisingFactory = new CrowdinvestingCloneFactory(address(new Crowdinvesting(address(forwarder))));
 
-        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+        CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             companyAdmin,
             companyCurrencyReceiver,
             minAmountPerBuyer,
@@ -213,7 +213,7 @@ contract CompanySetUpTest is Test {
             address(0)
         );
 
-        raise = PublicFundraising(fundraisingFactory.createPublicFundraisingClone(0, address(forwarder), arguments));
+        raise = Crowdinvesting(fundraisingFactory.createCrowdinvestingClone(0, address(forwarder), arguments));
 
         // the company admin can now enable the fundraising campaign by granting it a token minting allowance.
         // Because the company admin does not hold eth, they will use a meta transaction to call the function.
@@ -560,11 +560,11 @@ contract CompanySetUpTest is Test {
         assertTrue(paymentToken.balanceOf(companyAdmin) > 0, "Company currency not received");
     }
 
-    function testlaunchCompanyAndInvestViaPublicFundraisingWithLocalForwarder() public {
+    function testlaunchCompanyAndInvestViaCrowdinvestingWithLocalForwarder() public {
         launchCompanyAndInvestViaContinousFundraising(new Forwarder());
     }
 
-    function testlaunchCompanyAndInvestViaPublicFundraisingWithMainnetGSNForwarder() public {
+    function testlaunchCompanyAndInvestViaCrowdinvestingWithMainnetGSNForwarder() public {
         // uses deployed forwarder on mainnet with fork. https://docs-v2.opengsn.org/networks/ethereum/mainnet.html
         launchCompanyAndInvestViaContinousFundraising(Forwarder(payable(0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA)));
     }

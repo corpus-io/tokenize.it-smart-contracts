@@ -2,10 +2,10 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/TokenProxyFactory.sol";
+import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/FeeSettings.sol";
-import "../contracts/PublicFundraisingCloneFactory.sol";
-import "../contracts/PriceLinearCloneFactory.sol";
+import "../contracts/factories/CrowdinvestingCloneFactory.sol";
+import "../contracts/factories/PriceLinearCloneFactory.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
 
@@ -41,7 +41,7 @@ contract MinPriceOracle is IPriceDynamic {
     }
 }
 
-contract PublicFundraisingTest is Test {
+contract CrowdinvestingTest is Test {
     event CurrencyReceiverChanged(address indexed);
     event MinAmountPerBuyerChanged(uint256);
     event MaxAmountPerBuyerChanged(uint256);
@@ -49,8 +49,8 @@ contract PublicFundraisingTest is Test {
     event MaxAmountOfTokenToBeSoldChanged(uint256);
     event TokensBought(address indexed buyer, uint256 tokenAmount, uint256 currencyAmount);
 
-    PublicFundraisingCloneFactory factory;
-    PublicFundraising raise;
+    CrowdinvestingCloneFactory factory;
+    Crowdinvesting raise;
     AllowList list;
     IFeeSettingsV2 feeSettings;
 
@@ -110,8 +110,8 @@ contract PublicFundraisingTest is Test {
         );
 
         // create fundraising
-        factory = new PublicFundraisingCloneFactory(address(new PublicFundraising(trustedForwarder)));
-        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+        factory = new CrowdinvestingCloneFactory(address(new Crowdinvesting(trustedForwarder)));
+        CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             companyAdmin,
             payable(receiver),
             minAmountPerBuyer,
@@ -125,7 +125,7 @@ contract PublicFundraisingTest is Test {
             0,
             address(0)
         );
-        raise = PublicFundraising(factory.createPublicFundraisingClone(0, trustedForwarder, arguments));
+        raise = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
 
         vm.stopPrank();
 

@@ -4,10 +4,10 @@ pragma solidity 0.8.23;
 import "../lib/forge-std/src/Test.sol";
 //import "../lib/forge-std/stdlib.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "../contracts/TokenProxyFactory.sol";
-import "../contracts/PublicFundraisingCloneFactory.sol";
+import "../contracts/factories/TokenProxyFactory.sol";
+import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "../contracts/PrivateOffer.sol";
-import "../contracts/PrivateOfferFactory.sol";
+import "../contracts/factories/PrivateOfferFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/ERC20Helper.sol";
 
@@ -26,7 +26,7 @@ contract MainnetCurrencies is Test {
     Token token;
     PrivateOfferFactory inviteFactory;
 
-    PublicFundraisingCloneFactory fundraisingFactory;
+    CrowdinvestingCloneFactory fundraisingFactory;
 
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant buyer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
@@ -70,7 +70,7 @@ contract MainnetCurrencies is Test {
             tokenCloneFactory.createTokenProxy(0, trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST")
         );
 
-        fundraisingFactory = new PublicFundraisingCloneFactory(address(new PublicFundraising(trustedForwarder)));
+        fundraisingFactory = new CrowdinvestingCloneFactory(address(new Crowdinvesting(trustedForwarder)));
 
         inviteFactory = new PrivateOfferFactory();
         currencyCost = (amountOfTokenToBuy * price) / 10 ** token.decimals();
@@ -93,7 +93,7 @@ contract MainnetCurrencies is Test {
     //         .checked_write(amount);
     // }
 
-    function publicFundraisingWithIERC20Currency(IERC20 _currency) public {
+    function crowdinvestingWithIERC20Currency(IERC20 _currency) public {
         // some math
         //uint _decimals = _currency.decimals(); // can't get decimals from IERC20
         //uint _price = 7 * 10**_decimals; // 7 payment tokens per token
@@ -103,7 +103,7 @@ contract MainnetCurrencies is Test {
 
         // set up fundraise with _currency
 
-        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+        CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             owner,
             payable(receiver),
             minAmountPerBuyer,
@@ -117,8 +117,8 @@ contract MainnetCurrencies is Test {
             0,
             address(0)
         );
-        PublicFundraising _raise = PublicFundraising(
-            fundraisingFactory.createPublicFundraisingClone(0, trustedForwarder, arguments)
+        Crowdinvesting _raise = Crowdinvesting(
+            fundraisingFactory.createCrowdinvestingClone(0, trustedForwarder, arguments)
         );
 
         // allow raise contract to mint
@@ -152,40 +152,40 @@ contract MainnetCurrencies is Test {
         assertEq(token.balanceOf(receiver), 0, "receiver has no tokens");
         assertEq(
             _currency.balanceOf(receiver),
-            _currencyCost - _currencyCost / FeeSettings(address(token.feeSettings())).publicFundraisingFeeDenominator(),
+            _currencyCost - _currencyCost / FeeSettings(address(token.feeSettings())).crowdinvestingFeeDenominator(),
             "receiver should have received currency"
         );
         assertEq(
             _currency.balanceOf(FeeSettings(address(token.feeSettings())).feeCollector()),
-            _currencyCost / FeeSettings(address(token.feeSettings())).publicFundraisingFeeDenominator(),
+            _currencyCost / FeeSettings(address(token.feeSettings())).crowdinvestingFeeDenominator(),
             "fee receiver should have received currency"
         );
         assertEq(
             token.balanceOf(FeeSettings(address(token.feeSettings())).feeCollector()),
-            amountOfTokenToBuy / FeeSettings(address(token.feeSettings())).publicFundraisingFeeDenominator(),
+            amountOfTokenToBuy / FeeSettings(address(token.feeSettings())).crowdinvestingFeeDenominator(),
             "fee receiver should have received tokens"
         );
         assertEq(_currency.balanceOf(buyer), _currencyAmount - _currencyCost, "buyer should have paid currency");
     }
 
-    function testPublicFundraisingWithMainnetUSDC() public {
-        publicFundraisingWithIERC20Currency(USDC);
+    function testCrowdinvestingWithMainnetUSDC() public {
+        crowdinvestingWithIERC20Currency(USDC);
     }
 
-    function testPublicFundraisingWithMainnetWETH() public {
-        publicFundraisingWithIERC20Currency(WETH);
+    function testCrowdinvestingWithMainnetWETH() public {
+        crowdinvestingWithIERC20Currency(WETH);
     }
 
-    function testPublicFundraisingWithMainnetWBTC() public {
-        publicFundraisingWithIERC20Currency(WBTC);
+    function testCrowdinvestingWithMainnetWBTC() public {
+        crowdinvestingWithIERC20Currency(WBTC);
     }
 
-    function testPublicFundraisingWithMainnetEUROC() public {
-        publicFundraisingWithIERC20Currency(EUROC);
+    function testCrowdinvestingWithMainnetEUROC() public {
+        crowdinvestingWithIERC20Currency(EUROC);
     }
 
-    function testPublicFundraisingWithMainnetDAI() public {
-        publicFundraisingWithIERC20Currency(DAI);
+    function testCrowdinvestingWithMainnetDAI() public {
+        crowdinvestingWithIERC20Currency(DAI);
     }
 
     function privateOfferWithIERC20Currency(IERC20 _currency) public {
@@ -239,12 +239,12 @@ contract MainnetCurrencies is Test {
         assertEq(token.balanceOf(receiver), 0, "receiver has no tokens");
         assertEq(
             _currency.balanceOf(receiver),
-            currencyCost - token.feeSettings().publicFundraisingFee(currencyCost),
+            currencyCost - token.feeSettings().crowdinvestingFee(currencyCost),
             "receiver should have received currency"
         );
         assertEq(
-            _currency.balanceOf(token.feeSettings().publicFundraisingFeeCollector()),
-            token.feeSettings().publicFundraisingFee(currencyCost),
+            _currency.balanceOf(token.feeSettings().crowdinvestingFeeCollector()),
+            token.feeSettings().crowdinvestingFee(currencyCost),
             "fee receiver should have received currency"
         );
         assertEq(

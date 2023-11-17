@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/TokenProxyFactory.sol";
+import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific version to avoid import error: yarn add @opengsn/contracts@2.2.5
@@ -49,7 +49,7 @@ contract TokenERC2612Test is Test {
 
     uint32 public constant tokenFeeNumerator = 0;
     uint32 public constant tokenFeeDenominator = 1;
-    uint32 public constant publicFundraisingFeeDenominator = 50;
+    uint32 public constant crowdinvestingFeeDenominator = 50;
     uint32 public constant privateOfferFeeDenominator = 70;
 
     uint256 public constant tokenMintAmount = UINT256_MAX - 1; // -1 to avoid overflow caused by fee mint
@@ -69,7 +69,7 @@ contract TokenERC2612Test is Test {
             tokenFeeNumerator,
             tokenFeeDenominator,
             1,
-            publicFundraisingFeeDenominator,
+            crowdinvestingFeeDenominator,
             1,
             privateOfferFeeDenominator,
             0

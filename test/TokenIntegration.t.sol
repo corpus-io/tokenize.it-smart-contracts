@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/TokenProxyFactory.sol";
+import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/WrongFeeSettings.sol";
 
@@ -113,7 +113,7 @@ contract tokenTest is Test {
         Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
         FeeSettings newFeeSettings = new FeeSettings(fees, newCollector, newCollector, newCollector);
         FeeSettings oldFeeSettings = FeeSettings(address(token.feeSettings()));
-        uint oldInvestmentFeeDenominator = oldFeeSettings.publicFundraisingFeeDenominator();
+        uint oldInvestmentFeeDenominator = oldFeeSettings.crowdinvestingFeeDenominator();
         uint oldTokenFeeDenominator = oldFeeSettings.tokenFeeDenominator();
         vm.expectEmit(true, true, true, true, address(token));
         emit NewFeeSettingsSuggested(newFeeSettings);
@@ -127,7 +127,7 @@ contract tokenTest is Test {
         );
         assertTrue(token.suggestedFeeSettings() == newFeeSettings, "suggested fee settings not set!");
         assertTrue(
-            FeeSettings(address(token.feeSettings())).publicFundraisingFeeDenominator() == oldInvestmentFeeDenominator,
+            FeeSettings(address(token.feeSettings())).crowdinvestingFeeDenominator() == oldInvestmentFeeDenominator,
             "investment fee denominator changed!"
         );
         assertTrue(
@@ -141,7 +141,7 @@ contract tokenTest is Test {
         Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
         FeeSettings newFeeSettings = new FeeSettings(fees, newCollector, newCollector, newCollector);
         FeeSettings oldFeeSettings = FeeSettings(address(token.feeSettings()));
-        uint oldInvestmentFeeDenominator = oldFeeSettings.publicFundraisingFeeDenominator();
+        uint oldInvestmentFeeDenominator = oldFeeSettings.crowdinvestingFeeDenominator();
         uint oldTokenFeeDenominator = oldFeeSettings.tokenFeeDenominator();
         vm.prank(feeSettings.owner());
         token.suggestNewFeeSettings(newFeeSettings);
@@ -154,7 +154,7 @@ contract tokenTest is Test {
         assertTrue(FeeSettings(address(token.feeSettings())) == newFeeSettings, "fee settings not changed!");
         assertEq(FeeSettings(address(token.feeSettings())).feeCollector(), newCollector, "Wrong feeCollector");
         assertTrue(
-            FeeSettings(address(token.feeSettings())).publicFundraisingFeeDenominator() != oldInvestmentFeeDenominator,
+            FeeSettings(address(token.feeSettings())).crowdinvestingFeeDenominator() != oldInvestmentFeeDenominator,
             "investment fee denominator changed!"
         );
         assertTrue(

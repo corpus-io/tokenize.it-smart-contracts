@@ -2,13 +2,13 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/TokenProxyFactory.sol";
+import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/FeeSettings.sol";
-import "../contracts/PublicFundraisingCloneFactory.sol";
+import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
 
-contract PublicFundraisingTest is Test {
+contract CrowdinvestingTest is Test {
     event CurrencyReceiverChanged(address indexed);
     event MinAmountPerBuyerChanged(uint256);
     event MaxAmountPerBuyerChanged(uint256);
@@ -16,8 +16,8 @@ contract PublicFundraisingTest is Test {
     event MaxAmountOfTokenToBeSoldChanged(uint256);
     event TokensBought(address indexed buyer, uint256 tokenAmount, uint256 currencyAmount);
 
-    PublicFundraisingCloneFactory factory;
-    PublicFundraising raise;
+    CrowdinvestingCloneFactory factory;
+    Crowdinvesting raise;
     AllowList list;
     IFeeSettingsV2 feeSettings;
 
@@ -70,8 +70,8 @@ contract PublicFundraisingTest is Test {
         assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
 
         vm.prank(owner);
-        factory = new PublicFundraisingCloneFactory(address(new PublicFundraising(trustedForwarder)));
-        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+        factory = new CrowdinvestingCloneFactory(address(new Crowdinvesting(trustedForwarder)));
+        CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             owner,
             payable(receiver),
             minAmountPerBuyer,
@@ -85,7 +85,7 @@ contract PublicFundraisingTest is Test {
             0,
             address(0)
         );
-        raise = PublicFundraising(factory.createPublicFundraisingClone(0, trustedForwarder, arguments));
+        raise = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
 
         // allow raise contract to mint
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
@@ -101,14 +101,14 @@ contract PublicFundraisingTest is Test {
     }
 
     function testLogicContractCreation() public {
-        PublicFundraising _logic = new PublicFundraising(address(1));
+        Crowdinvesting _logic = new Crowdinvesting(address(1));
 
         console.log("address of logic contract: ", address(_logic));
 
         // try to initialize
         vm.expectRevert("Initializable: contract is already initialized");
         _logic.initialize(
-            PublicFundraisingInitializerArguments(
+            CrowdinvestingInitializerArguments(
                 address(this),
                 payable(receiver),
                 minAmountPerBuyer,
@@ -135,7 +135,7 @@ contract PublicFundraisingTest is Test {
     }
 
     function testConstructorHappyCase() public {
-        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+        CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             address(this),
             payable(receiver),
             minAmountPerBuyer,
@@ -149,9 +149,7 @@ contract PublicFundraisingTest is Test {
             lastBuyDate,
             address(0)
         );
-        PublicFundraising _raise = PublicFundraising(
-            factory.createPublicFundraisingClone(0, trustedForwarder, arguments)
-        );
+        Crowdinvesting _raise = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
         assertTrue(_raise.owner() == address(this));
         assertTrue(_raise.currencyReceiver() == receiver);
         assertTrue(_raise.minAmountPerBuyer() == minAmountPerBuyer);
@@ -164,7 +162,7 @@ contract PublicFundraisingTest is Test {
     }
 
     function testConstructorWith0Arguments() public {
-        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+        CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             address(this),
             payable(receiver),
             minAmountPerBuyer,
@@ -178,45 +176,45 @@ contract PublicFundraisingTest is Test {
             0,
             address(0)
         );
-        vm.expectRevert("PublicFundraisingCloneFactory: Unexpected trustedForwarder");
-        PublicFundraising(factory.createPublicFundraisingClone(0, address(0), arguments));
+        vm.expectRevert("CrowdinvestingCloneFactory: Unexpected trustedForwarder");
+        Crowdinvesting(factory.createCrowdinvestingClone(0, address(0), arguments));
 
         // owner 0
-        PublicFundraisingInitializerArguments memory tempArgs = clonePublicFundraisingInitializerArguments(arguments);
+        CrowdinvestingInitializerArguments memory tempArgs = cloneCrowdinvestingInitializerArguments(arguments);
         tempArgs.owner = address(0);
         vm.expectRevert("owner can not be zero address");
-        factory.createPublicFundraisingClone(0, trustedForwarder, tempArgs);
+        factory.createCrowdinvestingClone(0, trustedForwarder, tempArgs);
 
         // receiver 0
-        tempArgs = clonePublicFundraisingInitializerArguments(arguments);
+        tempArgs = cloneCrowdinvestingInitializerArguments(arguments);
         tempArgs.currencyReceiver = address(0);
         vm.expectRevert("currencyReceiver can not be zero address");
-        factory.createPublicFundraisingClone(0, trustedForwarder, tempArgs);
+        factory.createCrowdinvestingClone(0, trustedForwarder, tempArgs);
 
         // max price 0
-        tempArgs = clonePublicFundraisingInitializerArguments(arguments);
+        tempArgs = cloneCrowdinvestingInitializerArguments(arguments);
         tempArgs.priceMax = 0;
         tempArgs.priceOracle = address(3);
         vm.expectRevert("priceMax needs to be larger or equal to priceBase");
-        factory.createPublicFundraisingClone(0, trustedForwarder, tempArgs);
+        factory.createCrowdinvestingClone(0, trustedForwarder, tempArgs);
 
         // min price too high
         tempArgs.priceMax = price;
         tempArgs.priceMin = price + 1;
         vm.expectRevert("priceMin needs to be smaller or equal to priceBase");
-        factory.createPublicFundraisingClone(0, trustedForwarder, tempArgs);
+        factory.createCrowdinvestingClone(0, trustedForwarder, tempArgs);
 
         // currency 0
-        tempArgs = clonePublicFundraisingInitializerArguments(arguments);
+        tempArgs = cloneCrowdinvestingInitializerArguments(arguments);
         tempArgs.currency = IERC20(address(0));
         vm.expectRevert("currency can not be zero address");
-        factory.createPublicFundraisingClone(0, trustedForwarder, tempArgs);
+        factory.createCrowdinvestingClone(0, trustedForwarder, tempArgs);
 
         // token 0
-        tempArgs = clonePublicFundraisingInitializerArguments(arguments);
+        tempArgs = cloneCrowdinvestingInitializerArguments(arguments);
         tempArgs.token = Token(address(0));
         vm.expectRevert("token can not be zero address");
-        factory.createPublicFundraisingClone(0, trustedForwarder, tempArgs);
+        factory.createCrowdinvestingClone(0, trustedForwarder, tempArgs);
     }
 
     /*
@@ -253,7 +251,7 @@ contract PublicFundraisingTest is Test {
         maliciousPaymentToken = new MaliciousPaymentToken(_paymentTokenAmount);
         vm.prank(owner);
 
-        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+        CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             address(this),
             payable(receiver),
             1,
@@ -268,9 +266,7 @@ contract PublicFundraisingTest is Test {
             address(0)
         );
 
-        PublicFundraising _raise = PublicFundraising(
-            factory.createPublicFundraisingClone(0, trustedForwarder, arguments)
-        );
+        Crowdinvesting _raise = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
 
         // allow invite contract to mint
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
@@ -322,12 +318,12 @@ contract PublicFundraisingTest is Test {
         assertTrue(token.balanceOf(buyer) == tokenBuyAmount, "buyer has tokens");
         assertTrue(
             paymentToken.balanceOf(receiver) ==
-                costInPaymentToken - localFeeSettings.publicFundraisingFee(costInPaymentToken),
+                costInPaymentToken - localFeeSettings.crowdinvestingFee(costInPaymentToken),
             "receiver has payment tokens"
         );
         assertTrue(
-            paymentToken.balanceOf(token.feeSettings().publicFundraisingFeeCollector()) ==
-                localFeeSettings.publicFundraisingFee(costInPaymentToken),
+            paymentToken.balanceOf(token.feeSettings().crowdinvestingFeeCollector()) ==
+                localFeeSettings.crowdinvestingFee(costInPaymentToken),
             "fee collector has collected fee in payment tokens"
         );
         assertTrue(
@@ -536,7 +532,7 @@ contract PublicFundraisingTest is Test {
             FeeSettings(address(token.feeSettings())).tokenFeeDenominator();
         uint256 paymentTokenFee = (costInPaymentTokenForMinAmount * 3) /
             2 /
-            FeeSettings(address(token.feeSettings())).publicFundraisingFeeDenominator();
+            FeeSettings(address(token.feeSettings())).crowdinvestingFeeDenominator();
         assertTrue(
             paymentToken.balanceOf(receiver) == (costInPaymentTokenForMinAmount * 3) / 2 - paymentTokenFee,
             "receiver received payment tokens"
@@ -547,7 +543,7 @@ contract PublicFundraisingTest is Test {
             "fee collector has not collected fee in tokens"
         );
         assertEq(
-            paymentToken.balanceOf(token.feeSettings().publicFundraisingFeeCollector()),
+            paymentToken.balanceOf(token.feeSettings().crowdinvestingFeeCollector()),
             paymentTokenFee,
             "fee collector has not collected fee in payment tokens"
         );
@@ -1103,7 +1099,7 @@ contract PublicFundraisingTest is Test {
         paymentToken.transfer(buyer, UINT256_MAX);
 
         // create the raise contract
-        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+        CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             address(this),
             payable(receiver),
             0,
@@ -1118,7 +1114,7 @@ contract PublicFundraisingTest is Test {
             address(0)
         );
         vm.prank(owner);
-        raise = PublicFundraising(factory.createPublicFundraisingClone(0, trustedForwarder, arguments));
+        raise = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
 
         // grant allowances
         vm.prank(mintAllower);
@@ -1151,7 +1147,7 @@ contract PublicFundraisingTest is Test {
         paymentToken.transfer(buyer, maxCurrencyAmount);
 
         // create the raise contract
-        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+        CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             address(this),
             payable(receiver),
             _tokenBuyAmount,
@@ -1166,7 +1162,7 @@ contract PublicFundraisingTest is Test {
             address(0)
         );
         vm.prank(owner);
-        raise = PublicFundraising(factory.createPublicFundraisingClone(0, trustedForwarder, arguments));
+        raise = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
 
         // set fees to 0, otherwise extra currency is minted which causes an overflow
         Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
@@ -1239,7 +1235,7 @@ contract PublicFundraisingTest is Test {
 
     function testLastBuyDateInConstructor(uint256 _lastBuyDate, uint256 testDate) public {
         vm.assume(_lastBuyDate > 0);
-        PublicFundraisingInitializerArguments memory arguments = PublicFundraisingInitializerArguments(
+        CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             address(this),
             payable(receiver),
             minAmountPerBuyer,
@@ -1253,9 +1249,7 @@ contract PublicFundraisingTest is Test {
             _lastBuyDate,
             address(0)
         );
-        PublicFundraising _raise = PublicFundraising(
-            factory.createPublicFundraisingClone(0, trustedForwarder, arguments)
-        );
+        Crowdinvesting _raise = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
 
         vm.warp(testDate);
 
@@ -1288,11 +1282,11 @@ contract PublicFundraisingTest is Test {
         }
     }
 
-    function clonePublicFundraisingInitializerArguments(
-        PublicFundraisingInitializerArguments memory arguments
-    ) public pure returns (PublicFundraisingInitializerArguments memory) {
+    function cloneCrowdinvestingInitializerArguments(
+        CrowdinvestingInitializerArguments memory arguments
+    ) public pure returns (CrowdinvestingInitializerArguments memory) {
         return
-            PublicFundraisingInitializerArguments(
+            CrowdinvestingInitializerArguments(
                 arguments.owner,
                 arguments.currencyReceiver,
                 arguments.minAmountPerBuyer,
