@@ -307,12 +307,22 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
         return tokenFeeCollector;
     }
 
+    /**
+     * @notice calculate the fee for a given currency amount in Crowdinvesting (formerly ContinuousFundraising)
+     * @dev this is a compatibility function for IFeeSettingsV1. It enables older token contracts to use the new fee settings contract.
+     * @param _currencyAmount The amount of currency to calculate the fee for
+     */
     function continuousFundraisingFee(
         uint256 _currencyAmount
     ) external view override(IFeeSettingsV1) returns (uint256) {
         return _crowdinvestingFee(_currencyAmount);
     }
 
+    /**
+     * @notice calculate the fee for a given currency amount in PrivateOffer (formerly PersonalInvite)
+     * @dev this is a compatibility function for IFeeSettingsV1. It enables older token contracts to use the new fee settings contract.
+     * @param _currencyAmount The amount of currency to calculate the fee for
+     */
     function personalInviteFee(uint256 _currencyAmount) external view override(IFeeSettingsV1) returns (uint256) {
         return _privateOfferFee(_currencyAmount);
     }
