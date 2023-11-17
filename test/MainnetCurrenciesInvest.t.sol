@@ -4,10 +4,10 @@ pragma solidity 0.8.23;
 import "../lib/forge-std/src/Test.sol";
 //import "../lib/forge-std/stdlib.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "../contracts/TokenProxyFactory.sol";
-import "../contracts/PublicFundraisingCloneFactory.sol";
+import "../contracts/factories/TokenProxyFactory.sol";
+import "../contracts/factories/PublicFundraisingCloneFactory.sol";
 import "../contracts/PrivateOffer.sol";
-import "../contracts/PrivateOfferFactory.sol";
+import "../contracts/factories/PrivateOfferFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/ERC20Helper.sol";
 

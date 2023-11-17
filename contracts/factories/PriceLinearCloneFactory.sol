@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.23;
 
-import "./PriceLinear.sol";
+import "../PriceLinear.sol";
 import "./CloneFactory.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 

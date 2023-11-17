@@ -2,8 +2,8 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/TokenProxyFactory.sol";
-import "../contracts/PublicFundraisingCloneFactory.sol";
+import "../contracts/factories/TokenProxyFactory.sol";
+import "../contracts/factories/PublicFundraisingCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/ERC2771Helper.sol";

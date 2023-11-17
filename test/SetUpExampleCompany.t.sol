@@ -2,10 +2,10 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/TokenProxyFactory.sol";
-import "../contracts/PublicFundraisingCloneFactory.sol";
+import "../contracts/factories/TokenProxyFactory.sol";
+import "../contracts/factories/PublicFundraisingCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
-import "../contracts/PrivateOfferFactory.sol";
+import "../contracts/factories/PrivateOfferFactory.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/ERC2771Helper.sol";
 import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific version to avoid import error: yarn add @opengsn/contracts@2.2.5

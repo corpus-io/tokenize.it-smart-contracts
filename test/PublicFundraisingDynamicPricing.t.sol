@@ -2,10 +2,10 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/TokenProxyFactory.sol";
+import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/FeeSettings.sol";
-import "../contracts/PublicFundraisingCloneFactory.sol";
-import "../contracts/PriceLinearCloneFactory.sol";
+import "../contracts/factories/PublicFundraisingCloneFactory.sol";
+import "../contracts/factories/PriceLinearCloneFactory.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
 

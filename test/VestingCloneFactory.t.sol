@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/VestingCloneFactory.sol";
+import "../contracts/factories/VestingCloneFactory.sol";
 
 contract VestingCloneFactoryTest is Test {
     Vesting implementation;

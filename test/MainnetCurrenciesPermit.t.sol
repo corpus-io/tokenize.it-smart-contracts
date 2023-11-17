@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../contracts/Token.sol";
 import "../contracts/PublicFundraising.sol";
 import "../contracts/PrivateOffer.sol";
-import "../contracts/PrivateOfferFactory.sol";
+import "../contracts/factories/PrivateOfferFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/ERC20Helper.sol";
 

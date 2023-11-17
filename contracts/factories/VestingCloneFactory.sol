@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.23;
 
-import "./Vesting.sol";
+import "../Vesting.sol";
 import "./CloneFactory.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 

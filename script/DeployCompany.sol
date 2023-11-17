@@ -7,7 +7,7 @@ import "../lib/forge-std/src/Script.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../contracts/FeeSettings.sol";
 import "../contracts/AllowList.sol";
-import "../contracts/PrivateOfferFactory.sol";
+import "../contracts/factories/PrivateOfferFactory.sol";
 import "../contracts/Token.sol";
 import "../contracts/PublicFundraising.sol";
 import "../contracts/PrivateOffer.sol";

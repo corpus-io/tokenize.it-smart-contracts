@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.23;
 
-import "./Token.sol";
+import "../Token.sol";
 import "./Factory.sol";
 import "@openzeppelin/contracts/utils/Create2.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
