@@ -345,10 +345,13 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
      * @param _endTime when to end the original vesting
      * @param _newStartTime when to start the new vesting
      */
-    function pauseVesting(uint64 _id, uint64 _endTime, uint64 _newStartTime) external onlyManager returns (uint64) {
-        VestingPlan memory vesting = vestings[_id];
+    function pauseVesting(
+        uint64 _id,
+        uint64 _endTime,
+        uint64 _newStartTime
+    ) external onlyManager returns (uint64 newId) {
         require(_endTime > uint64(block.timestamp), "endTime must be in the future");
-        require(_endTime < vesting.start + vesting.duration, "endTime must be before vesting end");
+        require(_endTime < start(_id) + duration(_id), "endTime must be before vesting end");
         require(_newStartTime > _endTime, "newStartTime must be after endTime");
 
         uint256 allocationRemainder = allocation(_id) - vestedAmount(_id, _endTime);
@@ -356,19 +359,18 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         uint64 cliffRemainder = timeVested >= cliff(_id) ? 0 : cliff(_id) - timeVested;
         uint64 durationRemainder = duration(_id) - timeVested;
 
+        // create new vesting
+        newId = _createVesting(
+            allocationRemainder,
+            beneficiary(_id),
+            _newStartTime,
+            cliffRemainder,
+            durationRemainder,
+            isMintable(_id)
+        );
+
         // stop old vesting
         stopVesting(_id, _endTime);
-
-        // create new vesting
-        return
-            _createVesting(
-                allocationRemainder,
-                vesting.beneficiary,
-                _newStartTime,
-                cliffRemainder,
-                durationRemainder,
-                vesting.isMintable
-            );
     }
 
     /**
@@ -404,13 +406,12 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
      * @param _timestamp point in time for which the vested amount is calculated
      */
     function vestedAmount(uint64 _id, uint64 _timestamp) public view returns (uint256) {
-        VestingPlan memory vesting = vestings[_id];
-        if (_timestamp < vesting.start + vesting.cliff) {
+        if (_timestamp < start(_id) + cliff(_id)) {
             return 0;
-        } else if (_timestamp > vesting.start + vesting.duration) {
-            return vesting.allocation;
+        } else if (_timestamp > start(_id) + duration(_id)) {
+            return allocation(_id);
         } else {
-            return (vesting.allocation * (_timestamp - vesting.start)) / vesting.duration;
+            return (allocation(_id) * (_timestamp - start(_id))) / duration(_id);
         }
     }
 
