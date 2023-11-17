@@ -65,59 +65,7 @@ contract tokenTest is Test {
         fundraisingFactory = new CrowdinvestingCloneFactory(address(fundraisingImplementation));
     }
 
-    // function testAddressPrediction1(
-    //     bytes32 _rawSalt,
-    //     address _trustedForwarder,
-    //     address _owner,
-    //     address _currencyReceiver,
-    //     uint256 _minAmountPerBuyer,
-    //     uint256 _maxAmountPerBuyer,
-    //     uint256 _priceBase,
-    //     uint256 _maxAmountOfTokenToBeSold,
-    //     IERC20 _currency,
-    //     Token _token,
-    //     uint256 _lastBuyDate,
-    //     address _priceOracle
-    // ) public {
-    //     vm.assume(_trustedForwarder != address(0));
-    //     vm.assume(_owner != address(0));
-    //     vm.assume(address(_currency) != address(0));
-    //     vm.assume(address(_token) != address(0));
-    //     vm.assume(_currencyReceiver != address(0));
-    //     vm.assume(_minAmountPerBuyer > 0);
-    //     vm.assume(_maxAmountPerBuyer >= _minAmountPerBuyer);
-    //     vm.assume(_priceBase > 0);
-    //     vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
-
-    //     // create new clone factory so we can use the local forwarder
-    //     fundraisingImplementation = new Crowdinvesting(_trustedForwarder);
-    //     fundraisingFactory = new CrowdinvestingCloneFactory(address(fundraisingImplementation));
-
-    //     CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
-    //         _owner,
-    //         _currencyReceiver,
-    //         _minAmountPerBuyer,
-    //         _maxAmountPerBuyer,
-    //         _priceBase,
-    //         _maxAmountOfTokenToBeSold,
-    //         _currency,
-    //         _token,
-    //         _lastBuyDate,
-    //         _priceOracle
-    //     );
-
-    //     address expected1 = fundraisingFactory.predictCloneAddress(
-    //         keccak256(abi.encode(_rawSalt, _trustedForwarder, arguments))
-    //     );
-    //     address expected2 = fundraisingFactory.predictCloneAddress(_rawSalt, _trustedForwarder, arguments);
-
-    //     // log both addresses
-    //     console.log(expected1);
-    //     console.log(expected2);
-    //     assertEq(expected1, expected2, "address prediction with salt and params not equal");
-    // }
-
-    function testAddressPrediction2(
+    function testAddressPrediction1(
         uint256 _maxAmountPerBuyer,
         uint256 _tokenPrice,
         uint256 _tokenPriceMin,
@@ -160,6 +108,10 @@ contract tokenTest is Test {
             keccak256(abi.encode(exampleRawSalt, exampleTrustedForwarder, arguments))
         );
 
+        address expected2 = fundraisingFactory.predictCloneAddress(exampleRawSalt, exampleTrustedForwarder, arguments);
+
+        assertEq(expected1, expected2, "address prediction with salt and params not equal");
+
         address actual = fundraisingFactory.createCrowdinvestingClone(
             exampleRawSalt,
             exampleTrustedForwarder,
@@ -168,7 +120,7 @@ contract tokenTest is Test {
         assertEq(expected1, actual, "address prediction failed");
     }
 
-    function testAddressPrediction3(
+    function testAddressPrediction2(
         bytes32 _rawSalt,
         address _trustedForwarder,
         address _owner,
@@ -202,9 +154,52 @@ contract tokenTest is Test {
         bytes32 salt = keccak256(abi.encode(_rawSalt, _trustedForwarder, arguments));
 
         address expected1 = fundraisingFactory.predictCloneAddress(salt);
+        address expected2 = fundraisingFactory.predictCloneAddress(_rawSalt, _trustedForwarder, arguments);
+
+        assertEq(expected1, expected2, "address prediction with salt and params not equal");
 
         address actual = fundraisingFactory.createCrowdinvestingClone(_rawSalt, _trustedForwarder, arguments);
         assertEq(expected1, actual, "address prediction failed");
+    }
+
+    function testChangingOneValueInStructChangesAddress(
+        bytes32 _rawSalt,
+        address _trustedForwarder,
+        address _owner,
+        address _currencyReceiver,
+        uint256 _minAmountPerBuyer
+    ) public {
+        vm.assume(_trustedForwarder != address(0));
+        vm.assume(_owner != address(0));
+        vm.assume(_currencyReceiver != address(0));
+        vm.assume(_minAmountPerBuyer > 0);
+
+        // create new clone factory so we can use the local forwarder
+        fundraisingImplementation = new Crowdinvesting(_trustedForwarder);
+        fundraisingFactory = new CrowdinvestingCloneFactory(address(fundraisingImplementation));
+
+        CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
+            _owner,
+            _currencyReceiver,
+            _minAmountPerBuyer,
+            exampleMaxAmountPerBuyer,
+            exampleTokenPrice,
+            exampleMinTokenPrice,
+            exampleMaxTokenPrice,
+            exampleMaxAmountOfTokenToBeSold,
+            exampleCurrency,
+            exampleToken,
+            exampleLastBuyDate,
+            examplePriceOracle
+        );
+
+        address expected1 = fundraisingFactory.predictCloneAddress(_rawSalt, _trustedForwarder, arguments);
+
+        arguments.maxAmountPerBuyer = exampleMaxAmountPerBuyer - 1;
+
+        address expected2 = fundraisingFactory.predictCloneAddress(_rawSalt, _trustedForwarder, arguments);
+
+        assertFalse(expected1 == expected2, "these addresses can not be equal");
     }
 
     function testSecondDeploymentFails(
