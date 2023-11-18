@@ -7,11 +7,28 @@ import "./Factory.sol";
 import "@openzeppelin/contracts/utils/Create2.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
+/**
+ * @title TokenProxyFactory
+ * @author malteish
+ * @notice Use this contract to create ERC1967 proxies for Token contracts
+ */
 contract TokenProxyFactory is Factory {
     event NewProxy(address proxy);
 
     constructor(address _implementation) Factory(_implementation) {}
 
+    /**
+     * create a new proxy and initialize it
+     * @param _rawSalt value that influences the address of the proxy, but not the initialization
+     * @param _trustedForwarder trustedForwarder can not be changed, but is checked for security
+     * @param _feeSettings address of the FeeSettings contract to use in the new token
+     * @param _admin default-admin of the new token
+     * @param _allowList AllowList of the new token
+     * @param _requirements Which requirements to use in the new token
+     * @param _name token name (e.g. "Test Token")
+     * @param _symbol token symbol (e.g. "TST")
+     * @return address of the new proxy
+     */
     function createTokenProxy(
         bytes32 _rawSalt,
         address _trustedForwarder,
@@ -41,6 +58,18 @@ contract TokenProxyFactory is Factory {
         return address(proxy);
     }
 
+    /**
+     * Calculate which address a token would have if it was created with these parameters.
+     * @param _rawSalt value that influences the address of the proxy, but not the initialization
+     * @param _trustedForwarder trustedForwarder can not be changed, but is checked for security
+     * @param _feeSettings address of the FeeSettings contract to use in the new token
+     * @param _admin default-admin of the new token
+     * @param _allowList AllowList of the new token
+     * @param _requirements Which requirements to use in the new token
+     * @param _name token name (e.g. "Test Token")
+     * @param _symbol token symbol (e.g. "TST")
+     * @return address of the token that would be created
+     */
     function predictProxyAddress(
         bytes32 _rawSalt,
         address _trustedForwarder,
@@ -64,6 +93,11 @@ contract TokenProxyFactory is Factory {
         return Create2.computeAddress(salt, keccak256(getBytecode()));
     }
 
+    /**
+     * Calculate address without revealing the parameters.
+     * @param _salt Salt generated off-chain that includes all the parameters that will be used to create the token
+     * @return address of the token that would be created
+     */
     function predictProxyAddress(bytes32 _salt) external view returns (address) {
         return Create2.computeAddress(_salt, keccak256(getBytecode()));
     }
@@ -76,6 +110,18 @@ contract TokenProxyFactory is Factory {
         return abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(implementation, new bytes(0)));
     }
 
+    /**
+     * @dev Generates the salt that will be used to deploy the proxy using CREATE2
+     * @param _rawSalt value that influences the address of the proxy, but not the initialization
+     * @param _trustedForwarder trustedForwarder can not be changed, but is checked for security
+     * @param _feeSettings address of the FeeSettings contract to use in the new token
+     * @param _admin default-admin of the new token
+     * @param _allowList AllowList of the new token
+     * @param _requirements Which requirements to use in the new token
+     * @param _name token name (e.g. "Test Token")
+     * @param _symbol token symbol (e.g. "TST")
+     * @return salt that will be used to calculate the address of the token.
+     */
     function getSalt(
         bytes32 _rawSalt,
         address _trustedForwarder,

@@ -45,6 +45,7 @@ contract VestingWalletFactory {
      * @param   _beneficiaryAddress address receiving the tokens
      * @param   _startTimestamp timestamp of when to start releasing tokens linearly
      * @param   _durationSeconds duration of the vesting period in seconds
+     * @return  address of the VestingWallet contract to be deployed
      */
     function getAddress(
         bytes32 _salt,

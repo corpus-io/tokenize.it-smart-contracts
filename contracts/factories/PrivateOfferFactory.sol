@@ -28,6 +28,7 @@ contract PrivateOfferFactory {
      * @param _expiration timestamp after which the contract is no longer valid
      * @param _currency address of the currency
      * @param _token address of the token
+     * @return address of the deployed contract
      */
     function deploy(
         bytes32 _salt,

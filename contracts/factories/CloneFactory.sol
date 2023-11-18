@@ -5,6 +5,12 @@ pragma solidity 0.8.23;
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "./Factory.sol";
 
+/**
+ * @title CloneFactory
+ * @dev Inherit from this contract to allow creation of Clones of a specific contract.
+ * @author malteish
+ */
+
 abstract contract CloneFactory is Factory {
     event NewClone(address clone);
 
