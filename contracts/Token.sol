@@ -104,6 +104,11 @@ contract Token is
      */
     mapping(address => uint256) public mintingAllowance; // used for token generating events such as vesting or new financing rounds
 
+    /**
+     * @notice The version of the token contract. This is used to keep track of upgrades.
+     * @dev The token contract is upgradeable, so the version is stored in the contract itself. Updating the logic contract address
+     *  in the proxy will not change the version. If desired, the version must be changed in the new initializer function.
+     */
     uint256 public version;
 
     /// @param newRequirements The new requirements that will be enforced from now on.
@@ -178,6 +183,8 @@ contract Token is
     /**
      * This function is called during the upgrade process. The modifier onlyRole(DEFAULT_ADMIN_ROLE)
      * is used to make sure that only the admin can perform upgrades.
+     * @dev REMEMBER to make the new logic contract ERC1967Upgrade compatible, and, if required,
+     * include a new initializer function!
      * @param newImplementation address of the new implementation contract
      */
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
@@ -290,6 +297,12 @@ contract Token is
         _burn(_from, _amount);
     }
 
+    /**
+     * This token can keep track of historical balances. In order to store all current balances, a snapshot must be created.
+     * Call this function to create a snapshot. The historical balances can be accessed with the balanceOfAt function.
+     * They could be used to determine eligibility for airdrops or dividends.
+     * @return id of the snapshot
+     */
     function createSnapshot() external onlyRole(SNAPSHOTCREATOR_ROLE) returns (uint256) {
         return _snapshot();
     }
@@ -354,10 +367,16 @@ contract Token is
         );
     }
 
+    /**
+     * pause the token contract. No transfers, burning or minting will be possible while the contract is paused.
+     */
     function pause() external onlyRole(PAUSER_ROLE) {
         _pause();
     }
 
+    /**
+     * unpause the token contract. Transfers, burning and minting will be possible again.
+     */
     function unpause() external onlyRole(PAUSER_ROLE) {
         _unpause();
     }

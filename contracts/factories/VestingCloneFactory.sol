@@ -6,9 +6,22 @@ import "../Vesting.sol";
 import "./CloneFactory.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
+/**
+ * @title VestingCloneFactory
+ * @author malteish
+ * @notice Create clones of a Vesting contract with deterministic addresses
+ */
 contract VestingCloneFactory is CloneFactory {
     constructor(address _implementation) CloneFactory(_implementation) {}
 
+    /**
+     * Create and initialize a clone
+     * @param _rawSalt value that influences the address of the clone, but not the initialization
+     * @param _trustedForwarder the trusted forwarder (ERC2771) can not be changed, but is checked for security
+     * @param _owner address that will own the new clone
+     * @param _token address of the token to be vested
+     * @return address of the clone that was created
+     */
     function createVestingClone(
         bytes32 _rawSalt,
         address _trustedForwarder,
@@ -24,6 +37,13 @@ contract VestingCloneFactory is CloneFactory {
         return clone;
     }
 
+    /**
+     * Calculate the address a clone will have using the given parameters
+     * @param _rawSalt value that influences the address of the clone, but not the initialization
+     * @param _trustedForwarder the trusted forwarder (ERC2771) can not be changed, but is checked for security
+     * @param _owner owner of the clone
+     * @param _token token to vest
+     */
     function predictCloneAddress(
         bytes32 _rawSalt,
         address _trustedForwarder,
