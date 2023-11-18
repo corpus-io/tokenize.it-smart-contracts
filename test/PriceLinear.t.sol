@@ -268,7 +268,7 @@ contract PriceLinearTest is Test {
         vm.assume(rando != address(0));
         vm.prank(rando);
         vm.expectRevert("Ownable: caller is not the owner");
-        oracle.updateParameters(1, 1, 1, 1, false, true);
+        oracle.updateParameters(1, 1, 1 days, 1, false, true);
     }
 
     function testRevertsBeforeCoolDownEnd(uint32 testDelay) public {
@@ -286,8 +286,8 @@ contract PriceLinearTest is Test {
         oracle.getPrice(7e18);
     }
 
-    function testCreateWithOwner0() public {
-        vm.warp(1 days);
+    function testCreateWithParameters0() public {
+        // owner 0
         vm.expectRevert("owner can not be zero address");
         PriceLinear(
             priceLinearCloneFactory.createPriceLinearClone(
@@ -302,5 +302,134 @@ contract PriceLinearTest is Test {
                 true
             )
         );
+
+        // slopeEnumerator 0
+        vm.expectRevert("slopeEnumerator can not be zero");
+        PriceLinear(
+            priceLinearCloneFactory.createPriceLinearClone(
+                bytes32(uint256(0)),
+                trustedForwarder,
+                companyAdmin,
+                0,
+                1,
+                uint64(block.timestamp + 1),
+                1,
+                false,
+                true
+            )
+        );
+
+        // slopeDenominator 0
+        vm.expectRevert("slopeDenominator can not be zero");
+        PriceLinear(
+            priceLinearCloneFactory.createPriceLinearClone(
+                bytes32(uint256(0)),
+                trustedForwarder,
+                companyAdmin,
+                1,
+                0,
+                uint64(block.timestamp + 1),
+                1,
+                false,
+                true
+            )
+        );
+
+        // stepDuration 0
+        vm.expectRevert("stepDuration can not be zero");
+        PriceLinear(
+            priceLinearCloneFactory.createPriceLinearClone(
+                bytes32(uint256(0)),
+                trustedForwarder,
+                companyAdmin,
+                1,
+                1,
+                uint64(block.timestamp + 1),
+                0,
+                false,
+                true
+            )
+        );
+    }
+
+    function testStartIsInFuture(uint64 _start, uint64 _currentTime, uint64 _currentBlock) public {
+        vm.warp(_currentTime);
+        vm.roll(_currentBlock);
+
+        // check time-based start
+        if (_start <= _currentTime) {
+            console.log("time based start must revert");
+            vm.expectRevert("start must be in the future");
+            PriceLinear(
+                priceLinearCloneFactory.createPriceLinearClone(
+                    bytes32(uint256(734)),
+                    trustedForwarder,
+                    companyAdmin,
+                    1,
+                    1,
+                    _start,
+                    1,
+                    false,
+                    true
+                )
+            );
+        } else {
+            console.log("time based start must not revert");
+            PriceLinear(
+                priceLinearCloneFactory.createPriceLinearClone(
+                    bytes32(uint256(734)),
+                    trustedForwarder,
+                    companyAdmin,
+                    1,
+                    1,
+                    _start,
+                    1,
+                    false,
+                    true
+                )
+            );
+        }
+
+        // check block-based start
+        if (_start <= _currentBlock) {
+            console.log("block based start must revert");
+            vm.expectRevert("start must be in the future");
+            PriceLinear(
+                priceLinearCloneFactory.createPriceLinearClone(
+                    bytes32(uint256(734)),
+                    trustedForwarder,
+                    companyAdmin,
+                    1,
+                    1,
+                    _start,
+                    1,
+                    true,
+                    true
+                )
+            );
+        } else {
+            console.log("block based start must not revert");
+            PriceLinear(
+                priceLinearCloneFactory.createPriceLinearClone(
+                    bytes32(uint256(734)),
+                    trustedForwarder,
+                    companyAdmin,
+                    1,
+                    1,
+                    _start,
+                    1,
+                    true,
+                    true
+                )
+            );
+        }
+    }
+
+    function testOverflowIsCastToMax() public {
+        vm.warp(1000 * 365 days);
+
+        uint256 price = oracle.getPrice(type(uint256).max - 1);
+
+        assertEq(price, type(uint256).max, "Price should be max");
     }
 }
