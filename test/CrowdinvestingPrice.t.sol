@@ -162,6 +162,64 @@ contract CrowdinvestingTest is Test {
         assertTrue(crowdinvesting.getPrice() > price, "Price should have changed!");
     }
 
+    function testActivateDynamicPricingWithAddress0Reverts() public {
+        // activate dynamic pricing
+        vm.startPrank(owner);
+        crowdinvesting.pause();
+        vm.expectRevert("_priceOracle can not be zero address");
+        crowdinvesting.activateDynamicPricing(IPriceDynamic(address(0)), priceMin, priceMax);
+    }
+
+    function testDeactivateDynamicPricing() public {
+        // create oracle
+        vm.warp(1 hours + 1); // otherwise, price linear thinks it has to cool down
+        PriceLinear priceLinear = PriceLinear(
+            priceLinearCloneFactory.createPriceLinearClone(
+                0,
+                trustedForwarder,
+                owner,
+                1e5,
+                1,
+                2 hours,
+                1,
+                false,
+                true // price will fall
+            )
+        );
+
+        CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
+            owner,
+            payable(receiver),
+            minAmountPerBuyer,
+            maxAmountPerBuyer,
+            price,
+            priceMin,
+            priceMax,
+            maxAmountOfTokenToBeSold,
+            paymentToken,
+            token,
+            0,
+            address(priceLinear)
+        );
+
+        crowdinvesting = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
+
+        vm.warp(100 days);
+
+        // check that price is changed by oracle
+        assertTrue(crowdinvesting.getPrice() > price, "Price should have changed!");
+
+        // disable dynamic pricing
+        vm.startPrank(owner);
+        crowdinvesting.pause();
+        crowdinvesting.deactivateDynamicPricing();
+        vm.warp(block.timestamp + crowdinvesting.delay() + 1);
+        crowdinvesting.unpause();
+
+        // check that price is not changed anymore
+        assertTrue(crowdinvesting.getPrice() == price, "Price should not have changed!");
+    }
+
     function testActivateDynamicPricingOnDeployAndEnforceMinPrice(
         uint64 priceChangePerDuration,
         uint64 duration,

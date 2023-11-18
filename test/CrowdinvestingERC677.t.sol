@@ -406,4 +406,11 @@ contract CrowdinvestingTest is Test {
         assertTrue(crowdinvesting.tokensSold() == 0);
         assertTrue(crowdinvesting.tokensBought(buyer) == 0);
     }
+
+    function testOnlyCurrencyContractCanCallOnTokenTransfer(address rando) public {
+        vm.assume(rando != address(paymentToken));
+        vm.prank(rando);
+        vm.expectRevert("Only currency contract can call onTokenTransfer");
+        crowdinvesting.onTokenTransfer(rando, 0, new bytes(0));
+    }
 }
