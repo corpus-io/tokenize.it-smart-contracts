@@ -53,9 +53,6 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     event ManagerRemoved(address manager);
     event BeneficiaryChanged(uint64 id, address newBeneficiary);
 
-    /// We limit start and end of vesting to 20 years from now. Current business logic does not require more, and it
-    /// might prevent user errors.
-    uint64 public constant TIME_HORIZON = 20 * 365 days;
     /// token to be vested
     address public token;
     /// stores who create and stop vestings (both public and private)
@@ -273,14 +270,6 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         uint64 _duration,
         bool _isMintable
     ) external onlyManager returns (uint64 id) {
-        /// @dev The checks for resonable start, cliff and duration only apply when creating a vesting plan transparently.
-        /// Otherwise, revealing after 20+ years would not be possible.
-        require(
-            _start >= block.timestamp - TIME_HORIZON && _start <= block.timestamp + TIME_HORIZON,
-            "Start must be reasonable"
-        );
-        require(_cliff >= 0 && _cliff <= _duration, "Cliff must be reasonable");
-        require(_duration > 0 && _duration <= TIME_HORIZON, "Duration must be reasonable");
         return _createVesting(_allocation, _beneficiary, _start, _cliff, _duration, _isMintable);
     }
 
@@ -303,6 +292,12 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     ) internal returns (uint64 id) {
         require(_allocation > 0, "Allocation must be greater than zero");
         require(_beneficiary != address(0), "Beneficiary must not be zero address");
+
+        // cliff longer than duration is not valid and can only happen by mistake.
+        // We heal this by extending the duration to match the cliff, thus balancing
+        // the interests of the beneficiary (be able to reveal the vesting plan)
+        // and the token holder (not giving away tokens too early).
+        _duration = _duration > _cliff ? _duration : _cliff;
 
         id = ++ids;
         vestings[id] = VestingPlan({
