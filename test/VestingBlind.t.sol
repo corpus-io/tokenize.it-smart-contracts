@@ -163,7 +163,7 @@ contract VestingBlindTest is Test {
             token.mint(address(vesting), _maxReleaseAmount);
         }
 
-        vm.warp(_start + _cliff + _duration + 1); // go to end of vesting period
+        vm.warp(_start + _duration + 1); // go to end of vesting period
 
         // revealAndRelease
         vm.expectEmit(true, true, true, true, address(vesting));
@@ -218,7 +218,7 @@ contract VestingBlindTest is Test {
         assertTrue(vesting.commitments(hash) == block.timestamp, "revocation not correct");
 
         // warp till end of vesting and claim
-        vm.warp(_start + _cliff + _duration + 1);
+        vm.warp(_start + _duration);
         vm.expectEmit(true, true, true, true, address(vesting));
         emit Reveal(hash, 1);
         uint64 id = vesting.reveal(
