@@ -85,7 +85,7 @@ contract TokenProxyFactory is Factory {
         uint256 _requirements,
         string memory _name,
         string memory _symbol
-    ) public pure returns (bytes32) {
+    ) private pure returns (bytes32) {
         return
             keccak256(
                 abi.encodePacked(

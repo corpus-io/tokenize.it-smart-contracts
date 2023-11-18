@@ -155,7 +155,7 @@ contract CrowdinvestingTest is Test {
 
         // set up price oracle to increase the price by 1 payment token per second
         PriceLinear priceOracle = PriceLinear(
-            priceLinearCloneFactory.createPriceLinear(
+            priceLinearCloneFactory.createPriceLinearClone(
                 0,
                 trustedForwarder,
                 companyAdmin,

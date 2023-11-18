@@ -163,7 +163,7 @@ contract CrowdinvestingTest is Test {
         assertTrue(_crowdinvesting.lastBuyDate() == lastBuyDate);
     }
 
-    function testConstructorWith0Arguments() public {
+    function testConstructorWithBadArguments() public {
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             address(this),
             payable(receiver),
@@ -193,6 +193,18 @@ contract CrowdinvestingTest is Test {
         vm.expectRevert("currencyReceiver can not be zero address");
         factory.createCrowdinvestingClone(0, trustedForwarder, tempArgs);
 
+        // token minAmount > maxAmountPerBuyer
+        tempArgs = cloneCrowdinvestingInitializerArguments(arguments);
+        tempArgs.minAmountPerBuyer = maxAmountPerBuyer + 1;
+        vm.expectRevert("_minAmountPerBuyer needs to be smaller or equal to _maxAmountPerBuyer");
+        factory.createCrowdinvestingClone(0, trustedForwarder, tempArgs);
+
+        // price 0
+        tempArgs = cloneCrowdinvestingInitializerArguments(arguments);
+        tempArgs.tokenPrice = 0;
+        vm.expectRevert("_tokenPrice needs to be a non-zero amount");
+        factory.createCrowdinvestingClone(0, trustedForwarder, tempArgs);
+
         // max price 0
         tempArgs = cloneCrowdinvestingInitializerArguments(arguments);
         tempArgs.priceMax = 0;
@@ -204,6 +216,12 @@ contract CrowdinvestingTest is Test {
         tempArgs.priceMax = price;
         tempArgs.priceMin = price + 1;
         vm.expectRevert("priceMin needs to be smaller or equal to priceBase");
+        factory.createCrowdinvestingClone(0, trustedForwarder, tempArgs);
+
+        // token maxAmountToBeSold 0
+        tempArgs = cloneCrowdinvestingInitializerArguments(arguments);
+        tempArgs.maxAmountOfTokenToBeSold = 0;
+        vm.expectRevert("_maxAmountOfTokenToBeSold needs to be larger than zero");
         factory.createCrowdinvestingClone(0, trustedForwarder, tempArgs);
 
         // currency 0

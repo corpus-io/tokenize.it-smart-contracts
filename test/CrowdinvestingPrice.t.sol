@@ -118,7 +118,7 @@ contract CrowdinvestingTest is Test {
         // create oracle
         vm.warp(1 hours + 1); // otherwise, price linear thinks it has to cool down
         PriceLinear priceLinear = PriceLinear(
-            priceLinearCloneFactory.createPriceLinear(
+            priceLinearCloneFactory.createPriceLinearClone(
                 0,
                 trustedForwarder,
                 owner,
@@ -176,7 +176,7 @@ contract CrowdinvestingTest is Test {
         // create oracle
         vm.warp(1 hours + 1); // otherwise, price linear thinks it has to cool down
         PriceLinear priceLinear = PriceLinear(
-            priceLinearCloneFactory.createPriceLinear(
+            priceLinearCloneFactory.createPriceLinearClone(
                 0,
                 trustedForwarder,
                 owner,
@@ -237,7 +237,7 @@ contract CrowdinvestingTest is Test {
 
         // create oracle
         PriceLinear priceLinear = PriceLinear(
-            priceLinearCloneFactory.createPriceLinear(
+            priceLinearCloneFactory.createPriceLinearClone(
                 0,
                 trustedForwarder,
                 owner,

@@ -125,6 +125,24 @@ contract tokenProxyFactoryTest is Test {
         );
     }
 
+    function testWrongForwarder(address _wrongForwarder) public {
+        vm.assume(trustedForwarder != _wrongForwarder);
+        vm.assume(_wrongForwarder != address(0));
+
+        // using a different trustedForwarder should fail
+        vm.expectRevert("TokenProxyFactory: Unexpected trustedForwarder");
+        factory.createTokenProxy(
+            bytes32(uint256(0)),
+            _wrongForwarder,
+            feeSettings,
+            admin,
+            AllowList(allowList),
+            requirements,
+            "testToken",
+            "TEST"
+        );
+    }
+
     function testInitialization(
         string memory name,
         string memory symbol,
