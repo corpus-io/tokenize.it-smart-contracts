@@ -10,7 +10,7 @@ Beyond being an ERC20 token, it has fine grained access control to:
 - define who is allowed to pause the contract
 - define minting rights (through increaseMintingAllowance and decreaseMintingAllowance functions)
 
-Also, this is the only contract in this repository that is deployed using an ERC1967-proxy. This means that is can be upgraded. Since this token is legally bound to the company, we want to make sure that we can offer our customers options if a security issue arises or regulation enforces changes.
+Also, this is the only contract in this repository that is deployed using an ERC1967-proxy. This means that it can be upgraded. Since this token is legally bound to the company, we want to make sure that we can offer our customers options if a security issue arises or regulation enforces changes.
 
 ### Minting
 
