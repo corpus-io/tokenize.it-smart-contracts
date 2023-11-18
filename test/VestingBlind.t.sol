@@ -3,6 +3,7 @@ pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/VestingCloneFactory.sol";
+import "./Vesting.t.sol";
 import "./resources/ERC20MintableByAnyone.sol";
 
 contract VestingBlindTest is Test {
@@ -96,7 +97,18 @@ contract VestingBlindTest is Test {
         bool _isMintable,
         address _rando
     ) public {
-        vm.assume(checkLimits(_allocation, _beneficiary, _start, _cliff, _duration, vesting, block.timestamp));
+        vm.assume(
+            checkLimits(
+                _allocation,
+                _beneficiary,
+                _start,
+                _cliff,
+                _duration,
+                vesting,
+                block.timestamp,
+                trustedForwarder
+            )
+        );
         vm.assume(_rando != address(0));
         bytes32 hash = keccak256(
             abi.encodePacked(_allocation, _beneficiary, _start, _cliff, _duration, _isMintable, _salt)
@@ -115,10 +127,79 @@ contract VestingBlindTest is Test {
 
         // reveal
         vm.expectEmit(true, true, true, true, address(vesting));
-        emit Reveal(hash, 0);
+        emit Reveal(hash, 1);
         vm.prank(_rando);
         uint64 id = vesting.reveal(hash, _allocation, _beneficiary, _start, _cliff, _duration, _isMintable, _salt);
-        assertEq(id, 0, "id is not 0");
+        assertEq(id, 1, "id is not 1");
+
+        checkVestingPlanDetails(id, _beneficiary, _allocation, _start, _duration, _cliff, _isMintable, vesting);
+
+        // make sure the commitment is deleted
+        assertTrue(vesting.commitments(hash) == 0, "commitment still exists");
+
+        // make sure a second creation fails
+        vm.expectRevert("invalid-hash");
+        vm.prank(_rando);
+        vesting.reveal(hash, _allocation, _beneficiary, _start, _cliff, _duration, _isMintable, _salt);
+    }
+
+    function testRevealAndRelease(
+        address _beneficiary,
+        uint256 _allocation,
+        uint64 _start,
+        uint64 _duration,
+        uint64 _cliff,
+        bytes32 _salt,
+        bool _isMintable,
+        address _rando,
+        uint256 _maxReleaseAmount
+    ) public {
+        vm.assume(
+            checkLimits(
+                _allocation,
+                _beneficiary,
+                _start,
+                _cliff,
+                _duration,
+                vesting,
+                block.timestamp,
+                trustedForwarder
+            )
+        );
+        vm.assume(_rando != address(0));
+        bytes32 hash = keccak256(
+            abi.encodePacked(_allocation, _beneficiary, _start, _cliff, _duration, _isMintable, _salt)
+        );
+
+        _maxReleaseAmount = 0;
+
+        // commit
+        assertTrue(vesting.commitments(hash) == 0, "commitment already exists");
+        vm.expectEmit(true, true, true, true, address(vesting));
+        emit Commit(hash);
+        vm.prank(owner);
+        vesting.commit(hash);
+        assertTrue(vesting.commitments(hash) > 0, "commitment does not exist");
+
+        // mint tokens if necessary
+        if (!_isMintable) {
+            token.mint(address(vesting), _maxReleaseAmount);
+        }
+
+        vm.warp(_start + _cliff + _duration + 1); // go to end of vesting period
+
+        // revealAndRelease
+        vm.expectEmit(true, true, true, true, address(vesting));
+        emit Reveal(hash, 1);
+        vm.prank(_rando);
+        uint64 id = vesting.reveal(hash, _allocation, _beneficiary, _start, _cliff, _duration, _isMintable, _salt);
+        assertEq(id, 1, "id is not 1");
+
+        if (_maxReleaseAmount > _allocation) {
+            assertEq(token.balanceOf(_beneficiary), _allocation, "balance is not equal to total");
+        } else {
+            assertEq(token.balanceOf(_beneficiary), _maxReleaseAmount, "balance is not equal to amount");
+        }
 
         checkVestingPlanDetails(id, _beneficiary, _allocation, _start, _duration, _cliff, _isMintable, vesting);
 
@@ -162,7 +243,7 @@ contract VestingBlindTest is Test {
         // warp till end of vesting and claim
         vm.warp(_start + _cliff + _duration + 1);
         vm.expectEmit(true, true, true, true, address(vesting));
-        emit Reveal(hash, 0);
+        emit Reveal(hash, 1);
         uint64 id = vesting.reveal(
             hash,
             commitmentAllocation,
@@ -173,7 +254,7 @@ contract VestingBlindTest is Test {
             _isMintable,
             _salt
         );
-        assertEq(id, 0, "id is not 0");
+        assertEq(id, 1, "id is not 1");
 
         checkVestingPlanDetails(id, beneficiary, realAllocation, _start, 1.5 * 365 days, _cliff, _isMintable, vesting);
 
@@ -204,7 +285,18 @@ contract VestingBlindTest is Test {
         uint64 revokeAfter = revokeAfter24;
 
         vm.assume(revokeAfter < _cliff);
-        vm.assume(checkLimits(_allocation, _beneficiary, _start, _cliff, _duration, vesting, block.timestamp));
+        vm.assume(
+            checkLimits(
+                _allocation,
+                _beneficiary,
+                _start,
+                _cliff,
+                _duration,
+                vesting,
+                block.timestamp,
+                trustedForwarder
+            )
+        );
         bytes32 hash = keccak256(
             abi.encodePacked(_allocation, _beneficiary, _start, _cliff, _duration, isMintable, _salt)
         );
@@ -246,7 +338,9 @@ contract VestingBlindTest is Test {
         vm.assume(_cliff < revokeAfter);
         vm.assume(_cliff < _duration);
 
-        vm.assume(checkLimits(_allocation, beneficiary, _start, _cliff, _duration, vesting, block.timestamp));
+        vm.assume(
+            checkLimits(_allocation, beneficiary, _start, _cliff, _duration, vesting, block.timestamp, trustedForwarder)
+        );
 
         bytes32 hash = keccak256(
             abi.encodePacked(_allocation, beneficiary, _start, _cliff, _duration, isMintable, salt)
@@ -276,7 +370,17 @@ contract VestingBlindTest is Test {
             console.log("newTot is 0");
             vm.prank(beneficiary);
             //vm.expectRevert(); // todo: this path is never used. why?
-            vesting.revealAndRelease(hash, _allocation, beneficiary, _start, _cliff, _duration, isMintable, salt);
+            vesting.revealAndRelease(
+                hash,
+                _allocation,
+                beneficiary,
+                _start,
+                _cliff,
+                _duration,
+                isMintable,
+                salt,
+                type(uint256).max
+            );
             // assure no vesting plan has been created
             assertTrue(vesting.ids() == 0, "a vesting plan has been created");
         } else {
@@ -290,7 +394,8 @@ contract VestingBlindTest is Test {
                 _cliff,
                 _duration,
                 isMintable,
-                salt
+                salt,
+                type(uint256).max
             );
             // check correct execution
             assertTrue(vesting.commitments(hash) == 0, "revocation not correct");
@@ -316,7 +421,9 @@ contract VestingBlindTest is Test {
         vm.assume(revokeAfter > _duration);
         vm.assume(_cliff < _duration);
 
-        vm.assume(checkLimits(_allocation, beneficiary, _start, _cliff, _duration, vesting, block.timestamp));
+        vm.assume(
+            checkLimits(_allocation, beneficiary, _start, _cliff, _duration, vesting, block.timestamp, trustedForwarder)
+        );
         bytes32 hash = keccak256(
             abi.encodePacked(_allocation, beneficiary, _start, _cliff, _duration, isMintable, salt)
         );
@@ -349,7 +456,8 @@ contract VestingBlindTest is Test {
             _cliff,
             _duration,
             isMintable,
-            _salt
+            _salt,
+            type(uint256).max
         );
         // check correct execution
         assertTrue(vesting.commitments(hash) == 0, "commitment still exists");
@@ -373,7 +481,9 @@ contract VestingBlindTest is Test {
         vm.assume(_cliff < vesting.TIME_HORIZON());
         vm.assume(revokeAfter < _duration);
         vm.assume(_cliff < _duration);
-        vm.assume(checkLimits(_allocation, beneficiary, start, _cliff, _duration, vesting, block.timestamp));
+        vm.assume(
+            checkLimits(_allocation, beneficiary, start, _cliff, _duration, vesting, block.timestamp, trustedForwarder)
+        );
         bytes32 hash = keccak256(
             abi.encodePacked(_allocation, beneficiary, start, _cliff, _duration, isMintable, salt)
         );
@@ -414,9 +524,19 @@ contract VestingBlindTest is Test {
             console.log("User gets no tokens, so claim must fail");
             vm.prank(beneficiary);
             vm.expectRevert();
-            vesting.revealAndRelease(hash, _allocation, beneficiary, start, _cliff, _duration, isMintable, salt);
+            vesting.revealAndRelease(
+                hash,
+                _allocation,
+                beneficiary,
+                start,
+                _cliff,
+                _duration,
+                isMintable,
+                salt,
+                type(uint256).max
+            );
             // assure no vesting plan has been created
-            assertTrue(vesting.ids() == createId + 1, "a vesting plan has been created");
+            assertTrue(vesting.ids() == createId, "a vesting plan has been created");
         } else {
             console.log("User gets tokens");
             vm.prank(_beneficiaryCreate);
@@ -431,13 +551,14 @@ contract VestingBlindTest is Test {
                 _cliff,
                 _duration,
                 isMintable,
-                salt
+                salt,
+                type(uint256).max
             );
 
             console.log("usrCommit balance: ", token.balanceOf(beneficiary));
             // check correct execution
             assertTrue(vesting.commitments(hash) == 0, "commitment still exists");
-            assertTrue(vesting.ids() == createId + 2, "no vesting plan has been created");
+            assertTrue(vesting.ids() == createId + 1, "no vesting plan has been created");
             assertTrue(vesting.released(commitId) == token.balanceOf(_beneficiaryCreate), "accrued is not new total");
             assertTrue(vesting.releasable(commitId) == 0, "unpaid is not 0");
             assertTrue(
@@ -488,26 +609,6 @@ contract VestingBlindTest is Test {
 
         vm.expectRevert("invalid-hash");
         vesting.reveal(hash, _allocation2, _beneficiary, _start, _cliff, _duration, isMintable, _salt);
-    }
-
-    function checkLimits(
-        uint256 _allocation,
-        address _beneficiary,
-        uint64 _start,
-        uint64 _cliff,
-        uint64 _duration,
-        Vesting _vesting,
-        uint256 _timestamp
-    ) public view returns (bool valid) {
-        valid =
-            _beneficiary != address(0) &&
-            _beneficiary != address(trustedForwarder) &&
-            _allocation != 0 &&
-            _start > _timestamp - _vesting.TIME_HORIZON() + 1 &&
-            _start < _timestamp + _vesting.TIME_HORIZON() - 1 &&
-            _duration < _vesting.TIME_HORIZON() &&
-            _duration >= _cliff &&
-            _duration > 0;
     }
 
     function checkVestingPlanDetails(

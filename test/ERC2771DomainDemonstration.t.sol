@@ -129,7 +129,7 @@ contract TokenERC2771Test is Test {
             lastBuyDate: 0,
             priceOracle: address(0)
         });
-        Crowdinvesting raise = Crowdinvesting(
+        Crowdinvesting crowdinvesting = Crowdinvesting(
             fundraisingFactory.createCrowdinvestingClone(0, address(forwarder), arguments)
         );
 
@@ -241,11 +241,11 @@ contract TokenERC2771Test is Test {
          */
 
         // build request
-        payload = abi.encodeWithSelector(raise.pause.selector);
+        payload = abi.encodeWithSelector(crowdinvesting.pause.selector);
 
         request = IForwarder.ForwardRequest({
             from: companyAdmin,
-            to: address(raise),
+            to: address(crowdinvesting),
             value: 0,
             gas: 1000000,
             nonce: forwarder.getNonce(companyAdmin),
@@ -277,10 +277,10 @@ contract TokenERC2771Test is Test {
         /*
             execute request and check results
         */
-        assertEq(raise.paused(), false);
+        assertEq(crowdinvesting.paused(), false);
 
         // send call through forwarder contract
         forwarder.execute(request, domainSeparator, requestType, suffixData, signature);
-        assertEq(raise.paused(), true);
+        assertEq(crowdinvesting.paused(), true);
     }
 }

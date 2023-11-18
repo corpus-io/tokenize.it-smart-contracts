@@ -282,15 +282,15 @@ contract tokenTest is Test {
             examplePriceOracle
         );
 
-        Crowdinvesting raise = Crowdinvesting(
+        Crowdinvesting crowdinvesting = Crowdinvesting(
             fundraisingFactory.createCrowdinvestingClone(_rawSalt, _trustedForwarder, arguments)
         );
 
-        assertTrue(raise.isTrustedForwarder(_trustedForwarder), "trustedForwarder not set");
-        assertEq(raise.owner(), _owner, "owner not set");
-        assertEq(raise.currencyReceiver(), _currencyReceiver, "currencyReceiver not set");
-        assertEq(raise.minAmountPerBuyer(), _minAmountPerBuyer, "minAmountPerBuyer not set");
-        assertEq(raise.maxAmountPerBuyer(), _maxAmountPerBuyer, "maxAmountPerBuyer not set");
+        assertTrue(crowdinvesting.isTrustedForwarder(_trustedForwarder), "trustedForwarder not set");
+        assertEq(crowdinvesting.owner(), _owner, "owner not set");
+        assertEq(crowdinvesting.currencyReceiver(), _currencyReceiver, "currencyReceiver not set");
+        assertEq(crowdinvesting.minAmountPerBuyer(), _minAmountPerBuyer, "minAmountPerBuyer not set");
+        assertEq(crowdinvesting.maxAmountPerBuyer(), _maxAmountPerBuyer, "maxAmountPerBuyer not set");
     }
 
     function testInitialization2(
@@ -331,19 +331,23 @@ contract tokenTest is Test {
             _priceOracle
         );
 
-        Crowdinvesting raise = Crowdinvesting(
+        Crowdinvesting crowdinvesting = Crowdinvesting(
             fundraisingFactory.createCrowdinvestingClone(exampleRawSalt, exampleTrustedForwarder, arguments)
         );
 
-        assertEq(raise.maxAmountPerBuyer(), _maxAmountPerBuyer, "maxAmountPerBuyer not set");
-        assertEq(raise.priceBase(), _priceBase, "priceBase not set");
-        assertEq(raise.priceMin(), _priceMin, "priceMin not set");
-        assertEq(raise.priceMax(), _priceMax, "priceMax not set");
-        assertEq(raise.maxAmountOfTokenToBeSold(), _maxAmountOfTokenToBeSold, "maxAmountOfTokenToBeSold not set");
-        assertEq(address(raise.currency()), address(_currency), "currency not set");
-        assertEq(address(raise.token()), address(_token), "token not set");
-        assertEq(raise.lastBuyDate(), _lastBuyDate, "lastBuyDate not set");
-        assertEq(address(raise.priceOracle()), _priceOracle, "priceOracle not set");
+        assertEq(crowdinvesting.maxAmountPerBuyer(), _maxAmountPerBuyer, "maxAmountPerBuyer not set");
+        assertEq(crowdinvesting.priceBase(), _priceBase, "priceBase not set");
+        assertEq(crowdinvesting.priceMin(), _priceMin, "priceMin not set");
+        assertEq(crowdinvesting.priceMax(), _priceMax, "priceMax not set");
+        assertEq(
+            crowdinvesting.maxAmountOfTokenToBeSold(),
+            _maxAmountOfTokenToBeSold,
+            "maxAmountOfTokenToBeSold not set"
+        );
+        assertEq(address(crowdinvesting.currency()), address(_currency), "currency not set");
+        assertEq(address(crowdinvesting.token()), address(_token), "token not set");
+        assertEq(crowdinvesting.lastBuyDate(), _lastBuyDate, "lastBuyDate not set");
+        assertEq(address(crowdinvesting.priceOracle()), _priceOracle, "priceOracle not set");
     }
 
     /*
@@ -369,30 +373,30 @@ contract tokenTest is Test {
             examplePriceOracle
         );
 
-        Crowdinvesting raise = Crowdinvesting(
+        Crowdinvesting crowdinvesting = Crowdinvesting(
             fundraisingFactory.createCrowdinvestingClone(0, trustedForwarder, arguments)
         );
 
         vm.prank(rando);
         vm.expectRevert("Ownable: caller is not the owner");
-        raise.pause();
+        crowdinvesting.pause();
 
-        assertFalse(raise.paused());
+        assertFalse(crowdinvesting.paused());
         vm.prank(_admin);
-        raise.pause();
-        assertTrue(raise.paused());
+        crowdinvesting.pause();
+        assertTrue(crowdinvesting.paused());
 
         vm.prank(rando);
         vm.expectRevert("Ownable: caller is not the owner");
-        raise.unpause();
+        crowdinvesting.unpause();
 
         // can't buy when paused
         vm.prank(rando);
         vm.expectRevert("Pausable: paused");
-        raise.buy(1, address(this));
+        crowdinvesting.buy(1, address(this));
 
         vm.warp(block.timestamp + 1 days + 1);
         vm.prank(_admin);
-        raise.unpause();
+        crowdinvesting.unpause();
     }
 }
