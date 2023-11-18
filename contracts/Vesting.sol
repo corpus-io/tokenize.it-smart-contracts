@@ -53,9 +53,6 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     event ManagerRemoved(address manager);
     event BeneficiaryChanged(uint64 id, address newBeneficiary);
 
-    /// We limit start and end of vesting to 20 years from now. Current business logic does not require more, and it
-    /// might prevent user errors.
-    uint64 public constant TIME_HORIZON = 20 * 365 days;
     /// token to be vested
     address public token;
     /// stores who create and stop vestings (both public and private)

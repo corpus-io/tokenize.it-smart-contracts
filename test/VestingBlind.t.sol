@@ -28,7 +28,6 @@ contract VestingBlindTest is Test {
 
     function setUp() public {
         implementation = new Vesting(trustedForwarder);
-        vm.warp(implementation.TIME_HORIZON());
 
         factory = new VestingCloneFactory(address(implementation));
 
@@ -97,25 +96,13 @@ contract VestingBlindTest is Test {
         bool _isMintable,
         address _rando
     ) public {
-        vm.assume(
-            checkLimits(
-                _allocation,
-                _beneficiary,
-                _start,
-                _cliff,
-                _duration,
-                vesting,
-                block.timestamp,
-                trustedForwarder
-            )
-        );
+        vm.assume(checkLimits(_allocation, _beneficiary, _start, _cliff, _duration, trustedForwarder));
         vm.assume(_rando != address(0));
         bytes32 hash = keccak256(
             abi.encodePacked(_allocation, _beneficiary, _start, _cliff, _duration, _isMintable, _salt)
         );
 
         console.log("duration: ", _duration);
-        console.log("time TIME_HORIZON: ", vesting.TIME_HORIZON());
 
         // commit
         assertTrue(vesting.commitments(hash) == 0, "commitment already exists");
@@ -154,18 +141,7 @@ contract VestingBlindTest is Test {
         address _rando,
         uint256 _maxReleaseAmount
     ) public {
-        vm.assume(
-            checkLimits(
-                _allocation,
-                _beneficiary,
-                _start,
-                _cliff,
-                _duration,
-                vesting,
-                block.timestamp,
-                trustedForwarder
-            )
-        );
+        vm.assume(checkLimits(_allocation, _beneficiary, _start, _cliff, _duration, trustedForwarder));
         vm.assume(_rando != address(0));
         bytes32 hash = keccak256(
             abi.encodePacked(_allocation, _beneficiary, _start, _cliff, _duration, _isMintable, _salt)
@@ -285,18 +261,7 @@ contract VestingBlindTest is Test {
         uint64 revokeAfter = revokeAfter24;
 
         vm.assume(revokeAfter < _cliff);
-        vm.assume(
-            checkLimits(
-                _allocation,
-                _beneficiary,
-                _start,
-                _cliff,
-                _duration,
-                vesting,
-                block.timestamp,
-                trustedForwarder
-            )
-        );
+        vm.assume(checkLimits(_allocation, _beneficiary, _start, _cliff, _duration, trustedForwarder));
         bytes32 hash = keccak256(
             abi.encodePacked(_allocation, _beneficiary, _start, _cliff, _duration, isMintable, _salt)
         );
@@ -331,16 +296,14 @@ contract VestingBlindTest is Test {
         uint256 _allocation = 8127847e18;
         uint64 _start = 30 * 365 days;
 
-        vm.assume(_duration < vesting.TIME_HORIZON());
-        vm.assume(revokeAfter < vesting.TIME_HORIZON());
-        vm.assume(_cliff < vesting.TIME_HORIZON());
+        vm.assume(_duration < type(uint64).max / 2);
+        vm.assume(revokeAfter < type(uint64).max / 2);
+        vm.assume(_cliff < type(uint64).max / 2);
         vm.assume(revokeAfter < _duration);
         vm.assume(_cliff < revokeAfter);
         vm.assume(_cliff < _duration);
 
-        vm.assume(
-            checkLimits(_allocation, beneficiary, _start, _cliff, _duration, vesting, block.timestamp, trustedForwarder)
-        );
+        vm.assume(checkLimits(_allocation, beneficiary, _start, _cliff, _duration, trustedForwarder));
 
         bytes32 hash = keccak256(
             abi.encodePacked(_allocation, beneficiary, _start, _cliff, _duration, isMintable, salt)
@@ -415,15 +378,13 @@ contract VestingBlindTest is Test {
 
         bytes32 _salt = 0;
 
-        vm.assume(_duration < vesting.TIME_HORIZON());
-        vm.assume(revokeAfter < vesting.TIME_HORIZON());
-        vm.assume(_cliff < vesting.TIME_HORIZON());
+        vm.assume(_duration < type(uint64).max / 2);
+        vm.assume(revokeAfter < type(uint64).max / 2);
+        vm.assume(_cliff < type(uint64).max / 2);
         vm.assume(revokeAfter > _duration);
         vm.assume(_cliff < _duration);
 
-        vm.assume(
-            checkLimits(_allocation, beneficiary, _start, _cliff, _duration, vesting, block.timestamp, trustedForwarder)
-        );
+        vm.assume(checkLimits(_allocation, beneficiary, _start, _cliff, _duration, trustedForwarder));
         bytes32 hash = keccak256(
             abi.encodePacked(_allocation, beneficiary, _start, _cliff, _duration, isMintable, salt)
         );
@@ -476,14 +437,12 @@ contract VestingBlindTest is Test {
         address _beneficiaryCreate = address(23);
         vm.assume(_allocation > 0);
         vm.assume(type(uint256).max / _allocation > revokeAfter); // prevent overflow
-        vm.assume(_duration < vesting.TIME_HORIZON());
+        vm.assume(_duration < type(uint64).max / 2);
         vm.assume(revokeAfter > 0);
-        vm.assume(_cliff < vesting.TIME_HORIZON());
+        vm.assume(_cliff < type(uint64).max / 2);
         vm.assume(revokeAfter < _duration);
         vm.assume(_cliff < _duration);
-        vm.assume(
-            checkLimits(_allocation, beneficiary, start, _cliff, _duration, vesting, block.timestamp, trustedForwarder)
-        );
+        vm.assume(checkLimits(_allocation, beneficiary, start, _cliff, _duration, trustedForwarder));
         bytes32 hash = keccak256(
             abi.encodePacked(_allocation, beneficiary, start, _cliff, _duration, isMintable, salt)
         );

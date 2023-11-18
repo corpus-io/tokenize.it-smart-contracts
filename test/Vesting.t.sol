@@ -11,17 +11,15 @@ function checkLimits(
     uint64 _start,
     uint64 _cliff,
     uint64 _duration,
-    Vesting _vesting,
-    uint256 _timestamp,
     address _trustedForwarder
-) view returns (bool valid) {
+) pure returns (bool valid) {
     valid =
         _beneficiary != address(0) &&
         _beneficiary != address(_trustedForwarder) &&
         _allocation != 0 &&
-        _start > _timestamp - _vesting.TIME_HORIZON() + 1 &&
-        _start < _timestamp + _vesting.TIME_HORIZON() - 1 &&
-        _duration < _vesting.TIME_HORIZON() &&
+        _start > 0 &&
+        _start < type(uint64).max / 2 &&
+        _duration < type(uint64).max / 2 &&
         _duration >= _cliff &&
         _duration > 0;
 }
@@ -49,13 +47,12 @@ contract VestingTest is Test {
 
     function setUp() public {
         implementation = new Vesting(trustedForwarder);
-        vm.warp(implementation.TIME_HORIZON());
 
         factory = new VestingCloneFactory(address(implementation));
 
         vesting = Vesting(factory.createVestingClone(0, trustedForwarder, owner, address(token)));
 
-        exampleStart = implementation.TIME_HORIZON() + 2 * 365 days;
+        exampleStart = 2 * 365 days;
     }
 
     function testSwitchOwner(address _owner, address newOwner) public {
@@ -120,13 +117,13 @@ contract VestingTest is Test {
         uint256 amount = 10 ** 18;
 
         vm.startPrank(owner);
-        uint64 id = vesting.createVesting(amount, _beneficiary, implementation.TIME_HORIZON(), 0, 100 days, true);
+        uint64 id = vesting.createVesting(amount, _beneficiary, 0, 0, 100 days, true);
         vm.stopPrank();
 
         assertEq(vesting.beneficiary(id), _beneficiary);
         assertEq(vesting.allocation(id), amount);
         assertEq(vesting.released(id), 0);
-        assertEq(vesting.start(id), implementation.TIME_HORIZON());
+        assertEq(vesting.start(id), 0);
         assertEq(vesting.cliff(id), 0);
         assertEq(vesting.duration(id), 100 days);
         assertEq(vesting.isMintable(id), true, "Vesting plan not mintable");
@@ -134,13 +131,13 @@ contract VestingTest is Test {
         assertEq(token.balanceOf(_beneficiary), 0);
 
         // rando can not release tokens
-        vm.warp(block.timestamp + 10 days);
+        vm.warp(10 days);
         vm.prank(rando);
         vm.expectRevert("Only beneficiary can release tokens");
         vesting.release(id);
 
         // beneficiary can release tokens
-        vm.warp(block.timestamp + 70 days);
+        vm.warp(80 days);
         vm.prank(_beneficiary);
         vesting.release(id);
 
@@ -153,7 +150,7 @@ contract VestingTest is Test {
         vm.assume(_beneficiary != trustedForwarder);
 
         uint256 amount = 70e18;
-        uint64 start = implementation.TIME_HORIZON() + 2 * 365 days;
+        uint64 start = 2 * 365 days;
         uint64 duration = 2 * 365 days;
         uint64 cliff = 1 * 365 days;
         uint64 pauseStart = start + 90 days;
@@ -216,7 +213,7 @@ contract VestingTest is Test {
         pauseDuration = (pauseDuration % (10 * 365 days)) + 1;
 
         uint256 amount = 70e18;
-        uint64 start = implementation.TIME_HORIZON() + 2 * 365 days;
+        uint64 start = 2 * 365 days;
         uint64 duration = 2 * 365 days;
         uint64 cliff = 1 * 365 days;
         uint64 pauseStart = start + cliff + pauseAfter;
