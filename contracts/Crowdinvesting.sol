@@ -208,7 +208,14 @@ contract Crowdinvesting is
 
     function getPrice() public view returns (uint256) {
         if (address(priceOracle) != address(0)) {
-            return Math.min(Math.max(priceOracle.getPrice(priceBase), priceMin), priceMax);
+            uint256 price = priceOracle.getPrice(priceBase);
+            if (price > priceMax) {
+                return priceMax;
+            }
+            if (price < priceMin) {
+                return priceMin;
+            }
+            return price;
         }
 
         return priceBase;
@@ -322,12 +329,14 @@ contract Crowdinvesting is
 
     /**
      * @notice change currency to `_currency` and tokenPrice to `_tokenPrice`
+     * @dev If price dynamic is active, it will be deactivated.
      * @param _currency new currency
      * @param _tokenPrice new tokenPrice
      */
     function setCurrencyAndTokenPrice(IERC20 _currency, uint256 _tokenPrice) external onlyOwner whenPaused {
         require(address(_currency) != address(0), "currency can not be zero address");
         require(_tokenPrice != 0, "_tokenPrice needs to be a non-zero amount");
+        priceOracle = IPriceDynamic(address(0)); // deactivate dynamic pricing because price changed, so min and max need to be updated
         priceBase = _tokenPrice;
         currency = _currency;
         emit TokenPriceAndCurrencyChanged(_tokenPrice, _currency);

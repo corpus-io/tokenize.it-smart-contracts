@@ -143,6 +143,7 @@ contract VestingBlindTest is Test {
     ) public {
         vm.assume(checkLimits(_allocation, _beneficiary, _start, _cliff, _duration, trustedForwarder));
         vm.assume(_rando != address(0));
+        vm.assume(_rando != trustedForwarder);
         bytes32 hash = keccak256(
             abi.encodePacked(_allocation, _beneficiary, _start, _cliff, _duration, _isMintable, _salt)
         );
