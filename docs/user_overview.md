@@ -13,7 +13,7 @@ Let's assume that there will be one (1) platform, many (**X**) companies and man
 | FeeSettings | 1 | platform | used by all companies |
 | Token | X | company | represents a specific companies shares |
 | Vesting | X | company | allows company to vest tokens over a period of time |
-| Crowdinvesting | X | company | most companies will want raise funds from all eligible investors |
+| Crowdinvesting | X | company | most companies will want crowdinvesting funds from all eligible investors |
 | PrivateOffer | >X | --- | most companies will extend special investment offers to specific investors, or receive these from investors |
 
 # Example work flow: creating company and raising funds

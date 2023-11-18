@@ -13,7 +13,7 @@ contract CrowdinvestingTest is Test {
     using ECDSA for bytes32; // for verify with var.recover()
 
     CrowdinvestingCloneFactory fundraisingFactory;
-    Crowdinvesting raise;
+    Crowdinvesting crowdinvesting;
     AllowList list;
     FeeSettings feeSettings;
 
@@ -117,26 +117,26 @@ contract CrowdinvestingTest is Test {
         vm.prank(owner);
         fundraisingFactory = new CrowdinvestingCloneFactory(address(new Crowdinvesting(address(forwarder))));
 
-        raise = Crowdinvesting(fundraisingFactory.createCrowdinvestingClone(0, address(forwarder), arguments));
+        crowdinvesting = Crowdinvesting(fundraisingFactory.createCrowdinvestingClone(0, address(forwarder), arguments));
 
-        // allow raise contract to mint
+        // allow crowdinvesting contract to mint
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.increaseMintingAllowance(address(raise), maxAmountOfTokenToBeSold);
+        token.increaseMintingAllowance(address(crowdinvesting), maxAmountOfTokenToBeSold);
 
-        // give raise contract allowance
+        // give crowdinvesting contract allowance
         vm.prank(buyer);
-        paymentToken.approve(address(raise), paymentTokenAmount);
+        paymentToken.approve(address(crowdinvesting), paymentTokenAmount);
 
         assert(costInPaymentToken == 35 * 10 ** paymentTokenDecimals); // 35 payment tokens, manually calculated
 
         // register domain and request type
         bytes32 domainSeparator = ERC2771helper.registerDomain(
             forwarder,
-            Strings.toHexString(uint256(uint160(address(raise))), 20),
+            Strings.toHexString(uint256(uint160(address(crowdinvesting))), 20),
             "1"
         );
         bytes32 requestType = ERC2771helper.registerRequestType(forwarder, "buy", "address buyer,uint256 amount");
@@ -152,11 +152,11 @@ contract CrowdinvestingTest is Test {
         // todo: get nonce from forwarder
 
         // build request
-        bytes memory payload = abi.encodeWithSelector(raise.buy.selector, tokenBuyAmount, buyer);
+        bytes memory payload = abi.encodeWithSelector(crowdinvesting.buy.selector, tokenBuyAmount, buyer);
 
         IForwarder.ForwardRequest memory request = IForwarder.ForwardRequest({
             from: buyer,
-            to: address(raise),
+            to: address(crowdinvesting),
             value: 0,
             gas: 1000000,
             nonce: forwarder.getNonce(buyer),
@@ -191,12 +191,12 @@ contract CrowdinvestingTest is Test {
         vm.prank(buyer);
         assertEq(token.balanceOf(buyer), 0);
         assertEq(paymentToken.balanceOf(receiver), 0);
-        assertEq(paymentToken.balanceOf(address(raise)), 0);
-        assertEq(token.balanceOf(address(raise)), 0);
+        assertEq(paymentToken.balanceOf(address(crowdinvesting)), 0);
+        assertEq(token.balanceOf(address(crowdinvesting)), 0);
         assertEq(token.balanceOf(receiver), 0);
         assertEq(token.balanceOf(address(forwarder)), 0);
-        assertTrue(raise.tokensSold() == 0);
-        assertTrue(raise.tokensBought(buyer) == 0);
+        assertTrue(crowdinvesting.tokensSold() == 0);
+        assertTrue(crowdinvesting.tokensBought(buyer) == 0);
         //assertTrue(vm.getNonce(buyer) == 0); // it seems forge does not increase nonces with prank
 
         console.log("Token balance of buyer before: ", token.balanceOf(buyer));
@@ -206,7 +206,7 @@ contract CrowdinvestingTest is Test {
         uint256 gasBefore = gasleft();
         forwarder.execute(request, domainSeparator, requestType, suffixData, signature);
         // vm.prank(buyer);
-        // raise.buy(tokenBuyAmount);
+        // crowdinvesting.buy(tokenBuyAmount);
         console.log("Gas used: ", gasBefore - gasleft());
 
         // investor receives as many tokens as they paid for
@@ -222,12 +222,12 @@ contract CrowdinvestingTest is Test {
         // fee collector receives fee in payment tokens
         assertEq(paymentToken.balanceOf(feeSettings.feeCollector()), costInPaymentToken / paymentTokenFeeDenominator);
 
-        assertEq(paymentToken.balanceOf(address(raise)), 0);
-        assertEq(token.balanceOf(address(raise)), 0);
+        assertEq(paymentToken.balanceOf(address(crowdinvesting)), 0);
+        assertEq(token.balanceOf(address(crowdinvesting)), 0);
         assertEq(token.balanceOf(receiver), 0);
         assertEq(token.balanceOf(address(forwarder)), 0);
-        assertTrue(raise.tokensSold() == tokenBuyAmount);
-        assertTrue(raise.tokensBought(buyer) == tokenBuyAmount);
+        assertTrue(crowdinvesting.tokensSold() == tokenBuyAmount);
+        assertTrue(crowdinvesting.tokensBought(buyer) == tokenBuyAmount);
         //assertTrue(vm.getNonce(buyer) == 0);
 
         console.log("paymentToken balance of receiver after: ", paymentToken.balanceOf(receiver));

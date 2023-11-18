@@ -50,7 +50,7 @@ contract CrowdinvestingTest is Test {
     event TokensBought(address indexed buyer, uint256 tokenAmount, uint256 currencyAmount);
 
     CrowdinvestingCloneFactory factory;
-    Crowdinvesting raise;
+    Crowdinvesting crowdinvesting;
     AllowList list;
     IFeeSettingsV2 feeSettings;
 
@@ -125,21 +125,21 @@ contract CrowdinvestingTest is Test {
             0,
             address(0)
         );
-        raise = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
+        crowdinvesting = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
 
         vm.stopPrank();
 
-        // allow raise contract to mint
+        // allow crowdinvesting contract to mint
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
         vm.prank(companyAdmin);
         token.grantRole(roleMintAllower, mintAllower);
         vm.prank(mintAllower);
-        token.increaseMintingAllowance(address(raise), maxAmountOfTokenToBeSold);
+        token.increaseMintingAllowance(address(crowdinvesting), maxAmountOfTokenToBeSold);
 
-        // give raise contract allowance
+        // give crowdinvesting contract allowance
         vm.prank(buyer);
-        paymentToken.approve(address(raise), paymentTokenAmount);
+        paymentToken.approve(address(crowdinvesting), paymentTokenAmount);
 
         // set up price oracle factory
         PriceLinear priceLinearLogicContract = new PriceLinear(trustedForwarder);
@@ -168,23 +168,27 @@ contract CrowdinvestingTest is Test {
             )
         );
 
-        // configure raise to use oracle
-        raise.pause();
-        raise.activateDynamicPricing(IPriceDynamic(priceOracle), raise.priceBase(), raise.priceBase() * 2);
+        // configure crowdinvesting to use oracle
+        crowdinvesting.pause();
+        crowdinvesting.activateDynamicPricing(
+            IPriceDynamic(priceOracle),
+            crowdinvesting.priceBase(),
+            crowdinvesting.priceBase() * 2
+        );
         vm.warp(startTime);
-        raise.unpause();
+        crowdinvesting.unpause();
 
         vm.stopPrank();
 
         // check time and price
         console.log("Timestamp matches tomorrow: %s", block.timestamp == startTime);
-        uint256 currentPrice = raise.getPrice();
+        uint256 currentPrice = crowdinvesting.getPrice();
         console.log("Price: %s", currentPrice);
         assertTrue(currentPrice == price, "Price should be equal to base price before start time");
 
         // check price 1 second later
         vm.warp(startTime + 1);
-        currentPrice = raise.getPrice();
+        currentPrice = crowdinvesting.getPrice();
         console.log("Price: %s", currentPrice);
         assertTrue(currentPrice == price + 1e6, "Price should be equal to base price + 1 payment token");
 
@@ -192,7 +196,7 @@ contract CrowdinvestingTest is Test {
         assertEq(token.balanceOf(buyer), 0, "Buyer should have 0 tokens before");
         uint256 buyerPaymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
         vm.prank(buyer);
-        raise.buy(1e18, buyer);
+        crowdinvesting.buy(1e18, buyer);
         assertTrue(token.balanceOf(buyer) == 1e18, "Buyer should have 1 token");
         assertEq(
             paymentToken.balanceOf(buyer),
@@ -202,19 +206,19 @@ contract CrowdinvestingTest is Test {
 
         // check price 4 seconds later
         vm.warp(startTime + 4);
-        currentPrice = raise.getPrice();
+        currentPrice = crowdinvesting.getPrice();
         console.log("Price: %s", currentPrice);
         assertTrue(currentPrice == price + 4 * 1e6, "Price should be equal to base price + 4 payment token");
 
         // check price much later
         vm.warp(startTime + 1 days);
-        currentPrice = raise.getPrice();
+        currentPrice = crowdinvesting.getPrice();
         console.log("Price: %s", currentPrice);
         assertTrue(currentPrice == price * 2, "Price should be equal to max price");
 
         // check price timeShift later
         vm.warp(startTime + timeShift);
-        currentPrice = raise.getPrice();
+        currentPrice = crowdinvesting.getPrice();
         console.log("Price: %s", currentPrice);
         assertTrue(currentPrice == price * 2, "Price should be equal to max price after timeShift");
     }
@@ -226,17 +230,17 @@ contract CrowdinvestingTest is Test {
         // deploy max price oracle
         MaxPriceOracle maxPriceOracle = new MaxPriceOracle();
 
-        // configure raise to use oracle
+        // configure crowdinvesting to use oracle
         vm.startPrank(companyAdmin);
-        raise.pause();
-        raise.activateDynamicPricing(IPriceDynamic(maxPriceOracle), raise.priceBase(), maxPrice);
+        crowdinvesting.pause();
+        crowdinvesting.activateDynamicPricing(IPriceDynamic(maxPriceOracle), crowdinvesting.priceBase(), maxPrice);
         vm.warp(1 days + 1);
-        raise.unpause();
+        crowdinvesting.unpause();
 
         vm.stopPrank();
 
         // check price
-        uint256 currentPrice = raise.getPrice();
+        uint256 currentPrice = crowdinvesting.getPrice();
         console.log("Price: %s", currentPrice);
         assertTrue(currentPrice == maxPrice, "Price should be equal to max price");
     }
@@ -248,17 +252,17 @@ contract CrowdinvestingTest is Test {
         // deploy max price oracle
         MinPriceOracle maxPriceOracle = new MinPriceOracle();
 
-        // configure raise to use oracle
+        // configure crowdinvesting to use oracle
         vm.startPrank(companyAdmin);
-        raise.pause();
-        raise.activateDynamicPricing(IPriceDynamic(maxPriceOracle), minPrice, raise.priceBase());
+        crowdinvesting.pause();
+        crowdinvesting.activateDynamicPricing(IPriceDynamic(maxPriceOracle), minPrice, crowdinvesting.priceBase());
         vm.warp(1 days + 1);
-        raise.unpause();
+        crowdinvesting.unpause();
 
         vm.stopPrank();
 
         // check price
-        uint256 currentPrice = raise.getPrice();
+        uint256 currentPrice = crowdinvesting.getPrice();
         console.log("Price: %s", currentPrice);
         assertTrue(currentPrice == minPrice, "Price should be equal to min price");
     }

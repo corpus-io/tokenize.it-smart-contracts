@@ -92,7 +92,7 @@ contract CrowdinvestingTest is Test {
 
         crowdinvesting = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
 
-        // allow raise contract to mint
+        // allow crowdinvesting contract to mint
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
         vm.prank(admin);
@@ -100,7 +100,7 @@ contract CrowdinvestingTest is Test {
         vm.prank(mintAllower);
         token.increaseMintingAllowance(address(crowdinvesting), maxAmountOfTokenToBeSold);
 
-        // give raise contract allowance
+        // give crowdinvesting contract allowance
         vm.prank(buyer);
         paymentToken.approve(address(crowdinvesting), paymentTokenAmount);
     }
@@ -331,24 +331,5 @@ contract CrowdinvestingTest is Test {
 
         vm.warp(type(uint64).max);
         assertEq(crowdinvesting.getPrice(), priceMax, "Price should be priceMax now");
-
-        // if (block.timestamp < startDate) {
-        //     // price can not change before start date
-        //     console.log("Start date not reached yet: ", startDate);
-        //     console.log("Current price: ", crowdinvesting.getPrice());
-        //     assertEq(crowdinvesting.getPrice(), price, "Price should not have changed yet");
-        // } else {
-        //     // price can never exceed bounds
-        //     console.log("Current price: ", crowdinvesting.getPrice());
-        //     console.log("Min price: ", priceMin);
-        //     console.log("price plus increase: ", price + priceChangePerDuration);
-        //     assertTrue(crowdinvesting.getPrice() >= priceMin, "Price too low!");
-        //     assertTrue(crowdinvesting.getPrice() <= priceMax, "Price too high!");
-        // }
-
-        // // check if the price actually changed
-        // vm.warp(uint256(startDate) + duration);
-        // console.log("Current price: ", crowdinvesting.getPrice());
-        // assertTrue(crowdinvesting.getPrice() < price, "Price should have changed!");
     }
 }
