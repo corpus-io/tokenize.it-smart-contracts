@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.13;
+pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/AllowList.sol";
 
 contract AllowListTest is Test {
+    event Set(address indexed key, uint256 value);
+
     AllowList list;
     address owner;
 
@@ -39,6 +41,18 @@ contract AllowListTest is Test {
         assertTrue(list.map(address(1)) == 0);
         list.set(address(1), 2);
         assertTrue(list.map(address(1)) == 2);
+    }
+
+    function testSetEvent(address x, uint256 attributes) public {
+        assertTrue(list.map(address(x)) == 0);
+
+        vm.expectEmit(true, true, true, true, address(list));
+        emit Set(address(x), attributes);
+        list.set(address(x), attributes);
+
+        vm.expectEmit(true, true, true, true, address(list));
+        emit Set(address(x), 0);
+        list.remove(address(x));
     }
 
     function testSetFuzzingAddress(address x) public {

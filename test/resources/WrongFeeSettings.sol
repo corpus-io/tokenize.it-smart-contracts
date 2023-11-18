@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.13;
+pragma solidity 0.8.23;
 
 import "../../lib/forge-std/src/Test.sol";
 import "../../contracts/FeeSettings.sol";
@@ -11,11 +11,9 @@ contract FeeSettingsFailERC165Check0 is FeeSettings {
     constructor(
         Fees memory _fees,
         address _feeCollector
-    ) FeeSettings(_fees, _feeCollector) {}
+    ) FeeSettings(_fees, _feeCollector, _feeCollector, _feeCollector) {}
 
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view override returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view override returns (bool) {
         if (interfaceId == 0x01ffc9a7) {
             return false; // signal that we don't support ERC165
         }
@@ -28,11 +26,9 @@ contract FeeSettingsFailERC165Check1 is FeeSettings {
     constructor(
         Fees memory _fees,
         address _feeCollector
-    ) FeeSettings(_fees, _feeCollector) {}
+    ) FeeSettings(_fees, _feeCollector, _feeCollector, _feeCollector) {}
 
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view override returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view override returns (bool) {
         if (interfaceId == 0x01ffc9a7) {
             return true; // signal that we support ERC165
         } else if (interfaceId == 0xffffffff) {
@@ -42,20 +38,18 @@ contract FeeSettingsFailERC165Check1 is FeeSettings {
     }
 }
 
-contract FeeSettingsFailIFeeSettingsV1Check is FeeSettings {
+contract FeeSettingsFailIFeeSettingsV2Check is FeeSettings {
     constructor(
         Fees memory _fees,
         address _feeCollector
-    ) FeeSettings(_fees, _feeCollector) {}
+    ) FeeSettings(_fees, _feeCollector, _feeCollector, _feeCollector) {}
 
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view override returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view override returns (bool) {
         if (interfaceId == 0x01ffc9a7) {
             return true; // signal that we support ERC165
         } else if (interfaceId == 0xffffffff) {
             return false; // signal that we support ERC165
-        } else if (interfaceId == type(IFeeSettingsV1).interfaceId) {
+        } else if (interfaceId == type(IFeeSettingsV2).interfaceId) {
             return false; // signal that we don't support IFeeSettingsV1
         }
         return FeeSettings.supportsInterface(interfaceId);

@@ -1,4 +1,5 @@
 cache
+typechain-types
 types
 lcov.info
 .gas-snapshot
@@ -24,3 +25,4 @@ broadcast/
 !.env.example
 .npmignore
 .VSCodeCounter/
+*.code-workspace

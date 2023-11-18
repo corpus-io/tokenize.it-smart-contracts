@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.13;
+pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/Token.sol";
+import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific version to avoid import error: yarn add @opengsn/contracts@2.2.5
@@ -14,6 +14,8 @@ contract TokenERC2612Test is Test {
     FeeSettings feeSettings;
 
     Token token;
+    Token implementation;
+    TokenProxyFactory tokenCloneFactory;
     FakePaymentToken paymentToken;
     //Forwarder trustedForwarder;
 
@@ -28,34 +30,27 @@ contract TokenERC2612Test is Test {
         uint256 validUntil;
     }
 
-    address public constant trustedForwarder =
-        0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
+    address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
 
     // DO NOT USE IN PRODUCTION! Key was generated online for testing only.
-    uint256 public constant tokenOwnerPrivateKey =
-        0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
+    uint256 public constant tokenOwnerPrivateKey = 0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
     address public tokenOwner; // = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
 
     address public companyAdmin = 0x38d6703d37988C644D6d31551e9af6dcB762E618;
 
-    address public constant mintAllower =
-        0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
-    address public constant investor =
-        0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
+    address public constant mintAllower = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
+    address public constant investor = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
 
-    address public constant platformHotWallet =
-        0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
-    address public constant tokenSpender =
-        0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
+    address public constant platformHotWallet = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
+    address public constant tokenSpender = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
 
-    address public constant platformAdmin =
-        0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
-    address public constant feeCollector =
-        0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
+    address public constant platformAdmin = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
+    address public constant feeCollector = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
 
-    uint256 public constant tokenFeeDenominator = UINT256_MAX;
-    uint256 public constant continuousFundraisingFeeDenominator = 50;
-    uint256 public constant personalInviteFeeDenominator = 70;
+    uint32 public constant tokenFeeNumerator = 0;
+    uint32 public constant tokenFeeDenominator = 1;
+    uint32 public constant crowdinvestingFeeDenominator = 50;
+    uint32 public constant privateOfferFeeDenominator = 70;
 
     uint256 public constant tokenMintAmount = UINT256_MAX - 1; // -1 to avoid overflow caused by fee mint
     bytes32 domainSeparator;
@@ -71,26 +66,35 @@ contract TokenERC2612Test is Test {
 
         // deploy fee settings
         Fees memory fees = Fees(
+            tokenFeeNumerator,
             tokenFeeDenominator,
-            continuousFundraisingFeeDenominator,
-            personalInviteFeeDenominator,
+            1,
+            crowdinvestingFeeDenominator,
+            1,
+            privateOfferFeeDenominator,
             0
         );
         vm.prank(platformAdmin);
-        feeSettings = new FeeSettings(fees, feeCollector);
+        feeSettings = new FeeSettings(fees, feeCollector, feeCollector, feeCollector);
 
         // deploy forwarder
         Forwarder forwarder = new Forwarder();
 
+        implementation = new Token(address(forwarder));
+        tokenCloneFactory = new TokenProxyFactory(address(implementation));
+
         // deploy company token
-        token = new Token(
-            address(forwarder),
-            feeSettings,
-            companyAdmin,
-            allowList,
-            0x0,
-            "TESTTOKEN",
-            "TEST"
+        token = Token(
+            tokenCloneFactory.createTokenProxy(
+                0,
+                address(forwarder),
+                feeSettings,
+                companyAdmin,
+                allowList,
+                0x0,
+                "TESTTOKEN",
+                "TEST"
+            )
         );
 
         // mint tokens for holder
@@ -101,10 +105,7 @@ contract TokenERC2612Test is Test {
         assertEq(token.balanceOf(tokenOwner), tokenMintAmount);
     }
 
-    function testPermit(
-        uint256 _tokenPermitAmount,
-        uint256 _tokenTransferAmount
-    ) public {
+    function testPermit(uint256 _tokenPermitAmount, uint256 _tokenTransferAmount) public {
         vm.assume(_tokenPermitAmount < token.balanceOf(tokenOwner));
         vm.assume(_tokenTransferAmount <= _tokenPermitAmount);
 
@@ -116,14 +117,7 @@ contract TokenERC2612Test is Test {
         );
         bytes32 DOMAIN_SEPARATOR = token.DOMAIN_SEPARATOR();
         bytes32 structHash = keccak256(
-            abi.encode(
-                permitTypehash,
-                tokenOwner,
-                tokenSpender,
-                _tokenPermitAmount,
-                nonce,
-                deadline
-            )
+            abi.encode(permitTypehash, tokenOwner, tokenSpender, _tokenPermitAmount, nonce, deadline)
         );
 
         bytes32 hash = ECDSA.toTypedDataHash(DOMAIN_SEPARATOR, structHash);
@@ -131,25 +125,14 @@ contract TokenERC2612Test is Test {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(tokenOwnerPrivateKey, hash);
 
         // verify signature
-        require(
-            tokenOwner == ECDSA.recover(hash, v, r, s),
-            "invalid signature"
-        );
+        require(tokenOwner == ECDSA.recover(hash, v, r, s), "invalid signature");
 
         // check allowance
         assertEq(token.allowance(tokenOwner, tokenSpender), 0);
 
         // call permit with a wallet that is not tokenOwner
         vm.prank(platformHotWallet);
-        token.permit(
-            tokenOwner,
-            tokenSpender,
-            _tokenPermitAmount,
-            deadline,
-            v,
-            r,
-            s
-        );
+        token.permit(tokenOwner, tokenSpender, _tokenPermitAmount, deadline, v, r, s);
 
         // check allowance
         assertEq(token.allowance(tokenOwner, tokenSpender), _tokenPermitAmount);
@@ -163,10 +146,7 @@ contract TokenERC2612Test is Test {
         token.transferFrom(tokenOwner, investor, _tokenPermitAmount);
 
         // check token balance of investor
-        assertEq(
-            token.balanceOf(tokenOwner),
-            tokenMintAmount - _tokenPermitAmount
-        );
+        assertEq(token.balanceOf(tokenOwner), tokenMintAmount - _tokenPermitAmount);
         assertEq(token.balanceOf(investor), _tokenPermitAmount);
     }
 }

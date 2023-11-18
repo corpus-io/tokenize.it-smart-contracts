@@ -4,13 +4,17 @@
 
 The platform-related contracts are:
 
-- AllowList.sol
-- FeeSettings.sol
-- PersonalInviteFactory.sol
+1. [allowList](../contracts/AllowList.sol)
+2. [feeSettings](../contracts/FeeSettings.sol)
+3. [TokenFactory](../contracts/TokenProxyFactory.sol)
+4. [PrivateOfferFactory](../contracts/PrivateOfferFactory.sol)
+5. [CrowdinvestingFactory](../contracts/CrowdinvestingCloneFactory.sol)
+6. [VestingFactory](../contracts/VestingCloneFactory.sol)
+7. [PriceLinearFactory](../contracts/PriceLinearCloneFactory.sol) or other dynamic pricing factories
 
-Currently, there is no need for them to be deployed automatically. Instead, deployment can be done with foundry. For some background, review the [foundry book's chapter on deployments](https://book.getfoundry.sh/forge/deploying).
+Some of them can be deployed manually. A script is provided to automate some of the deployment steps though. It can quickly be adapted to deploy more or less of these contracts.
 
-Deploy these contracts like this:
+The script is called like this:
 
 ```bash
 source .env
@@ -25,7 +29,8 @@ Note:
 - generally, contracts with simple constructor arguments can also be deployed without script:
   ```bash
   forge create --rpc-url $GOERLI_RPC_URL --private-key $PRIVATE_KEY --verify --etherscan-api-key=$ETHERSCAN_API_KEY contracts/AllowList.sol:AllowList
-  forge create --rpc-url $GOERLI_RPC_URL --private-key $PRIVATE_KEY --verify --etherscan-api-key=$ETHERSCAN_API_KEY contracts/PersonalInviteFactory.sol:PersonalInviteFactory
+  forge create --rpc-url $GOERLI_RPC_URL --private-key $PRIVATE_KEY --verify --etherscan-api-key=$ETHERSCAN_API_KEY contracts/PrivateOfferFactory.sol:PrivateOfferFactory
+  forge create --rpc-url $GOERLI_RPC_URL --private-key $PRIVATE_KEY --verify --etherscan-api-key=$ETHERSCAN_API_KEY contracts/VestingWalletFactory.sol:VestingWalletFactory
   ```
 
 **After the contracts have been deployed like this, they are still owned by the wallet used for deployment. Don't forget to transfer ownership to a safer address, like a multisig.**
@@ -35,12 +40,29 @@ Note:
 The company-related contracts are:
 
 - Token.sol
-- ContinuousInvestment.sol
-- PersonalInvite.sol
+- Crowdinvesting.sol
+- PrivateOffer.sol
 
 They are deployed through the web app.
 
-As long as automatic verification is not implemented, the contracts need to be verified manually. Doing this with foundry was not successful, possibly because they are compiled using hardhat. The ContinuousFundraising contract can be verified like this:
+For development purposes, the contracts can be deployed by adapting this script and executing it:
+
+```bash
+forge script script/DeployToken.s.sol --rpc-url $GOERLI_RPC_URL  --verify --broadcast
+```
+
+## Forwarder
+
+If the forwarder has not been deployed yet, e.g. when working in a testing environment, it can be deployed like this:
+`forge create node_modules/@opengsn/contracts/src/forwarder/Forwarder.sol:Forwarder --private-key $PRIVATE_KEY --rpc-url $GOERLI_RPC_URL --verify --etherscan-api-key $ETHERSCAN_API_KEY`
+
+## Contract Verification
+
+As the web app does not automatically verify the contracts (with etherscan or other services), this needs to be done manually. Use hardhat or foundry for this purpose. Sometimes one or the other works better.
+
+### hardhat
+
+The Crowdinvesting contract can be verified like this:
 
 ```
 yarn hardhat verify --network goerli 0x29b659E948616815FADCD013f6BfC767da1BDe83 0x0445d09A1917196E1DC12EdB7334C70c1FfB1623 0xA1e28D1f17b7Da62d10fbFaFCA98Fa406D759ce2 10000000000000000000 50000000000000000000 1000000 100000000000000000000 0x07865c6E87B9F70255377e024ace6630C1Eaa37F 0xc1C74cbD565D16E0cCe9C5DCf7683368DE4E35e2
@@ -78,13 +100,18 @@ optimizer: {
       },
 ```
 
-For development purposes, the contracts can be deployed like this:
+### foundry
 
-```bash
-forge script script/DeployToken.s.sol --rpc-url $GOERLI_RPC_URL  --verify --broadcast
+Example for token verification:
+
+```
+forge verify-contract 0x458A75E83c50080279e8d8e870cF0d0F4B48C01b --constructor-args-path verificationArguments/foundry/Token --chain goerli Token
 ```
 
-## Forwarder
+Provide the constructor arguments separated by whitespace in a file like this:
 
-If the forwarder has not been deployed yet, e.g. when working in a testing environment, it can be deployed like this:
-`forge create node_modules/@opengsn/contracts/src/forwarder/Forwarder.sol:Forwarder --private-key $PRIVATE_KEY --rpc-url $GOERLI_RPC_URL --verify --etherscan-api-key $ETHERSCAN_API_KEY`
+```
+0x0445d09A1917196E1DC12EdB7334C70c1FfB1623 0x387aD1Aa745C70829b651B3F2D3E7852Df961C93 0x2Db0DD9394f851baefD1FA3334c6B188A0C0548D 0x274ca5f21Cdde06B6E4Fe063f5087EB6Cf3eAe55 0 'Max Mustermann Token' 'MAXMT'
+```
+
+More info can be found [here](https://book.getfoundry.sh/reference/forge/forge-verify-contract).

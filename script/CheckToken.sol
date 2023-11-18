@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity 0.8.23;
 
 // taken from https://moveseventyeight.com/deploy-your-first-nft-contract-with-foundry#heading-prepare-a-basic-deployment-script
 
 import "../lib/forge-std/src/Script.sol";
 import "../contracts/FeeSettings.sol";
 import "../contracts/AllowList.sol";
-import "../contracts/PersonalInviteFactory.sol";
+import "../contracts/factories/PrivateOfferFactory.sol";
 import "../contracts/Token.sol";
 
 /*
@@ -29,27 +29,16 @@ contract CheckToken is Script {
     function run() public view {
         Token token = Token(address(TOKEN_ADDRESS));
 
-        console.log(
-            "Remember to update addresses in this script in order to check other deployments."
-        );
+        console.log("Remember to update addresses in this script in order to check other deployments.");
 
         console.log("Token name: ", token.name());
         console.log("Token symbol: ", token.symbol());
-        console.log(
-            "Token fee settings matches: ",
-            address(token.feeSettings()) == FEE_SETTINGS
-        );
+        console.log("Token fee settings matches: ", address(token.feeSettings()) == FEE_SETTINGS);
         console.log(
             "Token trusted forwarder matches: ",
             token.isTrustedForwarder(0x994257AcCF99E5995F011AB2A3025063e5367629)
         );
-        console.log(
-            "Token allow list matches: ",
-            address(token.allowList()) == ALLOW_LIST
-        );
-        console.log(
-            "Token admin matches: ",
-            token.hasRole(DEFAULT_ADMIN_ROLE, ADMIN)
-        );
+        console.log("Token allow list matches: ", address(token.allowList()) == ALLOW_LIST);
+        console.log("Token admin matches: ", token.hasRole(DEFAULT_ADMIN_ROLE, ADMIN));
     }
 }

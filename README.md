@@ -1,6 +1,10 @@
 # tokenize.it
 
-These smart contracts implement [tokenize.it](https://tokenize.it/)'s tokenized cap table management.
+These smart contracts implement [tokenize.it](https://tokenize.it/)'s tokenized cap table management. Using tokenize.it, it is possible to:
+
+- generate tokens that grant economical rights to the token holder
+- sell these tokens to investors either publicly or privately
+- distribute tokens to employees or partners, either directly or through a vesting contract
 
 # Getting Started
 
@@ -22,7 +26,7 @@ npm install @tokenizeit/contracts
 2. enter project root folder: `cd tokenize.it-smart-contracts`
 3. if repository was cloned without submodules, init submodules now (not necessary if cloning command above was used): `git submodule update --init --recursive`
 4. init project: `yarn install`
-5. run tests: `forge test --no-match-test Mainnet`
+5. run tests: `yarn test`
 
 If you are missing dependencies:
 
@@ -41,13 +45,13 @@ More dev information can be found here:
 
 # Main Concept
 
-1. All shares of a company are tokenized using the [Token.sol](contracts/Token.sol) contract
-2. Funds are raised through selling of these tokens:
-   - a customized deal to a specific investor can be realized through the [PersonalInvite.sol](contracts/archive/PersonalInvite.sol) contract
-   - continuous fundraising, which is open to everyone meeting the requirements, is done through the [ContinuousFundraising.sol](contracts/ContinuousFundraising.sol) contract
+1. Using tokenize.it's legal approach, a company can create tokens that grant economical rights to the token holders. The best smart contract to create these tokens is [Token.sol](contracts/Token.sol)
+2. Funds are crowdinvestingd through selling of these tokens:
+   - a customized deal to a specific investor can be realized through the [PrivateOffer.sol](contracts/archive/PrivateOffer.sol) contract
+   - crowdinvesting, which is open to everyone meeting the requirements, is done through the [Crowdinvesting.sol](contracts/Crowdinvesting.sol) contract
 3. Employee participation is easy:
    - direct distribution of tokens (does not need another smart contract)
-   - vesting can be realized using the [DssVest.sol](https://github.com/makerdao/dss-vest/blob/master/src/DssVest.sol) contract by MakerDao
+   - vesting can be realized using the [Vesting.sol](./contracts/Vesting.sol) contract
 
 The requirements for an address to send or receive tokens are checked against the [AllowList.sol](contracts/AllowList.sol) contract. Fees are collected according to the settings in [FeeSettings.sol](./contracts/FeeSettings.sol). Tokenize.it will deploy and manage at least one AllowList and one FeeSettings contract.
 
@@ -66,7 +70,7 @@ In order to improve UX, though, a frontend will be offered. In order to improve 
 2. actions concerning our own contracts that require the user's approval are executed as meta-transactions, using EIP-2711
 3. granting allowances on external currencies is possible through EIP-2612 (ERC20Permit), which is widely adopted. This is not in the scope of this documentation though.
 
-Two contracts implement [EIP-2771](https://eips.ethereum.org/EIPS/eip-2771), and therefore use a trusted forwarder. The forwarder will be set in the constructor and there is no way to change it after deployment. The forwarder used will be the openGSN v2 forwarder deployed on mainnet. Some information about this contract:
+Several of the contracts implement [EIP-2771](https://eips.ethereum.org/EIPS/eip-2771), and therefore use a trusted forwarder. The forwarder will be set in the constructor and there is no way to change it after deployment. The forwarder used will be the openGSN v2 forwarder deployed on mainnet. Some information about this contract:
 
 - [Documentation and addresses](https://docs-v2.opengsn.org/networks/ethereum/mainnet.html)
 - [Code](https://github.com/opengsn/gsn/blob/v2.2.5/packages/contracts/src/forwarder/Forwarder.sol)
@@ -75,7 +79,7 @@ Two contracts implement [EIP-2771](https://eips.ethereum.org/EIPS/eip-2771), and
   - deployed 2022-04-21
   - Visit on [etherscan](https://etherscan.io/address/0xaa3e82b4c4093b4ba13cb5714382c99adbf750ca) ([see transactions here](https://etherscan.io/txsInternal?a=0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA&&m=advanced&p=1))
   - This [dashboard](https://dune.com/oren/meta-transactions-on-ethereum-over-time) lists the forwarder as second most active forwarder contract with over 2000 transactions executed
-  - used in our [tests](./test/ContinuousFundraisingERC2771.t.sol).
+  - used in our [tests](./test/CrowdinvestingERC2771.t.sol).
 
 The platform will maintain a hot wallet (EOA) in order to send transactions to the forwarder contract. This results in the following flow:
 
@@ -110,6 +114,7 @@ The currencies used for payments must conform to the ERC20 standard. This standa
 - USDC: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48](https://etherscan.io/address/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48)
 - EUROC: [0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c](https://etherscan.io/address/0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c)
 - DAI: [0x6B175474E89094C44Da98b954EedeAC495271d0F](https://etherscan.io/token/0x6b175474e89094c44da98b954eedeac495271d0f)
+- EURe: [0x3231cb76718cdef2155fc47b5286d82e6eda273f](https://etherscan.io/token/0x3231cb76718cdef2155fc47b5286d82e6eda273f)
 
 These implementations have been checked and tested to work well with the tokenize.it smart contracts. The use of any other currencies is HIGHLY DISCOURAGED and might lead to:
 

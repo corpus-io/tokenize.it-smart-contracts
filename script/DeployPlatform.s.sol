@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity 0.8.23;
 
 // taken from https://moveseventyeight.com/deploy-your-first-nft-contract-with-foundry#heading-prepare-a-basic-deployment-script
 
 import "../lib/forge-std/src/Script.sol";
 import "../contracts/FeeSettings.sol";
 import "../contracts/AllowList.sol";
-import "../contracts/PersonalInviteFactory.sol";
+import "../contracts/factories/PrivateOfferFactory.sol";
+import "../contracts/factories/VestingWalletFactory.sol";
 
 contract DeployPlatform is Script {
     function setUp() public {}
@@ -28,8 +29,8 @@ contract DeployPlatform is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         console.log("Deploying FeeSettings contract...");
-        Fees memory fees = Fees(100, 100, 100, 0);
-        FeeSettings feeSettings = new FeeSettings(fees, platformColdWallet);
+        Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
+        FeeSettings feeSettings = new FeeSettings(fees, platformColdWallet, platformColdWallet, platformColdWallet);
         console.log("FeeSettings deployed at: ", address(feeSettings));
         feeSettings.transferOwnership(platformColdWallet);
         console.log("Started ownership transfer to: ", platformColdWallet);
@@ -40,17 +41,16 @@ contract DeployPlatform is Script {
         allowList.transferOwnership(platformAdminWallet);
         console.log("Started ownership transfer to: ", platformAdminWallet);
 
-        console.log("Deploying PersonalInviteFactory contract...");
-        PersonalInviteFactory personalInviteFactory = new PersonalInviteFactory();
-        console.log(
-            "PersonalInviteFactory deployed at: ",
-            address(personalInviteFactory)
-        );
+        console.log("Deploying PrivateOfferFactory contract...");
+        PrivateOfferFactory privateOfferFactory = new PrivateOfferFactory();
+        console.log("PrivateOfferFactory deployed at: ", address(privateOfferFactory));
+
+        console.log("Deploying VestingWalletFactory contract...");
+        VestingWalletFactory vestingWalletFactory = new VestingWalletFactory();
+        console.log("VestingWalletFactory deployed at: ", address(vestingWalletFactory));
 
         vm.stopBroadcast();
 
-        console.log(
-            "Don't forget to check and finalize ownership transfers for all contracts!"
-        );
+        console.log("Don't forget to check and finalize ownership transfers for all contracts!");
     }
 }
