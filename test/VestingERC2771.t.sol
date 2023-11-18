@@ -123,7 +123,7 @@ contract VestingERC2771Test is Test {
 
         console.log("signing address: ", request.from);
 
-        uint64 id = 0;
+        uint64 id = 1;
 
         // confirm vesting plan was created with proper values
         assertEq(vesting.allocation(id), allocation, "total is wrong");
