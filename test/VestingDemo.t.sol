@@ -20,7 +20,6 @@ contract VestingDemoTest is Test {
 
     function setUp() public {
         implementation = new Vesting(trustedForwarder);
-        vm.warp(implementation.TIME_HORIZON());
 
         vestingFactory = new VestingCloneFactory(address(implementation));
 
