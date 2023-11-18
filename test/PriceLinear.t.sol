@@ -285,4 +285,22 @@ contract PriceLinearTest is Test {
         vm.warp(block.timestamp + testDelay + 1 hours + 1); // this is definitely after the cool down period
         oracle.getPrice(7e18);
     }
+
+    function testCreateWithOwner0() public {
+        vm.warp(1 days);
+        vm.expectRevert("owner can not be zero address");
+        PriceLinear(
+            priceLinearCloneFactory.createPriceLinearClone(
+                bytes32(uint256(0)),
+                trustedForwarder,
+                address(0),
+                1,
+                1,
+                uint64(block.timestamp + 1),
+                1,
+                false,
+                true
+            )
+        );
+    }
 }
