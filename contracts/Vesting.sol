@@ -10,6 +10,9 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
+/**
+ * @dev a token must implement this interface to be used with the Vesting contract and mintable vestings
+ */
 interface ERC20Mintable {
     function mint(address, uint256) external;
 }
@@ -110,6 +113,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
 
     /**
      * @dev Start date of the vesting plan.
+     * The cliff duration and total duration are measured from this date.
      */
     function start(uint64 _id) public view returns (uint64) {
         return vestings[_id].start;
@@ -117,6 +121,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
 
     /**
      * @dev Cliff duration of the vesting plan.
+     * The beneficiary gets no tokens before this duration has passed.
      */
     function cliff(uint64 _id) public view returns (uint64) {
         return vestings[_id].cliff;
@@ -124,6 +129,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
 
     /**
      * @dev Total duration of the vesting plan.
+     * After this duration all tokens can be released.
      */
     function duration(uint64 _id) public view returns (uint64) {
         return vestings[_id].duration;
@@ -399,6 +405,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
      * is also the sum of the released amount and the releasable amount.
      * @param _id ID of the vesting plan
      * @param _timestamp point in time for which the vested amount is calculated
+     * @return amount of vested tokens
      */
     function vestedAmount(uint64 _id, uint64 _timestamp) public view returns (uint256) {
         if (_timestamp < start(_id) + cliff(_id)) {

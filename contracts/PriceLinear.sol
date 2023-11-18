@@ -45,8 +45,14 @@ contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPri
     }
 
     /**
-     * @notice Sets up the Crowdinvesting. The contract is usable immediately after initialization, but does need a minting allowance for the token.
-     * @dev Constructor that passes the trusted forwarder to the ERC2771Context constructor
+     * Initializes the clone after it has been created.
+     * @param _owner The owner of the contract
+     * @param _slopeEnumerator if the slope is a/b, this parameter is a
+     * @param _slopeDenominator if the slope is a/b, this parameter is b
+     * @param _startTimeOrBlockNumber block height or timestamp at which the price function starts
+     * @param _stepDuration how long each price is valid before it changes again
+     * @param _isBlockBased true = price changes with block height, false = price changes with time
+     * @param _isRising true = price is rising, false = price is falling
      */
     function initialize(
         address _owner,
@@ -71,7 +77,13 @@ contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPri
     }
 
     /**
-     * Update the parameters of the linear price function
+     * Sets the parameters of the linear price function
+     * @param _slopeEnumerator if the slope is a/b, this parameter is a
+     * @param _slopeDenominator if the slope is a/b, this parameter is b
+     * @param _startTimeOrBlockNumber block height or timestamp at which the price function starts
+     * @param _stepDuration how long each price is valid before it changes again
+     * @param _isBlockBased true = price changes with block height, false = price changes with time
+     * @param _isRising true = price is rising, false = price is falling
      */
     function updateParameters(
         uint64 _slopeEnumerator,
@@ -92,6 +104,16 @@ contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPri
         coolDownStart = block.timestamp;
     }
 
+    /**
+     * Sets the parameters of the linear price function
+     * @dev This internal function is used by the public updateParameters function and the initialize function
+     * @param _slopeEnumerator if the slope is a/b, this parameter is a
+     * @param _slopeDenominator if the slope is a/b, this parameter is b
+     * @param _startTimeOrBlockNumber block height or timestamp at which the price function starts
+     * @param _stepDuration how long each price is valid before it changes again
+     * @param _isBlockBased true = price changes with block height, false = price changes with time
+     * @param _isRising true = price is rising, false = price is falling
+     */
     function _updateParameters(
         uint64 _slopeEnumerator,
         uint64 _slopeDenominator,
@@ -118,6 +140,12 @@ contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPri
         });
     }
 
+    /**
+     * Calculate the price of the token at the current time or block height.
+     * @dev This function is called by Crowdinvesting to determine the price of the token.
+     * @param basePrice The base price of the token
+     * @return The price of the token at the current time or block height
+     */
     function getPrice(uint256 basePrice) public view returns (uint256) {
         require(coolDownStart + COOL_DOWN_DURATION < block.timestamp, "PriceLinear: cool down period not over yet");
         Linear memory _parameters = parameters;

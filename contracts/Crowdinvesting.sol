@@ -74,11 +74,11 @@ contract Crowdinvesting is
     /// @dev units: [tokenPrice] = [currency_bits]/[token], so for above example: [tokenPrice] = [USDC_bits]/[TOK]
     /// @dev priceBase is the base price, which is used if no dynamic pricing is active
     uint256 public priceBase;
-    /// minimum price of a token. Limits how far the price can drop when dynamic pricing is active
+    /// minimum price of a token. Limits how far the price can drop when dynamic pricing is active. Unused if no dynamic pricing is active.
     uint256 public priceMin;
-    /// maximum price of a token. Limits how far the price can rise when dynamic pricing is active
+    /// maximum price of a token. Limits how far the price can rise when dynamic pricing is active. Unused if no dynamic pricing is active.
     uint256 public priceMax;
-    /// dynamic pricing oracle, which can implement various pricing strategies
+    /// dynamic pricing oracle, which can implement various pricing strategies. If set to address(0), dynamic pricing is disabled.
     IPriceDynamic public priceOracle;
 
     /// total amount of tokens that CAN BE minted through this contract, in bits (bit = smallest subunit of token)
@@ -177,6 +177,12 @@ contract Crowdinvesting is
         }
     }
 
+    /**
+     * Enables a price oracle to influence the price of the token.
+     * @param _priceOracle address of the oracle to use
+     * @param _priceMin smallest price the contract will ever sell a token for
+     * @param _priceMax highest price the contract will ever sell a token for
+     */
     function activateDynamicPricing(
         IPriceDynamic _priceOracle,
         uint256 _priceMin,
@@ -187,6 +193,12 @@ contract Crowdinvesting is
         emit DynamicPricingActivated(address(_priceOracle), _priceMin, _priceMax);
     }
 
+    /**
+     * Activates dynamic pricing and sets the price oracle, as well as the minimum and maximum price.
+     * @param _priceOracle this address is queried for the current price of a token
+     * @param _priceMin price will never be less that this
+     * @param _priceMax price will never be more than this
+     */
     function _activateDynamicPricing(IPriceDynamic _priceOracle, uint256 _priceMin, uint256 _priceMax) internal {
         require(address(_priceOracle) != address(0), "_priceOracle can not be zero address");
         priceOracle = _priceOracle;
@@ -199,6 +211,9 @@ contract Crowdinvesting is
         emit DynamicPricingActivated(address(_priceOracle), _priceMin, _priceMax);
     }
 
+    /**
+     * @notice Deactivates dynamic pricing and uses priceBase instead.
+     */
     function deactivateDynamicPricing() external onlyOwner whenPaused {
         priceOracle = IPriceDynamic(address(0));
         coolDownStart = block.timestamp;
@@ -206,6 +221,11 @@ contract Crowdinvesting is
         emit DynamicPricingDeactivated();
     }
 
+    /**
+     * @notice Returns the current price of a token, in currency bits per token main unit.
+     * @dev If a dynamic pricing oracle is active, the price is calculated by the oracle. Otherwise, the priceBase is returned.
+     * @return price of a token, in currency bits per token main unit.
+     */
     function getPrice() public view returns (uint256) {
         if (address(priceOracle) != address(0)) {
             return Math.min(Math.max(priceOracle.getPrice(priceBase), priceMin), priceMax);
@@ -214,6 +234,11 @@ contract Crowdinvesting is
         return priceBase;
     }
 
+    /**
+     * Checks if the buy is valid, and if so, mints the tokens to the buyer.
+     * @param _amount how many tokens to buy, in bits (bit = smallest subunit of token)
+     * @param _tokenReceiver address that will receive the tokens
+     */
     function _checkAndDeliver(uint256 _amount, address _tokenReceiver) internal {
         require(tokensSold + _amount <= maxAmountOfTokenToBeSold, "Not enough tokens to sell left");
         require(tokensBought[_tokenReceiver] + _amount >= minAmountPerBuyer, "Buyer needs to buy at least minAmount");
@@ -257,7 +282,14 @@ contract Crowdinvesting is
         emit TokensBought(_msgSender(), _amount, currencyAmount);
     }
 
-    /// ERC 677 compatibility - TransferAndCall
+    /**
+     * ERC 677 compatibility - this function make this contract a TransferAndCall recipient
+     * @param _from address of the sender
+     * @param _currencyAmount how much currency was received
+     * @param _data additional information. If the first 32 bytes of _data are not zero, they are interpreted as the address of the token receiver.
+     *     Otherwise, the tokens are sent to the sender.
+     * @return true if the buy was successful. Otherwise, the transaction is reverted. This is an antipattern, but the return value is required by the interface.
+     */
     function onTokenTransfer(
         address _from,
         uint256 _currencyAmount,

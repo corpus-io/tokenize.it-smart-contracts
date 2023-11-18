@@ -242,7 +242,6 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
 
     /**
      * @notice Returns the fee for a given token amount
-     * @dev will wrongly return 1 if denominator and amount are both uint256 max
      */
     function tokenFee(uint256 _tokenAmount) external view override(IFeeSettingsV1, IFeeSettingsV2) returns (uint256) {
         return (_tokenAmount * tokenFeeNumerator) / tokenFeeDenominator;
@@ -250,7 +249,6 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
 
     /**
      * @notice Calculates the fee for a given currency amount in Crowdinvesting.sol
-     * @dev will wrongly return 1 if denominator and amount are both uint256 max
      * @param _currencyAmount The amount of currency to calculate the fee for
      * @return The fee
      */
@@ -258,13 +256,17 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
         return _crowdinvestingFee(_currencyAmount);
     }
 
+    /**
+     * Calculates the fee for a given currency amount in Crowdinvesting (v5) or ContinuousFundraising (v4)
+     * @param _currencyAmount how much currency is raised
+     * @return the fee
+     */
     function _crowdinvestingFee(uint256 _currencyAmount) internal view returns (uint256) {
         return (_currencyAmount * crowdinvestingFeeNumerator) / crowdinvestingFeeDenominator;
     }
 
     /**
      * @notice Calculates the fee for a given currency amount in PrivateOffer.sol
-     * @dev will wrongly return 1 if denominator and amount are both uint256 max
      * @param _currencyAmount The amount of currency to calculate the fee for
      * @return The fee
      */
@@ -272,6 +274,11 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
         return _privateOfferFee(_currencyAmount);
     }
 
+    /**
+     * Calculates the fee for a given currency amount in PrivateOffer (v5) or PersonalInvite (v4)
+     * @param _currencyAmount how much currency is raised
+     * @return the fee
+     */
     function _privateOfferFee(uint256 _currencyAmount) internal view returns (uint256) {
         return (_currencyAmount * privateOfferFeeNumerator) / privateOfferFeeDenominator;
     }
