@@ -266,6 +266,7 @@ contract PriceLinearTest is Test {
     function testOnlyOwnerCanUpdateParameters(address rando) public {
         vm.assume(rando != companyAdmin);
         vm.assume(rando != address(0));
+        vm.assume(rando != trustedForwarder);
         vm.prank(rando);
         vm.expectRevert("Ownable: caller is not the owner");
         oracle.updateParameters(1, 1, 1 days, 1, false, true);
