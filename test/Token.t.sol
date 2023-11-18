@@ -320,7 +320,7 @@ contract tokenTest is Test {
     function testMintWith0Fee() public {
         uint256 x = 1; // fee is 1%, so fee will be 0
 
-        vm.prank(admin);
+        vm.prank(mintAllower);
         token.mint(pauser, x);
         assertTrue(token.balanceOf(pauser) == x);
         assertTrue(token.totalSupply() == x);
