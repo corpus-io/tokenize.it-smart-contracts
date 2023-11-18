@@ -479,7 +479,7 @@ contract FeeSettingsTest is Test {
         );
     }
 
-    function testIFeeSettingsV1IsAvailable() public {
+    function testIFeeSettingsV1IsAvailable(uint256 _amount) public {
         FeeSettings _feeSettings;
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
         _feeSettings = new FeeSettings(fees, admin, admin, admin);
@@ -489,6 +489,20 @@ contract FeeSettingsTest is Test {
             true,
             "IFeeSettingsV1 not supported"
         );
+
+        // these functions must be present, so the call can not revert
+
+        assertEq(
+            _feeSettings.crowdinvestingFee(_amount),
+            _feeSettings.continuousFundraisingFee(_amount),
+            "Crowdinvesting Fee mismatch"
+        );
+        assertEq(
+            _feeSettings.privateOfferFee(_amount),
+            _feeSettings.personalInviteFee(_amount),
+            "Private offer fee mismatch"
+        );
+        assertEq(_feeSettings.feeCollector(), _feeSettings.tokenFeeCollector(), "Fee collector mismatch");
     }
 
     function testIFeeSettingsV2IsAvailable() public {

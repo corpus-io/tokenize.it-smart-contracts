@@ -263,7 +263,7 @@ contract Crowdinvesting is
         uint256 _currencyAmount,
         bytes calldata _data
     ) external whenNotPaused nonReentrant returns (bool) {
-        require(_msgSender() == address(currency), "only the currency contract can call this function");
+        require(_msgSender() == address(currency), "Only currency contract can call onTokenTransfer");
 
         // if a recipient address was provided in data, use it as receiver. Otherwise, use _from as receiver.
         address tokenReceiver;

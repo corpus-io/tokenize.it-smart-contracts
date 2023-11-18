@@ -270,6 +270,22 @@ contract VestingTest is Test {
         assertFalse(vesting.managers(rando), "rando is a manager");
     }
 
+    function testAddAndRemoveManager(address rando) public {
+        vm.assume(rando != address(owner));
+        vm.assume(rando != address(0));
+        vm.assume(rando != trustedForwarder);
+
+        vm.prank(owner);
+        vesting.addManager(rando);
+
+        assertTrue(vesting.managers(rando), "rando is not a manager");
+
+        vm.prank(owner);
+        vesting.removeManager(rando);
+
+        assertFalse(vesting.managers(rando), "rando is a manager");
+    }
+
     function testReleasable(uint64 testAfter) public {
         testAfter = (testAfter % exampleDuration);
 
@@ -379,5 +395,76 @@ contract VestingTest is Test {
         } else {
             assertEq(vesting.duration(id), _duration, "duration is changed");
         }
+    }
+
+    function testInitializingWith0() public {
+        // owner 0
+        vm.expectRevert("Owner must not be zero address");
+        Vesting vest = Vesting(factory.createVestingClone(0, trustedForwarder, address(0), address(token)));
+
+        // token 0
+        vm.expectRevert("Token must not be zero address");
+        vest = Vesting(factory.createVestingClone(0, trustedForwarder, owner, address(0)));
+    }
+
+    function testCommit0() public {
+        vm.expectRevert("hash must not be zero");
+        vm.prank(owner);
+        vesting.commit(bytes32(0));
+    }
+
+    function testRevoke0() public {
+        vm.expectRevert("invalid-hash");
+        vm.prank(owner);
+        vesting.revoke(bytes32(0), 20 days);
+    }
+
+    function testBeneficiary0() public {
+        vm.expectRevert("Beneficiary must not be zero address");
+        vm.prank(owner);
+        vesting.createVesting(100, address(0), 1, 20 days, 40 days, false);
+    }
+
+    function testStopVestingAfterEnd() public {
+        vm.startPrank(owner);
+        uint64 id = vesting.createVesting(
+            exampleAmount,
+            beneficiary,
+            exampleStart,
+            exampleCliff,
+            exampleDuration,
+            true
+        );
+        vm.stopPrank();
+
+        vm.prank(owner);
+        vm.expectRevert("endTime must be before vesting end");
+        vesting.stopVesting(id, exampleStart + exampleDuration + 1);
+    }
+
+    function testPauseVestingWrong() public {
+        vm.startPrank(owner);
+        uint64 id = vesting.createVesting(
+            exampleAmount,
+            beneficiary,
+            exampleStart,
+            exampleCliff,
+            exampleDuration,
+            true
+        );
+
+        vm.warp(exampleStart + exampleCliff);
+
+        // end time in past
+        vm.expectRevert("endTime must be in the future");
+        vesting.pauseVesting(id, exampleStart, exampleStart + 2 * exampleDuration);
+
+        // end time is vesting end
+        vm.expectRevert("endTime must be before vesting end");
+        vesting.pauseVesting(id, exampleStart + exampleDuration, exampleStart + 2 * exampleDuration);
+
+        // new start before end
+        vm.expectRevert("newStartTime must be after endTime");
+        vesting.pauseVesting(id, exampleStart + exampleCliff + 1, exampleStart + exampleCliff / 2);
     }
 }
