@@ -296,6 +296,12 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         require(_allocation > 0, "Allocation must be greater than zero");
         require(_beneficiary != address(0), "Beneficiary must not be zero address");
 
+        // cliff longer than duration is not valid and can only happen by mistake.
+        // We heal this by extending the duration to match the cliff, thus balancing
+        // the interests of the beneficiary (be able to reveal the vesting plan)
+        // and the token holder (not giving away tokens too early).
+        _duration = _duration > _cliff ? _duration : _cliff;
+
         id = ++ids;
         vestings[id] = VestingPlan({
             allocation: _allocation,
