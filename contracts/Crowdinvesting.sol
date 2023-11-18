@@ -208,7 +208,14 @@ contract Crowdinvesting is
 
     function getPrice() public view returns (uint256) {
         if (address(priceOracle) != address(0)) {
-            return Math.min(Math.max(priceOracle.getPrice(priceBase), priceMin), priceMax);
+            uint256 price = priceOracle.getPrice(priceBase);
+            if (price > priceMax) {
+                return priceMax;
+            }
+            if (price < priceMin) {
+                return priceMin;
+            }
+            return price;
         }
 
         return priceBase;
