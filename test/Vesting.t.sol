@@ -366,4 +366,21 @@ contract VestingTest is Test {
             assertEq(vesting.beneficiary(id), rando, "owner changed beneficiary too early");
         }
     }
+
+    function testDurationIsExtendedToCliff(uint64 _duration, uint64 _cliff) public {
+        vm.assume(_duration > 0);
+        vm.assume(_cliff > 0);
+
+        // create vesting plan
+        vm.startPrank(owner);
+        uint64 id = vesting.createVesting(exampleAmount, beneficiary, exampleStart, _cliff, _duration, true);
+        vm.stopPrank();
+
+        // check duration is extended to cliff
+        if (_duration < _cliff) {
+            assertEq(vesting.duration(id), _cliff, "duration is not extended to cliff");
+        } else {
+            assertEq(vesting.duration(id), _duration, "duration is changed");
+        }
+    }
 }
