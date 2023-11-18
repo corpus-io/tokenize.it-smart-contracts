@@ -10,6 +10,8 @@ Beyond being an ERC20 token, it has fine grained access control to:
 - define who is allowed to pause the contract
 - define minting rights (through increaseMintingAllowance and decreaseMintingAllowance functions)
 
+Also, this is the only contract in this repository that is deployed using an ERC1967-proxy. This means that is can be upgraded. Since this token is legally bound to the company, we want to make sure that we can offer our customers options if a security issue arises or regulation enforces changes.
+
 ### Minting
 
 Minting is very central to the usage of this contract. The MintAllower role (see [access control](https://docs.openzeppelin.com/contracts/4.x/access-control)) can give an address a minting allowance. For example the admin (or CEO) of the company might need a minting allowance to create new shares. Each investment or vesting contract also needs a minting allowance in order to function.
@@ -48,3 +50,10 @@ In case there is no vesting, tokens can directly be issued through minting as de
 For vesting the [Vesting.sol](../contracts/Vesting.sol) contract is used.
 
 The contract needs to be given a minting allowance of maximum amount of tokens to be vested in the company token contract by calling `increaseMintingAllowance(contractAddress, amount)` from an address which has the MintAllower role.
+
+## Factories
+
+Most of the contracts in this repository are deployed using factory contracts. This has two reasons:
+
+1. Deterministic addresses. We can tell our customers which address their contract will have before it is deployed. This is important for the customer to be able to prepare their legal documents, which often require the address of the contract. Then, once the legal work is done (which can take days or even weeks), we can deploy the contract to the address we told them.
+2. Gas efficiency. Instead of deploying full contracts, we deploy clones or proxies when possible. This saves a lot of gas, especially when deploying many contracts.
