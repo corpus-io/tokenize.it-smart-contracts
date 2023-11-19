@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/PrivateOffer.sol";
-import "../contracts/factories/PrivateOfferCloneFactory.sol";
+import "../contracts/factories/PrivateOfferFactory.sol";
 import "../contracts/factories/VestingWalletFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
@@ -300,7 +300,7 @@ contract PrivateOfferTimeLockTest is Test {
         uint256 tokenDecimals = token.decimals();
         uint256 currencyAmount = (tokenAmount * price) / 10 ** tokenDecimals;
 
-        address expectedInviteAddress = privateOfferCloneFactory.predictCloneAddress(
+        address expectedInviteAddress = privateOfferFactory.predictPrivateOfferAddress(
             salt,
             currencyPayer,
             expectedTimeLockAddress,

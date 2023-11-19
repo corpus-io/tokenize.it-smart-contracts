@@ -6,7 +6,7 @@ pragma solidity 0.8.23;
 import "../lib/forge-std/src/Script.sol";
 import "../contracts/FeeSettings.sol";
 import "../contracts/AllowList.sol";
-import "../contracts/factories/PrivateOfferCloneFactory.sol";
+import "../contracts/factories/PrivateOfferFactory.sol";
 import "../contracts/factories/VestingWalletFactory.sol";
 
 contract DeployPlatform is Script {

@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/PrivateOffer.sol";
-import "../contracts/factories/PrivateOfferCloneFactory.sol";
+import "../contracts/factories/PrivateOfferFactory.sol";
 import "../contracts/FeeSettings.sol";
 
 contract PrivateOfferCloneFactoryTest is Test {

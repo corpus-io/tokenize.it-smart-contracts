@@ -5,7 +5,7 @@ import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
-import "../contracts/factories/PrivateOfferCloneFactory.sol";
+import "../contracts/factories/PrivateOfferFactory.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/ERC2771Helper.sol";
 import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific version to avoid import error: yarn add @opengsn/contracts@2.2.5
@@ -403,8 +403,7 @@ contract CompanySetUpTest is Test {
 
         salt = "random number"; // random number generated and stored by the platform for this Private Offer
 
-        privateOfferAddress = privateOfferCloneFactory.predictCloneAddress(
-            salt,
+        PrivateOfferArguments calldata arguments = PrivateOfferArguments(
             investor,
             investorColdWallet,
             companyAdmin,
@@ -414,6 +413,7 @@ contract CompanySetUpTest is Test {
             paymentToken,
             token
         );
+        privateOfferAddress = privateOfferFactory.predictPrivateOfferAddress(salt, arguments);
 
         // If the investor wants to invest, they have to sign a meta transaction granting the private offer address an sufficient allowance in paymentToken.
         // Let's prepare this meta transaction using EIP-2612 approval (ERC-20 permit)
