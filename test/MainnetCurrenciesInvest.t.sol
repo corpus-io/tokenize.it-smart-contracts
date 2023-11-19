@@ -24,7 +24,7 @@ contract MainnetCurrencies is Test {
     FeeSettings feeSettings;
 
     Token token;
-    PrivateOfferCloneFactory inviteFactory;
+    PrivateOfferFactory inviteFactory;
 
     CrowdinvestingCloneFactory fundraisingFactory;
 
@@ -74,10 +74,7 @@ contract MainnetCurrencies is Test {
 
         Vesting vestingImplementation = new Vesting(trustedForwarder);
         PrivateOffer privateOfferImplementation = new PrivateOffer();
-        inviteFactory = new PrivateOfferCloneFactory(
-            address(privateOfferImplementation),
-            address(vestingImplementation)
-        );
+        inviteFactory = new PrivateOfferFactory(address(privateOfferImplementation), address(vestingImplementation));
         currencyCost = (amountOfTokenToBuy * price) / 10 ** token.decimals();
         currencyAmount = currencyCost * 2;
     }
@@ -197,8 +194,7 @@ contract MainnetCurrencies is Test {
         //bytes memory creationCode = type(PrivateOffer).creationCode;
         uint256 expiration = block.timestamp + 1000;
 
-        address expectedAddress = inviteFactory.predictCloneAddress(
-            salt,
+        PrivateOfferArguments memory arguments = PrivateOfferArguments(
             buyer,
             buyer,
             receiver,
@@ -208,6 +204,7 @@ contract MainnetCurrencies is Test {
             _currency,
             token
         );
+        address expectedAddress = inviteFactory.predictPrivateOfferAddress(salt, arguments);
 
         // grant mint allowance to invite
         vm.prank(admin);
@@ -225,7 +222,7 @@ contract MainnetCurrencies is Test {
         assertEq(token.balanceOf(receiver), 0);
 
         // deploy invite
-        address inviteAddress = inviteFactory.createPrivateOfferClone(
+        address inviteAddress = inviteFactory.deployPrivateOffer(
             salt,
             buyer,
             buyer,

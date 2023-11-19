@@ -22,7 +22,7 @@ contract CompanySetUpTest is Test {
     Crowdinvesting crowdinvesting;
     AllowList list;
     FeeSettings feeSettings;
-    PrivateOfferCloneFactory privateOfferCloneFactory;
+    PrivateOfferFactory privateOfferFactory;
     TokenProxyFactory tokenFactory;
     Token token;
     FakePaymentToken paymentToken;
@@ -136,10 +136,10 @@ contract CompanySetUpTest is Test {
         Token implementation = new Token(address(forwarder));
         tokenFactory = new TokenProxyFactory(address(implementation));
 
-        // set up PrivateOfferCloneFactory. Again, this is done here only because we need the forwarder address.
+        // set up PrivateOfferFactory. Again, this is done here only because we need the forwarder address.
         Vesting vestingImplementation = new Vesting(address(forwarder));
         PrivateOffer privateOfferImplementation = new PrivateOffer();
-        privateOfferCloneFactory = new PrivateOfferCloneFactory(
+        privateOfferFactory = new PrivateOfferFactory(
             address(privateOfferImplementation),
             address(vestingImplementation)
         );
@@ -543,9 +543,7 @@ contract CompanySetUpTest is Test {
         // companyCurrencyReceiver has no currency before
         assertEq(paymentToken.balanceOf(companyCurrencyReceiver), 0);
 
-        vm.prank(platformHotWallet);
-        privateOfferCloneFactory.createPrivateOfferClone(
-            salt,
+        PrivateOfferArguments memory arguments = PrivateOfferArguments(
             investor,
             investorColdWallet,
             companyAdmin,
@@ -555,6 +553,8 @@ contract CompanySetUpTest is Test {
             paymentToken,
             token
         );
+        vm.prank(platformHotWallet);
+        privateOfferFactory.deployPrivateOffer(salt, arguments);
 
         // investor receives as many tokens as they paid for
         assertTrue(token.balanceOf(investorColdWallet) == tokenBuyAmount, "Investor has no tokens");

@@ -8,22 +8,22 @@ import "../PrivateOffer.sol";
 import "./VestingCloneFactory.sol";
 
 /**
- * @title PrivateOfferCloneFactory
+ * @title PrivateOfferFactory
  * @author malteish
  * @notice This contract deploys PrivateOffers using create2. It is used to deploy PrivateOffers with a deterministic address.
  * @dev One deployment of this contract can be used for deployment of any number of PrivateOffers using create2.
  */
 contract PrivateOfferFactory {
     event NewPrivateOfferWithLockup(address privateOffer, address vesting);
-    event Deploy(address indexed addr);
+    event Deploy(address indexed privateOffer);
     VestingCloneFactory public immutable vestingCloneFactory;
 
     constructor(VestingCloneFactory _vestingCloneFactory) {
-        require(_vestingCloneFactory != address(0), "VestingCloneFactory must not be 0");
+        require(address(_vestingCloneFactory) != address(0), "VestingCloneFactory must not be 0");
         vestingCloneFactory = _vestingCloneFactory;
     }
 
-    function createPrivateOfferClone(
+    function deployPrivateOffer(
         bytes32 _rawSalt,
         PrivateOfferArguments calldata _arguments
     ) external returns (address) {
@@ -49,11 +49,8 @@ contract PrivateOfferFactory {
         );
 
         // deploy the vesting contract
-        Vesting vesting = vestingCloneFactory.createVestingClone(
-            salt,
-            trustedForwarder,
-            address(this),
-            address(_arguments.token)
+        Vesting vesting = Vesting(
+            vestingCloneFactory.createVestingClone(salt, trustedForwarder, address(this), address(_arguments.token))
         );
 
         // create the vesting plan
@@ -90,8 +87,16 @@ contract PrivateOfferFactory {
         address _vestingContractOwner,
         address trustedForwarder
     ) public view returns (address, address) {
-        address vestingAddress = vestingCloneFactory.predictCloneAddress(
+        bytes32 salt = _getSalt(
             _rawSalt,
+            _arguments,
+            _vestingStart,
+            _vestingCliff,
+            _vestingDuration,
+            _vestingContractOwner
+        );
+        address vestingAddress = vestingCloneFactory.predictCloneAddress(
+            salt,
             trustedForwarder,
             address(this),
             address(_arguments.token)

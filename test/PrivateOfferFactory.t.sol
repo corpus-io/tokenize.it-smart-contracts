@@ -7,10 +7,10 @@ import "../contracts/PrivateOffer.sol";
 import "../contracts/factories/PrivateOfferFactory.sol";
 import "../contracts/FeeSettings.sol";
 
-contract PrivateOfferCloneFactoryTest is Test {
+contract PrivateOfferFactoryTest is Test {
     event NewClone(address clone);
 
-    PrivateOfferCloneFactory factory;
+    PrivateOfferFactory factory;
 
     AllowList list;
     FeeSettings feeSettings;
@@ -34,7 +34,7 @@ contract PrivateOfferCloneFactoryTest is Test {
     function setUp() public {
         Vesting vestingImplementation = new Vesting(trustedForwarder);
         PrivateOffer privateOfferImplementation = new PrivateOffer();
-        factory = new PrivateOfferCloneFactory(address(privateOfferImplementation), address(vestingImplementation));
+        factory = new PrivateOfferFactory(address(privateOfferImplementation), address(vestingImplementation));
         list = new AllowList();
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
         feeSettings = new FeeSettings(fees, admin, admin, admin);
@@ -57,8 +57,7 @@ contract PrivateOfferCloneFactoryTest is Test {
         uint256 amount = 20000000000000;
         uint256 expiration = block.timestamp + 1000;
 
-        address expectedAddress = factory.predictCloneAddress(
-            salt,
+        PrivateOfferArguments memory arguments = PrivateOfferArguments(
             buyer,
             buyer,
             receiver,
@@ -68,6 +67,7 @@ contract PrivateOfferCloneFactoryTest is Test {
             IERC20(address(currency)),
             token
         );
+        address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
 
         // make sure no contract lives here yet
         uint256 len;
@@ -89,7 +89,7 @@ contract PrivateOfferCloneFactoryTest is Test {
 
         vm.expectEmit(true, true, true, true, address(factory));
         emit NewClone(expectedAddress);
-        factory.createPrivateOfferClone(
+        factory.deployPrivateOffer(
             salt,
             buyer,
             buyer,

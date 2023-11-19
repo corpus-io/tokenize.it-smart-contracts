@@ -41,19 +41,6 @@ contract DeployPlatform is Script {
         allowList.transferOwnership(platformColdWallet);
         console.log("Started ownership transfer to: ", platformColdWallet);
 
-        console.log("Deploying PrivateOfferCloneFactory contract...");
-        Vesting vestingImplementation = new Vesting(trustedForwarder);
-        PrivateOffer privateOfferImplementation = new PrivateOffer();
-        PrivateOfferCloneFactory privateOfferCloneFactory = new PrivateOfferCloneFactory(
-            address(privateOfferImplementation),
-            address(vestingImplementation)
-        );
-        console.log("PrivateOfferCloneFactory deployed at: ", address(privateOfferCloneFactory));
-
-        console.log("Deploying VestingWalletFactory contract...");
-        VestingWalletFactory vestingWalletFactory = new VestingWalletFactory();
-        console.log("VestingWalletFactory deployed at: ", address(vestingWalletFactory));
-
         vm.stopBroadcast();
 
         console.log("Don't forget to check and finalize ownership transfers for all contracts!");

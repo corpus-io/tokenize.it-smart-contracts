@@ -52,11 +52,11 @@ contract DeployPlatform is Script {
         // console.log("Deploying PersonalInviteFactory contract...");
         // Vesting vestingImplementation = new Vesting(trustedForwarder);
         // PrivateOffer privateOfferImplementation = new PrivateOffer();
-        // PrivateOfferCloneFactory privateOfferCloneFactory = new PrivateOfferCloneFactory(
+        // PrivateOfferFactory privateOfferFactory = new PrivateOfferFactory(
         //     address(privateOfferImplementation),
         //     address(vestingImplementation)
         // );
-        // console.log("PersonalInviteFactory deployed at: ", address(privateOfferCloneFactory));
+        // console.log("PersonalInviteFactory deployed at: ", address(privateOfferFactory));
 
         console.log("Deploying VestingWalletFactory contract...");
         VestingWalletFactory vestingWalletFactory = new VestingWalletFactory();

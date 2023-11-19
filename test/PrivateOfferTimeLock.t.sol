@@ -11,7 +11,7 @@ import "./resources/FakePaymentToken.sol";
 import "../node_modules/@openzeppelin/contracts/finance/VestingWallet.sol";
 
 contract PrivateOfferTimeLockTest is Test {
-    PrivateOfferCloneFactory privateOfferCloneFactory;
+    PrivateOfferFactory privateOfferFactory;
     VestingWalletFactory vestingWalletFactory;
 
     AllowList list;
@@ -37,7 +37,7 @@ contract PrivateOfferTimeLockTest is Test {
     function setUp() public {
         Vesting vestingImplementation = new Vesting(trustedForwarder);
         PrivateOffer privateOfferImplementation = new PrivateOffer();
-        privateOfferCloneFactory = new PrivateOfferCloneFactory(
+        privateOfferFactory = new PrivateOfferFactory(
             address(privateOfferImplementation),
             address(vestingImplementation)
         );
@@ -148,7 +148,7 @@ contract PrivateOfferTimeLockTest is Test {
         uint256 currencyAmount = (arguments.tokenAmount * price) / 10 ** token.decimals();
 
         // // get future vestingWallet address.
-        // address expectedTimeLockAddress = privateOfferCloneFactory.predictVestingAddress(
+        // address expectedTimeLockAddress = privateOfferFactory.predictVestingAddress(
         //     salt,
         //     arguments,
         //     releaseStartTime,
@@ -158,7 +158,7 @@ contract PrivateOfferTimeLockTest is Test {
         // );
 
         // predict addresses
-        (address expectedInviteAddress, address expectedTimeLockAddress) = privateOfferCloneFactory
+        (address expectedInviteAddress, address expectedTimeLockAddress) = privateOfferFactory
             .predictPrivateOfferAndTimeLockAddress(salt, arguments, releaseStartTime, 0, releaseDuration, admin);
 
         // add time lock and token receiver to the allow list
@@ -191,7 +191,7 @@ contract PrivateOfferTimeLockTest is Test {
 
         // deploy private offer
         Vesting timeLock = Vesting(
-            privateOfferCloneFactory.executePrivateOfferWithTimeLock(
+            privateOfferFactory.executePrivateOfferWithTimeLock(
                 salt,
                 arguments,
                 releaseStartTime,
@@ -342,7 +342,7 @@ contract PrivateOfferTimeLockTest is Test {
         assertEq(address(timeLock), expectedTimeLockAddress, "timeLock address is not correct");
 
         // deploy private offer
-        address inviteAddress = privateOfferCloneFactory.createPrivateOfferClone(
+        address inviteAddress = privateOfferFactory.deployPrivateOffer(
             salt,
             currencyPayer,
             expectedTimeLockAddress,

@@ -18,7 +18,7 @@ contract PrivateOfferTest is Test {
         Token indexed token
     );
 
-    PrivateOfferCloneFactory factory;
+    PrivateOfferFactory factory;
 
     AllowList list;
     FeeSettings feeSettings;
@@ -45,7 +45,7 @@ contract PrivateOfferTest is Test {
     function setUp() public {
         Vesting vestingImplementation = new Vesting(trustedForwarder);
         PrivateOffer privateOfferImplementation = new PrivateOffer();
-        factory = new PrivateOfferCloneFactory(address(privateOfferImplementation), address(vestingImplementation));
+        factory = new PrivateOfferFactory(address(privateOfferImplementation), address(vestingImplementation));
         list = new AllowList();
 
         list.set(tokenReceiver, requirements);
@@ -80,8 +80,7 @@ contract PrivateOfferTest is Test {
         uint256 amount = 20000000000000;
         uint256 expiration = block.timestamp + 1000;
 
-        address expectedAddress = factory.predictCloneAddress(
-            salt,
+        PrivateOfferArguments memory arguments = PrivateOfferArguments(
             tokenReceiver,
             tokenReceiver,
             currencyReceiver,
@@ -91,6 +90,7 @@ contract PrivateOfferTest is Test {
             currency,
             token
         );
+        address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
 
         uint256 tokenDecimals = token.decimals();
 
@@ -128,7 +128,7 @@ contract PrivateOfferTest is Test {
         vm.expectEmit(true, true, true, true, address(expectedAddress));
         emit Deal(tokenReceiver, tokenReceiver, amount, price, currency, token);
 
-        address inviteAddress = factory.createPrivateOfferClone(
+        address inviteAddress = factory.deployPrivateOffer(
             salt,
             tokenReceiver,
             tokenReceiver,
@@ -189,8 +189,7 @@ contract PrivateOfferTest is Test {
         //bytes memory creationCode = type(PrivateOffer).creationCode;
         uint256 expiration = block.timestamp + 1000;
 
-        address expectedAddress = factory.predictCloneAddress(
-            salt,
+        PrivateOfferArguments memory arguments = PrivateOfferArguments(
             currencyPayer,
             tokenReceiver,
             currencyReceiver,
@@ -200,6 +199,7 @@ contract PrivateOfferTest is Test {
             currency,
             token
         );
+        address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
 
         // set fees to 0, otherwise extra tokens are minted which causes an overflow
         Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
@@ -243,7 +243,7 @@ contract PrivateOfferTest is Test {
         // make sure balances are as expected after deployment
         uint256 currencyReceiverBalanceBefore = currency.balanceOf(currencyReceiver);
 
-        address inviteAddress = factory.createPrivateOfferClone(
+        address inviteAddress = factory.deployPrivateOffer(
             salt,
             currencyPayer,
             tokenReceiver,
@@ -327,8 +327,7 @@ contract PrivateOfferTest is Test {
         //bytes memory creationCode = type(PrivateOffer).creationCode;
         uint256 expiration = block.timestamp + 1000;
 
-        address expectedAddress = factory.predictCloneAddress(
-            salt,
+        PrivateOfferArguments memory arguments = PrivateOfferArguments(
             currencyPayer,
             tokenReceiver,
             currencyReceiver,
@@ -338,6 +337,7 @@ contract PrivateOfferTest is Test {
             currency,
             token
         );
+        address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
 
         vm.startPrank(admin);
         console.log("expectedAddress: %s", token.mintingAllowance(expectedAddress));
@@ -354,7 +354,7 @@ contract PrivateOfferTest is Test {
 
         // make sure balances are as expected before deployment
         vm.expectRevert();
-        factory.createPrivateOfferClone(
+        factory.deployPrivateOffer(
             salt,
             currencyPayer,
             tokenReceiver,
@@ -386,8 +386,7 @@ contract PrivateOfferTest is Test {
         uint256 tokenDecimals = token.decimals();
         uint256 currencyAmount = (tokenAmount * price) / 10 ** tokenDecimals;
 
-        address expectedAddress = factory.predictCloneAddress(
-            salt,
+        PrivateOfferArguments memory arguments = PrivateOfferArguments(
             currencyPayer,
             tokenReceiver,
             currencyReceiver,
@@ -397,6 +396,7 @@ contract PrivateOfferTest is Test {
             currency,
             token
         );
+        address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
 
         vm.prank(admin);
         token.increaseMintingAllowance(expectedAddress, tokenAmount);
@@ -424,7 +424,7 @@ contract PrivateOfferTest is Test {
             "tokenFeeCollector token balance is not correct"
         );
 
-        address inviteAddress = factory.createPrivateOfferClone(
+        address inviteAddress = factory.deployPrivateOffer(
             salt,
             currencyPayer,
             tokenReceiver,
