@@ -8,7 +8,7 @@ import "../contracts/factories/PrivateOfferFactory.sol";
 import "../contracts/FeeSettings.sol";
 
 contract PrivateOfferFactoryTest is Test {
-    event NewClone(address clone);
+    event Deploy(address indexed privateOffer);
 
     PrivateOfferFactory factory;
 
@@ -33,8 +33,8 @@ contract PrivateOfferFactoryTest is Test {
 
     function setUp() public {
         Vesting vestingImplementation = new Vesting(trustedForwarder);
-        PrivateOffer privateOfferImplementation = new PrivateOffer();
-        factory = new PrivateOfferFactory(address(privateOfferImplementation), address(vestingImplementation));
+        VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
+        factory = new PrivateOfferFactory(vestingCloneFactory);
         list = new AllowList();
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
         feeSettings = new FeeSettings(fees, admin, admin, admin);
@@ -88,23 +88,15 @@ contract PrivateOfferFactoryTest is Test {
         currency.approve(expectedAddress, amount * price);
 
         vm.expectEmit(true, true, true, true, address(factory));
-        emit NewClone(expectedAddress);
-        factory.deployPrivateOffer(
-            salt,
-            buyer,
-            buyer,
-            receiver,
-            amount,
-            price,
-            expiration,
-            IERC20(address(currency)),
-            token
-        );
+        emit Deploy(expectedAddress);
+        address actualAddress = factory.deployPrivateOffer(salt, arguments);
+
+        assertTrue(actualAddress == expectedAddress, "Wrong address returned");
 
         // make sure contract lives here now
         assembly {
             len := extcodesize(expectedAddress)
         }
-        assert(len != 0);
+        assertTrue(len != 0, "Contract not deployed or to wrong address");
     }
 }

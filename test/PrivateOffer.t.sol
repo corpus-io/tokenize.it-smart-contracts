@@ -44,8 +44,8 @@ contract PrivateOfferTest is Test {
 
     function setUp() public {
         Vesting vestingImplementation = new Vesting(trustedForwarder);
-        PrivateOffer privateOfferImplementation = new PrivateOffer();
-        factory = new PrivateOfferFactory(address(privateOfferImplementation), address(vestingImplementation));
+        VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
+        factory = new PrivateOfferFactory(vestingCloneFactory);
         list = new AllowList();
 
         list.set(tokenReceiver, requirements);
@@ -128,17 +128,7 @@ contract PrivateOfferTest is Test {
         vm.expectEmit(true, true, true, true, address(expectedAddress));
         emit Deal(tokenReceiver, tokenReceiver, amount, price, currency, token);
 
-        address inviteAddress = factory.deployPrivateOffer(
-            salt,
-            tokenReceiver,
-            tokenReceiver,
-            currencyReceiver,
-            amount,
-            price,
-            expiration,
-            currency,
-            token
-        );
+        address inviteAddress = factory.deployPrivateOffer(salt, arguments);
 
         console.log(
             "feeCollector currency balance after deployment: %s",
@@ -243,17 +233,7 @@ contract PrivateOfferTest is Test {
         // make sure balances are as expected after deployment
         uint256 currencyReceiverBalanceBefore = currency.balanceOf(currencyReceiver);
 
-        address inviteAddress = factory.deployPrivateOffer(
-            salt,
-            currencyPayer,
-            tokenReceiver,
-            currencyReceiver,
-            _tokenBuyAmount,
-            _nominalPrice,
-            expiration,
-            currency,
-            token
-        );
+        address inviteAddress = factory.deployPrivateOffer(salt, arguments);
 
         console.log(
             "feeCollector currency balance after deployment: %s",
@@ -354,17 +334,7 @@ contract PrivateOfferTest is Test {
 
         // make sure balances are as expected before deployment
         vm.expectRevert();
-        factory.deployPrivateOffer(
-            salt,
-            currencyPayer,
-            tokenReceiver,
-            currencyReceiver,
-            _tokenBuyAmount,
-            _nominalPrice,
-            expiration,
-            currency,
-            token
-        );
+        factory.deployPrivateOffer(salt, arguments);
     }
 
     function testRevertOnOverflow(uint256 _tokenBuyAmount, uint256 _tokenPrice) public {
@@ -424,17 +394,7 @@ contract PrivateOfferTest is Test {
             "tokenFeeCollector token balance is not correct"
         );
 
-        address inviteAddress = factory.deployPrivateOffer(
-            salt,
-            currencyPayer,
-            tokenReceiver,
-            currencyReceiver,
-            tokenAmount,
-            price,
-            expiration,
-            currency,
-            token
-        );
+        address inviteAddress = factory.deployPrivateOffer(salt, arguments);
 
         assertEq(inviteAddress, expectedAddress, "deployed contract address is not correct");
 
