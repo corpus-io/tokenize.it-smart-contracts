@@ -49,19 +49,6 @@ contract DeployPlatform is Script {
         allowList.transferOwnership(platformAdminWallet);
         console.log("Started ownership transfer to: ", platformAdminWallet);
 
-        // console.log("Deploying PersonalInviteFactory contract...");
-        // Vesting vestingImplementation = new Vesting(trustedForwarder);
-        // PrivateOffer privateOfferImplementation = new PrivateOffer();
-        // PrivateOfferFactory privateOfferFactory = new PrivateOfferFactory(
-        //     address(privateOfferImplementation),
-        //     address(vestingImplementation)
-        // );
-        // console.log("PersonalInviteFactory deployed at: ", address(privateOfferFactory));
-
-        console.log("Deploying VestingWalletFactory contract...");
-        VestingWalletFactory vestingWalletFactory = new VestingWalletFactory();
-        console.log("VestingWalletFactory deployed at: ", address(vestingWalletFactory));
-
         console.log("Deploying TokenProxyFactory contract...");
         Token tokenLogicContract = new Token(address(1)); // use bullshit forwarder
         TokenProxyFactory tokenProxyFactory = new TokenProxyFactory(address(tokenLogicContract));

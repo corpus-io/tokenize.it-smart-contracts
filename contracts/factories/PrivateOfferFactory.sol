@@ -9,13 +9,15 @@ import "./VestingCloneFactory.sol";
 
 /**
  * @title PrivateOfferFactory
- * @author malteish
+ * @author malteish, cjentzsch
  * @notice This contract deploys PrivateOffers using create2. It is used to deploy PrivateOffers with a deterministic address.
+ * I also deploys the vesting contracts used for token lockup.
  * @dev One deployment of this contract can be used for deployment of any number of PrivateOffers using create2.
  */
 contract PrivateOfferFactory {
-    event NewPrivateOfferWithLockup(address privateOffer, address vesting);
     event Deploy(address indexed privateOffer);
+    event NewPrivateOfferWithLockup(address privateOffer, address vesting);
+
     VestingCloneFactory public immutable vestingCloneFactory;
 
     constructor(VestingCloneFactory _vestingCloneFactory) {
@@ -23,6 +25,10 @@ contract PrivateOfferFactory {
         vestingCloneFactory = _vestingCloneFactory;
     }
 
+    /**
+     * @notice Deploys a contract using create2. During the deployment, `_currencyPayer` pays `_currencyReceiver` for the purchase of `_tokenAmount` tokens at `_tokenPrice` per token.
+     *      The tokens are minted to `_tokenReceiver`. The token is deployed at `_token` and the currency is `_currency`.
+     */
     function deployPrivateOffer(
         bytes32 _rawSalt,
         PrivateOfferArguments calldata _arguments
@@ -30,12 +36,22 @@ contract PrivateOfferFactory {
         return _deployPrivateOffer(_rawSalt, _arguments);
     }
 
-    function executePrivateOfferWithTimeLock(
+    /**
+     * @notice Deploys a contract using create2. During the deployment, `_currencyPayer` pays `_currencyReceiver` for the purchase of `_tokenAmount` tokens at `_tokenPrice` per token.
+     *      The tokens are minted to `_tokenReceiver`. The token is deployed at `_token` and the currency is `_currency`.
+     * @param _rawSalt Value influencing the addresses of the deployed contract, but nothing else.
+     * @param _arguments Arguments for the PrivateOffer contract.
+     * @param _vestingStart The start of the vesting period.
+     * @param _vestingCliff The cliff of the vesting period.
+     * @param _vestingDuration The duration of the vesting period.
+     * @param _vestingContractOwner The owner of the vesting contract.
+     */
+    function deployPrivateOfferWithTimeLock(
         bytes32 _rawSalt,
         PrivateOfferArguments calldata _arguments,
-        uint256 _vestingStart,
-        uint256 _vestingCliff,
-        uint256 _vestingDuration,
+        uint64 _vestingStart,
+        uint64 _vestingCliff,
+        uint64 _vestingDuration,
         address _vestingContractOwner,
         address trustedForwarder
     ) external returns (address) {
@@ -57,9 +73,9 @@ contract PrivateOfferFactory {
         vesting.createVesting(
             _arguments.tokenAmount,
             _arguments.tokenReceiver,
-            SafeCast.toUint64(_vestingStart),
-            SafeCast.toUint64(_vestingCliff),
-            SafeCast.toUint64(_vestingDuration),
+            _vestingStart,
+            _vestingCliff,
+            _vestingDuration,
             false
         ); // this plan is not mintable
 
@@ -78,12 +94,24 @@ contract PrivateOfferFactory {
         return address(vesting);
     }
 
+    /**
+     * @notice Predicts the addresses of the PrivateOffer and Vesting contracts that would be deployed with the given parameters.
+     * @param _rawSalt Value influencing the addresses of the deployed contracts, but nothing else.
+     * @param _arguments Arguments for the PrivateOffer contract.
+     * @param _vestingStart Begin of the vesting period.
+     * @param _vestingCliff Cliff duration.
+     * @param _vestingDuration Total vesting duration.
+     * @param _vestingContractOwner Address that will own the vesting contract (note: this is not the token receiver or the beneficiary, but rather the company admin)
+     * @param trustedForwarder ERC2771 trusted forwarder address
+     * @return privateOfferAddress The address of the PrivateOffer contract that would be deployed.
+     * @return vestingAddress The address of the Vesting contract that would be deployed.
+     */
     function predictPrivateOfferAndTimeLockAddress(
         bytes32 _rawSalt,
         PrivateOfferArguments calldata _arguments,
-        uint256 _vestingStart,
-        uint256 _vestingCliff,
-        uint256 _vestingDuration,
+        uint64 _vestingStart,
+        uint64 _vestingCliff,
+        uint64 _vestingDuration,
         address _vestingContractOwner,
         address trustedForwarder
     ) public view returns (address, address) {
@@ -110,6 +138,11 @@ contract PrivateOfferFactory {
         return (privateOfferAddress, vestingAddress);
     }
 
+    /**
+     * @notice Predicts the address of the PrivateOffer contract that would be deployed with the given parameters.
+     * @param _salt Value influencing the addresses of the deployed contract, but nothing else.
+     * @param _arguments Parameters for the PrivateOffer contract (which also influence the address of the deployed contract)
+     */
     function predictPrivateOfferAddress(
         bytes32 _salt,
         PrivateOfferArguments memory _arguments
@@ -118,12 +151,21 @@ contract PrivateOfferFactory {
         return Create2.computeAddress(_salt, keccak256(bytecode));
     }
 
+    /**
+     * Calculates a salt from all input parameters.
+     * @param _rawSalt Value influencing the addresses of the deployed contract, but nothing else.
+     * @param _arguments Arguments for the PrivateOffer contract.
+     * @param _vestingStart Begin of the vesting period.
+     * @param _vestingCliff Cliff duration.
+     * @param _vestingDuration Total vesting duration.
+     * @param _vestingContractOwner Address that will own the vesting contract (note: this is not the token receiver or the beneficiary, but rather the company admin)
+     */
     function _getSalt(
         bytes32 _rawSalt,
         PrivateOfferArguments calldata _arguments,
-        uint256 _vestingStart,
-        uint256 _vestingCliff,
-        uint256 _vestingDuration,
+        uint64 _vestingStart,
+        uint64 _vestingCliff,
+        uint64 _vestingDuration,
         address _vestingContractOwner
     ) private pure returns (bytes32) {
         return
@@ -134,12 +176,18 @@ contract PrivateOfferFactory {
 
     /**
      * @dev Generates the bytecode of the contract to be deployed, using the parameters.
+     * @param _arguments Arguments for the PrivateOffer contract.
      * @return bytecode of the contract to be deployed.
      */
     function _getBytecode(PrivateOfferArguments memory _arguments) private pure returns (bytes memory) {
         return abi.encodePacked(type(PrivateOffer).creationCode, abi.encode(_arguments));
     }
 
+    /**
+     * Creates a PrivateOffer contract using create2.
+     * @param _rawSalt Value influencing the addresses of the deployed contract, but nothing else.
+     * @param _arguments Parameters for the PrivateOffer contract (which also influence the address of the deployed contract)
+     */
     function _deployPrivateOffer(bytes32 _rawSalt, PrivateOfferArguments memory _arguments) private returns (address) {
         address privateOffer = Create2.deploy(0, _rawSalt, _getBytecode(_arguments));
 

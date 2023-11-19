@@ -7,7 +7,7 @@ import "../lib/forge-std/src/Script.sol";
 import "../contracts/FeeSettings.sol";
 import "../contracts/AllowList.sol";
 import "../contracts/factories/PrivateOfferFactory.sol";
-import "../contracts/factories/VestingWalletFactory.sol";
+import "../contracts/factories/VestingCloneFactory.sol";
 
 contract DeployPlatform is Script {
     function setUp() public {}
@@ -22,7 +22,7 @@ contract DeployPlatform is Script {
 
         // Mainnet
         address platformColdWallet = 0x9E23f8AA17B2721cf69D157b8a15bd7b64ac881C;
-        //address trustedForwarder = 0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA;
+        address trustedForwarder = 0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA;
 
         console.log("Deployer address: ", deployerAddress);
 
@@ -40,6 +40,15 @@ contract DeployPlatform is Script {
         console.log("Allowlist deployed at: ", address(allowList));
         allowList.transferOwnership(platformColdWallet);
         console.log("Started ownership transfer to: ", platformColdWallet);
+
+        console.log("Deploying VestingCloneFactory contract...");
+        Vesting vestingImplementation = new Vesting(trustedForwarder);
+        VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
+        console.log("VestingCloneFactory deployed at: ", address(vestingCloneFactory));
+
+        console.log("Deploying PrivateOfferFactory contract...");
+        PrivateOfferFactory privateOfferFactory = new PrivateOfferFactory(vestingCloneFactory);
+        console.log("PrivateOfferFactory deployed at: ", address(privateOfferFactory));
 
         vm.stopBroadcast();
 

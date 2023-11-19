@@ -187,7 +187,7 @@ contract PrivateOfferTimeLockTest is Test {
         uint256 gasBefore = gasleft();
         // deploy private offer
         Vesting timeLock = Vesting(
-            privateOfferFactory.executePrivateOfferWithTimeLock(
+            privateOfferFactory.deployPrivateOfferWithTimeLock(
                 salt,
                 arguments,
                 releaseStartTime,
