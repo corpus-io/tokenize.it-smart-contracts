@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "../contracts/PrivateOffer.sol";
-import "../contracts/factories/PrivateOfferFactory.sol";
+import "../contracts/factories/PrivateOfferCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/ERC20Helper.sol";
 
@@ -24,7 +24,7 @@ contract MainnetCurrencies is Test {
     FeeSettings feeSettings;
 
     Token token;
-    PrivateOfferFactory inviteFactory;
+    PrivateOfferCloneFactory inviteFactory;
 
     CrowdinvestingCloneFactory fundraisingFactory;
 
@@ -72,7 +72,12 @@ contract MainnetCurrencies is Test {
 
         fundraisingFactory = new CrowdinvestingCloneFactory(address(new Crowdinvesting(trustedForwarder)));
 
-        inviteFactory = new PrivateOfferFactory();
+        Vesting vestingImplementation = new Vesting(trustedForwarder);
+        PrivateOffer privateOfferImplementation = new PrivateOffer();
+        inviteFactory = new PrivateOfferCloneFactory(
+            address(privateOfferImplementation),
+            address(vestingImplementation)
+        );
         currencyCost = (amountOfTokenToBuy * price) / 10 ** token.decimals();
         currencyAmount = currencyCost * 2;
     }
@@ -192,7 +197,7 @@ contract MainnetCurrencies is Test {
         //bytes memory creationCode = type(PrivateOffer).creationCode;
         uint256 expiration = block.timestamp + 1000;
 
-        address expectedAddress = inviteFactory.getAddress(
+        address expectedAddress = inviteFactory.predictCloneAddress(
             salt,
             buyer,
             buyer,
@@ -201,7 +206,7 @@ contract MainnetCurrencies is Test {
             price,
             expiration,
             _currency,
-            IERC20(address(token))
+            token
         );
 
         // grant mint allowance to invite
@@ -220,7 +225,7 @@ contract MainnetCurrencies is Test {
         assertEq(token.balanceOf(receiver), 0);
 
         // deploy invite
-        address inviteAddress = inviteFactory.deploy(
+        address inviteAddress = inviteFactory.createPrivateOfferClone(
             salt,
             buyer,
             buyer,
@@ -229,7 +234,7 @@ contract MainnetCurrencies is Test {
             price,
             expiration,
             _currency,
-            IERC20(address(token))
+            token
         );
 
         // check situation after deployment

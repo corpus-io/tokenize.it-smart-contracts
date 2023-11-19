@@ -7,7 +7,7 @@ The platform-related contracts are:
 1. [allowList](../contracts/AllowList.sol)
 2. [feeSettings](../contracts/FeeSettings.sol)
 3. [TokenFactory](../contracts/TokenProxyFactory.sol)
-4. [PrivateOfferFactory](../contracts/PrivateOfferFactory.sol)
+4. [PrivateOfferCloneFactory](../contracts/PrivateOfferCloneFactory.sol)
 5. [CrowdinvestingFactory](../contracts/CrowdinvestingCloneFactory.sol)
 6. [VestingFactory](../contracts/VestingCloneFactory.sol)
 7. [PriceLinearFactory](../contracts/PriceLinearCloneFactory.sol) or other dynamic pricing factories
@@ -29,7 +29,7 @@ Note:
 - generally, contracts with simple constructor arguments can also be deployed without script:
   ```bash
   forge create --rpc-url $GOERLI_RPC_URL --private-key $PRIVATE_KEY --verify --etherscan-api-key=$ETHERSCAN_API_KEY contracts/AllowList.sol:AllowList
-  forge create --rpc-url $GOERLI_RPC_URL --private-key $PRIVATE_KEY --verify --etherscan-api-key=$ETHERSCAN_API_KEY contracts/PrivateOfferFactory.sol:PrivateOfferFactory
+  forge create --rpc-url $GOERLI_RPC_URL --private-key $PRIVATE_KEY --verify --etherscan-api-key=$ETHERSCAN_API_KEY contracts/PrivateOfferCloneFactory.sol:PrivateOfferCloneFactory
   forge create --rpc-url $GOERLI_RPC_URL --private-key $PRIVATE_KEY --verify --etherscan-api-key=$ETHERSCAN_API_KEY contracts/VestingWalletFactory.sol:VestingWalletFactory
   ```
 

@@ -5,7 +5,7 @@ import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
-import "../contracts/factories/PrivateOfferFactory.sol";
+import "../contracts/factories/PrivateOfferCloneFactory.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/ERC2771Helper.sol";
 import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific version to avoid import error: yarn add @opengsn/contracts@2.2.5
@@ -22,7 +22,7 @@ contract CompanySetUpTest is Test {
     Crowdinvesting crowdinvesting;
     AllowList list;
     FeeSettings feeSettings;
-    PrivateOfferFactory privateOfferFactory;
+    PrivateOfferCloneFactory privateOfferCloneFactory;
     TokenProxyFactory tokenFactory;
     Token token;
     FakePaymentToken paymentToken;
@@ -116,9 +116,6 @@ contract CompanySetUpTest is Test {
         vm.prank(platformAdmin);
         list = new AllowList();
 
-        // set up PrivateOfferFactory
-        privateOfferFactory = new PrivateOfferFactory();
-
         // investor registers with the platform
         // after kyc, the platform adds the investor to the allowlist with all the properties they were able to proof
         vm.prank(platformAdmin);
@@ -138,6 +135,14 @@ contract CompanySetUpTest is Test {
         // this should be part of the platform setup, but since the logic contract needs to use the same forwarder as the final token contract, we do it here.
         Token implementation = new Token(address(forwarder));
         tokenFactory = new TokenProxyFactory(address(implementation));
+
+        // set up PrivateOfferCloneFactory. Again, this is done here only because we need the forwarder address.
+        Vesting vestingImplementation = new Vesting(address(forwarder));
+        PrivateOffer privateOfferImplementation = new PrivateOffer();
+        privateOfferCloneFactory = new PrivateOfferCloneFactory(
+            address(privateOfferImplementation),
+            address(vestingImplementation)
+        );
 
         // launch the company token. The platform deploys the contract. There is no need to transfer ownership, because the token is never controlled by the address that deployed it.
         // Instead, it is immediately controlled by the address provided in the constructor, which is the companyAdmin in this case.
@@ -182,7 +187,7 @@ contract CompanySetUpTest is Test {
         );
     }
 
-    function launchCompanyAndInvestViaContinousFundraising(Forwarder forwarder) public {
+    function launchCompanyAndInvestViaCrowdinvesting(Forwarder forwarder) public {
         // platform deploys the token contract for the founder
         deployToken(forwarder);
 
@@ -398,7 +403,7 @@ contract CompanySetUpTest is Test {
 
         salt = "random number"; // random number generated and stored by the platform for this Private Offer
 
-        privateOfferAddress = privateOfferFactory.getAddress(
+        privateOfferAddress = privateOfferCloneFactory.predictCloneAddress(
             salt,
             investor,
             investorColdWallet,
@@ -407,7 +412,7 @@ contract CompanySetUpTest is Test {
             price,
             deadline,
             paymentToken,
-            IERC20(address(token))
+            token
         );
 
         // If the investor wants to invest, they have to sign a meta transaction granting the private offer address an sufficient allowance in paymentToken.
@@ -539,7 +544,7 @@ contract CompanySetUpTest is Test {
         assertEq(paymentToken.balanceOf(companyCurrencyReceiver), 0);
 
         vm.prank(platformHotWallet);
-        privateOfferFactory.deploy(
+        privateOfferCloneFactory.createPrivateOfferClone(
             salt,
             investor,
             investorColdWallet,
@@ -548,7 +553,7 @@ contract CompanySetUpTest is Test {
             price,
             deadline,
             paymentToken,
-            IERC20(address(token))
+            token
         );
 
         // investor receives as many tokens as they paid for
@@ -561,12 +566,12 @@ contract CompanySetUpTest is Test {
     }
 
     function testlaunchCompanyAndInvestViaCrowdinvestingWithLocalForwarder() public {
-        launchCompanyAndInvestViaContinousFundraising(new Forwarder());
+        launchCompanyAndInvestViaCrowdinvesting(new Forwarder());
     }
 
     function testlaunchCompanyAndInvestViaCrowdinvestingWithMainnetGSNForwarder() public {
         // uses deployed forwarder on mainnet with fork. https://docs-v2.opengsn.org/networks/ethereum/mainnet.html
-        launchCompanyAndInvestViaContinousFundraising(Forwarder(payable(0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA)));
+        launchCompanyAndInvestViaCrowdinvesting(Forwarder(payable(0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA)));
     }
 
     function testlaunchCompanyAndInvestViaPrivateOfferWithLocalForwarder() public {

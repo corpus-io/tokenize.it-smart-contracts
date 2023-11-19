@@ -4,13 +4,13 @@ pragma solidity 0.8.23;
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/PrivateOffer.sol";
-import "../contracts/factories/PrivateOfferFactory.sol";
+import "../contracts/factories/PrivateOfferCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 
-contract PrivateOfferFactoryTest is Test {
-    event Deploy(address indexed addr);
+contract PrivateOfferCloneFactoryTest is Test {
+    event NewClone(address clone);
 
-    PrivateOfferFactory factory;
+    PrivateOfferCloneFactory factory;
 
     AllowList list;
     FeeSettings feeSettings;
@@ -32,7 +32,9 @@ contract PrivateOfferFactoryTest is Test {
     uint256 public constant price = 10000000;
 
     function setUp() public {
-        factory = new PrivateOfferFactory();
+        Vesting vestingImplementation = new Vesting(trustedForwarder);
+        PrivateOffer privateOfferImplementation = new PrivateOffer();
+        factory = new PrivateOfferCloneFactory(address(privateOfferImplementation), address(vestingImplementation));
         list = new AllowList();
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
         feeSettings = new FeeSettings(fees, admin, admin, admin);
@@ -55,7 +57,7 @@ contract PrivateOfferFactoryTest is Test {
         uint256 amount = 20000000000000;
         uint256 expiration = block.timestamp + 1000;
 
-        address expectedAddress = factory.getAddress(
+        address expectedAddress = factory.predictCloneAddress(
             salt,
             buyer,
             buyer,
@@ -64,7 +66,7 @@ contract PrivateOfferFactoryTest is Test {
             price,
             expiration,
             IERC20(address(currency)),
-            IERC20(address(token))
+            token
         );
 
         // make sure no contract lives here yet
@@ -86,8 +88,8 @@ contract PrivateOfferFactoryTest is Test {
         currency.approve(expectedAddress, amount * price);
 
         vm.expectEmit(true, true, true, true, address(factory));
-        emit Deploy(expectedAddress);
-        factory.deploy(
+        emit NewClone(expectedAddress);
+        factory.createPrivateOfferClone(
             salt,
             buyer,
             buyer,
@@ -96,7 +98,7 @@ contract PrivateOfferFactoryTest is Test {
             price,
             expiration,
             IERC20(address(currency)),
-            IERC20(address(token))
+            token
         );
 
         // make sure contract lives here now

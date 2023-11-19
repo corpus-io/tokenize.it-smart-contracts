@@ -4,14 +4,14 @@ pragma solidity 0.8.23;
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/PrivateOffer.sol";
-import "../contracts/factories/PrivateOfferFactory.sol";
+import "../contracts/factories/PrivateOfferCloneFactory.sol";
 import "../contracts/factories/VestingWalletFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 import "../node_modules/@openzeppelin/contracts/finance/VestingWallet.sol";
 
 contract PrivateOfferTimeLockTest is Test {
-    PrivateOfferFactory privateOfferFactory;
+    PrivateOfferCloneFactory privateOfferCloneFactory;
     VestingWalletFactory vestingWalletFactory;
 
     AllowList list;
@@ -35,7 +35,12 @@ contract PrivateOfferTimeLockTest is Test {
     uint256 requirements = 92785934;
 
     function setUp() public {
-        privateOfferFactory = new PrivateOfferFactory();
+        Vesting vestingImplementation = new Vesting(trustedForwarder);
+        PrivateOffer privateOfferImplementation = new PrivateOffer();
+        privateOfferCloneFactory = new PrivateOfferCloneFactory(
+            address(privateOfferImplementation),
+            address(vestingImplementation)
+        );
         vestingWalletFactory = new VestingWalletFactory();
         list = new AllowList();
 
@@ -146,7 +151,7 @@ contract PrivateOfferTimeLockTest is Test {
         uint256 tokenDecimals = token.decimals();
         uint256 currencyAmount = (tokenAmount * price) / 10 ** tokenDecimals;
 
-        address expectedInviteAddress = privateOfferFactory.getAddress(
+        address expectedInviteAddress = privateOfferCloneFactory.predictCloneAddress(
             salt,
             currencyPayer,
             expectedTimeLockAddress,
@@ -155,7 +160,7 @@ contract PrivateOfferTimeLockTest is Test {
             price,
             expiration,
             currency,
-            IERC20(address(token))
+            token
         );
 
         vm.prank(admin);
@@ -188,7 +193,7 @@ contract PrivateOfferTimeLockTest is Test {
         assertEq(address(timeLock), expectedTimeLockAddress, "timeLock address is not correct");
 
         // deploy private offer
-        address inviteAddress = privateOfferFactory.deploy(
+        address inviteAddress = privateOfferCloneFactory.createPrivateOfferClone(
             salt,
             currencyPayer,
             expectedTimeLockAddress,
@@ -197,7 +202,7 @@ contract PrivateOfferTimeLockTest is Test {
             price,
             expiration,
             currency,
-            IERC20(address(token))
+            token
         );
 
         assertEq(inviteAddress, expectedInviteAddress, "deployed contract address is not correct");

@@ -66,7 +66,7 @@ The following statements about the smart contracts should always be true
 - No settings can be updated.
 - No settings can be changed before deployment without the contract address changing.
 
-## PrivateOfferFactory.sol
+## PrivateOfferCloneFactory.sol
 
 - Contract state cannot be changed.
 - Given equal inputs, getAddress() and deploy() return the same address.

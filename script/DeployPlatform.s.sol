@@ -6,7 +6,7 @@ pragma solidity 0.8.23;
 import "../lib/forge-std/src/Script.sol";
 import "../contracts/FeeSettings.sol";
 import "../contracts/AllowList.sol";
-import "../contracts/factories/PrivateOfferFactory.sol";
+import "../contracts/factories/PrivateOfferCloneFactory.sol";
 import "../contracts/factories/VestingWalletFactory.sol";
 
 contract DeployPlatform is Script {
@@ -22,7 +22,7 @@ contract DeployPlatform is Script {
 
         // Mainnet
         address platformColdWallet = 0x9E23f8AA17B2721cf69D157b8a15bd7b64ac881C;
-        address platformAdminWallet = platformColdWallet;
+        address trustedForwarder = 0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA;
 
         console.log("Deployer address: ", deployerAddress);
 
@@ -38,12 +38,17 @@ contract DeployPlatform is Script {
         console.log("Deploying AllowList contract...");
         AllowList allowList = new AllowList();
         console.log("Allowlist deployed at: ", address(allowList));
-        allowList.transferOwnership(platformAdminWallet);
-        console.log("Started ownership transfer to: ", platformAdminWallet);
+        allowList.transferOwnership(platformColdWallet);
+        console.log("Started ownership transfer to: ", platformColdWallet);
 
-        console.log("Deploying PrivateOfferFactory contract...");
-        PrivateOfferFactory privateOfferFactory = new PrivateOfferFactory();
-        console.log("PrivateOfferFactory deployed at: ", address(privateOfferFactory));
+        console.log("Deploying PrivateOfferCloneFactory contract...");
+        Vesting vestingImplementation = new Vesting(trustedForwarder);
+        PrivateOffer privateOfferImplementation = new PrivateOffer();
+        PrivateOfferCloneFactory privateOfferCloneFactory = new PrivateOfferCloneFactory(
+            address(privateOfferImplementation),
+            address(vestingImplementation)
+        );
+        console.log("PrivateOfferCloneFactory deployed at: ", address(privateOfferCloneFactory));
 
         console.log("Deploying VestingWalletFactory contract...");
         VestingWalletFactory vestingWalletFactory = new VestingWalletFactory();

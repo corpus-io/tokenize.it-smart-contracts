@@ -7,7 +7,7 @@ Tokenize.it has already deployed these contracts:
 1. [allowList](../contracts/AllowList.sol)
 2. [feeSettings](../contracts/FeeSettings.sol)
 3. [TokenFactory](../contracts/TokenProxyFactory.sol)
-4. [PrivateOfferFactory](../contracts/PrivateOfferFactory.sol)
+4. [PrivateOfferCloneFactory](../contracts/PrivateOfferCloneFactory.sol)
 5. [CrowdinvestingFactory](../contracts/CrowdinvestingCloneFactory.sol)
 6. [VestingFactory](../contracts/VestingCloneFactory.sol)
 7. [PriceLinearFactory](../contracts/PriceLinearCloneFactory.sol) or other dynamic pricing factories

@@ -4,6 +4,7 @@ pragma solidity 0.8.23;
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./Token.sol";
 
 /**
@@ -27,7 +28,7 @@ import "./Token.sol";
  *     Because all of the execution logic is in the constructor, the deployment of the PrivateOffer contract is the last step. During the deployment, the newly
  *     minted tokens will be transferred to the buyer and the currency will be transferred to the company's receiver address.
  */
-contract PrivateOffer {
+contract PrivateOffer is Initializable {
     using SafeERC20 for IERC20;
 
     /**
@@ -49,6 +50,10 @@ contract PrivateOffer {
         Token indexed token
     );
 
+    constructor() {
+        _disableInitializers();
+    }
+
     /**
      * @notice Contains all logic, see above.
      * @param _currencyPayer address holding the currency. Must have given sufficient allowance to this contract.
@@ -60,7 +65,7 @@ contract PrivateOffer {
      * @param _currency currency used for payment
      * @param _token token to be bought
      */
-    constructor(
+    function initialize(
         address _currencyPayer,
         address _tokenReceiver,
         address _currencyReceiver,
@@ -69,7 +74,7 @@ contract PrivateOffer {
         uint256 _expiration,
         IERC20 _currency,
         Token _token
-    ) {
+    ) public initializer {
         require(_currencyPayer != address(0), "_currencyPayer can not be zero address");
         require(_tokenReceiver != address(0), "_tokenReceiver can not be zero address");
         require(_currencyReceiver != address(0), "_currencyReceiver can not be zero address");

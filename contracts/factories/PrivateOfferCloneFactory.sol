@@ -2,8 +2,8 @@
 pragma solidity 0.8.23;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "@openzeppelin/contracts/utils/Create2.sol";
 import "../PrivateOffer.sol";
+import "../Vesting.sol";
 import "./CloneFactory.sol";
 
 /**
@@ -14,14 +14,14 @@ import "./CloneFactory.sol";
  */
 contract PrivateOfferCloneFactory is CloneFactory {
     event Deploy(address indexed addr);
-    address public immutable vestingWalletImplementation;
+    address public immutable vestingImplementation;
 
     constructor(
         address _privateOfferImplementation,
         address _vestingWalletImplementation
     ) CloneFactory(_privateOfferImplementation) {
         require(_vestingWalletImplementation != address(0), "VestingWallet implementation address must not be 0");
-        vestingWalletImplementation = _vestingWalletImplementation;
+        vestingImplementation = _vestingWalletImplementation;
     }
 
     function createPrivateOfferClone(
@@ -33,7 +33,7 @@ contract PrivateOfferCloneFactory is CloneFactory {
         uint256 _tokenPrice,
         uint256 _expiration,
         IERC20 _currency,
-        IERC20 _token
+        Token _token
     ) external returns (address) {
         bytes32 salt = _getSalt(
             _rawSalt,
@@ -70,7 +70,7 @@ contract PrivateOfferCloneFactory is CloneFactory {
         uint256 _tokenPrice,
         uint256 _expiration,
         IERC20 _currency,
-        IERC20 _token
+        Token _token
     ) external view returns (address) {
         bytes32 salt = _getSalt(
             _rawSalt,
@@ -95,7 +95,7 @@ contract PrivateOfferCloneFactory is CloneFactory {
         uint256 _tokenPrice,
         uint256 _expiration,
         IERC20 _currency,
-        IERC20 _token
+        Token _token
     ) private pure returns (bytes32) {
         return
             keccak256(

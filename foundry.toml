@@ -11,7 +11,7 @@ via-ir = false # Enable the IR-based optimizer (yul)
 optimizer = true
 optimizer_runs = 10_000
 
-gas_reports = ["AllowList", "ContinuousFundraising", "FeeSettings", "PrivateOffer", "PrivateOfferFactory", "Token"]
+gas_reports = ["AllowList", "ContinuousFundraising", "FeeSettings", "PrivateOffer", "PrivateOfferCloneFactory", "Token"]
 
 [rpc_endpoints]
 goerli = "${GOERLI_RPC_URL}"
