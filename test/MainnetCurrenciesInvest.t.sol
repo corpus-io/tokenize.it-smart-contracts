@@ -73,8 +73,8 @@ contract MainnetCurrencies is Test {
         fundraisingFactory = new CrowdinvestingCloneFactory(address(new Crowdinvesting(trustedForwarder)));
 
         Vesting vestingImplementation = new Vesting(trustedForwarder);
-        PrivateOffer privateOfferImplementation = new PrivateOffer();
-        inviteFactory = new PrivateOfferFactory(address(privateOfferImplementation), address(vestingImplementation));
+        VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
+        inviteFactory = new PrivateOfferFactory(vestingCloneFactory);
         currencyCost = (amountOfTokenToBuy * price) / 10 ** token.decimals();
         currencyAmount = currencyCost * 2;
     }
@@ -222,17 +222,7 @@ contract MainnetCurrencies is Test {
         assertEq(token.balanceOf(receiver), 0);
 
         // deploy invite
-        address inviteAddress = inviteFactory.deployPrivateOffer(
-            salt,
-            buyer,
-            buyer,
-            receiver,
-            amountOfTokenToBuy,
-            price,
-            expiration,
-            _currency,
-            token
-        );
+        address inviteAddress = inviteFactory.deployPrivateOffer(salt, arguments);
 
         // check situation after deployment
         assertEq(inviteAddress, expectedAddress, "deployed contract address is not correct");

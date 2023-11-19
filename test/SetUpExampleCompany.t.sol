@@ -138,11 +138,8 @@ contract CompanySetUpTest is Test {
 
         // set up PrivateOfferFactory. Again, this is done here only because we need the forwarder address.
         Vesting vestingImplementation = new Vesting(address(forwarder));
-        PrivateOffer privateOfferImplementation = new PrivateOffer();
-        privateOfferFactory = new PrivateOfferFactory(
-            address(privateOfferImplementation),
-            address(vestingImplementation)
-        );
+        VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
+        privateOfferFactory = new PrivateOfferFactory(vestingCloneFactory);
 
         // launch the company token. The platform deploys the contract. There is no need to transfer ownership, because the token is never controlled by the address that deployed it.
         // Instead, it is immediately controlled by the address provided in the constructor, which is the companyAdmin in this case.
@@ -403,7 +400,7 @@ contract CompanySetUpTest is Test {
 
         salt = "random number"; // random number generated and stored by the platform for this Private Offer
 
-        PrivateOfferArguments calldata arguments = PrivateOfferArguments(
+        PrivateOfferArguments memory arguments = PrivateOfferArguments(
             investor,
             investorColdWallet,
             companyAdmin,
@@ -543,16 +540,6 @@ contract CompanySetUpTest is Test {
         // companyCurrencyReceiver has no currency before
         assertEq(paymentToken.balanceOf(companyCurrencyReceiver), 0);
 
-        PrivateOfferArguments memory arguments = PrivateOfferArguments(
-            investor,
-            investorColdWallet,
-            companyAdmin,
-            tokenBuyAmount,
-            price,
-            deadline,
-            paymentToken,
-            token
-        );
         vm.prank(platformHotWallet);
         privateOfferFactory.deployPrivateOffer(salt, arguments);
 
