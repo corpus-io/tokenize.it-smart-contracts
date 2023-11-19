@@ -39,7 +39,7 @@ contract TokenProxyFactory is Factory {
         string memory _name,
         string memory _symbol
     ) external returns (address) {
-        bytes32 salt = getSalt(
+        bytes32 salt = _getSalt(
             _rawSalt,
             _trustedForwarder,
             _feeSettings,
@@ -80,7 +80,7 @@ contract TokenProxyFactory is Factory {
         string memory _name,
         string memory _symbol
     ) external view returns (address) {
-        bytes32 salt = getSalt(
+        bytes32 salt = _getSalt(
             _rawSalt,
             _trustedForwarder,
             _feeSettings,
@@ -122,7 +122,7 @@ contract TokenProxyFactory is Factory {
      * @param _symbol token symbol (e.g. "TST")
      * @return salt that will be used to calculate the address of the token.
      */
-    function getSalt(
+    function _getSalt(
         bytes32 _rawSalt,
         address _trustedForwarder,
         IFeeSettingsV2 _feeSettings,
