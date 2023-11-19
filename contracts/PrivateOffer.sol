@@ -7,6 +7,17 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./Token.sol";
 
+struct PrivateOfferArguments {
+    address currencyPayer;
+    address tokenReceiver;
+    address currencyReceiver;
+    uint256 tokenAmount;
+    uint256 tokenPrice;
+    uint256 expiration;
+    IERC20 currency;
+    Token token;
+}
+
 /**
  * @title PrivateOffer
  * @author malteish, cjentzsch
@@ -52,6 +63,19 @@ contract PrivateOffer is Initializable {
 
     constructor() {
         _disableInitializers();
+    }
+
+    function initializeFast(PrivateOfferArguments calldata _arguments) external {
+        initialize(
+            _arguments.currencyPayer,
+            _arguments.tokenReceiver,
+            _arguments.currencyReceiver,
+            _arguments.tokenAmount,
+            _arguments.tokenPrice,
+            _arguments.expiration,
+            _arguments.currency,
+            _arguments.token
+        );
     }
 
     /**
