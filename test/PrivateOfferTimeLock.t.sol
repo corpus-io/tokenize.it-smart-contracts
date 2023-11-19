@@ -5,14 +5,12 @@ import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/PrivateOffer.sol";
 import "../contracts/factories/PrivateOfferFactory.sol";
-import "../contracts/factories/VestingWalletFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 import "../node_modules/@openzeppelin/contracts/finance/VestingWallet.sol";
 
 contract PrivateOfferTimeLockTest is Test {
     PrivateOfferFactory privateOfferFactory;
-    VestingWalletFactory vestingWalletFactory;
 
     AllowList list;
     FeeSettings feeSettings;
@@ -38,7 +36,6 @@ contract PrivateOfferTimeLockTest is Test {
         Vesting vestingImplementation = new Vesting(trustedForwarder);
         VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
         privateOfferFactory = new PrivateOfferFactory(vestingCloneFactory);
-        vestingWalletFactory = new VestingWalletFactory();
         list = new AllowList();
 
         list.set(tokenReceiver, requirements);

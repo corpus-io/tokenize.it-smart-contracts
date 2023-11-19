@@ -7,7 +7,6 @@ import "../lib/forge-std/src/Script.sol";
 import "../contracts/FeeSettings.sol";
 import "../contracts/AllowList.sol";
 import "../contracts/factories/PrivateOfferFactory.sol";
-import "../contracts/factories/VestingWalletFactory.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 
 contract DeployPlatform is Script {
