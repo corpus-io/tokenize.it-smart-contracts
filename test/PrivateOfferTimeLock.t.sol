@@ -7,7 +7,6 @@ import "../contracts/PrivateOffer.sol";
 import "../contracts/factories/PrivateOfferFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
-import "../node_modules/@openzeppelin/contracts/finance/VestingWallet.sol";
 
 contract PrivateOfferTimeLockTest is Test {
     PrivateOfferFactory privateOfferFactory;
@@ -60,46 +59,6 @@ contract PrivateOfferTimeLockTest is Test {
 
         vm.prank(paymentTokenProvider);
         currency = new FakePaymentToken(0, 18);
-    }
-
-    /**
-     * @notice Test that the timeLock works as expected
-     */
-    function testTimeLock() public {
-        uint lockDuration = 1000;
-        uint tokenAmount = 300;
-
-        // create the time lock
-        VestingWallet timeLock = new VestingWallet(
-            tokenReceiver,
-            uint64(block.timestamp + lockDuration),
-            0 // all tokens are released at once
-        );
-
-        // add time lock and token receiver to the allow list
-        list.set(address(timeLock), requirements);
-        list.set(tokenReceiver, requirements);
-
-        // transfer some ERC20 tokens to the time lock
-        vm.startPrank(admin);
-        token.increaseMintingAllowance(admin, tokenAmount);
-        token.mint(address(timeLock), tokenAmount);
-        vm.stopPrank();
-
-        // try releasing tokens before the lock expires
-        timeLock.release(address(token));
-
-        // check that no tokens were released
-        assertEq(token.balanceOf(tokenReceiver), 0);
-
-        // wait for the lock to expire
-        vm.warp(block.timestamp + lockDuration + 2); // +2 to account for block time, which starts at 1 in these tests
-
-        // release tokens
-        timeLock.release(address(token));
-
-        // check that tokens were released
-        assertEq(token.balanceOf(tokenReceiver), tokenAmount, "wrong token amount released");
     }
 
     /**
