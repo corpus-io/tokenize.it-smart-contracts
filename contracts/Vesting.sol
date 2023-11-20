@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: AGPL-3.0-only
 // derived from OpenZeppelin Contracts (last updated v4.9.0) (finance/VestingWallet.sol)
 /// @author cjentzsch, malteish
 
