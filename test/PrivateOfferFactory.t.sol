@@ -179,7 +179,7 @@ contract PrivateOfferFactoryTest is Test {
         // make sure vesting contract is owned by correct address
         Vesting vestingContract = Vesting(expectedVesting);
         if (companyAdmin == address(0)) {
-            assertTrue(vestingContract.owner() == address(factory), "Vesting contract not owned by factory");
+            assertTrue(vestingContract.owner() == address(0), "Vesting contract has owner");
         } else {
             assertTrue(vestingContract.owner() == companyAdmin, "Vesting contract not owned by company admin");
         }
