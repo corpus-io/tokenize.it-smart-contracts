@@ -25,7 +25,7 @@ contract CrowdinvestingCloneFactory is CloneFactory {
         address _trustedForwarder,
         CrowdinvestingInitializerArguments memory _arguments
     ) external returns (address) {
-        bytes32 salt = _generateSalt(_rawSalt, _trustedForwarder, _arguments);
+        bytes32 salt = _getSalt(_rawSalt, _trustedForwarder, _arguments);
         Crowdinvesting crowdinvesting = Crowdinvesting(Clones.cloneDeterministic(implementation, salt));
         require(
             crowdinvesting.isTrustedForwarder(_trustedForwarder),
@@ -47,7 +47,7 @@ contract CrowdinvestingCloneFactory is CloneFactory {
         address _trustedForwarder,
         CrowdinvestingInitializerArguments memory _arguments
     ) external view returns (address) {
-        bytes32 salt = _generateSalt(_rawSalt, _trustedForwarder, _arguments);
+        bytes32 salt = _getSalt(_rawSalt, _trustedForwarder, _arguments);
         return Clones.predictDeterministicAddress(implementation, salt);
     }
 
@@ -59,7 +59,7 @@ contract CrowdinvestingCloneFactory is CloneFactory {
      * @return salt to be used for clone generation
      * @dev This function does not check if the clone has already been created
      */
-    function _generateSalt(
+    function _getSalt(
         bytes32 _rawSalt,
         address _trustedForwarder,
         CrowdinvestingInitializerArguments memory _arguments

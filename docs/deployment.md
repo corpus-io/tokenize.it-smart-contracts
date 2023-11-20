@@ -30,7 +30,6 @@ Note:
   ```bash
   forge create --rpc-url $GOERLI_RPC_URL --private-key $PRIVATE_KEY --verify --etherscan-api-key=$ETHERSCAN_API_KEY contracts/AllowList.sol:AllowList
   forge create --rpc-url $GOERLI_RPC_URL --private-key $PRIVATE_KEY --verify --etherscan-api-key=$ETHERSCAN_API_KEY contracts/PrivateOfferFactory.sol:PrivateOfferFactory
-  forge create --rpc-url $GOERLI_RPC_URL --private-key $PRIVATE_KEY --verify --etherscan-api-key=$ETHERSCAN_API_KEY contracts/VestingWalletFactory.sol:VestingWalletFactory
   ```
 
 **After the contracts have been deployed like this, they are still owned by the wallet used for deployment. Don't forget to transfer ownership to a safer address, like a multisig.**

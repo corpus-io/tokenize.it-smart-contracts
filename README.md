@@ -47,7 +47,7 @@ More dev information can be found here:
 
 1. Using tokenize.it's legal approach, a company can create tokens that grant economical rights to the token holders. The best smart contract to create these tokens is [Token.sol](contracts/Token.sol)
 2. Funds are raised through selling of these tokens:
-   - a customized deal to a specific investor can be realized through the [PrivateOffer.sol](contracts/archive/PrivateOffer.sol) contract
+   - a customized deal to a specific investor can be realized through the [PrivateOffer.sol](contracts/PrivateOffer.sol) contract.
    - crowdinvesting, which is open to everyone meeting the requirements, is done through the [Crowdinvesting.sol](contracts/Crowdinvesting.sol) contract
 3. Employee participation is easy:
    - direct distribution of tokens (does not need another smart contract)

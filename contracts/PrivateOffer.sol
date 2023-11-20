@@ -5,6 +5,27 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./Token.sol";
+/**
+ * @notice Contains all information necessary to execute a PrivateOffer.
+ */
+struct PrivateOfferArguments {
+    /// address holding the currency. Must have given sufficient allowance to this contract.
+    address currencyPayer;
+    /// address receiving the tokens. Must have sufficient attributes in AllowList to be able to receive tokens or the TRANSFERER role.
+    address tokenReceiver;
+    /// address receiving the payment in currency.
+    address currencyReceiver;
+    /// amount of tokens to be bought.
+    uint256 tokenAmount;
+    /// price company and investor agreed on, see docs/price.md.
+    uint256 tokenPrice;
+    /// timestamp after which the invitation is no longer valid.
+    uint256 expiration;
+    /// currency used for payment
+    IERC20 currency;
+    /// token to be bought
+    Token token;
+}
 
 /**
  * @title PrivateOffer
@@ -49,45 +70,39 @@ contract PrivateOffer {
         Token indexed token
     );
 
-    /**
-     * @notice Contains all logic, see above.
-     * @param _currencyPayer address holding the currency. Must have given sufficient allowance to this contract.
-     * @param _tokenReceiver address receiving the tokens. Must have sufficient attributes in AllowList to be able to receive tokens or the TRANSFERER role.
-     * @param _currencyReceiver address receiving the payment in currency.
-     * @param _tokenAmount amount of tokens to be bought.
-     * @param _tokenPrice price company and investor agreed on, see docs/price.md.
-     * @param _expiration timestamp after which the invitation is no longer valid.
-     * @param _currency currency used for payment
-     * @param _token token to be bought
-     */
-    constructor(
-        address _currencyPayer,
-        address _tokenReceiver,
-        address _currencyReceiver,
-        uint256 _tokenAmount,
-        uint256 _tokenPrice,
-        uint256 _expiration,
-        IERC20 _currency,
-        Token _token
-    ) {
-        require(_currencyPayer != address(0), "_currencyPayer can not be zero address");
-        require(_tokenReceiver != address(0), "_tokenReceiver can not be zero address");
-        require(_currencyReceiver != address(0), "_currencyReceiver can not be zero address");
-        require(_tokenPrice != 0, "_tokenPrice can not be zero"); // a simple mint from the token contract will do in that case
-        require(block.timestamp <= _expiration, "Deal expired");
+    constructor(PrivateOfferArguments memory _arguments) {
+        require(_arguments.currencyPayer != address(0), "_arguments.currencyPayer can not be zero address");
+        require(_arguments.tokenReceiver != address(0), "_arguments.tokenReceiver can not be zero address");
+        require(_arguments.currencyReceiver != address(0), "_arguments.currencyReceiver can not be zero address");
+        require(_arguments.tokenPrice != 0, "_arguments.tokenPrice can not be zero"); // a simple mint from the token contract will do in that case
+        require(block.timestamp <= _arguments.expiration, "Deal expired");
 
         // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
-        uint256 currencyAmount = Math.ceilDiv(_tokenAmount * _tokenPrice, 10 ** _token.decimals());
+        uint256 currencyAmount = Math.ceilDiv(
+            _arguments.tokenAmount * _arguments.tokenPrice,
+            10 ** _arguments.token.decimals()
+        );
 
-        IFeeSettingsV2 feeSettings = _token.feeSettings();
+        IFeeSettingsV2 feeSettings = _arguments.token.feeSettings();
         uint256 fee = feeSettings.privateOfferFee(currencyAmount);
         if (fee != 0) {
-            _currency.safeTransferFrom(_currencyPayer, feeSettings.privateOfferFeeCollector(), fee);
+            _arguments.currency.safeTransferFrom(_arguments.currencyPayer, feeSettings.privateOfferFeeCollector(), fee);
         }
-        _currency.safeTransferFrom(_currencyPayer, _currencyReceiver, (currencyAmount - fee));
+        _arguments.currency.safeTransferFrom(
+            _arguments.currencyPayer,
+            _arguments.currencyReceiver,
+            (currencyAmount - fee)
+        );
 
-        _token.mint(_tokenReceiver, _tokenAmount);
+        _arguments.token.mint(_arguments.tokenReceiver, _arguments.tokenAmount);
 
-        emit Deal(_currencyPayer, _tokenReceiver, _tokenAmount, _tokenPrice, _currency, _token);
+        emit Deal(
+            _arguments.currencyPayer,
+            _arguments.tokenReceiver,
+            _arguments.tokenAmount,
+            _arguments.tokenPrice,
+            _arguments.currency,
+            _arguments.token
+        );
     }
 }

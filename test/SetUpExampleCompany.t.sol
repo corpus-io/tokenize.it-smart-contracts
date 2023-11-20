@@ -116,9 +116,6 @@ contract CompanySetUpTest is Test {
         vm.prank(platformAdmin);
         list = new AllowList();
 
-        // set up PrivateOfferFactory
-        privateOfferFactory = new PrivateOfferFactory();
-
         // investor registers with the platform
         // after kyc, the platform adds the investor to the allowlist with all the properties they were able to proof
         vm.prank(platformAdmin);
@@ -138,6 +135,11 @@ contract CompanySetUpTest is Test {
         // this should be part of the platform setup, but since the logic contract needs to use the same forwarder as the final token contract, we do it here.
         Token implementation = new Token(address(forwarder));
         tokenFactory = new TokenProxyFactory(address(implementation));
+
+        // set up PrivateOfferFactory. Again, this is done here only because we need the forwarder address.
+        Vesting vestingImplementation = new Vesting(address(forwarder));
+        VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
+        privateOfferFactory = new PrivateOfferFactory(vestingCloneFactory);
 
         // launch the company token. The platform deploys the contract. There is no need to transfer ownership, because the token is never controlled by the address that deployed it.
         // Instead, it is immediately controlled by the address provided in the constructor, which is the companyAdmin in this case.
@@ -182,7 +184,7 @@ contract CompanySetUpTest is Test {
         );
     }
 
-    function launchCompanyAndInvestViaContinousFundraising(Forwarder forwarder) public {
+    function launchCompanyAndInvestViaCrowdinvesting(Forwarder forwarder) public {
         // platform deploys the token contract for the founder
         deployToken(forwarder);
 
@@ -398,8 +400,7 @@ contract CompanySetUpTest is Test {
 
         salt = "random number"; // random number generated and stored by the platform for this Private Offer
 
-        privateOfferAddress = privateOfferFactory.getAddress(
-            salt,
+        PrivateOfferArguments memory arguments = PrivateOfferArguments(
             investor,
             investorColdWallet,
             companyAdmin,
@@ -407,8 +408,9 @@ contract CompanySetUpTest is Test {
             price,
             deadline,
             paymentToken,
-            IERC20(address(token))
+            token
         );
+        privateOfferAddress = privateOfferFactory.predictPrivateOfferAddress(salt, arguments);
 
         // If the investor wants to invest, they have to sign a meta transaction granting the private offer address an sufficient allowance in paymentToken.
         // Let's prepare this meta transaction using EIP-2612 approval (ERC-20 permit)
@@ -539,17 +541,7 @@ contract CompanySetUpTest is Test {
         assertEq(paymentToken.balanceOf(companyCurrencyReceiver), 0);
 
         vm.prank(platformHotWallet);
-        privateOfferFactory.deploy(
-            salt,
-            investor,
-            investorColdWallet,
-            companyAdmin,
-            tokenBuyAmount,
-            price,
-            deadline,
-            paymentToken,
-            IERC20(address(token))
-        );
+        privateOfferFactory.deployPrivateOffer(salt, arguments);
 
         // investor receives as many tokens as they paid for
         assertTrue(token.balanceOf(investorColdWallet) == tokenBuyAmount, "Investor has no tokens");
@@ -561,12 +553,12 @@ contract CompanySetUpTest is Test {
     }
 
     function testlaunchCompanyAndInvestViaCrowdinvestingWithLocalForwarder() public {
-        launchCompanyAndInvestViaContinousFundraising(new Forwarder());
+        launchCompanyAndInvestViaCrowdinvesting(new Forwarder());
     }
 
     function testlaunchCompanyAndInvestViaCrowdinvestingWithMainnetGSNForwarder() public {
         // uses deployed forwarder on mainnet with fork. https://docs-v2.opengsn.org/networks/ethereum/mainnet.html
-        launchCompanyAndInvestViaContinousFundraising(Forwarder(payable(0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA)));
+        launchCompanyAndInvestViaCrowdinvesting(Forwarder(payable(0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA)));
     }
 
     function testlaunchCompanyAndInvestViaPrivateOfferWithLocalForwarder() public {

@@ -72,7 +72,9 @@ contract MainnetCurrencies is Test {
 
         fundraisingFactory = new CrowdinvestingCloneFactory(address(new Crowdinvesting(trustedForwarder)));
 
-        inviteFactory = new PrivateOfferFactory();
+        Vesting vestingImplementation = new Vesting(trustedForwarder);
+        VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
+        inviteFactory = new PrivateOfferFactory(vestingCloneFactory);
         currencyCost = (amountOfTokenToBuy * price) / 10 ** token.decimals();
         currencyAmount = currencyCost * 2;
     }
@@ -192,8 +194,7 @@ contract MainnetCurrencies is Test {
         //bytes memory creationCode = type(PrivateOffer).creationCode;
         uint256 expiration = block.timestamp + 1000;
 
-        address expectedAddress = inviteFactory.getAddress(
-            salt,
+        PrivateOfferArguments memory arguments = PrivateOfferArguments(
             buyer,
             buyer,
             receiver,
@@ -201,8 +202,9 @@ contract MainnetCurrencies is Test {
             price,
             expiration,
             _currency,
-            IERC20(address(token))
+            token
         );
+        address expectedAddress = inviteFactory.predictPrivateOfferAddress(salt, arguments);
 
         // grant mint allowance to invite
         vm.prank(admin);
@@ -220,17 +222,7 @@ contract MainnetCurrencies is Test {
         assertEq(token.balanceOf(receiver), 0);
 
         // deploy invite
-        address inviteAddress = inviteFactory.deploy(
-            salt,
-            buyer,
-            buyer,
-            receiver,
-            amountOfTokenToBuy,
-            price,
-            expiration,
-            _currency,
-            IERC20(address(token))
-        );
+        address inviteAddress = inviteFactory.deployPrivateOffer(salt, arguments);
 
         // check situation after deployment
         assertEq(inviteAddress, expectedAddress, "deployed contract address is not correct");

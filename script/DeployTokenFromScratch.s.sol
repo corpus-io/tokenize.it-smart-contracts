@@ -7,7 +7,6 @@ import "../lib/forge-std/src/Script.sol";
 import "../contracts/FeeSettings.sol";
 import "../contracts/AllowList.sol";
 import "../contracts/factories/PrivateOfferFactory.sol";
-import "../contracts/factories/VestingWalletFactory.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 
 contract DeployPlatform is Script {
@@ -48,14 +47,6 @@ contract DeployPlatform is Script {
         console.log("Allowlist deployed at: ", address(allowList));
         allowList.transferOwnership(platformAdminWallet);
         console.log("Started ownership transfer to: ", platformAdminWallet);
-
-        console.log("Deploying PersonalInviteFactory contract...");
-        PrivateOfferFactory privateOfferFactory = new PrivateOfferFactory();
-        console.log("PersonalInviteFactory deployed at: ", address(privateOfferFactory));
-
-        console.log("Deploying VestingWalletFactory contract...");
-        VestingWalletFactory vestingWalletFactory = new VestingWalletFactory();
-        console.log("VestingWalletFactory deployed at: ", address(vestingWalletFactory));
 
         console.log("Deploying TokenProxyFactory contract...");
         Token tokenLogicContract = new Token(address(1)); // use bullshit forwarder

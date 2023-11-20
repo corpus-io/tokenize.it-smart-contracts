@@ -43,7 +43,9 @@ contract PrivateOfferTest is Test {
     uint256 requirements = 92785934;
 
     function setUp() public {
-        factory = new PrivateOfferFactory();
+        Vesting vestingImplementation = new Vesting(trustedForwarder);
+        VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
+        factory = new PrivateOfferFactory(vestingCloneFactory);
         list = new AllowList();
 
         list.set(tokenReceiver, requirements);
@@ -78,8 +80,7 @@ contract PrivateOfferTest is Test {
         uint256 amount = 20000000000000;
         uint256 expiration = block.timestamp + 1000;
 
-        address expectedAddress = factory.getAddress(
-            salt,
+        PrivateOfferArguments memory arguments = PrivateOfferArguments(
             tokenReceiver,
             tokenReceiver,
             currencyReceiver,
@@ -87,8 +88,9 @@ contract PrivateOfferTest is Test {
             price,
             expiration,
             currency,
-            IERC20(address(token))
+            token
         );
+        address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
 
         uint256 tokenDecimals = token.decimals();
 
@@ -126,17 +128,7 @@ contract PrivateOfferTest is Test {
         vm.expectEmit(true, true, true, true, address(expectedAddress));
         emit Deal(tokenReceiver, tokenReceiver, amount, price, currency, token);
 
-        address inviteAddress = factory.deploy(
-            salt,
-            tokenReceiver,
-            tokenReceiver,
-            currencyReceiver,
-            amount,
-            price,
-            expiration,
-            currency,
-            IERC20(address(token))
-        );
+        address inviteAddress = factory.deployPrivateOffer(salt, arguments);
 
         console.log(
             "feeCollector currency balance after deployment: %s",
@@ -187,8 +179,7 @@ contract PrivateOfferTest is Test {
         //bytes memory creationCode = type(PrivateOffer).creationCode;
         uint256 expiration = block.timestamp + 1000;
 
-        address expectedAddress = factory.getAddress(
-            salt,
+        PrivateOfferArguments memory arguments = PrivateOfferArguments(
             currencyPayer,
             tokenReceiver,
             currencyReceiver,
@@ -196,8 +187,9 @@ contract PrivateOfferTest is Test {
             _nominalPrice,
             expiration,
             currency,
-            IERC20(address(token))
+            token
         );
+        address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
 
         // set fees to 0, otherwise extra tokens are minted which causes an overflow
         Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
@@ -241,17 +233,7 @@ contract PrivateOfferTest is Test {
         // make sure balances are as expected after deployment
         uint256 currencyReceiverBalanceBefore = currency.balanceOf(currencyReceiver);
 
-        address inviteAddress = factory.deploy(
-            salt,
-            currencyPayer,
-            tokenReceiver,
-            currencyReceiver,
-            _tokenBuyAmount,
-            _nominalPrice,
-            expiration,
-            currency,
-            IERC20(address(token))
-        );
+        address inviteAddress = factory.deployPrivateOffer(salt, arguments);
 
         console.log(
             "feeCollector currency balance after deployment: %s",
@@ -325,8 +307,7 @@ contract PrivateOfferTest is Test {
         //bytes memory creationCode = type(PrivateOffer).creationCode;
         uint256 expiration = block.timestamp + 1000;
 
-        address expectedAddress = factory.getAddress(
-            salt,
+        PrivateOfferArguments memory arguments = PrivateOfferArguments(
             currencyPayer,
             tokenReceiver,
             currencyReceiver,
@@ -334,8 +315,9 @@ contract PrivateOfferTest is Test {
             _nominalPrice,
             expiration,
             currency,
-            IERC20(address(token))
+            token
         );
+        address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
 
         vm.startPrank(admin);
         console.log("expectedAddress: %s", token.mintingAllowance(expectedAddress));
@@ -351,18 +333,8 @@ contract PrivateOfferTest is Test {
         currency.approve(expectedAddress, maxCurrencyAmount);
 
         // make sure balances are as expected before deployment
-        vm.expectRevert("Create2: Failed on deploy");
-        factory.deploy(
-            salt,
-            currencyPayer,
-            tokenReceiver,
-            currencyReceiver,
-            _tokenBuyAmount,
-            _nominalPrice,
-            expiration,
-            currency,
-            IERC20(address(token))
-        );
+        vm.expectRevert();
+        factory.deployPrivateOffer(salt, arguments);
     }
 
     function testRevertOnOverflow(uint256 _tokenBuyAmount, uint256 _tokenPrice) public {
@@ -384,8 +356,7 @@ contract PrivateOfferTest is Test {
         uint256 tokenDecimals = token.decimals();
         uint256 currencyAmount = (tokenAmount * price) / 10 ** tokenDecimals;
 
-        address expectedAddress = factory.getAddress(
-            salt,
+        PrivateOfferArguments memory arguments = PrivateOfferArguments(
             currencyPayer,
             tokenReceiver,
             currencyReceiver,
@@ -393,8 +364,9 @@ contract PrivateOfferTest is Test {
             price,
             expiration,
             currency,
-            IERC20(address(token))
+            token
         );
+        address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
 
         vm.prank(admin);
         token.increaseMintingAllowance(expectedAddress, tokenAmount);
@@ -422,17 +394,7 @@ contract PrivateOfferTest is Test {
             "tokenFeeCollector token balance is not correct"
         );
 
-        address inviteAddress = factory.deploy(
-            salt,
-            currencyPayer,
-            tokenReceiver,
-            currencyReceiver,
-            tokenAmount,
-            price,
-            expiration,
-            currency,
-            IERC20(address(token))
-        );
+        address inviteAddress = factory.deployPrivateOffer(salt, arguments);
 
         assertEq(inviteAddress, expectedAddress, "deployed contract address is not correct");
 
