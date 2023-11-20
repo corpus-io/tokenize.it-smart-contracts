@@ -80,7 +80,11 @@ contract PrivateOfferFactory {
         ); // this plan is not mintable
 
         // transfer ownership of the vesting contract
-        vesting.transferOwnership(_vestingContractOwner);
+        if (_vestingContractOwner != address(0)) {
+            vesting.transferOwnership(_vestingContractOwner);
+        }
+        // if the owner is 0, the vesting contract will be owned by the PrivateOffer contract, which means it is owned by
+        // a secure address (that can not interfere and stop vestings, for example)
 
         // deploy the private offer
         PrivateOfferArguments memory calldataArguments = _arguments;

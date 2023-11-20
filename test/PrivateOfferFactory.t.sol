@@ -110,7 +110,6 @@ contract PrivateOfferFactoryTest is Test {
         vm.assume(_vestingDuration < type(uint64).max / 2);
         vm.assume(_vestingDuration > 0);
         vm.assume(tokenReceiver != address(0));
-        vm.assume(companyAdmin != address(0));
         vm.assume(tokenReceiver != companyAdmin);
         vm.assume(tokenReceiver != trustedForwarder);
         vm.assume(companyAdmin != trustedForwarder);
@@ -177,9 +176,13 @@ contract PrivateOfferFactoryTest is Test {
         assertTrue(Address.isContract(expectedPrivateOffer), "Private Offer address does not contain contract");
         assertTrue(Address.isContract(expectedVesting), "Vesting address does not contain contract");
 
-        // make sure vesting contract is owned by company admin
+        // make sure vesting contract is owned by correct address
         Vesting vestingContract = Vesting(expectedVesting);
-        assertTrue(vestingContract.owner() == companyAdmin, "Vesting contract not owned by company admin");
+        if (companyAdmin == address(0)) {
+            assertTrue(vestingContract.owner() == address(factory), "Vesting contract not owned by factory");
+        } else {
+            assertTrue(vestingContract.owner() == companyAdmin, "Vesting contract not owned by company admin");
+        }
 
         // check balances again
         assertEq(currency.balanceOf(buyer), 0, "Buyer has wrong currency balance after deployment");
