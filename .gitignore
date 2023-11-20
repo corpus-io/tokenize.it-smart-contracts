@@ -5,6 +5,7 @@ lcov.info
 .gas-snapshot
 dist
 out
+build
 node_modules/
 **/*.dbg.json
 artifacts/*
