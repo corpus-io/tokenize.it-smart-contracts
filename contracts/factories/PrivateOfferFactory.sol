@@ -85,6 +85,7 @@ contract PrivateOfferFactory {
             vesting.removeManager(address(this));
             vesting.renounceOwnership();
         } else {
+            vesting.removeManager(address(this));
             vesting.transferOwnership(_vestingContractOwner);
         }
 
