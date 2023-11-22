@@ -36,6 +36,21 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
     /// Denominator to calculate fees paid in PrivateOffer.sol.
     uint32 public privateOfferFeeDenominator;
 
+    /// Numerator to calculate the amount based fee reduction paid in Token.sol.
+    uint32 public tokenFeeAmountBasedReductionNumerator;
+    /// Denominator to calculate the amount based fee reduction paid in Token.sol.
+    uint32 public tokenFeeAmountBasedReductionDenominator;
+
+    /// Numerator to calculate the amount based fee reduction paid in Crowdinvesting.sol.
+    uint32 public crowdinvestingFeeAmountBasedReductionNumerator;
+    /// Denominator to calculate the amount based fee reduction paid in Crowdinvesting.sol.
+    uint32 public crowdinvestingFeeAmountBasedReductionDenominator;
+
+    /// Numerator to calculate the amount based fee reduction paid in PrivateOffer.sol.
+    uint32 public privateOfferFeeAmountBasedReductionNumerator;
+    /// Denominator to calculate the amount based fee reduction paid in PrivateOffer.sol.
+    uint32 public privateOfferFeeAmountBasedReductionDenominator;
+
     /// address the token fees have to be paid to
     address public tokenFeeCollector;
     /// address the crowdinvesting fees have to be paid to
@@ -62,7 +77,13 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
         uint32 crowdinvestingFeeNumerator,
         uint32 crowdinvestingFeeDenominator,
         uint32 privateOfferFeeNumerator,
-        uint32 privateOfferFeeDenominator
+        uint32 privateOfferFeeDenominator,
+        uint32 tokenFeeAmountBasedReductionNumerator,
+        uint32 tokenFeeAmountBasedReductionDenominator,
+        uint32 crowdinvestingFeeAmountBasedReductionNumerator,
+        uint32 crowdinvestingFeeAmountBasedReductionDenominator,
+        uint32 privateOfferFeeAmountBasedReductionNumerator,
+        uint32 privateOfferFeeAmountBasedReductionDenominator
     );
 
     /**
@@ -101,6 +122,14 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
         crowdinvestingFeeDenominator = _fees.crowdinvestingFeeDenominator;
         privateOfferFeeNumerator = _fees.privateOfferFeeNumerator;
         privateOfferFeeDenominator = _fees.privateOfferFeeDenominator;
+
+        tokenFeeAmountBasedReductionNumerator = _fees.tokenFeeAmountBasedReductionNumerator;
+        tokenFeeAmountBasedReductionDenominator = _fees.tokenFeeAmountBasedReductionDenominator;
+        crowdinvestingFeeAmountBasedReductionNumerator = _fees.crowdinvestingFeeAmountBasedReductionNumerator;
+        crowdinvestingFeeAmountBasedReductionDenominator = _fees.crowdinvestingFeeAmountBasedReductionDenominator;
+        privateOfferFeeAmountBasedReductionNumerator = _fees.privateOfferFeeAmountBasedReductionNumerator;
+        privateOfferFeeAmountBasedReductionDenominator = _fees.privateOfferFeeAmountBasedReductionDenominator;
+
         require(_tokenFeeCollector != address(0), "Fee collector cannot be 0x0");
         tokenFeeCollector = _tokenFeeCollector;
         require(_crowdinvestingFeeCollector != address(0), "Fee collector cannot be 0x0");
@@ -155,13 +184,27 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
         crowdinvestingFeeDenominator = proposedFees.crowdinvestingFeeDenominator;
         privateOfferFeeNumerator = proposedFees.privateOfferFeeNumerator;
         privateOfferFeeDenominator = proposedFees.privateOfferFeeDenominator;
+
+        tokenFeeAmountBasedReductionNumerator = proposedFees.tokenFeeAmountBasedReductionNumerator;
+        tokenFeeAmountBasedReductionDenominator = proposedFees.tokenFeeAmountBasedReductionDenominator;
+        crowdinvestingFeeAmountBasedReductionNumerator = proposedFees.crowdinvestingFeeAmountBasedReductionNumerator;
+        crowdinvestingFeeAmountBasedReductionDenominator = proposedFees.crowdinvestingFeeAmountBasedReductionDenominator;
+        privateOfferFeeAmountBasedReductionNumerator = proposedFees.privateOfferFeeAmountBasedReductionNumerator;
+        privateOfferFeeAmountBasedReductionDenominator = proposedFees.privateOfferFeeAmountBasedReductionDenominator;
+
         emit SetFee(
             tokenFeeNumerator,
             tokenFeeDenominator,
             crowdinvestingFeeNumerator,
             crowdinvestingFeeDenominator,
             privateOfferFeeNumerator,
-            privateOfferFeeDenominator
+            privateOfferFeeDenominator,
+            tokenFeeAmountBasedReductionNumerator,
+            tokenFeeAmountBasedReductionDenominator,
+            crowdinvestingFeeAmountBasedReductionNumerator,
+            crowdinvestingFeeAmountBasedReductionDenominator,
+            privateOfferFeeAmountBasedReductionNumerator,
+            privateOfferFeeAmountBasedReductionDenominator
         );
         delete proposedFees;
     }
@@ -238,13 +281,41 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
             ),
             "PrivateOffer fee must be equal or less 5%"
         );
+
+        require(
+            !_isFractionAGreater(
+                _fees.tokenFeeNumerator,
+                _fees.tokenFeeDenominator,
+                _fees.tokenFeeAmountBasedReductionNumerator,
+                _fees.tokenFeeAmountBasedReductionDenominator
+            ),
+            "Token fee reduction must be equal or less then the fee"
+        );
+        require(
+            !_isFractionAGreater(
+                _fees.crowdinvestingFeeNumerator,
+                _fees.crowdinvestingFeeDenominator,
+                _fees.crowdinvestingFeeAmountBasedReductionNumerator,
+                _fees.crowdinvestingFeeAmountBasedReductionDenominator
+            ),
+            "Crowdinvesting fee reduction must be equal or less then the fee"
+        );
+        require(
+            !_isFractionAGreater(
+                _fees.privateOfferFeeNumerator,
+                _fees.privateOfferFeeDenominator,
+                _fees.privateOfferFeeAmountBasedReductionNumerator,
+                _fees.privateOfferFeeAmountBasedReductionDenominator
+            ),
+            "PrivateOffer fee reduction must be equal or less then the fee"
+        );
     }
 
     /**
      * @notice Returns the fee for a given token amount
      */
     function tokenFee(uint256 _tokenAmount) external view override(IFeeSettingsV1, IFeeSettingsV2) returns (uint256) {
-        return (_tokenAmount * tokenFeeNumerator) / tokenFeeDenominator;
+        return (_tokenAmount * tokenFeeNumerator) / tokenFeeDenominator - (_tokenAmount * tokenFeeAmountBasedReductionNumerator) / tokenFeeAmountBasedReductionDenominator;
     }
 
     /**
@@ -262,7 +333,7 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      * @return the fee
      */
     function _crowdinvestingFee(uint256 _currencyAmount) internal view returns (uint256) {
-        return (_currencyAmount * crowdinvestingFeeNumerator) / crowdinvestingFeeDenominator;
+        return (_currencyAmount * crowdinvestingFeeNumerator) / crowdinvestingFeeDenominator - (_currencyAmount * crowdinvestingFeeAmountBasedReductionNumerator) / crowdinvestingFeeAmountBasedReductionDenominator;
     }
 
     /**
@@ -280,7 +351,7 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      * @return the fee
      */
     function _privateOfferFee(uint256 _currencyAmount) internal view returns (uint256) {
-        return (_currencyAmount * privateOfferFeeNumerator) / privateOfferFeeDenominator;
+        return (_currencyAmount * privateOfferFeeNumerator) / privateOfferFeeDenominator - (_currencyAmount * privateOfferFeeAmountBasedReductionNumerator) / privateOfferFeeAmountBasedReductionDenominator;
     }
 
     /**

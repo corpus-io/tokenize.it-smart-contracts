@@ -60,5 +60,11 @@ struct Fees {
     uint32 crowdinvestingFeeDenominator;
     uint32 privateOfferFeeNumerator;
     uint32 privateOfferFeeDenominator;
+    uint32 tokenFeeAmountBasedReductionNumerator;
+    uint32 tokenFeeAmountBasedReductionDenominator;
+    uint32 crowdinvestingFeeAmountBasedReductionNumerator;
+    uint32 crowdinvestingFeeAmountBasedReductionDenominator;
+    uint32 privateOfferFeeAmountBasedReductionNumerator;
+    uint32 privateOfferFeeAmountBasedReductionDenominator;
     uint64 time;
 }
