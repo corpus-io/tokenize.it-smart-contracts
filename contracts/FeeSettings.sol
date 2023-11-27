@@ -48,6 +48,14 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
     Fees public proposedFees;
 
     /**
+     * special fees for specific customers. If a customer has a custom fee, the custom fee is used instead of the default fee.
+     * Custom fees can only reduce the fee, not increase it.
+     * The key is the customer's token address.
+     * The `time` field is the time up to which the custom fee is valid. Afterwards, standard fees are used.
+     */
+    mapping(address => Fees) public customFees;
+
+    /**
      * @notice Fee factors have been changed
      * @param tokenFeeNumerator a in fraction a/b that defines the fee paid in Token: fee = amount * a / b
      * @param tokenFeeDenominator b in fraction a/b that defines the fee paid in Token: fee = amount * a / b
@@ -63,6 +71,17 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
         uint32 crowdinvestingFeeDenominator,
         uint32 privateOfferFeeNumerator,
         uint32 privateOfferFeeDenominator
+    );
+
+    event SetCustomFee(
+        address indexed token,
+        uint32 tokenFeeNumerator,
+        uint32 tokenFeeDenominator,
+        uint32 crowdinvestingFeeNumerator,
+        uint32 crowdinvestingFeeDenominator,
+        uint32 privateOfferFeeNumerator,
+        uint32 privateOfferFeeDenominator,
+        uint256 time
     );
 
     /**
@@ -142,6 +161,35 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
         }
         proposedFees = _fees;
         emit ChangeProposed(_fees);
+    }
+
+    /**
+     * @notice Sets a custom fee for a specific token
+     * @param _token The token for which the custom fee should be set
+     * @param _fees The custom fee
+     */
+    function setCustomFee(address _token, Fees memory _fees) external onlyOwner {
+        checkFeeLimits(_fees);
+        require(_fees.time > block.timestamp, "Custom fee expiry time must be in the future");
+        customFees[_token] = _fees;
+        emit SetCustomFee(
+            _token,
+            _fees.tokenFeeNumerator,
+            _fees.tokenFeeDenominator,
+            _fees.crowdinvestingFeeNumerator,
+            _fees.crowdinvestingFeeDenominator,
+            _fees.privateOfferFeeNumerator,
+            _fees.privateOfferFeeDenominator,
+            _fees.time
+        );
+    }
+
+    /**
+     * @notice removes a custom fee entry for a specific token
+     * @param _token The token for which the custom fee should be removed
+     */
+    function removeCustomFee(address _token) external onlyOwner {
+        delete customFees[_token];
     }
 
     /**
