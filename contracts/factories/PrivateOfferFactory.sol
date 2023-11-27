@@ -79,13 +79,13 @@ contract PrivateOfferFactory {
             false
         ); // this plan is not mintable
 
+        vesting.removeManager(address(this));
+
         // transfer ownership of the vesting contract
         if (_vestingContractOwner == address(0)) {
             // if the owner is 0, the vesting contract will not have an owner. So no one can interfere with the vesting.
-            vesting.removeManager(address(this));
             vesting.renounceOwnership();
         } else {
-            vesting.removeManager(address(this));
             vesting.transferOwnership(_vestingContractOwner);
         }
 
