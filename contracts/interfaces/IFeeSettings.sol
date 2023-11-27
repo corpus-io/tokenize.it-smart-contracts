@@ -39,7 +39,7 @@ interface IFeeSettingsV2 {
 
     function crowdinvestingFeeCollector() external view returns (address);
 
-    function privateOfferFee(uint256) external view returns (uint256);
+    function privateOfferFee(uint256, address) external view returns (uint256);
 
     function privateOfferFeeCollector() external view returns (address);
 

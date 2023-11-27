@@ -3,6 +3,7 @@ pragma solidity 0.8.23;
 
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import "./Crowdinvesting.sol";
 import "./interfaces/IFeeSettings.sol";
 
 /**
@@ -289,10 +290,31 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
     }
 
     /**
+     * General linear fee calculation function
+     * @param amount how many erc20 tokens are transferred
+     * @param numerator fee numerator
+     * @param denominator fee denominator
+     */
+    function _fee(uint256 amount, uint32 numerator, uint32 denominator) internal pure returns (uint256) {
+        return (amount * numerator) / denominator;
+    }
+
+    /**
      * @notice Returns the fee for a given token amount
      */
     function tokenFee(uint256 _tokenAmount) external view override(IFeeSettingsV1, IFeeSettingsV2) returns (uint256) {
-        return (_tokenAmount * tokenFeeNumerator) / tokenFeeDenominator;
+        uint256 baseFee = _fee(_tokenAmount, tokenFeeNumerator, tokenFeeDenominator);
+        if (customFees[msg.sender].time > block.timestamp) {
+            uint256 customFee = _fee(
+                _tokenAmount,
+                customFees[msg.sender].tokenFeeNumerator,
+                customFees[msg.sender].tokenFeeDenominator
+            );
+            if (customFee < baseFee) {
+                return customFee;
+            }
+        }
+        return baseFee;
     }
 
     /**
@@ -310,7 +332,19 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      * @return the fee
      */
     function _crowdinvestingFee(uint256 _currencyAmount) internal view returns (uint256) {
-        return (_currencyAmount * crowdinvestingFeeNumerator) / crowdinvestingFeeDenominator;
+        address token = address(Crowdinvesting(msg.sender).token());
+        uint256 baseFee = _fee(_currencyAmount, crowdinvestingFeeNumerator, crowdinvestingFeeDenominator);
+        if (customFees[token].time > block.timestamp) {
+            uint256 customFee = _fee(
+                _currencyAmount,
+                customFees[token].crowdinvestingFeeNumerator,
+                customFees[token].crowdinvestingFeeDenominator
+            );
+            if (customFee < baseFee) {
+                return customFee;
+            }
+        }
+        return baseFee;
     }
 
     /**
@@ -318,8 +352,11 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      * @param _currencyAmount The amount of currency to calculate the fee for
      * @return The fee
      */
-    function privateOfferFee(uint256 _currencyAmount) external view override(IFeeSettingsV2) returns (uint256) {
-        return _privateOfferFee(_currencyAmount);
+    function privateOfferFee(
+        uint256 _currencyAmount,
+        address _token
+    ) external view override(IFeeSettingsV2) returns (uint256) {
+        return _privateOfferFee(_currencyAmount, _token);
     }
 
     /**
@@ -327,8 +364,19 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      * @param _currencyAmount how much currency is raised
      * @return the fee
      */
-    function _privateOfferFee(uint256 _currencyAmount) internal view returns (uint256) {
-        return (_currencyAmount * privateOfferFeeNumerator) / privateOfferFeeDenominator;
+    function _privateOfferFee(uint256 _currencyAmount, address _token) internal view returns (uint256) {
+        uint256 baseFee = _fee(_currencyAmount, privateOfferFeeNumerator, privateOfferFeeDenominator);
+        if (customFees[_token].time > block.timestamp) {
+            uint256 customFee = _fee(
+                _currencyAmount,
+                customFees[_token].privateOfferFeeNumerator,
+                customFees[_token].privateOfferFeeDenominator
+            );
+            if (customFee < baseFee) {
+                return customFee;
+            }
+        }
+        return baseFee;
     }
 
     /**
@@ -379,6 +427,6 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      * @param _currencyAmount The amount of currency to calculate the fee for
      */
     function personalInviteFee(uint256 _currencyAmount) external view override(IFeeSettingsV1) returns (uint256) {
-        return _privateOfferFee(_currencyAmount);
+        return _privateOfferFee(_currencyAmount, address(0));
     }
 }
