@@ -168,13 +168,13 @@ contract PrivateOfferTimeLockTest is Test {
 
         assertEq(
             currency.balanceOf(currencyReceiver),
-            currencyAmount - token.feeSettings().privateOfferFee(currencyAmount),
+            currencyAmount - token.feeSettings().privateOfferFee(currencyAmount, address(token)),
             "currencyReceiver wrong balance after deployment"
         );
 
         assertEq(
             currency.balanceOf(token.feeSettings().privateOfferFeeCollector()),
-            token.feeSettings().privateOfferFee(currencyAmount),
+            token.feeSettings().privateOfferFee(currencyAmount, address(token)),
             "feeCollector currency balance is not correct"
         );
 

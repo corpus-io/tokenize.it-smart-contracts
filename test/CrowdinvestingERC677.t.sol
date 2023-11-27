@@ -7,6 +7,7 @@ import "../contracts/FeeSettings.sol";
 import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
+import "./resources/FakeCrowdinvestingAndToken.sol";
 
 contract CrowdinvestingTest is Test {
     event CurrencyReceiverChanged(address indexed);
@@ -220,20 +221,24 @@ contract CrowdinvestingTest is Test {
 
         assertTrue(paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore - costInPaymentToken, "buyer has paid");
         assertTrue(token.balanceOf(buyer) == realTokenBuyAmount, "buyer has wrong token amount");
+
+        FakeCrowdinvesting fakeCrowdinvesting = new FakeCrowdinvesting(address(token));
+
         assertTrue(
-            paymentToken.balanceOf(receiver) ==
-                costInPaymentToken - localFeeSettings.crowdinvestingFee(costInPaymentToken),
+            paymentToken.balanceOf(receiver) == costInPaymentToken - fakeCrowdinvesting.fee(costInPaymentToken),
             "receiver has payment tokens"
         );
         assertTrue(
             paymentToken.balanceOf(token.feeSettings().crowdinvestingFeeCollector()) ==
-                localFeeSettings.crowdinvestingFee(costInPaymentToken),
+                fakeCrowdinvesting.fee(costInPaymentToken),
             "fee collector has collected fee in payment tokens"
         );
+
         assertTrue(
             token.balanceOf(token.feeSettings().tokenFeeCollector()) >= localFeeSettings.tokenFee(tokenBuyAmount),
             "fee collector has collected fee in tokens"
         );
+
         assertTrue(crowdinvesting.tokensSold() == realTokenBuyAmount, "crowdinvesting has sold wrong amount of tokens");
         assertTrue(
             crowdinvesting.tokensBought(buyer) == realTokenBuyAmount,
