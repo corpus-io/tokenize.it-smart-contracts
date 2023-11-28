@@ -598,4 +598,189 @@ contract FeeSettingsTest is Test {
         vm.expectRevert("Denominator cannot be 0");
         _feeSettings.planFeeChange(fees);
     }
+
+    function testAddingCustomFees(address _someTokenAddress) public {
+        vm.assume(_someTokenAddress != address(0));
+
+        Fees memory fees = Fees(1, 100, 1, 50, 1, 20, 0);
+        // deploying from here makes address(this) the admin
+        FeeSettings _feeSettings = new FeeSettings(fees, admin, admin, admin);
+
+        // check there is no entry for this token address
+        (
+            uint32 tokenFeeNumerator,
+            uint32 tokenFeeDenominator,
+            uint32 crowdinvestingFeeNumerator,
+            uint32 crowdinvestingFeeDenominator,
+            uint32 privateOfferFeeNumerator,
+            uint32 privateOfferFeeDenominator,
+            uint64 endTime
+        ) = _feeSettings.customFees(_someTokenAddress);
+        assertEq(tokenFeeNumerator, 0, "Token fee numerator should be 0");
+        assertEq(tokenFeeDenominator, 0, "Token fee denominator should be 0");
+        assertEq(crowdinvestingFeeNumerator, 0, "Crowdinvesting fee numerator should be 0");
+        assertEq(crowdinvestingFeeDenominator, 0, "Crowdinvesting fee denominator should be 0");
+        assertEq(privateOfferFeeNumerator, 0, "Private offer fee numerator should be 0");
+        assertEq(privateOfferFeeDenominator, 0, "Private offer fee denominator should be 0");
+        assertEq(endTime, 0, "End time should be 0");
+
+        // check the token fee, private offer fee and crowdinvesting fee are as expected
+        assertEq(_feeSettings.tokenFee(1000, _someTokenAddress), 10, "Token fee should be 10");
+        assertEq(_feeSettings.crowdinvestingFee(1000, _someTokenAddress), 20, "Crowdinvesting fee should be 20");
+        assertEq(_feeSettings.privateOfferFee(1000, _someTokenAddress), 50, "Private offer fee should be 50");
+
+        // add custom fee entry for this token address
+        uint256 realEndTime = block.timestamp + 100;
+        fees = Fees(3, 1000, 4, 1000, 2, 1000, uint64(realEndTime));
+        _feeSettings.setCustomFee(_someTokenAddress, fees);
+
+        // check the token fee, private offer fee and crowdinvesting fee change as expected
+        assertEq(_feeSettings.tokenFee(1000, _someTokenAddress), 3, "Token fee should be 3");
+        assertEq(_feeSettings.crowdinvestingFee(1000, _someTokenAddress), 4, "Crowdinvesting fee should be 4");
+        assertEq(_feeSettings.privateOfferFee(1000, _someTokenAddress), 2, "Private offer fee should be 2");
+
+        // check the custom fee entry is as expected
+        (
+            tokenFeeNumerator,
+            tokenFeeDenominator,
+            crowdinvestingFeeNumerator,
+            crowdinvestingFeeDenominator,
+            privateOfferFeeNumerator,
+            privateOfferFeeDenominator,
+            endTime
+        ) = _feeSettings.customFees(_someTokenAddress);
+        assertEq(tokenFeeNumerator, 3, "Token fee numerator should be 3");
+        assertEq(tokenFeeDenominator, 1000, "Token fee denominator should be 1000");
+        assertEq(crowdinvestingFeeNumerator, 4, "Crowdinvesting fee numerator should be 4");
+        assertEq(crowdinvestingFeeDenominator, 1000, "Crowdinvesting fee denominator should be 1000");
+        assertEq(privateOfferFeeNumerator, 2, "Private offer fee numerator should be 2");
+        assertEq(privateOfferFeeDenominator, 1000, "Private offer fee denominator should be 1000");
+        assertEq(endTime, realEndTime, "End time should match");
+
+        // check that the custom fee is not applied after the end time
+        vm.warp(realEndTime + 1);
+        assertEq(_feeSettings.tokenFee(1000, _someTokenAddress), 10, "Token fee should be 10 again");
+        assertEq(_feeSettings.crowdinvestingFee(1000, _someTokenAddress), 20, "Crowdinvesting fee should be 20 again");
+        assertEq(_feeSettings.privateOfferFee(1000, _someTokenAddress), 50, "Private offer fee should be 50 again");
+    }
+
+    function testOnlyOwnerCanAddCustomFees(address _rando) public {
+        address someTokenAddress = address(74);
+        vm.assume(_rando != address(0));
+        vm.assume(_rando != admin);
+
+        Fees memory fees = Fees(1, 100, 1, 50, 1, 20, 0);
+
+        vm.prank(admin);
+        FeeSettings _feeSettings = new FeeSettings(fees, admin, admin, admin);
+
+        vm.expectRevert("Ownable: caller is not the owner");
+        vm.prank(_rando);
+        _feeSettings.setCustomFee(someTokenAddress, fees);
+    }
+
+    function testCustomFeesAreNotAppliedToOtherTokens(address _someTokenAddress, address _otherTokenAddress) public {
+        vm.assume(_someTokenAddress != address(0));
+        vm.assume(_otherTokenAddress != address(0));
+        vm.assume(_someTokenAddress != _otherTokenAddress);
+
+        Fees memory fees = Fees(1, 100, 1, 50, 1, 20, 0);
+        FeeSettings _feeSettings = new FeeSettings(fees, admin, admin, admin);
+
+        // add custom fee entry for this token address
+        fees = Fees(3, 1000, 4, 1000, 2, 1000, uint64(block.timestamp + 100));
+        _feeSettings.setCustomFee(_someTokenAddress, fees);
+
+        // check the token fee, private offer fee and crowdinvesting fee are as expected
+        assertEq(_feeSettings.tokenFee(1000, _otherTokenAddress), 10, "Token fee should be 10");
+        assertEq(_feeSettings.crowdinvestingFee(1000, _otherTokenAddress), 20, "Crowdinvesting fee should be 20");
+        assertEq(_feeSettings.privateOfferFee(1000, _otherTokenAddress), 50, "Private offer fee should be 50");
+    }
+
+    function testCustomFeesDoNotIncreaseFee() public {
+        address someTokenAddress = address(74);
+        Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
+        FeeSettings _feeSettings = new FeeSettings(fees, admin, admin, admin);
+
+        // check the token fee, private offer fee and crowdinvesting fee are as expected
+        assertEq(_feeSettings.tokenFee(type(uint256).max, someTokenAddress), 0, "Token fee should be 0");
+        assertEq(
+            _feeSettings.crowdinvestingFee(type(uint256).max, someTokenAddress),
+            0,
+            "Crowdinvesting fee should be 0"
+        );
+        assertEq(_feeSettings.privateOfferFee(type(uint256).max, someTokenAddress), 0, "Private offer fee should be 0");
+
+        // add custom fee entry for this token address
+        fees = Fees(1, 20, 1, 10, 1, 20, uint64(block.timestamp + 100));
+        _feeSettings.setCustomFee(someTokenAddress, fees);
+
+        // check the token fee, private offer fee and crowdinvesting fee are as expected
+        assertEq(_feeSettings.tokenFee(type(uint256).max, someTokenAddress), 0, "Token fee should still be 0");
+        assertEq(
+            _feeSettings.crowdinvestingFee(type(uint256).max, someTokenAddress),
+            0,
+            "Crowdinvesting fee should still be 0"
+        );
+        assertEq(
+            _feeSettings.privateOfferFee(type(uint256).max, someTokenAddress),
+            0,
+            "Private offer fee should still be 0"
+        );
+    }
+
+    function testRemovingCustomFee() public {
+        address someTokenAddress = address(74);
+        Fees memory fees = Fees(1, 100, 1, 50, 1, 20, 0);
+        FeeSettings _feeSettings = new FeeSettings(fees, admin, admin, admin);
+
+        // add custom fee entry for this token address
+        fees = Fees(3, 1000, 4, 1000, 2, 1000, uint64(block.timestamp + 100));
+        _feeSettings.setCustomFee(someTokenAddress, fees);
+
+        // check the token fee, private offer fee and crowdinvesting fee are as expected
+        assertEq(_feeSettings.tokenFee(1000, someTokenAddress), 3, "Token fee should be 3");
+        assertEq(_feeSettings.crowdinvestingFee(1000, someTokenAddress), 4, "Crowdinvesting fee should be 4");
+        assertEq(_feeSettings.privateOfferFee(1000, someTokenAddress), 2, "Private offer fee should be 2");
+
+        // remove custom fee entry for this token address
+        _feeSettings.removeCustomFee(someTokenAddress);
+
+        // check the token fee, private offer fee and crowdinvesting fee are as expected
+        assertEq(_feeSettings.tokenFee(1000, someTokenAddress), 10, "Token fee should be 10");
+        assertEq(_feeSettings.crowdinvestingFee(1000, someTokenAddress), 20, "Crowdinvesting fee should be 20");
+        assertEq(_feeSettings.privateOfferFee(1000, someTokenAddress), 50, "Private offer fee should be 50");
+    }
+
+    function testOnlyOwnerCanRemoveCustomFees(address _rando) public {
+        address someTokenAddress = address(74);
+        vm.assume(_rando != address(0));
+        vm.assume(_rando != admin);
+
+        Fees memory fees = Fees(1, 100, 1, 50, 1, 20, 0);
+
+        vm.prank(admin);
+        FeeSettings _feeSettings = new FeeSettings(fees, admin, admin, admin);
+
+        vm.expectRevert("Ownable: caller is not the owner");
+        vm.prank(_rando);
+        _feeSettings.removeCustomFee(someTokenAddress);
+    }
+
+    function testFeeCalculationFunctionsAreEqual() public {
+        Fees memory fees = Fees(1, 100, 1, 50, 1, 20, 0);
+        FeeSettings _feeSettings = new FeeSettings(fees, admin, admin, admin);
+
+        FakeToken fakeToken = new FakeToken(address(_feeSettings));
+        FakeCrowdinvesting fakeCrowdinvesting = new FakeCrowdinvesting(address(fakeToken));
+
+        uint256 amount = 1000e20;
+        assertEq(_feeSettings.tokenFee(amount, address(fakeToken)), fakeToken.fee(amount), "Token fee mismatch");
+        assertEq(
+            _feeSettings.crowdinvestingFee(amount, address(fakeToken)),
+            fakeCrowdinvesting.fee(amount),
+            "Crowdinvesting fee mismatch"
+        );
+        assertEq(_feeSettings.privateOfferFee(amount, address(fakeToken)), amount / 20, "Private offer fee mismatch");
+    }
 }
