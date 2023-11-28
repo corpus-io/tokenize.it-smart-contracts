@@ -3,8 +3,11 @@ pragma solidity 0.8.23;
 
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
-import "./Crowdinvesting.sol";
 import "./interfaces/IFeeSettings.sol";
+
+interface ICrowdinvestingLike {
+    function token() external view returns (address);
+}
 
 /**
  * @title FeeSettings
@@ -301,14 +304,20 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
 
     /**
      * @notice Returns the fee for a given token amount
+     * @dev Custom fees are only applied correctly when this function is called from the token contract itself.
+     * To calculate fees when calling from a different address, use `tokenFee(uint256, address)` instead.
      */
     function tokenFee(uint256 _tokenAmount) external view override(IFeeSettingsV1, IFeeSettingsV2) returns (uint256) {
+        return tokenFee(_tokenAmount, msg.sender);
+    }
+
+    function tokenFee(uint256 _tokenAmount, address _token) public view returns (uint256) {
         uint256 baseFee = _fee(_tokenAmount, tokenFeeNumerator, tokenFeeDenominator);
-        if (customFees[msg.sender].time > block.timestamp) {
+        if (customFees[_token].time > block.timestamp) {
             uint256 customFee = _fee(
                 _tokenAmount,
-                customFees[msg.sender].tokenFeeNumerator,
-                customFees[msg.sender].tokenFeeDenominator
+                customFees[_token].tokenFeeNumerator,
+                customFees[_token].tokenFeeDenominator
             );
             if (customFee < baseFee) {
                 return customFee;
@@ -319,26 +328,29 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
 
     /**
      * @notice Calculates the fee for a given currency amount in Crowdinvesting.sol
+     * @dev Custom fees are only applied correctly when this function is called from the crowdinvesting contract itself.
+     * To calculate fees when calling from a different address, use `crowdinvestingFee(uint256, address)` instead.
      * @param _currencyAmount The amount of currency to calculate the fee for
      * @return The fee
      */
-    function crowdinvestingFee(uint256 _currencyAmount) external view override(IFeeSettingsV2) returns (uint256) {
-        return _crowdinvestingFee(_currencyAmount);
+    function crowdinvestingFee(uint256 _currencyAmount) public view override(IFeeSettingsV2) returns (uint256) {
+        address token = address(ICrowdinvestingLike(msg.sender).token());
+        return crowdinvestingFee(_currencyAmount, token);
     }
 
     /**
      * Calculates the fee for a given currency amount in Crowdinvesting (v5) or ContinuousFundraising (v4)
      * @param _currencyAmount how much currency is raised
+     * @param _token the token that is sold through the crowdinvesting
      * @return the fee
      */
-    function _crowdinvestingFee(uint256 _currencyAmount) internal view returns (uint256) {
-        address token = address(Crowdinvesting(msg.sender).token());
+    function crowdinvestingFee(uint256 _currencyAmount, address _token) public view returns (uint256) {
         uint256 baseFee = _fee(_currencyAmount, crowdinvestingFeeNumerator, crowdinvestingFeeDenominator);
-        if (customFees[token].time > block.timestamp) {
+        if (customFees[_token].time > block.timestamp) {
             uint256 customFee = _fee(
                 _currencyAmount,
-                customFees[token].crowdinvestingFeeNumerator,
-                customFees[token].crowdinvestingFeeDenominator
+                customFees[_token].crowdinvestingFeeNumerator,
+                customFees[_token].crowdinvestingFeeDenominator
             );
             if (customFee < baseFee) {
                 return customFee;
@@ -418,7 +430,7 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
     function continuousFundraisingFee(
         uint256 _currencyAmount
     ) external view override(IFeeSettingsV1) returns (uint256) {
-        return _crowdinvestingFee(_currencyAmount);
+        return crowdinvestingFee(_currencyAmount);
     }
 
     /**

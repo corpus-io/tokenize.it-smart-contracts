@@ -494,11 +494,9 @@ contract FeeSettingsTest is Test {
         // set up fake crowdinvesting for this to work
         FakeToken _fakeToken = new FakeToken(address(_feeSettings));
         FakeCrowdinvesting _fakeCrowdinvesting = new FakeCrowdinvesting(address(_fakeToken));
-        assertEq(
-            _fakeCrowdinvesting.fee(_amount),
-            _feeSettings.continuousFundraisingFee(_amount),
-            "Crowdinvesting Fee mismatch"
-        );
+
+        assertEq(_fakeCrowdinvesting.fee(_amount), _fakeCrowdinvesting.feeV1(_amount), "Crowdinvesting Fee mismatch");
+
         assertEq(
             _feeSettings.privateOfferFee(_amount, address(0)),
             _feeSettings.personalInviteFee(_amount),

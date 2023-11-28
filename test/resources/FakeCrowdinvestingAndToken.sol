@@ -19,6 +19,11 @@ contract FakeCrowdinvesting {
         IFeeSettingsV2 feeSettings = token.feeSettings();
         return feeSettings.crowdinvestingFee(amount);
     }
+
+    function feeV1(uint256 amount) public view returns (uint256) {
+        IFeeSettingsV1 feeSettings = IFeeSettingsV1(address(token.feeSettings()));
+        return feeSettings.continuousFundraisingFee(amount);
+    }
 }
 
 /**
