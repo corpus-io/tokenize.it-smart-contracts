@@ -1,16 +1,28 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.23;
 
-import "@openzeppelin/contracts/access/Ownable2Step.sol";
-import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol";
+
 import "./interfaces/IFeeSettings.sol";
+
+interface ICrowdinvestingLike {
+    function token() external view returns (address);
+}
 
 /**
  * @title FeeSettings
  * @author malteish, cjentzsch
  * @notice The FeeSettings contract is used to manage fees paid to the tokenize.it platfom
  */
-contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
+contract FeeSettings is
+    Ownable2StepUpgradeable,
+    ERC165Upgradeable,
+    ERC2771ContextUpgradeable,
+    IFeeSettingsV2,
+    IFeeSettingsV1
+{
     /// max token fee is 5%
     uint32 public constant MAX_TOKEN_FEE_NUMERATOR = 1;
     uint32 public constant MAX_TOKEN_FEE_DENOMINATOR = 20;
@@ -48,6 +60,17 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
     Fees public proposedFees;
 
     /**
+     * special fees for specific customers. If a customer has a custom fee, the custom fee is used instead of the default fee.
+     * Custom fees can only reduce the fee, not increase it.
+     * The key is the customer's token address.
+     * The `time` field is the time up to which the custom fee is valid. Afterwards, standard fees are used.
+     */
+    mapping(address => Fees) public customFees;
+
+    /// stores who is a manager. Managers can change customFees, but nothing else.
+    mapping(address => bool) public managers;
+
+    /**
      * @notice Fee factors have been changed
      * @param tokenFeeNumerator a in fraction a/b that defines the fee paid in Token: fee = amount * a / b
      * @param tokenFeeDenominator b in fraction a/b that defines the fee paid in Token: fee = amount * a / b
@@ -65,6 +88,19 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
         uint32 privateOfferFeeDenominator
     );
 
+    event SetCustomFee(
+        address indexed token,
+        uint32 tokenFeeNumerator,
+        uint32 tokenFeeDenominator,
+        uint32 crowdinvestingFeeNumerator,
+        uint32 crowdinvestingFeeDenominator,
+        uint32 privateOfferFeeNumerator,
+        uint32 privateOfferFeeDenominator,
+        uint256 time
+    );
+
+    event RemoveCustomFee(address indexed token);
+
     /**
      * @notice The fee collector has been changed to `newFeeCollector`
      * @param newFeeCollector The new fee collector
@@ -81,6 +117,10 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      */
     event ChangeProposed(Fees proposal);
 
+    constructor(address _trustedForwarder) ERC2771ContextUpgradeable(_trustedForwarder) {
+        _disableInitializers();
+    }
+
     /**
      * @notice Initializes the contract with the given fee denominators and fee collector
      * @param _fees The initial fee denominators
@@ -88,12 +128,17 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      * @param _crowdinvestingFeeCollector The initial crowdinvesting fee collector
      * @param _privateOfferFeeCollector The initial private offer fee collector
      */
-    constructor(
+    function initialize(
+        address _owner,
         Fees memory _fees,
         address _tokenFeeCollector,
         address _crowdinvestingFeeCollector,
         address _privateOfferFeeCollector
-    ) {
+    ) external initializer {
+        require(_owner != address(0), "owner can not be zero address");
+        managers[_owner] = true;
+        _transferOwnership(_owner);
+
         checkFeeLimits(_fees);
         tokenFeeNumerator = _fees.tokenFeeNumerator;
         tokenFeeDenominator = _fees.tokenFeeDenominator;
@@ -101,12 +146,31 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
         crowdinvestingFeeDenominator = _fees.crowdinvestingFeeDenominator;
         privateOfferFeeNumerator = _fees.privateOfferFeeNumerator;
         privateOfferFeeDenominator = _fees.privateOfferFeeDenominator;
+
         require(_tokenFeeCollector != address(0), "Fee collector cannot be 0x0");
         tokenFeeCollector = _tokenFeeCollector;
+
         require(_crowdinvestingFeeCollector != address(0), "Fee collector cannot be 0x0");
         crowdinvestingFeeCollector = _crowdinvestingFeeCollector;
+
         require(_privateOfferFeeCollector != address(0), "Fee collector cannot be 0x0");
         privateOfferFeeCollector = _privateOfferFeeCollector;
+    }
+
+    /**
+     * @notice Adds a manager
+     * @param _manager The manager to add
+     */
+    function addManager(address _manager) external onlyOwner {
+        managers[_manager] = true;
+    }
+
+    /**
+     * @notice Removes a manager
+     * @param _manager The manager to remove
+     */
+    function removeManager(address _manager) external onlyOwner {
+        delete managers[_manager];
     }
 
     /**
@@ -138,17 +202,50 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
                 privateOfferFeeDenominator
             )
         ) {
-            require(_fees.time > block.timestamp + 12 weeks, "Fee change must be at least 12 weeks in the future");
+            require(
+                _fees.validityDate > block.timestamp + 12 weeks,
+                "Fee change must be at least 12 weeks in the future"
+            );
         }
         proposedFees = _fees;
         emit ChangeProposed(_fees);
     }
 
     /**
+     * @notice Sets a custom fee for a specific token
+     * @param _token The token for which the custom fee should be set
+     * @param _fees The custom fee
+     */
+    function setCustomFee(address _token, Fees memory _fees) external onlyManager {
+        checkFeeLimits(_fees);
+        require(_fees.validityDate > block.timestamp, "Custom fee expiry time must be in the future");
+        customFees[_token] = _fees;
+        emit SetCustomFee(
+            _token,
+            _fees.tokenFeeNumerator,
+            _fees.tokenFeeDenominator,
+            _fees.crowdinvestingFeeNumerator,
+            _fees.crowdinvestingFeeDenominator,
+            _fees.privateOfferFeeNumerator,
+            _fees.privateOfferFeeDenominator,
+            _fees.validityDate
+        );
+    }
+
+    /**
+     * @notice removes a custom fee entry for a specific token
+     * @param _token The token for which the custom fee should be removed
+     */
+    function removeCustomFee(address _token) external onlyManager {
+        delete customFees[_token];
+        emit RemoveCustomFee(_token);
+    }
+
+    /**
      * @notice Executes a fee change that has been planned before
      */
     function executeFeeChange() external onlyOwner {
-        require(block.timestamp >= proposedFees.time, "Fee change must be executed after the change time");
+        require(block.timestamp >= proposedFees.validityDate, "Fee change must be executed after the change time");
         tokenFeeNumerator = proposedFees.tokenFeeNumerator;
         tokenFeeDenominator = proposedFees.tokenFeeDenominator;
         crowdinvestingFeeNumerator = proposedFees.crowdinvestingFeeNumerator;
@@ -241,28 +338,70 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
     }
 
     /**
+     * General linear fee calculation function
+     * @param amount how many erc20 tokens are transferred
+     * @param numerator fee numerator
+     * @param denominator fee denominator
+     */
+    function _fee(uint256 amount, uint32 numerator, uint32 denominator) internal pure returns (uint256) {
+        return (amount * numerator) / denominator;
+    }
+
+    /**
      * @notice Returns the fee for a given token amount
+     * @dev Custom fees are only applied correctly when this function is called from the token contract itself.
+     * To calculate fees when calling from a different address, use `tokenFee(uint256, address)` instead.
      */
     function tokenFee(uint256 _tokenAmount) external view override(IFeeSettingsV1, IFeeSettingsV2) returns (uint256) {
-        return (_tokenAmount * tokenFeeNumerator) / tokenFeeDenominator;
+        return tokenFee(_tokenAmount, _msgSender());
+    }
+
+    function tokenFee(uint256 _tokenAmount, address _token) public view returns (uint256) {
+        uint256 baseFee = _fee(_tokenAmount, tokenFeeNumerator, tokenFeeDenominator);
+        if (customFees[_token].validityDate > block.timestamp) {
+            uint256 customFee = _fee(
+                _tokenAmount,
+                customFees[_token].tokenFeeNumerator,
+                customFees[_token].tokenFeeDenominator
+            );
+            if (customFee < baseFee) {
+                return customFee;
+            }
+        }
+        return baseFee;
     }
 
     /**
      * @notice Calculates the fee for a given currency amount in Crowdinvesting.sol
+     * @dev Custom fees are only applied correctly when this function is called from the crowdinvesting contract itself.
+     * To calculate fees when calling from a different address, use `crowdinvestingFee(uint256, address)` instead.
      * @param _currencyAmount The amount of currency to calculate the fee for
      * @return The fee
      */
-    function crowdinvestingFee(uint256 _currencyAmount) external view override(IFeeSettingsV2) returns (uint256) {
-        return _crowdinvestingFee(_currencyAmount);
+    function crowdinvestingFee(uint256 _currencyAmount) public view override(IFeeSettingsV2) returns (uint256) {
+        address token = address(ICrowdinvestingLike(_msgSender()).token());
+        return crowdinvestingFee(_currencyAmount, token);
     }
 
     /**
      * Calculates the fee for a given currency amount in Crowdinvesting (v5) or ContinuousFundraising (v4)
      * @param _currencyAmount how much currency is raised
+     * @param _token the token that is sold through the crowdinvesting
      * @return the fee
      */
-    function _crowdinvestingFee(uint256 _currencyAmount) internal view returns (uint256) {
-        return (_currencyAmount * crowdinvestingFeeNumerator) / crowdinvestingFeeDenominator;
+    function crowdinvestingFee(uint256 _currencyAmount, address _token) public view returns (uint256) {
+        uint256 baseFee = _fee(_currencyAmount, crowdinvestingFeeNumerator, crowdinvestingFeeDenominator);
+        if (customFees[_token].validityDate > block.timestamp) {
+            uint256 customFee = _fee(
+                _currencyAmount,
+                customFees[_token].crowdinvestingFeeNumerator,
+                customFees[_token].crowdinvestingFeeDenominator
+            );
+            if (customFee < baseFee) {
+                return customFee;
+            }
+        }
+        return baseFee;
     }
 
     /**
@@ -270,8 +409,11 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      * @param _currencyAmount The amount of currency to calculate the fee for
      * @return The fee
      */
-    function privateOfferFee(uint256 _currencyAmount) external view override(IFeeSettingsV2) returns (uint256) {
-        return _privateOfferFee(_currencyAmount);
+    function privateOfferFee(
+        uint256 _currencyAmount,
+        address _token
+    ) external view override(IFeeSettingsV2) returns (uint256) {
+        return _privateOfferFee(_currencyAmount, _token);
     }
 
     /**
@@ -279,16 +421,32 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      * @param _currencyAmount how much currency is raised
      * @return the fee
      */
-    function _privateOfferFee(uint256 _currencyAmount) internal view returns (uint256) {
-        return (_currencyAmount * privateOfferFeeNumerator) / privateOfferFeeDenominator;
+    function _privateOfferFee(uint256 _currencyAmount, address _token) internal view returns (uint256) {
+        uint256 baseFee = _fee(_currencyAmount, privateOfferFeeNumerator, privateOfferFeeDenominator);
+        if (customFees[_token].validityDate > block.timestamp) {
+            uint256 customFee = _fee(
+                _currencyAmount,
+                customFees[_token].privateOfferFeeNumerator,
+                customFees[_token].privateOfferFeeDenominator
+            );
+            if (customFee < baseFee) {
+                return customFee;
+            }
+        }
+        return baseFee;
     }
 
     /**
      * @dev Specify where the implementation of owner() is located
      * @return The owner of the contract
      */
-    function owner() public view override(Ownable, IFeeSettingsV1, IFeeSettingsV2) returns (address) {
-        return Ownable.owner();
+    function owner() public view override(OwnableUpgradeable, IFeeSettingsV1, IFeeSettingsV2) returns (address) {
+        return OwnableUpgradeable.owner();
+    }
+
+    modifier onlyManager() {
+        require(managers[_msgSender()], "Only managers can call this function");
+        _;
     }
 
     /**
@@ -298,11 +456,11 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      */
     function supportsInterface(
         bytes4 interfaceId
-    ) public view virtual override(ERC165, IFeeSettingsV1, IFeeSettingsV2) returns (bool) {
+    ) public view virtual override(ERC165Upgradeable, IFeeSettingsV1, IFeeSettingsV2) returns (bool) {
         return
             interfaceId == type(IFeeSettingsV1).interfaceId || // we implement IFeeSettingsV1 for backwards compatibility
             interfaceId == type(IFeeSettingsV2).interfaceId || // we implement IFeeSettingsV2
-            ERC165.supportsInterface(interfaceId); // default implementation that enables further querying
+            ERC165Upgradeable.supportsInterface(interfaceId); // default implementation that enables further querying
     }
 
     /**
@@ -322,7 +480,7 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
     function continuousFundraisingFee(
         uint256 _currencyAmount
     ) external view override(IFeeSettingsV1) returns (uint256) {
-        return _crowdinvestingFee(_currencyAmount);
+        return crowdinvestingFee(_currencyAmount);
     }
 
     /**
@@ -331,6 +489,20 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      * @param _currencyAmount The amount of currency to calculate the fee for
      */
     function personalInviteFee(uint256 _currencyAmount) external view override(IFeeSettingsV1) returns (uint256) {
-        return _privateOfferFee(_currencyAmount);
+        return _privateOfferFee(_currencyAmount, address(0));
+    }
+
+    /**
+     * @dev both Ownable and ERC2771Context have a _msgSender() function, so we need to override and select which one to use.
+     */
+    function _msgSender() internal view override(ContextUpgradeable, ERC2771ContextUpgradeable) returns (address) {
+        return ERC2771ContextUpgradeable._msgSender();
+    }
+
+    /**
+     * @dev both Ownable and ERC2771Context have a _msgData() function, so we need to override and select which one to use.
+     */
+    function _msgData() internal view override(ContextUpgradeable, ERC2771ContextUpgradeable) returns (bytes calldata) {
+        return ERC2771ContextUpgradeable._msgData();
     }
 }

@@ -7,6 +7,7 @@ import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
+import "./resources/FeeSettingsCreator.sol";
 
 contract CrowdinvestingTest is Test {
     Crowdinvesting crowdinvesting;
@@ -40,8 +41,14 @@ contract CrowdinvestingTest is Test {
     function setUp() public {
         list = new AllowList();
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 100);
-        vm.prank(platformAdmin);
-        feeSettings = new FeeSettings(fees, platformAdmin, platformAdmin, platformAdmin);
+        feeSettings = createFeeSettings(
+            trustedForwarder,
+            platformAdmin,
+            fees,
+            platformAdmin,
+            platformAdmin,
+            platformAdmin
+        );
         vm.prank(platformAdmin);
         token = Token(
             tokenFactory.createTokenProxy(
@@ -114,7 +121,7 @@ contract CrowdinvestingTest is Test {
         );
         vm.prank(platformAdmin);
         feeSettings.planFeeChange(fees);
-        vm.warp(fees.time + 1 seconds);
+        vm.warp(fees.validityDate + 1 seconds);
         vm.prank(platformAdmin);
         feeSettings.executeFeeChange();
 

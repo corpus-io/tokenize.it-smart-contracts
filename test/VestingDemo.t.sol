@@ -6,6 +6,7 @@ import "../contracts/factories/VestingCloneFactory.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/ERC20MintableByAnyone.sol";
+import "./resources/FeeSettingsCreator.sol";
 
 contract VestingDemoTest is Test {
     Vesting implementation;
@@ -43,7 +44,9 @@ contract VestingDemoTest is Test {
         bool isMintable = true; // the tokens are minted on payout
 
         vm.startPrank(platformAdmin);
-        FeeSettings feeSettings = new FeeSettings(
+        FeeSettings feeSettings = createFeeSettings(
+            trustedForwarder,
+            platformAdmin,
             Fees(1, 100, 1, 200, 1, 200, 0),
             platformAdmin,
             platformAdmin,

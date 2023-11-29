@@ -5,6 +5,7 @@ import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
+import "./resources/FeeSettingsCreator.sol";
 import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific version to avoid import error: yarn add @opengsn/contracts@2.2.5
 
 contract TokenERC2612Test is Test {
@@ -74,8 +75,14 @@ contract TokenERC2612Test is Test {
             privateOfferFeeDenominator,
             0
         );
-        vm.prank(platformAdmin);
-        feeSettings = new FeeSettings(fees, feeCollector, feeCollector, feeCollector);
+        feeSettings = createFeeSettings(
+            trustedForwarder,
+            platformAdmin,
+            fees,
+            feeCollector,
+            feeCollector,
+            feeCollector
+        );
 
         // deploy forwarder
         Forwarder forwarder = new Forwarder();

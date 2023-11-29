@@ -7,6 +7,8 @@ import "../contracts/FeeSettings.sol";
 import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
+import "./resources/FakeCrowdinvestingAndToken.sol";
+import "./resources/FeeSettingsCreator.sol";
 
 contract CrowdinvestingTest is Test {
     event CurrencyReceiverChanged(address indexed);
@@ -52,7 +54,14 @@ contract CrowdinvestingTest is Test {
     function setUp() public {
         list = new AllowList();
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 100);
-        feeSettings = new FeeSettings(fees, wrongFeeReceiver, admin, wrongFeeReceiver);
+        feeSettings = createFeeSettings(
+            trustedForwarder,
+            address(this),
+            fees,
+            wrongFeeReceiver,
+            admin,
+            wrongFeeReceiver
+        );
 
         // create token
         address tokenLogicContract = address(new Token(trustedForwarder));
@@ -334,6 +343,7 @@ contract CrowdinvestingTest is Test {
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
 
         FeeSettings localFeeSettings = FeeSettings(address(token.feeSettings()));
+        FakeCrowdinvesting fakeCrowdinvesting = new FakeCrowdinvesting(address(token));
 
         vm.prank(buyer);
         vm.expectEmit(true, true, true, true, address(crowdinvesting));
@@ -342,13 +352,12 @@ contract CrowdinvestingTest is Test {
         assertTrue(paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore - costInPaymentToken, "buyer has paid");
         assertTrue(token.balanceOf(buyer) == tokenBuyAmount, "buyer has tokens");
         assertTrue(
-            paymentToken.balanceOf(receiver) ==
-                costInPaymentToken - localFeeSettings.crowdinvestingFee(costInPaymentToken),
+            paymentToken.balanceOf(receiver) == costInPaymentToken - fakeCrowdinvesting.fee(costInPaymentToken),
             "receiver has payment tokens"
         );
         assertTrue(
             paymentToken.balanceOf(token.feeSettings().crowdinvestingFeeCollector()) ==
-                localFeeSettings.crowdinvestingFee(costInPaymentToken),
+                fakeCrowdinvesting.fee(costInPaymentToken),
             "fee collector has collected fee in payment tokens"
         );
         assertTrue(

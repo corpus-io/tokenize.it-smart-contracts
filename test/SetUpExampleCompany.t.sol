@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/factories/CrowdinvestingCloneFactory.sol";
-import "../contracts/FeeSettings.sol";
+import "./resources/FeeSettingsCreator.sol";
 import "../contracts/factories/PrivateOfferFactory.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/ERC2771Helper.sol";
@@ -109,8 +109,14 @@ contract CompanySetUpTest is Test {
             paymentTokenFeeDenominator,
             0
         );
-        vm.prank(platformAdmin);
-        feeSettings = new FeeSettings(fees, platformFeeCollector, platformFeeCollector, platformFeeCollector);
+        feeSettings = createFeeSettings(
+            address(8), // fake forwarder
+            platformAdmin,
+            fees,
+            platformFeeCollector,
+            platformFeeCollector,
+            platformFeeCollector
+        );
 
         // set up AllowList
         vm.prank(platformAdmin);

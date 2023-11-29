@@ -27,7 +27,7 @@ contract IFeeSettingsTest is Test {
         // see https://medium.com/@chiqing/ethereum-standard-erc165-explained-63b54ca0d273
         bytes4 expected = getFunctionSelector("crowdinvestingFee(uint256)");
         expected = expected ^ getFunctionSelector("crowdinvestingFeeCollector()");
-        expected = expected ^ getFunctionSelector("privateOfferFee(uint256)");
+        expected = expected ^ getFunctionSelector("privateOfferFee(uint256,address)");
         expected = expected ^ getFunctionSelector("privateOfferFeeCollector()");
         expected = expected ^ getFunctionSelector("tokenFee(uint256)");
         expected = expected ^ getFunctionSelector("tokenFeeCollector()");
@@ -35,8 +35,11 @@ contract IFeeSettingsTest is Test {
         expected = expected ^ getFunctionSelector("supportsInterface(bytes4)");
         bytes4 actual = type(IFeeSettingsV2).interfaceId;
 
+        console.logBytes4(expected);
+        console.logBytes4(actual);
+
         // hardcoding this here so this test throws when search and replace changes the interface
-        bytes4 fixedValue = 0x9fc80df3;
+        bytes4 fixedValue = 0xc8408cdb;
 
         assertEq(actual, fixedValue, "interface ID mismatch: did search and replace change the interface?");
 

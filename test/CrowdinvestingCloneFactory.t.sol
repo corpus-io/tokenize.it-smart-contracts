@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
-import "../contracts/FeeSettings.sol";
+import "../contracts/factories/FeeSettingsCloneFactory.sol";
 import "./resources/ERC2771Helper.sol";
 
 contract tokenTest is Test {
@@ -50,11 +50,20 @@ contract tokenTest is Test {
         vm.startPrank(feeSettingsAndAllowListOwner);
         allowList = new AllowList();
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
-        feeSettings = new FeeSettings(
-            fees,
-            feeSettingsAndAllowListOwner,
-            feeSettingsAndAllowListOwner,
-            feeSettingsAndAllowListOwner
+        FeeSettings feeSettingsLogicContract = new FeeSettings(trustedForwarder);
+        FeeSettingsCloneFactory feeSettingsCloneFactory = new FeeSettingsCloneFactory(
+            address(feeSettingsLogicContract)
+        );
+        feeSettings = FeeSettings(
+            feeSettingsCloneFactory.createFeeSettingsClone(
+                0,
+                trustedForwarder,
+                feeSettingsAndAllowListOwner,
+                fees,
+                feeSettingsAndAllowListOwner,
+                feeSettingsAndAllowListOwner,
+                feeSettingsAndAllowListOwner
+            )
         );
         vm.stopPrank();
 

@@ -5,6 +5,7 @@ import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/ERC2771Helper.sol";
+import "./resources/FeeSettingsCreator.sol";
 
 contract TokenV2 is Token {
     constructor(address _trustedForwarder) Token(_trustedForwarder) {}
@@ -42,7 +43,9 @@ contract tokenProxyUpgradeTest is Test {
         vm.startPrank(feeSettingsAndAllowListOwner);
         allowList = new AllowList();
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
-        feeSettings = new FeeSettings(
+        feeSettings = createFeeSettings(
+            trustedForwarder,
+            feeSettingsAndAllowListOwner,
             fees,
             feeSettingsAndAllowListOwner,
             feeSettingsAndAllowListOwner,

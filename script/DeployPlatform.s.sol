@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 // taken from https://moveseventyeight.com/deploy-your-first-nft-contract-with-foundry#heading-prepare-a-basic-deployment-script
 
 import "../lib/forge-std/src/Script.sol";
-import "../contracts/FeeSettings.sol";
+import "../contracts/factories/FeeSettingsCloneFactory.sol";
 import "../contracts/AllowList.sol";
 import "../contracts/factories/PrivateOfferFactory.sol";
 import "../contracts/factories/VestingCloneFactory.sol";
@@ -28,9 +28,26 @@ contract DeployPlatform is Script {
 
         vm.startBroadcast(deployerPrivateKey);
 
+        console.log("Deploying FeeSettingsCloneFactory contract...");
+        FeeSettings feeSettingsLogicContract = new FeeSettings(trustedForwarder);
+        FeeSettingsCloneFactory feeSettingsCloneFactory = new FeeSettingsCloneFactory(
+            address(feeSettingsLogicContract)
+        );
+        console.log("FeeSettingsCloneFactory deployed at: ", address(feeSettingsCloneFactory));
+
         console.log("Deploying FeeSettings contract...");
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
-        FeeSettings feeSettings = new FeeSettings(fees, platformColdWallet, platformColdWallet, platformColdWallet);
+        FeeSettings feeSettings = FeeSettings(
+            feeSettingsCloneFactory.createFeeSettingsClone(
+                bytes32(0),
+                trustedForwarder,
+                platformColdWallet,
+                fees,
+                platformColdWallet,
+                platformColdWallet,
+                platformColdWallet
+            )
+        );
         console.log("FeeSettings deployed at: ", address(feeSettings));
         feeSettings.transferOwnership(platformColdWallet);
         console.log("Started ownership transfer to: ", platformColdWallet);

@@ -8,10 +8,7 @@ import "../../contracts/FeeSettings.sol";
     fake currency to test the main contract with
 */
 contract FeeSettingsFailERC165Check0 is FeeSettings {
-    constructor(
-        Fees memory _fees,
-        address _feeCollector
-    ) FeeSettings(_fees, _feeCollector, _feeCollector, _feeCollector) {}
+    constructor(Fees memory _fees, address _feeCollector) FeeSettings(address(0)) {}
 
     function supportsInterface(bytes4 interfaceId) public view override returns (bool) {
         if (interfaceId == 0x01ffc9a7) {
@@ -23,10 +20,7 @@ contract FeeSettingsFailERC165Check0 is FeeSettings {
 }
 
 contract FeeSettingsFailERC165Check1 is FeeSettings {
-    constructor(
-        Fees memory _fees,
-        address _feeCollector
-    ) FeeSettings(_fees, _feeCollector, _feeCollector, _feeCollector) {}
+    constructor(Fees memory _fees, address _feeCollector) FeeSettings(address(0)) {}
 
     function supportsInterface(bytes4 interfaceId) public view override returns (bool) {
         if (interfaceId == 0x01ffc9a7) {
@@ -39,10 +33,7 @@ contract FeeSettingsFailERC165Check1 is FeeSettings {
 }
 
 contract FeeSettingsFailIFeeSettingsV2Check is FeeSettings {
-    constructor(
-        Fees memory _fees,
-        address _feeCollector
-    ) FeeSettings(_fees, _feeCollector, _feeCollector, _feeCollector) {}
+    constructor(Fees memory _fees, address _feeCollector) FeeSettings(address(0)) {}
 
     function supportsInterface(bytes4 interfaceId) public view override returns (bool) {
         if (interfaceId == 0x01ffc9a7) {

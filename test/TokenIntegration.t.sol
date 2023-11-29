@@ -5,6 +5,7 @@ import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/WrongFeeSettings.sol";
+import "./resources/FeeSettingsCreator.sol";
 
 contract tokenTest is Test {
     event AllowListChanged(AllowList indexed newAllowList);
@@ -32,7 +33,7 @@ contract tokenTest is Test {
         allowList = new AllowList();
         vm.prank(feeSettingsOwner);
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
-        feeSettings = new FeeSettings(fees, admin, admin, admin);
+        feeSettings = createFeeSettings(trustedForwarder, address(this), fees, admin, admin, admin);
         Token implementation = new Token(trustedForwarder);
         TokenProxyFactory tokenCloneFactory = new TokenProxyFactory(address(implementation));
         token = Token(
@@ -88,7 +89,7 @@ contract tokenTest is Test {
     function testSuggestNewFeeSettingsWrongCaller(address wrongUpdater) public {
         vm.assume(wrongUpdater != feeSettings.owner());
         Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
-        FeeSettings newFeeSettings = new FeeSettings(fees, pauser, pauser, pauser);
+        FeeSettings newFeeSettings = createFeeSettings(trustedForwarder, address(this), fees, pauser, pauser, pauser);
         vm.prank(wrongUpdater);
         vm.expectRevert("Only fee settings owner can suggest fee settings update");
         token.suggestNewFeeSettings(newFeeSettings);
@@ -96,7 +97,7 @@ contract tokenTest is Test {
 
     function testSuggestNewFeeSettingsFeeCollector() public {
         Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
-        FeeSettings newFeeSettings = new FeeSettings(fees, pauser, pauser, pauser);
+        FeeSettings newFeeSettings = createFeeSettings(trustedForwarder, address(this), fees, pauser, pauser, pauser);
         vm.prank(feeSettings.feeCollector());
         vm.expectRevert("Only fee settings owner can suggest fee settings update");
         token.suggestNewFeeSettings(newFeeSettings);
@@ -111,7 +112,14 @@ contract tokenTest is Test {
     function testSuggestNewFeeSettings(address newCollector) public {
         vm.assume(newCollector != address(0));
         Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
-        FeeSettings newFeeSettings = new FeeSettings(fees, newCollector, newCollector, newCollector);
+        FeeSettings newFeeSettings = createFeeSettings(
+            trustedForwarder,
+            address(this),
+            fees,
+            newCollector,
+            newCollector,
+            newCollector
+        );
         FeeSettings oldFeeSettings = FeeSettings(address(token.feeSettings()));
         uint oldInvestmentFeeDenominator = oldFeeSettings.crowdinvestingFeeDenominator();
         uint oldTokenFeeDenominator = oldFeeSettings.tokenFeeDenominator();
@@ -139,7 +147,14 @@ contract tokenTest is Test {
     function testAcceptNewFeeSettings(address newCollector) public {
         vm.assume(newCollector != address(0));
         Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
-        FeeSettings newFeeSettings = new FeeSettings(fees, newCollector, newCollector, newCollector);
+        FeeSettings newFeeSettings = createFeeSettings(
+            trustedForwarder,
+            address(this),
+            fees,
+            newCollector,
+            newCollector,
+            newCollector
+        );
         FeeSettings oldFeeSettings = FeeSettings(address(token.feeSettings()));
         uint oldInvestmentFeeDenominator = oldFeeSettings.crowdinvestingFeeDenominator();
         uint oldTokenFeeDenominator = oldFeeSettings.tokenFeeDenominator();
@@ -166,7 +181,9 @@ contract tokenTest is Test {
     function testAcceptFeeCollectorInsteadOfFeeSettings(address newFeeSettingsPretendAddress) public {
         vm.assume(newFeeSettingsPretendAddress != address(0));
         Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
-        FeeSettings newFeeSettings = new FeeSettings(
+        FeeSettings newFeeSettings = createFeeSettings(
+            trustedForwarder,
+            address(this),
             fees,
             newFeeSettingsPretendAddress,
             newFeeSettingsPretendAddress,
@@ -186,13 +203,17 @@ contract tokenTest is Test {
 
     function testAcceptWrongFeeSettings() public {
         Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
-        FeeSettings realNewFeeSettings = new FeeSettings(
+        FeeSettings realNewFeeSettings = createFeeSettings(
+            trustedForwarder,
+            feeSettings.owner(),
             fees,
             feeSettings.feeCollector(),
             feeSettings.feeCollector(),
             feeSettings.feeCollector()
         );
-        FeeSettings fakeNewFeeSettings = new FeeSettings(
+        FeeSettings fakeNewFeeSettings = createFeeSettings(
+            trustedForwarder,
+            address(this),
             fees,
             feeSettings.feeCollector(),
             feeSettings.feeCollector(),
