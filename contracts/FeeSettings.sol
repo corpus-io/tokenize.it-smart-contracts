@@ -490,23 +490,14 @@ contract FeeSettings is
     }
 
     /**
-     * @notice Calculates the fee for a given currency amount in PrivateOffer.sol
-     * @param _currencyAmount The amount of currency to calculate the fee for
-     * @return The fee
-     */
-    function privateOfferFee(
-        uint256 _currencyAmount,
-        address _token
-    ) external view override(IFeeSettingsV2) returns (uint256) {
-        return _privateOfferFee(_currencyAmount, _token);
-    }
-
-    /**
      * Calculates the fee for a given currency amount in PrivateOffer (v5) or PersonalInvite (v4)
      * @param _currencyAmount how much currency is raised
      * @return the fee
      */
-    function _privateOfferFee(uint256 _currencyAmount, address _token) internal view returns (uint256) {
+    function privateOfferFee(
+        uint256 _currencyAmount,
+        address _token
+    ) public view override(IFeeSettingsV2) returns (uint256) {
         uint256 baseFee = _fee(_currencyAmount, privateOfferFeeNumerator, privateOfferFeeDenominator);
         if (customFees[_token].validityDate > block.timestamp) {
             uint256 customFee = _fee(
@@ -574,7 +565,7 @@ contract FeeSettings is
      * @param _currencyAmount The amount of currency to calculate the fee for
      */
     function personalInviteFee(uint256 _currencyAmount) external view override(IFeeSettingsV1) returns (uint256) {
-        return _privateOfferFee(_currencyAmount, address(0));
+        return privateOfferFee(_currencyAmount, address(0));
     }
 
     /**
