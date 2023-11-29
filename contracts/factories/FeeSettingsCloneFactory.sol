@@ -36,12 +36,12 @@ contract FeeSettingsCloneFactory is CloneFactory {
             _privateOfferFeeCollector
         );
         address clone = Clones.cloneDeterministic(implementation, salt);
-        FeeSettings clonePriceOracle = FeeSettings(clone);
+        FeeSettings cloneFeeSettings = FeeSettings(clone);
         require(
-            clonePriceOracle.isTrustedForwarder(_trustedForwarder),
+            cloneFeeSettings.isTrustedForwarder(_trustedForwarder),
             "FeeSettingsCloneFactory: Unexpected trustedForwarder"
         );
-        clonePriceOracle.initialize(
+        cloneFeeSettings.initialize(
             _owner,
             _fees,
             _tokenFeeCollector,
