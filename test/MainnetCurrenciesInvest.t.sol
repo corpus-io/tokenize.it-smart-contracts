@@ -154,17 +154,17 @@ contract MainnetCurrencies is Test {
         assertEq(token.balanceOf(receiver), 0, "receiver has no tokens");
         assertEq(
             _currency.balanceOf(receiver),
-            _currencyCost - _currencyCost / FeeSettings(address(token.feeSettings())).crowdinvestingFeeDenominator(),
+            _currencyCost - FeeSettings(address(token.feeSettings())).crowdinvestingFee(_currencyCost, address(token)),
             "receiver should have received currency"
         );
         assertEq(
             _currency.balanceOf(FeeSettings(address(token.feeSettings())).feeCollector()),
-            _currencyCost / FeeSettings(address(token.feeSettings())).crowdinvestingFeeDenominator(),
+            FeeSettings(address(token.feeSettings())).crowdinvestingFee(_currencyCost, address(token)),
             "fee receiver should have received currency"
         );
         assertEq(
             token.balanceOf(FeeSettings(address(token.feeSettings())).feeCollector()),
-            amountOfTokenToBuy / FeeSettings(address(token.feeSettings())).crowdinvestingFeeDenominator(),
+            FeeSettings(address(token.feeSettings())).crowdinvestingFee(amountOfTokenToBuy, address(token)),
             "fee receiver should have received tokens"
         );
         assertEq(_currency.balanceOf(buyer), _currencyAmount - _currencyCost, "buyer should have paid currency");
@@ -231,17 +231,17 @@ contract MainnetCurrencies is Test {
         assertEq(token.balanceOf(receiver), 0, "receiver has no tokens");
         assertEq(
             _currency.balanceOf(receiver),
-            currencyCost - token.feeSettings().crowdinvestingFee(currencyCost),
+            currencyCost - FeeSettings(address(token.feeSettings())).crowdinvestingFee(currencyCost, address(token)),
             "receiver should have received currency"
         );
         assertEq(
             _currency.balanceOf(token.feeSettings().crowdinvestingFeeCollector()),
-            token.feeSettings().crowdinvestingFee(currencyCost),
+            FeeSettings(address(token.feeSettings())).crowdinvestingFee(currencyCost, address(token)),
             "fee receiver should have received currency"
         );
         assertEq(
             token.balanceOf(FeeSettings(address(token.feeSettings())).feeCollector()),
-            FeeSettings(address(token.feeSettings())).tokenFee(amountOfTokenToBuy),
+            FeeSettings(address(token.feeSettings())).tokenFee(amountOfTokenToBuy, address(token)),
             "fee receiver should have received tokens"
         );
         assertEq(_currency.balanceOf(buyer), currencyAmount - currencyCost, "buyer should have paid currency");
