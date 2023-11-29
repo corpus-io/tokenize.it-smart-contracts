@@ -44,11 +44,10 @@ contract VestingDemoTest is Test {
         bool isMintable = true; // the tokens are minted on payout
 
         vm.startPrank(platformAdmin);
-        Fees memory fees = Fees(1, 100, 1, 200, 1, 200, 0);
         FeeSettings feeSettings = createFeeSettings(
             trustedForwarder,
             platformAdmin,
-            fees,
+            Fees(1, 100, 1, 200, 1, 200, 0),
             platformAdmin,
             platformAdmin,
             platformAdmin
