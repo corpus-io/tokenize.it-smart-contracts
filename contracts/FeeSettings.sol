@@ -540,12 +540,13 @@ contract FeeSettings is
     }
 
     /**
-     * @notice Returns the token fee collector
+     * @notice Returns the default token fee collector
      * @dev this is a compatibility function for IFeeSettingsV1. It enables older token contracts to use the new fee settings contract.
+     * @dev as IFeeSettingsV1 only supports a single fee collector, we can not inquire the token address. Therefore, we return the default fee collector.
      * @return The token fee collector
      */
     function feeCollector() external view override(IFeeSettingsV1) returns (address) {
-        return tokenFeeCollector(_msgSender());
+        return tokenFeeCollectorAddress;
     }
 
     /**
