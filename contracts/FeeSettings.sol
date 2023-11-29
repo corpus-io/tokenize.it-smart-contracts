@@ -137,6 +137,22 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
     }
 
     /**
+     * @notice Adds a manager
+     * @param _manager The manager to add
+     */
+    function addManager(address _manager) external onlyOwner {
+        managers[_manager] = true;
+    }
+
+    /**
+     * @notice Removes a manager
+     * @param _manager The manager to remove
+     */
+    function removeManager(address _manager) external onlyOwner {
+        delete managers[_manager];
+    }
+
+    /**
      * @notice Prepares a fee change. Fee increases are subject to a minimum delay of 12 weeks, while fee reductions can be executed immediately.
      * @dev reducing fees = increasing the denominator
      * @param _fees The new fee denominators

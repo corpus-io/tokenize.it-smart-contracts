@@ -39,6 +39,12 @@ contract FeeSettingsTest is Test {
 
     uint256 public constant price = 10000000;
 
+    function setUp() public {
+        Fees memory fees = Fees(1, 100, 2, 100, 3, 100, 0);
+        vm.prank(admin);
+        feeSettings = new FeeSettings(fees, admin, admin, admin);
+    }
+
     function testEnforceFeeRangeInConstructor(uint32 numerator, uint32 denominator) public {
         vm.assume(denominator > 0);
         vm.assume(!tokenOrPrivateOfferFeeInValidRange(numerator, denominator));
@@ -765,6 +771,51 @@ contract FeeSettingsTest is Test {
         vm.expectRevert("Only managers can call this function");
         vm.prank(_rando);
         _feeSettings.removeCustomFee(someTokenAddress);
+    }
+
+    function testOwnerCanAddManager(address _manager) public {
+        vm.assume(_manager != address(0));
+        vm.assume(_manager != admin);
+
+        assertEq(feeSettings.managers(_manager), false, "Should not be manager yet");
+
+        vm.prank(admin);
+        feeSettings.addManager(_manager);
+
+        assertEq(feeSettings.managers(_manager), true, "Manager should be added");
+    }
+
+    function testRandoCanNotAddManager(address _rando) public {
+        vm.assume(_rando != address(0));
+        vm.assume(_rando != admin);
+
+        vm.expectRevert("Ownable: caller is not the owner");
+        vm.prank(_rando);
+        feeSettings.addManager(_rando);
+    }
+
+    function testOwnerCanRemoveManager(address _manager) public {
+        vm.assume(_manager != address(0));
+        vm.assume(_manager != admin);
+
+        vm.prank(admin);
+        feeSettings.addManager(_manager);
+
+        assertEq(feeSettings.managers(_manager), true, "Should be manager");
+
+        vm.prank(admin);
+        feeSettings.removeManager(_manager);
+
+        assertEq(feeSettings.managers(_manager), false, "Manager should be removed");
+    }
+
+    function testRandoCanNotRemoveManager(address _rando) public {
+        vm.assume(_rando != address(0));
+        vm.assume(_rando != admin);
+
+        vm.expectRevert("Ownable: caller is not the owner");
+        vm.prank(_rando);
+        feeSettings.removeManager(_rando);
     }
 
     function testFeeCalculationFunctionsAreEqual() public {
