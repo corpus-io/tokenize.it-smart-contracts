@@ -3,7 +3,7 @@ pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
-import "../contracts/FeeSettings.sol";
+import "./resources/FeeSettingsCreator.sol";
 
 contract tokenTest is Test {
     Token token;
@@ -28,7 +28,9 @@ contract tokenTest is Test {
         vm.startPrank(feeSettingsAndAllowListOwner);
         allowList = new AllowList();
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
-        feeSettings = new FeeSettings(
+        feeSettings = createFeeSettings(
+            trustedForwarder,
+            address(this),
             fees,
             feeSettingsAndAllowListOwner,
             feeSettingsAndAllowListOwner,
