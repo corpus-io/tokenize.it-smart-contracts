@@ -404,9 +404,9 @@ contract FeeSettingsTest is Test {
         vm.prank(admin);
         feeSettings.setFeeCollectors(newTokenFeeCollector, newCrowdinvestingFeeCollector, newPrivateOfferFeeCollector);
         assertEq(feeSettings.feeCollector(), newTokenFeeCollector); // IFeeSettingsV1
-        assertEq(feeSettings.tokenFeeCollector(), newTokenFeeCollector);
-        assertEq(feeSettings.crowdinvestingFeeCollector(), newCrowdinvestingFeeCollector);
-        assertEq(feeSettings.privateOfferFeeCollector(), newPrivateOfferFeeCollector);
+        assertEq(feeSettings.tokenFeeCollector(address(4)), newTokenFeeCollector);
+        assertEq(feeSettings.crowdinvestingFeeCollector(address(4)), newCrowdinvestingFeeCollector);
+        assertEq(feeSettings.privateOfferFeeCollector(address(4)), newPrivateOfferFeeCollector);
     }
 
     function tokenOrPrivateOfferFeeInValidRange(uint32 numerator, uint32 denominator) internal pure returns (bool) {
