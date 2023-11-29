@@ -3,12 +3,12 @@ pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
-import "../contracts/FeeSettings.sol";
 import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "../contracts/factories/PriceLinearCloneFactory.sol";
 import "../contracts/PriceLinear.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
+import "./resources/FeeSettingsCreator.sol";
 
 contract CrowdinvestingTest is Test {
     event CurrencyReceiverChanged(address indexed);
@@ -55,7 +55,14 @@ contract CrowdinvestingTest is Test {
     function setUp() public {
         list = new AllowList();
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 100);
-        feeSettings = new FeeSettings(fees, wrongFeeReceiver, admin, wrongFeeReceiver);
+        feeSettings = createFeeSettings(
+            trustedForwarder,
+            address(this),
+            fees,
+            wrongFeeReceiver,
+            admin,
+            wrongFeeReceiver
+        );
 
         // create token
         address tokenLogicContract = address(new Token(trustedForwarder));
