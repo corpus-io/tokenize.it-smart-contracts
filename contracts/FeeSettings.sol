@@ -99,6 +99,8 @@ contract FeeSettings is
         uint256 time
     );
 
+    event RemoveCustomFee(address indexed token);
+
     /**
      * @notice The fee collector has been changed to `newFeeCollector`
      * @param newFeeCollector The new fee collector
@@ -236,6 +238,7 @@ contract FeeSettings is
      */
     function removeCustomFee(address _token) external onlyManager {
         delete customFees[_token];
+        emit RemoveCustomFee(_token);
     }
 
     /**
