@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.23;
 
-import "@openzeppelin/contracts/access/Ownable2Step.sol";
-import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol";
+
 import "./interfaces/IFeeSettings.sol";
 
 interface ICrowdinvestingLike {
@@ -14,7 +16,13 @@ interface ICrowdinvestingLike {
  * @author malteish, cjentzsch
  * @notice The FeeSettings contract is used to manage fees paid to the tokenize.it platfom
  */
-contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
+contract FeeSettings is
+    Ownable2StepUpgradeable,
+    ERC165Upgradeable,
+    ERC2771ContextUpgradeable,
+    IFeeSettingsV2,
+    IFeeSettingsV1
+{
     /// max token fee is 5%
     uint32 public constant MAX_TOKEN_FEE_NUMERATOR = 1;
     uint32 public constant MAX_TOKEN_FEE_DENOMINATOR = 20;
@@ -107,6 +115,10 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      */
     event ChangeProposed(Fees proposal);
 
+    constructor(address _trustedForwarder) ERC2771ContextUpgradeable(_trustedForwarder) {
+        _disableInitializers();
+    }
+
     /**
      * @notice Initializes the contract with the given fee denominators and fee collector
      * @param _fees The initial fee denominators
@@ -114,12 +126,17 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      * @param _crowdinvestingFeeCollector The initial crowdinvesting fee collector
      * @param _privateOfferFeeCollector The initial private offer fee collector
      */
-    constructor(
+    function initialize(
+        address _owner,
         Fees memory _fees,
         address _tokenFeeCollector,
         address _crowdinvestingFeeCollector,
         address _privateOfferFeeCollector
-    ) {
+    ) external initializer {
+        require(_owner != address(0), "owner can not be zero address");
+        managers[_owner] = true;
+        _transferOwnership(_owner);
+
         checkFeeLimits(_fees);
         tokenFeeNumerator = _fees.tokenFeeNumerator;
         tokenFeeDenominator = _fees.tokenFeeDenominator;
@@ -127,13 +144,15 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
         crowdinvestingFeeDenominator = _fees.crowdinvestingFeeDenominator;
         privateOfferFeeNumerator = _fees.privateOfferFeeNumerator;
         privateOfferFeeDenominator = _fees.privateOfferFeeDenominator;
+
         require(_tokenFeeCollector != address(0), "Fee collector cannot be 0x0");
         tokenFeeCollector = _tokenFeeCollector;
+
         require(_crowdinvestingFeeCollector != address(0), "Fee collector cannot be 0x0");
         crowdinvestingFeeCollector = _crowdinvestingFeeCollector;
+
         require(_privateOfferFeeCollector != address(0), "Fee collector cannot be 0x0");
         privateOfferFeeCollector = _privateOfferFeeCollector;
-        managers[msg.sender] = true;
     }
 
     /**
@@ -328,7 +347,7 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      * To calculate fees when calling from a different address, use `tokenFee(uint256, address)` instead.
      */
     function tokenFee(uint256 _tokenAmount) external view override(IFeeSettingsV1, IFeeSettingsV2) returns (uint256) {
-        return tokenFee(_tokenAmount, msg.sender);
+        return tokenFee(_tokenAmount, _msgSender());
     }
 
     function tokenFee(uint256 _tokenAmount, address _token) public view returns (uint256) {
@@ -354,7 +373,7 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      * @return The fee
      */
     function crowdinvestingFee(uint256 _currencyAmount) public view override(IFeeSettingsV2) returns (uint256) {
-        address token = address(ICrowdinvestingLike(msg.sender).token());
+        address token = address(ICrowdinvestingLike(_msgSender()).token());
         return crowdinvestingFee(_currencyAmount, token);
     }
 
@@ -415,12 +434,12 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      * @dev Specify where the implementation of owner() is located
      * @return The owner of the contract
      */
-    function owner() public view override(Ownable, IFeeSettingsV1, IFeeSettingsV2) returns (address) {
-        return Ownable.owner();
+    function owner() public view override(OwnableUpgradeable, IFeeSettingsV1, IFeeSettingsV2) returns (address) {
+        return OwnableUpgradeable.owner();
     }
 
     modifier onlyManager() {
-        require(managers[msg.sender], "Only managers can call this function");
+        require(managers[_msgSender()], "Only managers can call this function");
         _;
     }
 
@@ -431,11 +450,11 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      */
     function supportsInterface(
         bytes4 interfaceId
-    ) public view virtual override(ERC165, IFeeSettingsV1, IFeeSettingsV2) returns (bool) {
+    ) public view virtual override(ERC165Upgradeable, IFeeSettingsV1, IFeeSettingsV2) returns (bool) {
         return
             interfaceId == type(IFeeSettingsV1).interfaceId || // we implement IFeeSettingsV1 for backwards compatibility
             interfaceId == type(IFeeSettingsV2).interfaceId || // we implement IFeeSettingsV2
-            ERC165.supportsInterface(interfaceId); // default implementation that enables further querying
+            ERC165Upgradeable.supportsInterface(interfaceId); // default implementation that enables further querying
     }
 
     /**
@@ -465,5 +484,19 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      */
     function personalInviteFee(uint256 _currencyAmount) external view override(IFeeSettingsV1) returns (uint256) {
         return _privateOfferFee(_currencyAmount, address(0));
+    }
+
+    /**
+     * @dev both Ownable and ERC2771Context have a _msgSender() function, so we need to override and select which one to use.
+     */
+    function _msgSender() internal view override(ContextUpgradeable, ERC2771ContextUpgradeable) returns (address) {
+        return ERC2771ContextUpgradeable._msgSender();
+    }
+
+    /**
+     * @dev both Ownable and ERC2771Context have a _msgData() function, so we need to override and select which one to use.
+     */
+    function _msgData() internal view override(ContextUpgradeable, ERC2771ContextUpgradeable) returns (bytes calldata) {
+        return ERC2771ContextUpgradeable._msgData();
     }
 }
