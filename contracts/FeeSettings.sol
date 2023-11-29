@@ -200,7 +200,10 @@ contract FeeSettings is
                 privateOfferFeeDenominator
             )
         ) {
-            require(_fees.time > block.timestamp + 12 weeks, "Fee change must be at least 12 weeks in the future");
+            require(
+                _fees.validityDate > block.timestamp + 12 weeks,
+                "Fee change must be at least 12 weeks in the future"
+            );
         }
         proposedFees = _fees;
         emit ChangeProposed(_fees);
@@ -213,7 +216,7 @@ contract FeeSettings is
      */
     function setCustomFee(address _token, Fees memory _fees) external onlyManager {
         checkFeeLimits(_fees);
-        require(_fees.time > block.timestamp, "Custom fee expiry time must be in the future");
+        require(_fees.validityDate > block.timestamp, "Custom fee expiry time must be in the future");
         customFees[_token] = _fees;
         emit SetCustomFee(
             _token,
@@ -223,7 +226,7 @@ contract FeeSettings is
             _fees.crowdinvestingFeeDenominator,
             _fees.privateOfferFeeNumerator,
             _fees.privateOfferFeeDenominator,
-            _fees.time
+            _fees.validityDate
         );
     }
 
@@ -239,7 +242,7 @@ contract FeeSettings is
      * @notice Executes a fee change that has been planned before
      */
     function executeFeeChange() external onlyOwner {
-        require(block.timestamp >= proposedFees.time, "Fee change must be executed after the change time");
+        require(block.timestamp >= proposedFees.validityDate, "Fee change must be executed after the change time");
         tokenFeeNumerator = proposedFees.tokenFeeNumerator;
         tokenFeeDenominator = proposedFees.tokenFeeDenominator;
         crowdinvestingFeeNumerator = proposedFees.crowdinvestingFeeNumerator;
@@ -352,7 +355,7 @@ contract FeeSettings is
 
     function tokenFee(uint256 _tokenAmount, address _token) public view returns (uint256) {
         uint256 baseFee = _fee(_tokenAmount, tokenFeeNumerator, tokenFeeDenominator);
-        if (customFees[_token].time > block.timestamp) {
+        if (customFees[_token].validityDate > block.timestamp) {
             uint256 customFee = _fee(
                 _tokenAmount,
                 customFees[_token].tokenFeeNumerator,
@@ -385,7 +388,7 @@ contract FeeSettings is
      */
     function crowdinvestingFee(uint256 _currencyAmount, address _token) public view returns (uint256) {
         uint256 baseFee = _fee(_currencyAmount, crowdinvestingFeeNumerator, crowdinvestingFeeDenominator);
-        if (customFees[_token].time > block.timestamp) {
+        if (customFees[_token].validityDate > block.timestamp) {
             uint256 customFee = _fee(
                 _currencyAmount,
                 customFees[_token].crowdinvestingFeeNumerator,
@@ -417,7 +420,7 @@ contract FeeSettings is
      */
     function _privateOfferFee(uint256 _currencyAmount, address _token) internal view returns (uint256) {
         uint256 baseFee = _fee(_currencyAmount, privateOfferFeeNumerator, privateOfferFeeDenominator);
-        if (customFees[_token].time > block.timestamp) {
+        if (customFees[_token].validityDate > block.timestamp) {
             uint256 customFee = _fee(
                 _currencyAmount,
                 customFees[_token].privateOfferFeeNumerator,

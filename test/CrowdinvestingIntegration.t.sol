@@ -121,7 +121,7 @@ contract CrowdinvestingTest is Test {
         );
         vm.prank(platformAdmin);
         feeSettings.planFeeChange(fees);
-        vm.warp(fees.time + 1 seconds);
+        vm.warp(fees.validityDate + 1 seconds);
         vm.prank(platformAdmin);
         feeSettings.executeFeeChange();
 

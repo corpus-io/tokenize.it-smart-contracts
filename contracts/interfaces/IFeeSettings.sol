@@ -63,5 +63,5 @@ struct Fees {
     uint32 crowdinvestingFeeDenominator;
     uint32 privateOfferFeeNumerator;
     uint32 privateOfferFeeDenominator;
-    uint64 time;
+    uint64 validityDate;
 }
