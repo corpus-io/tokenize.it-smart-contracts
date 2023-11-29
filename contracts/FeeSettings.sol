@@ -59,6 +59,9 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      */
     mapping(address => Fees) public customFees;
 
+    /// stores who is a manager. Managers can change customFees, but nothing else.
+    mapping(address => bool) public managers;
+
     /**
      * @notice Fee factors have been changed
      * @param tokenFeeNumerator a in fraction a/b that defines the fee paid in Token: fee = amount * a / b
@@ -130,6 +133,7 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
         crowdinvestingFeeCollector = _crowdinvestingFeeCollector;
         require(_privateOfferFeeCollector != address(0), "Fee collector cannot be 0x0");
         privateOfferFeeCollector = _privateOfferFeeCollector;
+        managers[msg.sender] = true;
     }
 
     /**
@@ -172,7 +176,7 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      * @param _token The token for which the custom fee should be set
      * @param _fees The custom fee
      */
-    function setCustomFee(address _token, Fees memory _fees) external onlyOwner {
+    function setCustomFee(address _token, Fees memory _fees) external onlyManager {
         checkFeeLimits(_fees);
         require(_fees.time > block.timestamp, "Custom fee expiry time must be in the future");
         customFees[_token] = _fees;
@@ -192,7 +196,7 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      * @notice removes a custom fee entry for a specific token
      * @param _token The token for which the custom fee should be removed
      */
-    function removeCustomFee(address _token) external onlyOwner {
+    function removeCustomFee(address _token) external onlyManager {
         delete customFees[_token];
     }
 
@@ -397,6 +401,11 @@ contract FeeSettings is Ownable2Step, ERC165, IFeeSettingsV2, IFeeSettingsV1 {
      */
     function owner() public view override(Ownable, IFeeSettingsV1, IFeeSettingsV2) returns (address) {
         return Ownable.owner();
+    }
+
+    modifier onlyManager() {
+        require(managers[msg.sender], "Only managers can call this function");
+        _;
     }
 
     /**

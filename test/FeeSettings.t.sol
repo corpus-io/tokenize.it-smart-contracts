@@ -664,7 +664,7 @@ contract FeeSettingsTest is Test {
         assertEq(_feeSettings.privateOfferFee(1000, _someTokenAddress), 50, "Private offer fee should be 50 again");
     }
 
-    function testOnlyOwnerCanAddCustomFees(address _rando) public {
+    function testOnlyManagerCanAddCustomFees(address _rando) public {
         address someTokenAddress = address(74);
         vm.assume(_rando != address(0));
         vm.assume(_rando != admin);
@@ -674,7 +674,7 @@ contract FeeSettingsTest is Test {
         vm.prank(admin);
         FeeSettings _feeSettings = new FeeSettings(fees, admin, admin, admin);
 
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert("Only managers can call this function");
         vm.prank(_rando);
         _feeSettings.setCustomFee(someTokenAddress, fees);
     }
@@ -752,7 +752,7 @@ contract FeeSettingsTest is Test {
         assertEq(_feeSettings.privateOfferFee(1000, someTokenAddress), 50, "Private offer fee should be 50");
     }
 
-    function testOnlyOwnerCanRemoveCustomFees(address _rando) public {
+    function testOnlyManagerCanRemoveCustomFees(address _rando) public {
         address someTokenAddress = address(74);
         vm.assume(_rando != address(0));
         vm.assume(_rando != admin);
@@ -762,7 +762,7 @@ contract FeeSettingsTest is Test {
         vm.prank(admin);
         FeeSettings _feeSettings = new FeeSettings(fees, admin, admin, admin);
 
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert("Only managers can call this function");
         vm.prank(_rando);
         _feeSettings.removeCustomFee(someTokenAddress);
     }
