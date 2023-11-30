@@ -40,8 +40,7 @@ contract tokenProxyUpgradeTest is Test {
     uint256 requirements = 0;
 
     function setUp() public {
-        vm.startPrank(feeSettingsAndAllowListOwner);
-        allowList = new AllowList();
+        allowList = createAllowList(trustedForwarder, feeSettingsAndAllowListOwner);
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
         feeSettings = createFeeSettings(
             trustedForwarder,

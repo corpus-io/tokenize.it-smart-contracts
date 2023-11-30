@@ -46,7 +46,7 @@ contract PrivateOfferTest is Test {
         Vesting vestingImplementation = new Vesting(trustedForwarder);
         VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
         factory = new PrivateOfferFactory(vestingCloneFactory);
-        list = new AllowList();
+        list = createAllowList(trustedForwarder, address(this));
 
         list.set(tokenReceiver, requirements);
 

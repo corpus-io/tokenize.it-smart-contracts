@@ -62,8 +62,7 @@ contract TokenERC2612Test is Test {
         tokenOwner = vm.addr(tokenOwnerPrivateKey);
 
         // deploy allow list
-        vm.prank(platformAdmin);
-        allowList = new AllowList();
+        allowList = createAllowList(trustedForwarder, platformAdmin);
 
         // deploy fee settings
         Fees memory fees = Fees(

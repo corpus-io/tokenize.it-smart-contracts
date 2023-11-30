@@ -53,7 +53,7 @@ contract CrowdinvestingTest is Test {
     uint256 public constant minAmountPerBuyer = maxAmountOfTokenToBeSold / 200; // 0.1 token
 
     function setUp() public {
-        list = new AllowList();
+        list = createAllowList(trustedForwarder, owner);
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 100);
         feeSettings = createFeeSettings(
             trustedForwarder,

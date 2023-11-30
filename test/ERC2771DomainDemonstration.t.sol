@@ -65,8 +65,7 @@ contract TokenERC2771Test is Test {
         minter = vm.addr(minterPrivateKey);
 
         // deploy allow list
-        vm.prank(platformAdmin);
-        allowList = new AllowList();
+        allowList = createAllowList(trustedForwarder, platformAdmin);
 
         // deploy fee settings
         Fees memory fees = Fees(

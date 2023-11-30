@@ -65,7 +65,7 @@ contract CrowdinvestingTest is Test {
     uint32 paymentTokenFeeDenominator = 50;
 
     function setUp() public {
-        list = new AllowList();
+        list = createAllowList(trustedForwarder, owner);
         Fees memory fees = Fees(
             1,
             tokenFeeDenominator,

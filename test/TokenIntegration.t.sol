@@ -29,11 +29,9 @@ contract tokenTest is Test {
     event RequirementsChanged(uint256 newRequirements);
 
     function setUp() public {
-        vm.prank(admin);
-        allowList = new AllowList();
-        vm.prank(feeSettingsOwner);
+        allowList = createAllowList(trustedForwarder, admin);
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
-        feeSettings = createFeeSettings(trustedForwarder, address(this), fees, admin, admin, admin);
+        feeSettings = createFeeSettings(trustedForwarder, feeSettingsOwner, fees, admin, admin, admin);
         Token implementation = new Token(trustedForwarder);
         TokenProxyFactory tokenCloneFactory = new TokenProxyFactory(address(implementation));
         token = Token(
@@ -71,7 +69,7 @@ contract tokenTest is Test {
     }
 
     function testUpdateAllowList() public {
-        AllowList newAllowList = new AllowList(); // deploy new AllowList
+        AllowList newAllowList = createAllowList(trustedForwarder, admin); // deploy new AllowList
         assertTrue(token.allowList() != newAllowList);
         vm.prank(admin);
         vm.expectEmit(true, true, true, true, address(token));

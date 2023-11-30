@@ -6,6 +6,7 @@ import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/factories/FeeSettingsCloneFactory.sol";
 import "./resources/ERC2771Helper.sol";
+import "./resources/CloneCreators.sol";
 
 contract tokenTest is Test {
     using ECDSA for bytes32;
@@ -48,7 +49,7 @@ contract tokenTest is Test {
 
     function setUp() public {
         vm.startPrank(feeSettingsAndAllowListOwner);
-        allowList = new AllowList();
+        allowList = createAllowList(trustedForwarder, feeSettingsAndAllowListOwner);
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
         FeeSettings feeSettingsLogicContract = new FeeSettings(trustedForwarder);
         FeeSettingsCloneFactory feeSettingsCloneFactory = new FeeSettingsCloneFactory(

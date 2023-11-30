@@ -26,8 +26,7 @@ contract tokenTest is Test {
     event RequirementsChanged(uint256 newRequirements);
 
     function setUp() public {
-        vm.startPrank(feeSettingsAndAllowListOwner);
-        allowList = new AllowList();
+        allowList = createAllowList(trustedForwarder, feeSettingsAndAllowListOwner);
         Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
         feeSettings = createFeeSettings(
             trustedForwarder,

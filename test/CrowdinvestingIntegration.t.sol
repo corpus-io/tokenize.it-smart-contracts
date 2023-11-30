@@ -39,7 +39,7 @@ contract CrowdinvestingTest is Test {
     uint256 public constant minAmountPerBuyer = maxAmountOfTokenToBeSold / 200; // 0.1 token
 
     function setUp() public {
-        list = new AllowList();
+        list = createAllowList(trustedForwarder, platformAdmin);
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 100);
         feeSettings = createFeeSettings(
             trustedForwarder,
@@ -144,7 +144,7 @@ contract CrowdinvestingTest is Test {
         uint256 _maxMintAmount = 2 ** 256 - 1; // need maximum possible value because we are using a fake token with variable decimals
         uint256 _paymentTokenAmount = 1000 * 10 ** _paymentTokenDecimals;
 
-        list = new AllowList();
+        list = createAllowList(trustedForwarder, platformAdmin);
         Token _token = Token(
             tokenFactory.createTokenProxy(
                 0,
@@ -263,7 +263,7 @@ contract CrowdinvestingTest is Test {
             uint256 _maxMintAmount = 2 ** 256 - 1; // need maximum possible value because we are using a fake token with variable decimals
             uint256 _paymentTokenAmount = 1000 * 10 ** _paymentTokenDecimals;
 
-            list = new AllowList();
+            list = createAllowList(trustedForwarder, platformAdmin);
             Token _token = Token(
                 tokenFactory.createTokenProxy(
                     0,

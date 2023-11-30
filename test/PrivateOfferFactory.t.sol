@@ -42,7 +42,7 @@ contract PrivateOfferFactoryTest is Test {
         Vesting vestingImplementation = new Vesting(trustedForwarder);
         VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
         factory = new PrivateOfferFactory(vestingCloneFactory);
-        list = new AllowList();
+        list = createAllowList(trustedForwarder, owner);
         Fees memory fees = Fees(0, 100, 0, 100, 0, 100, 0);
         feeSettings = createFeeSettings(trustedForwarder, address(this), fees, admin, admin, admin);
 

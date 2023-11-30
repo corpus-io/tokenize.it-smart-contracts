@@ -52,7 +52,7 @@ contract VestingDemoTest is Test {
             platformAdmin,
             platformAdmin
         );
-        AllowList allowList = new AllowList();
+        AllowList allowList = createAllowList(trustedForwarder, owner);
         Token localCompanyToken = Token(
             tokenFactory.createTokenProxy(
                 0,
