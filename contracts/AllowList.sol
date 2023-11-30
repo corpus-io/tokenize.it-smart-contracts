@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.23;
 
-import "@openzeppelin/contracts/access/Ownable2Step.sol";
-import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
+import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol";
 
 /**
  * @title AllowList
@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
  *   Examples for possible attributes are: is KYCed, is american, is of age, etc.
  *   One AllowList managed by one entity (e.g. tokenize.it) can manage up to 252 different attributes, and one tier with 5 levels, and can be used by an unlimited number of other Tokens.
  */
-contract AllowList is Ownable2Step, ERC2771Context {
+contract AllowList is Ownable2StepUpgradeable, ERC2771ContextUpgradeable {
     /**
      * @notice Stores the attributes for each address.
      * @dev Attributes are defined as bit mask, with the bit position encoding it's meaning and the bit's value whether this attribute is attested or not.
@@ -48,7 +48,12 @@ contract AllowList is Ownable2Step, ERC2771Context {
      * @notice Creates a new AllowList contract
      * @param _trustedForwarder the trusted forwarder (ERC2771) can not be changed, but is checked for security
      */
-    constructor(address _trustedForwarder, address _owner) ERC2771Context(_trustedForwarder) {
+    constructor(address _trustedForwarder) ERC2771ContextUpgradeable(_trustedForwarder) {
+        _disableInitializers();
+    }
+
+    function initialize(address _owner) public initializer {
+        require(_owner != address(0), "owner can not be zero address");
         _transferOwnership(_owner);
     }
 
@@ -75,14 +80,14 @@ contract AllowList is Ownable2Step, ERC2771Context {
     /**
      * @dev both Ownable and ERC2771Context have a _msgSender() function, so we need to override and select which one to use.
      */
-    function _msgSender() internal view override(Context, ERC2771Context) returns (address) {
-        return ERC2771Context._msgSender();
+    function _msgSender() internal view override(ContextUpgradeable, ERC2771ContextUpgradeable) returns (address) {
+        return ERC2771ContextUpgradeable._msgSender();
     }
 
     /**
      * @dev both Ownable and ERC2771Context have a _msgData() function, so we need to override and select which one to use.
      */
-    function _msgData() internal view override(Context, ERC2771Context) returns (bytes calldata) {
-        return ERC2771Context._msgData();
+    function _msgData() internal view override(ContextUpgradeable, ERC2771ContextUpgradeable) returns (bytes calldata) {
+        return ERC2771ContextUpgradeable._msgData();
     }
 }

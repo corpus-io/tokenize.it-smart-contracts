@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/AllowList.sol";
+import "../contracts/factories/AllowListCloneFactory.sol";
 
 contract AllowListTest is Test {
     event Set(address indexed key, uint256 value);
@@ -12,7 +12,18 @@ contract AllowListTest is Test {
     address owner = address(2);
 
     function setUp() public {
-        list = new AllowList(trustedForwarder, owner);
+        AllowList allowListLogicContract = new AllowList(trustedForwarder);
+        AllowListCloneFactory factory = new AllowListCloneFactory(address(allowListLogicContract));
+        list = AllowList(factory.createAllowListClone("salt", trustedForwarder, owner));
+    }
+
+    function testLogicContractInit(address _trustedForwarder) public {
+        vm.assume(_trustedForwarder != address(0));
+        AllowList allowListLogicContract = new AllowList(_trustedForwarder);
+        assertTrue(
+            allowListLogicContract.isTrustedForwarder(_trustedForwarder),
+            "AllowList: Unexpected trustedForwarder"
+        );
     }
 
     function testOwner() public {
