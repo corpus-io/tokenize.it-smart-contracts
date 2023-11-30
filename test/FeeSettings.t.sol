@@ -199,23 +199,23 @@ contract FeeSettingsTest is Test {
         );
         feeSettings.executeFeeChange();
 
-        assertEq(feeSettings.tokenFeeNumerator(), tokenFeeNumerator);
-        assertEq(feeSettings.tokenFeeDenominator(), tokenFeeDenominator);
-        assertEq(feeSettings.crowdinvestingFeeNumerator(), crowdinvestingFeeNumerator);
-        assertEq(feeSettings.crowdinvestingFeeDenominator(), crowdinvestingFeeDenominator);
-        assertEq(feeSettings.privateOfferFeeNumerator(), privateOfferFeeNumerator);
-        assertEq(feeSettings.privateOfferFeeDenominator(), privateOfferFeeDenominator);
+        assertEq(feeSettings.defaultTokenFeeNumerator(), tokenFeeNumerator);
+        assertEq(feeSettings.defaultTokenFeeDenominator(), tokenFeeDenominator);
+        assertEq(feeSettings.defaultCrowdinvestingFeeNumerator(), crowdinvestingFeeNumerator);
+        assertEq(feeSettings.defaultCrowdinvestingFeeDenominator(), crowdinvestingFeeDenominator);
+        assertEq(feeSettings.defaultPrivateOfferFeeNumerator(), privateOfferFeeNumerator);
+        assertEq(feeSettings.defaultPrivateOfferFeeDenominator(), privateOfferFeeDenominator);
     }
 
     function testSetFeeTo0Immediately() public {
         Fees memory feeChange = Fees(0, 1, 0, 1, 0, 1, uint64(block.timestamp));
 
-        assertEq(feeSettings.tokenFeeNumerator(), 1);
-        assertEq(feeSettings.tokenFeeDenominator(), 101);
-        assertEq(feeSettings.crowdinvestingFeeNumerator(), 2);
-        assertEq(feeSettings.crowdinvestingFeeDenominator(), 102);
-        assertEq(feeSettings.privateOfferFeeNumerator(), 3);
-        assertEq(feeSettings.privateOfferFeeDenominator(), 103);
+        assertEq(feeSettings.defaultTokenFeeNumerator(), 1);
+        assertEq(feeSettings.defaultTokenFeeDenominator(), 101);
+        assertEq(feeSettings.defaultCrowdinvestingFeeNumerator(), 2);
+        assertEq(feeSettings.defaultCrowdinvestingFeeDenominator(), 102);
+        assertEq(feeSettings.defaultPrivateOfferFeeNumerator(), 3);
+        assertEq(feeSettings.defaultPrivateOfferFeeDenominator(), 103);
 
         vm.prank(admin);
         feeSettings.planFeeChange(feeChange);
@@ -224,14 +224,14 @@ contract FeeSettingsTest is Test {
         //vm.warp(uint64(block.timestamp + delayAnnounced) + 1);
         feeSettings.executeFeeChange();
 
-        assertEq(feeSettings.tokenFeeNumerator(), 0);
-        assertEq(feeSettings.tokenFeeDenominator(), 1);
-        assertEq(feeSettings.crowdinvestingFeeNumerator(), 0);
-        assertEq(feeSettings.crowdinvestingFeeDenominator(), 1);
-        assertEq(feeSettings.privateOfferFeeNumerator(), 0);
-        assertEq(feeSettings.privateOfferFeeDenominator(), 1);
+        assertEq(feeSettings.defaultTokenFeeNumerator(), 0);
+        assertEq(feeSettings.defaultTokenFeeDenominator(), 1);
+        assertEq(feeSettings.defaultCrowdinvestingFeeNumerator(), 0);
+        assertEq(feeSettings.defaultCrowdinvestingFeeDenominator(), 1);
+        assertEq(feeSettings.defaultPrivateOfferFeeNumerator(), 0);
+        assertEq(feeSettings.defaultPrivateOfferFeeDenominator(), 1);
 
-        (, uint32 tokenFeeDenominator, , , , , uint64 time) = feeSettings.proposedFees();
+        (, uint32 tokenFeeDenominator, , , , , uint64 time) = feeSettings.proposedDefaultFees();
 
         assertEq(tokenFeeDenominator, 0, "Token fee denominator mismatch");
         assertEq(time, 0, "Time mismatch");
@@ -246,12 +246,12 @@ contract FeeSettingsTest is Test {
 
         Fees memory feeChange = Fees(1, 20, 1, 30, 1, 50, 0);
 
-        assertEq(_feeSettings.tokenFeeNumerator(), 0);
-        assertEq(_feeSettings.tokenFeeDenominator(), 1);
-        assertEq(_feeSettings.crowdinvestingFeeNumerator(), 0);
-        assertEq(_feeSettings.crowdinvestingFeeDenominator(), 1);
-        assertEq(_feeSettings.privateOfferFeeNumerator(), 0);
-        assertEq(_feeSettings.privateOfferFeeDenominator(), 1);
+        assertEq(_feeSettings.defaultTokenFeeNumerator(), 0);
+        assertEq(_feeSettings.defaultTokenFeeDenominator(), 1);
+        assertEq(_feeSettings.defaultCrowdinvestingFeeNumerator(), 0);
+        assertEq(_feeSettings.defaultCrowdinvestingFeeDenominator(), 1);
+        assertEq(_feeSettings.defaultPrivateOfferFeeNumerator(), 0);
+        assertEq(_feeSettings.defaultPrivateOfferFeeDenominator(), 1);
 
         vm.prank(admin);
         vm.expectRevert("Fee change must be at least 12 weeks in the future");
@@ -265,9 +265,9 @@ contract FeeSettingsTest is Test {
 
         Fees memory feeChange = Fees(1, tokenReductor, 2, continuousReductor, 3, personalReductor, 0);
 
-        assertEq(feeSettings.tokenFeeDenominator(), 101, "Token fee denominator mismatch");
-        assertEq(feeSettings.crowdinvestingFeeDenominator(), 102, "Crowdinvesting fee denominator mismatch");
-        assertEq(feeSettings.privateOfferFeeDenominator(), 103, "Private offer fee denominator mismatch");
+        assertEq(feeSettings.defaultTokenFeeDenominator(), 101, "Token fee denominator mismatch");
+        assertEq(feeSettings.defaultCrowdinvestingFeeDenominator(), 102, "Crowdinvesting fee denominator mismatch");
+        assertEq(feeSettings.defaultPrivateOfferFeeDenominator(), 103, "Private offer fee denominator mismatch");
 
         vm.prank(admin);
         feeSettings.planFeeChange(feeChange);
@@ -276,9 +276,9 @@ contract FeeSettingsTest is Test {
         //vm.warp(uint64(block.timestamp + delayAnnounced) + 1);
         feeSettings.executeFeeChange();
 
-        assertEq(feeSettings.tokenFeeDenominator(), tokenReductor);
-        assertEq(feeSettings.crowdinvestingFeeDenominator(), continuousReductor);
-        assertEq(feeSettings.privateOfferFeeDenominator(), personalReductor);
+        assertEq(feeSettings.defaultTokenFeeDenominator(), tokenReductor);
+        assertEq(feeSettings.defaultCrowdinvestingFeeDenominator(), continuousReductor);
+        assertEq(feeSettings.defaultPrivateOfferFeeDenominator(), personalReductor);
 
         //assertEq(_feeSettings.change, 0);
     }
@@ -308,25 +308,25 @@ contract FeeSettingsTest is Test {
         _feeSettings = FeeSettings(
             feeSettingsCloneFactory.createFeeSettingsClone("salt", trustedForwarder, admin, _fees, admin, admin, admin)
         );
-        assertEq(_feeSettings.tokenFeeNumerator(), tokenFeeNumerator, "Token fee numerator mismatch");
-        assertEq(_feeSettings.tokenFeeDenominator(), tokenFeeDenominator, "Token fee denominator mismatch");
+        assertEq(_feeSettings.defaultTokenFeeNumerator(), tokenFeeNumerator, "Token fee numerator mismatch");
+        assertEq(_feeSettings.defaultTokenFeeDenominator(), tokenFeeDenominator, "Token fee denominator mismatch");
         assertEq(
-            _feeSettings.crowdinvestingFeeNumerator(),
+            _feeSettings.defaultCrowdinvestingFeeNumerator(),
             crowdinvestingFeeNumerator,
             "Crowdinvesting fee numerator mismatch"
         );
         assertEq(
-            _feeSettings.crowdinvestingFeeDenominator(),
+            _feeSettings.defaultCrowdinvestingFeeDenominator(),
             crowdinvestingFeeDenominator,
             "Crowdinvesting fee denominator mismatch"
         );
         assertEq(
-            _feeSettings.privateOfferFeeNumerator(),
+            _feeSettings.defaultPrivateOfferFeeNumerator(),
             privateOfferFeeNumerator,
             "PrivateOffer fee numerator mismatch"
         );
         assertEq(
-            _feeSettings.privateOfferFeeDenominator(),
+            _feeSettings.defaultPrivateOfferFeeDenominator(),
             privateOfferFeeDenominator,
             "PrivateOffer fee denominator mismatch"
         );

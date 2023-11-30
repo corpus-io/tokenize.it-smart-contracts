@@ -271,7 +271,7 @@ contract tokenTest is Test {
     }
 
     function testMintOnce(uint256 x) public {
-        vm.assume(x <= UINT256_MAX - x / FeeSettings(address(token.feeSettings())).tokenFeeDenominator()); // avoid overflow
+        vm.assume(x <= UINT256_MAX - x / FeeSettings(address(token.feeSettings())).defaultTokenFeeDenominator()); // avoid overflow
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
         vm.prank(admin);
@@ -303,7 +303,7 @@ contract tokenTest is Test {
     }
 
     function testMintAllowerDoesNotNeedAllowance(uint256 x) public {
-        vm.assume(x <= UINT256_MAX - x / FeeSettings(address(token.feeSettings())).tokenFeeDenominator()); // avoid overflow
+        vm.assume(x <= UINT256_MAX - x / FeeSettings(address(token.feeSettings())).defaultTokenFeeDenominator()); // avoid overflow
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
         vm.prank(admin);
@@ -328,7 +328,7 @@ contract tokenTest is Test {
     function testIncreaseAllowance(uint256 x, uint256 y) public {
         vm.assume(
             x < UINT256_MAX - y &&
-                x + y <= UINT256_MAX - (x + y) / FeeSettings(address(token.feeSettings())).tokenFeeDenominator()
+                x + y <= UINT256_MAX - (x + y) / FeeSettings(address(token.feeSettings())).defaultTokenFeeDenominator()
         ); // avoid overflow
 
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
@@ -401,7 +401,7 @@ contract tokenTest is Test {
     function testMintAgain(uint256 totalMintAmount, uint256 steps) public {
         vm.assume(
             totalMintAmount <=
-                UINT256_MAX - totalMintAmount / FeeSettings(address(token.feeSettings())).tokenFeeDenominator()
+                UINT256_MAX - totalMintAmount / FeeSettings(address(token.feeSettings())).defaultTokenFeeDenominator()
         ); // avoid overflow
         //vm.assume(steps < 200);
 
@@ -443,7 +443,7 @@ contract tokenTest is Test {
     }
 
     function testBurnSimple(uint256 x) public {
-        vm.assume(x <= UINT256_MAX - x / FeeSettings(address(token.feeSettings())).tokenFeeDenominator()); // avoid overflow
+        vm.assume(x <= UINT256_MAX - x / FeeSettings(address(token.feeSettings())).defaultTokenFeeDenominator()); // avoid overflow
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
         bytes32 role = token.BURNER_ROLE();
 
@@ -454,21 +454,21 @@ contract tokenTest is Test {
         assertTrue(token.mintingAllowance(minter) == x);
 
         console.log("minting %s tokens", x);
-        console.log("fee demoninator: %s", FeeSettings(address(token.feeSettings())).tokenFeeDenominator());
+        console.log("fee demoninator: %s", FeeSettings(address(token.feeSettings())).defaultTokenFeeDenominator());
         console.log("amount: %s", x);
 
-        console.log("remainder: %s", x % FeeSettings(address(token.feeSettings())).tokenFeeDenominator());
+        console.log("remainder: %s", x % FeeSettings(address(token.feeSettings())).defaultTokenFeeDenominator());
         console.log(
             "amount without remainder: %s",
-            x - (x % FeeSettings(address(token.feeSettings())).tokenFeeDenominator())
+            x - (x % FeeSettings(address(token.feeSettings())).defaultTokenFeeDenominator())
         );
 
         console.log(
             "total tokens to mint (amount + fee): %s",
-            x + x / FeeSettings(address(token.feeSettings())).tokenFeeDenominator()
+            x + x / FeeSettings(address(token.feeSettings())).defaultTokenFeeDenominator()
         );
 
-        uint fee = x / FeeSettings(address(token.feeSettings())).tokenFeeDenominator();
+        uint fee = x / FeeSettings(address(token.feeSettings())).defaultTokenFeeDenominator();
         console.log("fee: %s", fee);
         vm.prank(minter);
         token.mint(pauser, x);
@@ -485,7 +485,7 @@ contract tokenTest is Test {
     Burn with requirements
      */
     function testBurnWithRequirements(uint256 x) public {
-        vm.assume(x <= UINT256_MAX - x / FeeSettings(address(token.feeSettings())).tokenFeeDenominator()); // avoid overflow
+        vm.assume(x <= UINT256_MAX - x / FeeSettings(address(token.feeSettings())).defaultTokenFeeDenominator()); // avoid overflow
         vm.prank(mintAllower);
         token.increaseMintingAllowance(minter, x);
         assertTrue(token.mintingAllowance(minter) == x);

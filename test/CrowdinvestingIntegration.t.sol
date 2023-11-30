@@ -214,7 +214,8 @@ contract CrowdinvestingTest is Test {
         // receiver should have the 990 FPT that were paid, minus the fee
 
         uint currencyAmount = 990 * 10 ** _paymentTokenDecimals;
-        uint256 currencyFee = currencyAmount / FeeSettings(address(token.feeSettings())).crowdinvestingFeeDenominator();
+        uint256 currencyFee = currencyAmount /
+            FeeSettings(address(token.feeSettings())).defaultCrowdinvestingFeeDenominator();
         assertTrue(
             paymentToken.balanceOf(receiver) == currencyAmount - currencyFee,
             "receiver has wrong amount of currency"
@@ -226,7 +227,7 @@ contract CrowdinvestingTest is Test {
             "fee collector has wrong amount of currency"
         );
         assertEq(
-            tokenAmount / FeeSettings(address(token.feeSettings())).tokenFeeDenominator(),
+            tokenAmount / FeeSettings(address(token.feeSettings())).defaultTokenFeeDenominator(),
             _token.balanceOf(feeSettings.feeCollector()),
             "fee collector has wrong amount of token"
         );
@@ -332,7 +333,7 @@ contract CrowdinvestingTest is Test {
             // receiver should have the 990 FPT that were paid, minus the fee
             uint currencyAmount = 990 * 10 ** _paymentTokenDecimals;
             uint256 currencyFee = currencyAmount /
-                FeeSettings(address(token.feeSettings())).crowdinvestingFeeDenominator();
+                FeeSettings(address(token.feeSettings())).defaultCrowdinvestingFeeDenominator();
             assertTrue(
                 paymentToken.balanceOf(receiver) == currencyAmount - currencyFee,
                 "receiver has wrong amount of currency"
@@ -344,7 +345,7 @@ contract CrowdinvestingTest is Test {
                 "fee collector has wrong amount of currency"
             );
             assertEq(
-                tokenAmount / FeeSettings(address(token.feeSettings())).tokenFeeDenominator(),
+                tokenAmount / FeeSettings(address(token.feeSettings())).defaultTokenFeeDenominator(),
                 _token.balanceOf(feeSettings.feeCollector()),
                 "fee collector has wrong amount of token"
             );
