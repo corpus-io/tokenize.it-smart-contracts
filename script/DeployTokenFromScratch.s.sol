@@ -5,7 +5,7 @@ pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Script.sol";
 import "../contracts/factories/FeeSettingsCloneFactory.sol";
-import "../contracts/AllowList.sol";
+import "../contracts/factories/AllowListCloneFactory.sol";
 import "../contracts/factories/PrivateOfferFactory.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 
@@ -61,11 +61,16 @@ contract DeployPlatform is Script {
         feeSettings.transferOwnership(platformColdWallet);
         console.log("Started ownership transfer to: ", platformColdWallet);
 
+        console.log("Deploying AllowListCloneFactory contract...");
+        AllowList allowListLogicContract = new AllowList(trustedForwarder);
+        AllowListCloneFactory allowListCloneFactory = new AllowListCloneFactory(address(allowListLogicContract));
+        console.log("AllowListCloneFactory deployed at: ", address(allowListCloneFactory));
+
         console.log("Deploying AllowList contract...");
-        AllowList allowList = new AllowList();
+        AllowList allowList = AllowList(
+            allowListCloneFactory.createAllowListClone(bytes32(0), trustedForwarder, platformColdWallet)
+        );
         console.log("Allowlist deployed at: ", address(allowList));
-        allowList.transferOwnership(platformAdminWallet);
-        console.log("Started ownership transfer to: ", platformAdminWallet);
 
         console.log("Deploying TokenProxyFactory contract...");
         Token tokenLogicContract = new Token(address(1)); // use bullshit forwarder
