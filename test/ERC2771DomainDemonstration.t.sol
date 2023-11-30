@@ -3,7 +3,7 @@ pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
-import "./resources/FeeSettingsCreator.sol";
+import "./resources/CloneCreators.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/ERC2771Helper.sol";
 import "../contracts/factories/CrowdinvestingCloneFactory.sol";
@@ -65,8 +65,7 @@ contract TokenERC2771Test is Test {
         minter = vm.addr(minterPrivateKey);
 
         // deploy allow list
-        vm.prank(platformAdmin);
-        allowList = new AllowList();
+        allowList = createAllowList(trustedForwarder, platformAdmin);
 
         // deploy fee settings
         Fees memory fees = Fees(

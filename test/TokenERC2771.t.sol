@@ -6,7 +6,7 @@ import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/ERC2771Helper.sol";
-import "./resources/FeeSettingsCreator.sol";
+import "./resources/CloneCreators.sol";
 import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific version to avoid import error: yarn add @opengsn/contracts@2.2.5
 
 contract TokenERC2771Test is Test {
@@ -59,8 +59,7 @@ contract TokenERC2771Test is Test {
         companyAdmin = vm.addr(companyAdminPrivateKey);
 
         // deploy allow list
-        vm.prank(platformAdmin);
-        allowList = new AllowList();
+        allowList = createAllowList(trustedForwarder, platformAdmin);
 
         // deploy fee settings
         Fees memory fees = Fees(

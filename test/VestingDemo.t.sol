@@ -6,7 +6,7 @@ import "../contracts/factories/VestingCloneFactory.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/ERC20MintableByAnyone.sol";
-import "./resources/FeeSettingsCreator.sol";
+import "./resources/CloneCreators.sol";
 
 contract VestingDemoTest is Test {
     Vesting implementation;
@@ -52,7 +52,7 @@ contract VestingDemoTest is Test {
             platformAdmin,
             platformAdmin
         );
-        AllowList allowList = new AllowList();
+        AllowList allowList = createAllowList(trustedForwarder, owner);
         Token localCompanyToken = Token(
             tokenFactory.createTokenProxy(
                 0,

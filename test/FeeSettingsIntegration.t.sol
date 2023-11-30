@@ -8,6 +8,7 @@ import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/factories/PrivateOfferFactory.sol";
 import "./resources/FakePaymentToken.sol";
+import "./resources/CloneCreators.sol";
 
 contract FeeSettingsIntegrationTest is Test {
     FeeSettings feeSettings;
@@ -53,7 +54,7 @@ contract FeeSettingsIntegrationTest is Test {
             )
         );
 
-        AllowList allowList = new AllowList();
+        AllowList allowList = createAllowList(trustedForwarder, owner);
 
         Token tokenLogic = new Token(trustedForwarder);
         TokenProxyFactory tokenProxyFactory = new TokenProxyFactory(address(tokenLogic));

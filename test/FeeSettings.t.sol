@@ -841,6 +841,7 @@ contract FeeSettingsTest is Test {
 
     function testOwnerCanAddManager(address _manager) public {
         vm.assume(_manager != address(0));
+        vm.assume(_manager != trustedForwarder);
         vm.assume(_manager != admin);
 
         assertEq(feeSettings.managers(_manager), false, "Should not be manager yet");
@@ -862,6 +863,7 @@ contract FeeSettingsTest is Test {
 
     function testOwnerCanRemoveManager(address _manager) public {
         vm.assume(_manager != address(0));
+        vm.assume(_manager != trustedForwarder);
         vm.assume(_manager != admin);
 
         vm.prank(admin);
@@ -1086,6 +1088,7 @@ contract FeeSettingsTest is Test {
 
     function testManagerCanSetAndRemoveCustomFeeCollector(address _manager, address _customFeeCollector) public {
         vm.assume(_manager != address(0));
+        vm.assume(_manager != trustedForwarder);
         vm.assume(_manager != admin);
         vm.assume(_customFeeCollector != address(0));
         vm.assume(_customFeeCollector != admin);

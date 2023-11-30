@@ -8,7 +8,7 @@ import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
 import "./resources/FakeCrowdinvestingAndToken.sol";
-import "./resources/FeeSettingsCreator.sol";
+import "./resources/CloneCreators.sol";
 
 contract CrowdinvestingTest is Test {
     event CurrencyReceiverChanged(address indexed);
@@ -52,7 +52,7 @@ contract CrowdinvestingTest is Test {
     uint256 public constant lastBuyDate = 12859023;
 
     function setUp() public {
-        list = new AllowList();
+        list = createAllowList(trustedForwarder, owner);
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 100);
         feeSettings = createFeeSettings(
             trustedForwarder,
@@ -263,7 +263,7 @@ contract CrowdinvestingTest is Test {
         uint256 _maxMintAmount = 1000 * 10 ** 18; // 2**256 - 1; // need maximum possible value because we are using a fake token with variable decimals
         uint256 _paymentTokenAmount = 100000 * 10 ** _paymentTokenDecimals;
 
-        list = new AllowList();
+        list = createAllowList(trustedForwarder, owner);
         Token _token = Token(
             tokenCloneFactory.createTokenProxy(
                 0,

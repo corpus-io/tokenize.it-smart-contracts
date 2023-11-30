@@ -7,7 +7,7 @@ import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/ERC2771Helper.sol";
-import "./resources/FeeSettingsCreator.sol";
+import "./resources/CloneCreators.sol";
 import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific version to avoid import error: yarn add @opengsn/contracts@2.2.5
 
 contract CrowdinvestingTest is Test {
@@ -65,7 +65,7 @@ contract CrowdinvestingTest is Test {
     uint32 paymentTokenFeeDenominator = 50;
 
     function setUp() public {
-        list = new AllowList();
+        list = createAllowList(trustedForwarder, owner);
         Fees memory fees = Fees(
             1,
             tokenFeeDenominator,

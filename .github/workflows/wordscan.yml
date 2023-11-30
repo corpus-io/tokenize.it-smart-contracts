@@ -10,6 +10,6 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: 16.x
-      - run: test "$(grep msg.sender contracts/Token.sol contracts/ContinuousFundraising.sol contracts/FeeSettings.sol |wc -l)" -eq 0 && test "$(grep msg.data contracts/Token.sol contracts/ContinuousFundraising.sol contracts/FeeSettings.sol |wc -l)" -eq 0
+      - run: test "$(grep msg.sender contracts/Token.sol contracts/ContinuousFundraising.sol contracts/FeeSettings.sol contracts/AllowList.sol |wc -l)" -eq 0 && test "$(grep msg.data contracts/Token.sol contracts/ContinuousFundraising.sol contracts/FeeSettings.sol contracts/AllowList.sol |wc -l)" -eq 0
 
       # these contracts inherit from ERC2771Context and may not contain msg.sender or msg.data. Instead, they must use _msgSender() and _msgData()

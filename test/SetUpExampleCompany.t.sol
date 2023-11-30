@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/factories/CrowdinvestingCloneFactory.sol";
-import "./resources/FeeSettingsCreator.sol";
+import "./resources/CloneCreators.sol";
 import "../contracts/factories/PrivateOfferFactory.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/ERC2771Helper.sol";
@@ -119,8 +119,7 @@ contract CompanySetUpTest is Test {
         );
 
         // set up AllowList
-        vm.prank(platformAdmin);
-        list = new AllowList();
+        list = createAllowList(address(8), platformAdmin);
 
         // investor registers with the platform
         // after kyc, the platform adds the investor to the allowlist with all the properties they were able to proof

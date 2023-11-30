@@ -8,7 +8,7 @@ import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "../contracts/PrivateOffer.sol";
 import "../contracts/factories/PrivateOfferFactory.sol";
-import "./resources/FeeSettingsCreator.sol";
+import "./resources/CloneCreators.sol";
 import "./resources/ERC20Helper.sol";
 
 /**
@@ -60,7 +60,7 @@ contract MainnetCurrencies is Test {
     // IERC20 DAI = IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
 
     function setUp() public {
-        list = new AllowList();
+        list = createAllowList(trustedForwarder, owner);
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
         feeSettings = createFeeSettings(trustedForwarder, address(this), fees, admin, admin, admin);
 

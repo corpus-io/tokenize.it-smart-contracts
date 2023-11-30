@@ -8,6 +8,7 @@ import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "../contracts/factories/PriceLinearCloneFactory.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
+import "./resources/CloneCreators.sol";
 
 /// fixture that always returns max price
 contract MaxPriceOracle is IPriceDynamic {
@@ -89,7 +90,7 @@ contract CrowdinvestingTest is Test {
 
         // set up platform
         vm.startPrank(platformAdmin);
-        list = new AllowList();
+        list = createAllowList(trustedForwarder, owner);
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 100);
         FeeSettings feeLogic = new FeeSettings(trustedForwarder);
         FeeSettingsCloneFactory feeSettingsCloneFactory = new FeeSettingsCloneFactory(address(feeLogic));

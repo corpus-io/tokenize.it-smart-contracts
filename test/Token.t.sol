@@ -3,7 +3,7 @@ pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
-import "./resources/FeeSettingsCreator.sol";
+import "./resources/CloneCreators.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract tokenTest is Test {
@@ -28,8 +28,7 @@ contract tokenTest is Test {
     address public constant feeSettingsOwner = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
 
     function setUp() public {
-        vm.prank(admin);
-        allowList = new AllowList();
+        allowList = createAllowList(trustedForwarder, admin);
         vm.prank(feeSettingsOwner);
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
         feeSettings = createFeeSettings(trustedForwarder, address(this), fees, admin, admin, admin);
