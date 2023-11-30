@@ -10,10 +10,11 @@ contract AllowListTest is Test {
     AllowList list;
     address trustedForwarder = address(1);
     address owner = address(2);
+    AllowListCloneFactory factory;
 
     function setUp() public {
         AllowList allowListLogicContract = new AllowList(trustedForwarder);
-        AllowListCloneFactory factory = new AllowListCloneFactory(address(allowListLogicContract));
+        factory = new AllowListCloneFactory(address(allowListLogicContract));
         list = AllowList(factory.createAllowListClone("salt", trustedForwarder, owner));
     }
 
@@ -24,6 +25,11 @@ contract AllowListTest is Test {
             allowListLogicContract.isTrustedForwarder(_trustedForwarder),
             "AllowList: Unexpected trustedForwarder"
         );
+    }
+
+    function testOwner0Reverts() public {
+        vm.expectRevert("owner can not be zero address");
+        factory.createAllowListClone("salt", trustedForwarder, address(0));
     }
 
     function testOwner() public {
