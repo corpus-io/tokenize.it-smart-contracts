@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/PrivateOffer.sol";
 import "../contracts/factories/PrivateOfferFactory.sol";
-import "./resources/FeeSettingsCreator.sol";
+import "./resources/CloneCreators.sol";
 import "./resources/ERC20MintableByAnyone.sol";
 
 contract PrivateOfferFactoryTest is Test {

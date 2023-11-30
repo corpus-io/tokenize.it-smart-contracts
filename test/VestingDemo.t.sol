@@ -6,7 +6,7 @@ import "../contracts/factories/VestingCloneFactory.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/ERC20MintableByAnyone.sol";
-import "./resources/FeeSettingsCreator.sol";
+import "./resources/CloneCreators.sol";
 
 contract VestingDemoTest is Test {
     Vesting implementation;

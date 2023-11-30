@@ -8,7 +8,7 @@ import "../contracts/factories/PriceLinearCloneFactory.sol";
 import "../contracts/PriceLinear.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
-import "./resources/FeeSettingsCreator.sol";
+import "./resources/CloneCreators.sol";
 
 contract CrowdinvestingTest is Test {
     event CurrencyReceiverChanged(address indexed);
