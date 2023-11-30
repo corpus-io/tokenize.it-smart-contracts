@@ -48,7 +48,9 @@ contract AllowList is Ownable2Step, ERC2771Context {
      * @notice Creates a new AllowList contract
      * @param _trustedForwarder the trusted forwarder (ERC2771) can not be changed, but is checked for security
      */
-    constructor(address _trustedForwarder) ERC2771Context(_trustedForwarder) {}
+    constructor(address _trustedForwarder, address _owner) ERC2771Context(_trustedForwarder) {
+        _transferOwnership(_owner);
+    }
 
     /**
      * @notice sets (or updates) the attributes for an address
