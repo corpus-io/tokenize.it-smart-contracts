@@ -314,15 +314,10 @@ contract FeeSettings is
         return crowdinvestingFeeCollector(ICrowdinvestingLike(_msgSender()).token());
     }
 
-    function privateOfferFeeCollector(address _token) public view returns (address) {
+    function privateOfferFeeCollector(address _token) public view override(IFeeSettingsV2) returns (address) {
         if (customPrivateOfferFeeCollector[_token] != address(0)) {
             return customPrivateOfferFeeCollector[_token];
         }
-        return privateOfferFeeCollectorAddress;
-    }
-
-    /// fallback for old private offers
-    function privateOfferFeeCollector() external view override(IFeeSettingsV2) returns (address) {
         return privateOfferFeeCollectorAddress;
     }
 

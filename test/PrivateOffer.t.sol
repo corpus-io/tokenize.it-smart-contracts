@@ -118,7 +118,7 @@ contract PrivateOfferTest is Test {
         assertEq(currency.balanceOf(currencyReceiver), 0);
         assertEq(token.balanceOf(tokenReceiver), 0);
         assertEq(
-            currency.balanceOf(FeeSettings(address(token.feeSettings())).privateOfferFeeCollector()),
+            currency.balanceOf(FeeSettings(address(token.feeSettings())).privateOfferFeeCollector(address(token))),
             0,
             "privateOfferFeeCollector currency balance is not correct"
         );
@@ -160,7 +160,7 @@ contract PrivateOfferTest is Test {
         );
 
         assertEq(
-            currency.balanceOf(FeeSettings(address(token.feeSettings())).privateOfferFeeCollector()),
+            currency.balanceOf(FeeSettings(address(token.feeSettings())).privateOfferFeeCollector(address(token))),
             feeCollectorCurrencyBalanceBefore +
                 FeeSettings(address(token.feeSettings())).privateOfferFee(currencyAmount, address(token)),
             "feeCollector currency balance is not correct"
@@ -391,7 +391,7 @@ contract PrivateOfferTest is Test {
         assertEq(currency.balanceOf(tokenReceiver), 0);
         assertEq(token.balanceOf(tokenReceiver), 0);
         assertEq(
-            currency.balanceOf(token.feeSettings().privateOfferFeeCollector()),
+            currency.balanceOf(token.feeSettings().privateOfferFeeCollector(address(token))),
             0,
             "privateOfferFeeCollector currency balance is not correct"
         );
@@ -421,7 +421,7 @@ contract PrivateOfferTest is Test {
         );
 
         assertEq(
-            currency.balanceOf(token.feeSettings().privateOfferFeeCollector()),
+            currency.balanceOf(token.feeSettings().privateOfferFeeCollector(address(token))),
             token.feeSettings().privateOfferFee(currencyAmount, address(token)),
             "feeCollector currency balance is not correct"
         );

@@ -137,7 +137,7 @@ contract PrivateOfferTimeLockTest is Test {
 
         console.log(
             "feeCollector currency balance before deployment: %s",
-            currency.balanceOf(token.feeSettings().privateOfferFeeCollector())
+            currency.balanceOf(token.feeSettings().privateOfferFeeCollector(address(token)))
         );
         // measure and log gas
         uint256 gasBefore = gasleft();
@@ -173,7 +173,7 @@ contract PrivateOfferTimeLockTest is Test {
         );
 
         assertEq(
-            currency.balanceOf(token.feeSettings().privateOfferFeeCollector()),
+            currency.balanceOf(token.feeSettings().privateOfferFeeCollector(address(token))),
             token.feeSettings().privateOfferFee(currencyAmount, address(token)),
             "feeCollector currency balance is not correct"
         );
@@ -185,7 +185,7 @@ contract PrivateOfferTimeLockTest is Test {
         );
 
         assertEq(
-            token.balanceOf(token.feeSettings().privateOfferFeeCollector()),
+            token.balanceOf(token.feeSettings().privateOfferFeeCollector(address(token))),
             token.feeSettings().tokenFee(arguments.tokenAmount),
             "feeCollector token balance is not correct"
         );
