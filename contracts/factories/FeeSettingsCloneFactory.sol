@@ -15,7 +15,14 @@ contract FeeSettingsCloneFactory is CloneFactory {
 
     /**
      * Create a clone
-
+     * @param _rawSalt this value influences the address of the clone, but not the initialization
+     * @param _trustedForwarder the trusted forwarder (ERC2771) can not be changed, but is checked for security
+     * @param _owner address that will own the new clone
+     * @param _fees struct that contains the fee schedule for the clone
+     * @param _tokenFeeCollector address that will receive the fees for token creation
+     * @param _crowdinvestingFeeCollector address that will receive the fees for crowdinvesting
+     * @param _privateOfferFeeCollector address that will receive the fees for private offers
+     * @return address of the new clone
      */
     function createFeeSettingsClone(
         bytes32 _rawSalt,
@@ -57,6 +64,11 @@ contract FeeSettingsCloneFactory is CloneFactory {
      * @param _rawSalt this value influences the address of the clone, but not the initialization
      * @param _trustedForwarder the trusted forwarder (ERC2771) can not be changed, but is checked for security
      * @param _owner address that will own the new clone
+     * @param _fees struct that contains the fee schedule for the clone
+     * @param _tokenFeeCollector address that will receive the fees for token creation
+     * @param _crowdinvestingFeeCollector address that will receive the fees for crowdinvesting
+     * @param _privateOfferFeeCollector address that will receive the fees for private offers
+     * @return address of the new clone
      */
     function predictCloneAddress(
         bytes32 _rawSalt,
@@ -81,7 +93,14 @@ contract FeeSettingsCloneFactory is CloneFactory {
 
     /**
      * Generate a single salt from all input parameters
-   
+     * @param _rawSalt this value influences the address of the clone, but not the initialization
+     * @param _trustedForwarder the trusted forwarder (ERC2771) can not be changed, but is checked for security
+     * @param _owner address that will own the new clone
+     * @param _fees struct that contains the fee schedule for the clone
+     * @param _tokenFeeCollector address that will receive the fees for token creation
+     * @param _crowdinvestingFeeCollector address that will receive the fees for crowdinvesting
+     * @param _privateOfferFeeCollector address that will receive the fees for private offers
+     * @return salt
      */
     function _generateSalt(
         bytes32 _rawSalt,

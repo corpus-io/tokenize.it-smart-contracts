@@ -565,10 +565,10 @@ contract CrowdinvestingTest is Test {
         assertTrue(token.balanceOf(buyer) == (minAmountPerBuyer * 3) / 2, "buyer has tokens");
         uint256 tokenFee = (minAmountPerBuyer * 3) /
             2 /
-            FeeSettings(address(token.feeSettings())).tokenFeeDenominator();
+            FeeSettings(address(token.feeSettings())).defaultTokenFeeDenominator();
         uint256 paymentTokenFee = (costInPaymentTokenForMinAmount * 3) /
             2 /
-            FeeSettings(address(token.feeSettings())).crowdinvestingFeeDenominator();
+            FeeSettings(address(token.feeSettings())).defaultCrowdinvestingFeeDenominator();
         assertTrue(
             paymentToken.balanceOf(receiver) == (costInPaymentTokenForMinAmount * 3) / 2 - paymentTokenFee,
             "receiver received payment tokens"

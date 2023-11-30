@@ -8,7 +8,7 @@ import "./CloneFactory.sol";
 /**
  * @title AllowListCloneFactory
  * @author malteish
- * @notice Create clones of a AllowList contract with deterministic addresses
+ * @notice Create clones of an AllowList contract with deterministic addresses
  */
 contract AllowListCloneFactory is CloneFactory {
     constructor(address _implementation) CloneFactory(_implementation) {}
@@ -18,6 +18,7 @@ contract AllowListCloneFactory is CloneFactory {
      * @param _rawSalt this value influences the address of the clone, but not the initialization
      * @param _trustedForwarder the trusted forwarder (ERC2771) can not be changed, but is checked for security
      * @param _owner address that will own the new clone
+     * @return address of the new clone
      */
     function createAllowListClone(
         bytes32 _rawSalt,
@@ -41,6 +42,7 @@ contract AllowListCloneFactory is CloneFactory {
      * @param _rawSalt this value influences the address of the clone, but not the initialization
      * @param _trustedForwarder the trusted forwarder (ERC2771) can not be changed, but is checked for security
      * @param _owner address that will own the new clone
+     * @return address of the new clone
      */
     function predictCloneAddress(
         bytes32 _rawSalt,
@@ -56,6 +58,7 @@ contract AllowListCloneFactory is CloneFactory {
      * @param _rawSalt this value influences the address of the clone, but not the initialization
      * @param _trustedForwarder the trusted forwarder (ERC2771) can not be changed, but is checked for security
      * @param _owner address that will own the new clone
+     * @return salt
      */
     function _generateSalt(
         bytes32 _rawSalt,
