@@ -235,7 +235,7 @@ contract MainnetCurrencies is Test {
             "receiver should have received currency"
         );
         assertEq(
-            _currency.balanceOf(token.feeSettings().crowdinvestingFeeCollector()),
+            _currency.balanceOf(FeeSettings(address(token.feeSettings())).crowdinvestingFeeCollector(address(token))),
             FeeSettings(address(token.feeSettings())).crowdinvestingFee(currencyCost, address(token)),
             "fee receiver should have received currency"
         );

@@ -28,7 +28,7 @@ contract IFeeSettingsTest is Test {
         bytes4 expected = getFunctionSelector("crowdinvestingFee(uint256)");
         expected = expected ^ getFunctionSelector("crowdinvestingFeeCollector()");
         expected = expected ^ getFunctionSelector("privateOfferFee(uint256,address)");
-        expected = expected ^ getFunctionSelector("privateOfferFeeCollector()");
+        expected = expected ^ getFunctionSelector("privateOfferFeeCollector(address)");
         expected = expected ^ getFunctionSelector("tokenFee(uint256)");
         expected = expected ^ getFunctionSelector("tokenFeeCollector()");
         expected = expected ^ getFunctionSelector("owner()");
@@ -39,7 +39,7 @@ contract IFeeSettingsTest is Test {
         console.logBytes4(actual);
 
         // hardcoding this here so this test throws when search and replace changes the interface
-        bytes4 fixedValue = 0xc8408cdb;
+        bytes4 fixedValue = 0x38921194;
 
         assertEq(actual, fixedValue, "interface ID mismatch: did search and replace change the interface?");
 

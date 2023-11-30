@@ -356,12 +356,14 @@ contract CrowdinvestingTest is Test {
             "receiver has payment tokens"
         );
         assertTrue(
-            paymentToken.balanceOf(token.feeSettings().crowdinvestingFeeCollector()) ==
-                fakeCrowdinvesting.fee(costInPaymentToken),
+            paymentToken.balanceOf(
+                FeeSettings(address(token.feeSettings())).crowdinvestingFeeCollector(address(token))
+            ) == fakeCrowdinvesting.fee(costInPaymentToken),
             "fee collector has collected fee in payment tokens"
         );
         assertTrue(
-            token.balanceOf(token.feeSettings().tokenFeeCollector()) == localFeeSettings.tokenFee(tokenBuyAmount),
+            token.balanceOf(FeeSettings(address(token.feeSettings())).tokenFeeCollector(address(token))) ==
+                localFeeSettings.tokenFee(tokenBuyAmount),
             "fee collector has collected fee in tokens"
         );
         assertTrue(crowdinvesting.tokensSold() == tokenBuyAmount, "crowdinvesting has sold tokens");
@@ -572,12 +574,14 @@ contract CrowdinvestingTest is Test {
             "receiver received payment tokens"
         );
         assertEq(
-            token.balanceOf(token.feeSettings().tokenFeeCollector()),
+            token.balanceOf(FeeSettings(address(token.feeSettings())).tokenFeeCollector(address(token))),
             tokenFee,
             "fee collector has not collected fee in tokens"
         );
         assertEq(
-            paymentToken.balanceOf(token.feeSettings().crowdinvestingFeeCollector()),
+            paymentToken.balanceOf(
+                FeeSettings(address(token.feeSettings())).crowdinvestingFeeCollector(address(token))
+            ),
             paymentTokenFee,
             "fee collector has not collected fee in payment tokens"
         );
