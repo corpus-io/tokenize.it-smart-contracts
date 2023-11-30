@@ -41,7 +41,7 @@ interface IFeeSettingsV2 {
 
     function privateOfferFee(uint256, address) external view returns (uint256);
 
-    function privateOfferFeeCollector() external view returns (address);
+    function privateOfferFeeCollector(address) external view returns (address);
 
     function owner() external view returns (address);
 
