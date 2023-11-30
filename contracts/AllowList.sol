@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
+import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 
 /**
  * @title AllowList
@@ -10,7 +11,7 @@ import "@openzeppelin/contracts/access/Ownable2Step.sol";
  *   Examples for possible attributes are: is KYCed, is american, is of age, etc.
  *   One AllowList managed by one entity (e.g. tokenize.it) can manage up to 252 different attributes, and one tier with 5 levels, and can be used by an unlimited number of other Tokens.
  */
-contract AllowList is Ownable2Step {
+contract AllowList is Ownable2Step, ERC2771Context {
     /**
      * @notice Stores the attributes for each address.
      * @dev Attributes are defined as bit mask, with the bit position encoding it's meaning and the bit's value whether this attribute is attested or not.
@@ -44,6 +45,12 @@ contract AllowList is Ownable2Step {
     event Set(address indexed _addr, uint256 _attributes);
 
     /**
+     * @notice Creates a new AllowList contract
+     * @param _trustedForwarder the trusted forwarder (ERC2771) can not be changed, but is checked for security
+     */
+    constructor(address _trustedForwarder) ERC2771Context(_trustedForwarder) {}
+
+    /**
      * @notice sets (or updates) the attributes for an address
      * @param _addr address to be set
      * @param _attributes new attributes
@@ -61,5 +68,19 @@ contract AllowList is Ownable2Step {
     function remove(address _addr) external onlyOwner {
         delete map[_addr];
         emit Set(_addr, 0);
+    }
+
+    /**
+     * @dev both Ownable and ERC2771Context have a _msgSender() function, so we need to override and select which one to use.
+     */
+    function _msgSender() internal view override(Context, ERC2771Context) returns (address) {
+        return ERC2771Context._msgSender();
+    }
+
+    /**
+     * @dev both Ownable and ERC2771Context have a _msgData() function, so we need to override and select which one to use.
+     */
+    function _msgData() internal view override(Context, ERC2771Context) returns (bytes calldata) {
+        return ERC2771Context._msgData();
     }
 }
