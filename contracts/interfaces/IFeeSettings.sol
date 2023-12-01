@@ -31,13 +31,13 @@ interface IFeeSettingsV1 {
  * From v4 to v5, the contract names have changed and instead of one fee collector, there are now three.
  */
 interface IFeeSettingsV2 {
-    function tokenFee(uint256) external view returns (uint256);
+    function tokenFee(uint256, address) external view returns (uint256);
 
-    function tokenFeeCollector() external view returns (address);
+    function tokenFeeCollector(address) external view returns (address);
 
-    function crowdinvestingFee(uint256) external view returns (uint256);
+    function crowdinvestingFee(uint256, address) external view returns (uint256);
 
-    function crowdinvestingFeeCollector() external view returns (address);
+    function crowdinvestingFeeCollector(address) external view returns (address);
 
     function privateOfferFee(uint256, address) external view returns (uint256);
 

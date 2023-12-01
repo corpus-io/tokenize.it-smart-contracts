@@ -17,7 +17,7 @@ contract FakeCrowdinvesting {
 
     function fee(uint256 amount) public view returns (uint256) {
         IFeeSettingsV2 feeSettings = token.feeSettings();
-        return feeSettings.crowdinvestingFee(amount);
+        return feeSettings.crowdinvestingFee(amount, address(token));
     }
 
     function feeV1(uint256 amount) public view returns (uint256) {
@@ -37,6 +37,6 @@ contract FakeToken {
     }
 
     function fee(uint256 amount) public view returns (uint256) {
-        return feeSettings.tokenFee(amount);
+        return feeSettings.tokenFee(amount, address(this));
     }
 }

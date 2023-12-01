@@ -286,7 +286,7 @@ contract tokenTest is Test {
         );
         assertEq(
             feeCollectorBalanceAfterMint - feeCollectorBalanceBeforeMint,
-            token.feeSettings().tokenFee(_amount),
+            token.feeSettings().tokenFee(_amount, address(token)),
             "fee collector has received wrong token amount"
         );
     }

@@ -539,7 +539,11 @@ contract FeeSettingsTest is Test {
             feeSettings.personalInviteFee(_amount),
             "Private offer fee mismatch"
         );
-        assertEq(feeSettings.feeCollector(), feeSettings.tokenFeeCollector(), "Fee collector mismatch");
+        assertEq(
+            feeSettings.feeCollector(),
+            feeSettings.tokenFeeCollector(address(_fakeToken)),
+            "Fee collector mismatch"
+        );
     }
 
     function testIFeeSettingsV2IsAvailable() public {
@@ -928,11 +932,6 @@ contract FeeSettingsTest is Test {
             feeSettings.feeCollector(),
             "Fee collector mismatch between V1 and V2"
         );
-        assertEq(
-            feeSettings.tokenFeeCollector(exampleTokenAddress),
-            feeSettings.tokenFeeCollector(),
-            "Fee collector wrong without custom fee collector"
-        );
         assertEq(feeSettings.tokenFeeCollector(exampleTokenAddress), admin, "Fee collector not admin address");
 
         vm.prank(admin);
@@ -973,11 +972,6 @@ contract FeeSettingsTest is Test {
             feeSettings.tokenFeeCollector(exampleTokenAddress),
             feeSettings.feeCollector(),
             "Fee collector mismatch between V1 and V2"
-        );
-        assertEq(
-            feeSettings.tokenFeeCollector(exampleTokenAddress),
-            feeSettings.tokenFeeCollector(),
-            "Fee collector wrong without custom fee collector"
         );
         assertEq(feeSettings.tokenFeeCollector(exampleTokenAddress), admin, "Fee collector not admin address");
     }
