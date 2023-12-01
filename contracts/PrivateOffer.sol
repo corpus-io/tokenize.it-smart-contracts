@@ -84,9 +84,13 @@ contract PrivateOffer {
         );
 
         IFeeSettingsV2 feeSettings = _arguments.token.feeSettings();
-        uint256 fee = feeSettings.privateOfferFee(currencyAmount);
+        uint256 fee = feeSettings.privateOfferFee(currencyAmount, address(_arguments.token));
         if (fee != 0) {
-            _arguments.currency.safeTransferFrom(_arguments.currencyPayer, feeSettings.privateOfferFeeCollector(), fee);
+            _arguments.currency.safeTransferFrom(
+                _arguments.currencyPayer,
+                feeSettings.privateOfferFeeCollector(address(_arguments.token)),
+                fee
+            );
         }
         _arguments.currency.safeTransferFrom(
             _arguments.currencyPayer,

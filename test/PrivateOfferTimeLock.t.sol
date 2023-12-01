@@ -5,7 +5,7 @@ import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/PrivateOffer.sol";
 import "../contracts/factories/PrivateOfferFactory.sol";
-import "../contracts/FeeSettings.sol";
+import "./resources/CloneCreators.sol";
 import "./resources/FakePaymentToken.sol";
 
 contract PrivateOfferTimeLockTest is Test {
@@ -35,12 +35,12 @@ contract PrivateOfferTimeLockTest is Test {
         Vesting vestingImplementation = new Vesting(trustedForwarder);
         VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
         privateOfferFactory = new PrivateOfferFactory(vestingCloneFactory);
-        list = new AllowList();
+        list = createAllowList(trustedForwarder, address(this));
 
         list.set(tokenReceiver, requirements);
 
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
-        feeSettings = new FeeSettings(fees, admin, admin, admin);
+        feeSettings = createFeeSettings(trustedForwarder, address(this), fees, admin, admin, admin);
 
         Token implementation = new Token(trustedForwarder);
         TokenProxyFactory tokenCloneFactory = new TokenProxyFactory(address(implementation));
@@ -137,7 +137,7 @@ contract PrivateOfferTimeLockTest is Test {
 
         console.log(
             "feeCollector currency balance before deployment: %s",
-            currency.balanceOf(token.feeSettings().privateOfferFeeCollector())
+            currency.balanceOf(token.feeSettings().privateOfferFeeCollector(address(token)))
         );
         // measure and log gas
         uint256 gasBefore = gasleft();
@@ -168,13 +168,13 @@ contract PrivateOfferTimeLockTest is Test {
 
         assertEq(
             currency.balanceOf(currencyReceiver),
-            currencyAmount - token.feeSettings().privateOfferFee(currencyAmount),
+            currencyAmount - token.feeSettings().privateOfferFee(currencyAmount, address(token)),
             "currencyReceiver wrong balance after deployment"
         );
 
         assertEq(
-            currency.balanceOf(token.feeSettings().privateOfferFeeCollector()),
-            token.feeSettings().privateOfferFee(currencyAmount),
+            currency.balanceOf(token.feeSettings().privateOfferFeeCollector(address(token))),
+            token.feeSettings().privateOfferFee(currencyAmount, address(token)),
             "feeCollector currency balance is not correct"
         );
 
@@ -185,8 +185,8 @@ contract PrivateOfferTimeLockTest is Test {
         );
 
         assertEq(
-            token.balanceOf(token.feeSettings().privateOfferFeeCollector()),
-            token.feeSettings().tokenFee(arguments.tokenAmount),
+            token.balanceOf(token.feeSettings().privateOfferFeeCollector(address(token))),
+            token.feeSettings().tokenFee(arguments.tokenAmount, address(token)),
             "feeCollector token balance is not correct"
         );
 

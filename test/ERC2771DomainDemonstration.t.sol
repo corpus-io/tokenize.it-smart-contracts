@@ -3,7 +3,7 @@ pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
-import "../contracts/FeeSettings.sol";
+import "./resources/CloneCreators.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/ERC2771Helper.sol";
 import "../contracts/factories/CrowdinvestingCloneFactory.sol";
@@ -22,17 +22,6 @@ contract TokenERC2771Test is Test {
     FakePaymentToken paymentToken;
     //Forwarder trustedForwarder;
     ERC2771Helper ERC2771helper;
-
-    // copied from openGSN IForwarder
-    struct ForwardRequest {
-        address from;
-        address to;
-        uint256 value;
-        uint256 gas;
-        uint256 nonce;
-        bytes data;
-        uint256 validUntil;
-    }
 
     address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
 
@@ -65,8 +54,7 @@ contract TokenERC2771Test is Test {
         minter = vm.addr(minterPrivateKey);
 
         // deploy allow list
-        vm.prank(platformAdmin);
-        allowList = new AllowList();
+        allowList = createAllowList(trustedForwarder, platformAdmin);
 
         // deploy fee settings
         Fees memory fees = Fees(
@@ -79,7 +67,14 @@ contract TokenERC2771Test is Test {
             0
         );
         vm.prank(platformAdmin);
-        feeSettings = new FeeSettings(fees, feeCollector, feeCollector, feeCollector);
+        feeSettings = createFeeSettings(
+            trustedForwarder,
+            platformAdmin,
+            fees,
+            feeCollector,
+            feeCollector,
+            feeCollector
+        );
 
         Token implementation = new Token(address(forwarder));
         factory = new TokenProxyFactory(address(implementation));

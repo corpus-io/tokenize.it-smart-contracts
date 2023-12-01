@@ -3,10 +3,11 @@ pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
-import "../contracts/FeeSettings.sol";
 import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
+import "./resources/FakeCrowdinvestingAndToken.sol";
+import "./resources/CloneCreators.sol";
 
 contract CrowdinvestingTest is Test {
     event CurrencyReceiverChanged(address indexed);
@@ -48,9 +49,16 @@ contract CrowdinvestingTest is Test {
     uint256 public constant minAmountPerBuyer = maxAmountOfTokenToBeSold / 200; // 0.1 token
 
     function setUp() public {
-        list = new AllowList();
+        list = createAllowList(trustedForwarder, owner);
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 100);
-        feeSettings = new FeeSettings(fees, wrongFeeReceiver, admin, wrongFeeReceiver);
+        feeSettings = createFeeSettings(
+            trustedForwarder,
+            address(this),
+            fees,
+            wrongFeeReceiver,
+            admin,
+            wrongFeeReceiver
+        );
 
         // create token
         address tokenLogicContract = address(new Token(trustedForwarder));
@@ -117,7 +125,7 @@ contract CrowdinvestingTest is Test {
         uint256 _maxMintAmount = 1000 * 10 ** 18; // 2**256 - 1; // need maximum possible value because we are using a fake token with variable decimals
         uint256 _paymentTokenAmount = 100000 * 10 ** _paymentTokenDecimals;
 
-        list = new AllowList();
+        list = createAllowList(trustedForwarder, owner);
         Token _token = Token(
             tokenCloneFactory.createTokenProxy(
                 0,
@@ -220,20 +228,26 @@ contract CrowdinvestingTest is Test {
 
         assertTrue(paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore - costInPaymentToken, "buyer has paid");
         assertTrue(token.balanceOf(buyer) == realTokenBuyAmount, "buyer has wrong token amount");
+
+        FakeCrowdinvesting fakeCrowdinvesting = new FakeCrowdinvesting(address(token));
+
         assertTrue(
-            paymentToken.balanceOf(receiver) ==
-                costInPaymentToken - localFeeSettings.crowdinvestingFee(costInPaymentToken),
+            paymentToken.balanceOf(receiver) == costInPaymentToken - fakeCrowdinvesting.fee(costInPaymentToken),
             "receiver has payment tokens"
         );
         assertTrue(
-            paymentToken.balanceOf(token.feeSettings().crowdinvestingFeeCollector()) ==
-                localFeeSettings.crowdinvestingFee(costInPaymentToken),
+            paymentToken.balanceOf(
+                FeeSettings(address(token.feeSettings())).crowdinvestingFeeCollector(address(token))
+            ) == fakeCrowdinvesting.fee(costInPaymentToken),
             "fee collector has collected fee in payment tokens"
         );
+
         assertTrue(
-            token.balanceOf(token.feeSettings().tokenFeeCollector()) >= localFeeSettings.tokenFee(tokenBuyAmount),
+            token.balanceOf(FeeSettings(address(token.feeSettings())).tokenFeeCollector(address(token))) >=
+                localFeeSettings.tokenFee(tokenBuyAmount),
             "fee collector has collected fee in tokens"
         );
+
         assertTrue(crowdinvesting.tokensSold() == realTokenBuyAmount, "crowdinvesting has sold wrong amount of tokens");
         assertTrue(
             crowdinvesting.tokensBought(buyer) == realTokenBuyAmount,

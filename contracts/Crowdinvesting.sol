@@ -164,8 +164,6 @@ contract Crowdinvesting is
         minAmountPerBuyer = _arguments.minAmountPerBuyer;
         maxAmountPerBuyer = _arguments.maxAmountPerBuyer;
         priceBase = _arguments.tokenPrice;
-        priceMin = _arguments.priceMin;
-        priceMax = _arguments.priceMax;
         maxAmountOfTokenToBeSold = _arguments.maxAmountOfTokenToBeSold;
         currency = _arguments.currency;
         token = _arguments.token;
@@ -266,7 +264,10 @@ contract Crowdinvesting is
 
     function _getFeeAndFeeReceiver(uint256 _currencyAmount) internal view returns (uint256, address) {
         IFeeSettingsV2 feeSettings = token.feeSettings();
-        return (feeSettings.crowdinvestingFee(_currencyAmount), feeSettings.crowdinvestingFeeCollector());
+        return (
+            feeSettings.crowdinvestingFee(_currencyAmount, address(token)),
+            feeSettings.crowdinvestingFeeCollector(address(token))
+        );
     }
 
     /**

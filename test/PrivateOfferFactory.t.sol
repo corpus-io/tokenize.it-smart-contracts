@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/PrivateOffer.sol";
 import "../contracts/factories/PrivateOfferFactory.sol";
-import "../contracts/FeeSettings.sol";
+import "./resources/CloneCreators.sol";
 import "./resources/ERC20MintableByAnyone.sol";
 
 contract PrivateOfferFactoryTest is Test {
@@ -42,9 +42,9 @@ contract PrivateOfferFactoryTest is Test {
         Vesting vestingImplementation = new Vesting(trustedForwarder);
         VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
         factory = new PrivateOfferFactory(vestingCloneFactory);
-        list = new AllowList();
+        list = createAllowList(trustedForwarder, owner);
         Fees memory fees = Fees(0, 100, 0, 100, 0, 100, 0);
-        feeSettings = new FeeSettings(fees, admin, admin, admin);
+        feeSettings = createFeeSettings(trustedForwarder, address(this), fees, admin, admin, admin);
 
         Token implementation = new Token(trustedForwarder);
         TokenProxyFactory tokenCloneFactory = new TokenProxyFactory(address(implementation));

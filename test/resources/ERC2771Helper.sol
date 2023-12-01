@@ -4,6 +4,17 @@ pragma solidity 0.8.23;
 import "../../lib/forge-std/src/Test.sol";
 import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific version to avoid import error: yarn add @opengsn/contracts@2.2.5
 
+// copied from openGSN IForwarder
+struct ForwardRequest {
+    address from;
+    address to;
+    uint256 value;
+    uint256 gas;
+    uint256 nonce;
+    bytes data;
+    uint256 validUntil;
+}
+
 contract ERC2771Helper is Test {
     using ECDSA for bytes32; // for verify with var.recover()
 

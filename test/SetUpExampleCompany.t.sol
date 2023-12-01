@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/factories/CrowdinvestingCloneFactory.sol";
-import "../contracts/FeeSettings.sol";
+import "./resources/CloneCreators.sol";
 import "../contracts/factories/PrivateOfferFactory.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/ERC2771Helper.sol";
@@ -109,12 +109,17 @@ contract CompanySetUpTest is Test {
             paymentTokenFeeDenominator,
             0
         );
-        vm.prank(platformAdmin);
-        feeSettings = new FeeSettings(fees, platformFeeCollector, platformFeeCollector, platformFeeCollector);
+        feeSettings = createFeeSettings(
+            address(8), // fake forwarder
+            platformAdmin,
+            fees,
+            platformFeeCollector,
+            platformFeeCollector,
+            platformFeeCollector
+        );
 
         // set up AllowList
-        vm.prank(platformAdmin);
-        list = new AllowList();
+        list = createAllowList(address(8), platformAdmin);
 
         // investor registers with the platform
         // after kyc, the platform adds the investor to the allowlist with all the properties they were able to proof

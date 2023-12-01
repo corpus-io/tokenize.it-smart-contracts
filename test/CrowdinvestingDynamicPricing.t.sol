@@ -3,11 +3,12 @@ pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
-import "../contracts/FeeSettings.sol";
+import "../contracts/factories/FeeSettingsCloneFactory.sol";
 import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "../contracts/factories/PriceLinearCloneFactory.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
+import "./resources/CloneCreators.sol";
 
 /// fixture that always returns max price
 contract MaxPriceOracle is IPriceDynamic {
@@ -89,9 +90,21 @@ contract CrowdinvestingTest is Test {
 
         // set up platform
         vm.startPrank(platformAdmin);
-        list = new AllowList();
+        list = createAllowList(trustedForwarder, owner);
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 100);
-        feeSettings = new FeeSettings(fees, platformAdmin, platformAdmin, platformAdmin);
+        FeeSettings feeLogic = new FeeSettings(trustedForwarder);
+        FeeSettingsCloneFactory feeSettingsCloneFactory = new FeeSettingsCloneFactory(address(feeLogic));
+        feeSettings = IFeeSettingsV2(
+            feeSettingsCloneFactory.createFeeSettingsClone(
+                0,
+                trustedForwarder,
+                platformAdmin,
+                fees,
+                platformAdmin,
+                platformAdmin,
+                platformAdmin
+            )
+        );
 
         // create token
         address tokenLogicContract = address(new Token(trustedForwarder));

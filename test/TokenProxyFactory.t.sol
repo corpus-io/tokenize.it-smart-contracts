@@ -5,6 +5,7 @@ import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/ERC2771Helper.sol";
+import "./resources/CloneCreators.sol";
 
 contract tokenProxyFactoryTest is Test {
     using ECDSA for bytes32;
@@ -27,10 +28,11 @@ contract tokenProxyFactoryTest is Test {
     uint256 requirements = 0;
 
     function setUp() public {
-        vm.startPrank(feeSettingsAndAllowListOwner);
-        allowList = new AllowList();
+        allowList = createAllowList(trustedForwarder, feeSettingsAndAllowListOwner);
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
-        feeSettings = new FeeSettings(
+        feeSettings = createFeeSettings(
+            trustedForwarder,
+            feeSettingsAndAllowListOwner,
             fees,
             feeSettingsAndAllowListOwner,
             feeSettingsAndAllowListOwner,
@@ -158,7 +160,9 @@ contract tokenProxyFactoryTest is Test {
         console.log("name: %s", name);
         console.log("symbol: %s", symbol);
 
-        FeeSettings _feeSettings = new FeeSettings(
+        FeeSettings _feeSettings = createFeeSettings(
+            trustedForwarder,
+            address(this),
             Fees(1, 100, 1, 100, 1, 100, 0),
             feeSettingsAndAllowListOwner,
             feeSettingsAndAllowListOwner,
@@ -223,7 +227,9 @@ contract tokenProxyFactoryTest is Test {
         vm.assume(rando != address(0));
         vm.assume(rando != _admin);
 
-        FeeSettings _feeSettings = new FeeSettings(
+        FeeSettings _feeSettings = createFeeSettings(
+            trustedForwarder,
+            address(this),
             Fees(1, 100, 1, 100, 1, 100, 0),
             feeSettingsAndAllowListOwner,
             feeSettingsAndAllowListOwner,
@@ -273,7 +279,9 @@ contract tokenProxyFactoryTest is Test {
         vm.assume(newPauser != address(0));
         vm.assume(newPauser != admin);
 
-        FeeSettings _feeSettings = new FeeSettings(
+        FeeSettings _feeSettings = createFeeSettings(
+            trustedForwarder,
+            address(this),
             Fees(1, 100, 1, 100, 1, 100, 0),
             feeSettingsAndAllowListOwner,
             feeSettingsAndAllowListOwner,

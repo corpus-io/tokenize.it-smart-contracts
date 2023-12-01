@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.23;
 
-import "@openzeppelin/contracts/access/Ownable2Step.sol";
+import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol";
 
 /**
  * @title AllowList
@@ -9,8 +10,10 @@ import "@openzeppelin/contracts/access/Ownable2Step.sol";
  * @notice  The AllowList contract is used to manage a list of addresses and attest each address certain attributes.
  *   Examples for possible attributes are: is KYCed, is american, is of age, etc.
  *   One AllowList managed by one entity (e.g. tokenize.it) can manage up to 252 different attributes, and one tier with 5 levels, and can be used by an unlimited number of other Tokens.
+ *   Another way of using the AllowList is to use a specific list for a specific token, e.g. allowListA for tokenA managed by companyA. This way, companyA can
+ *   independently decide which addresses to add to their allowListA, granting them the power to control who can use their tokenA.
  */
-contract AllowList is Ownable2Step {
+contract AllowList is Ownable2StepUpgradeable, ERC2771ContextUpgradeable {
     /**
      * @notice Stores the attributes for each address.
      * @dev Attributes are defined as bit mask, with the bit position encoding it's meaning and the bit's value whether this attribute is attested or not.
@@ -44,6 +47,23 @@ contract AllowList is Ownable2Step {
     event Set(address indexed _addr, uint256 _attributes);
 
     /**
+     * @notice Creates a new AllowList contract without owner that be used for cloning.
+     * @param _trustedForwarder the trusted forwarder (ERC2771) can not be changed, but is checked for security
+     */
+    constructor(address _trustedForwarder) ERC2771ContextUpgradeable(_trustedForwarder) {
+        _disableInitializers();
+    }
+
+    /**
+     * Initializes a new AllowList clone.
+     * @param _owner the owner of the contract
+     */
+    function initialize(address _owner) public initializer {
+        require(_owner != address(0), "owner can not be zero address");
+        _transferOwnership(_owner);
+    }
+
+    /**
      * @notice sets (or updates) the attributes for an address
      * @param _addr address to be set
      * @param _attributes new attributes
@@ -61,5 +81,19 @@ contract AllowList is Ownable2Step {
     function remove(address _addr) external onlyOwner {
         delete map[_addr];
         emit Set(_addr, 0);
+    }
+
+    /**
+     * @dev both Ownable and ERC2771Context have a _msgSender() function, so we need to override and select which one to use.
+     */
+    function _msgSender() internal view override(ContextUpgradeable, ERC2771ContextUpgradeable) returns (address) {
+        return ERC2771ContextUpgradeable._msgSender();
+    }
+
+    /**
+     * @dev both Ownable and ERC2771Context have a _msgData() function, so we need to override and select which one to use.
+     */
+    function _msgData() internal view override(ContextUpgradeable, ERC2771ContextUpgradeable) returns (bytes calldata) {
+        return ERC2771ContextUpgradeable._msgData();
     }
 }

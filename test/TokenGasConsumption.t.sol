@@ -3,7 +3,7 @@ pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
-import "../contracts/FeeSettings.sol";
+import "./resources/CloneCreators.sol";
 
 contract tokenTest is Test {
     Token token;
@@ -25,10 +25,11 @@ contract tokenTest is Test {
     event RequirementsChanged(uint256 newRequirements);
 
     function setUp() public {
-        vm.startPrank(feeSettingsAndAllowListOwner);
-        allowList = new AllowList();
+        allowList = createAllowList(trustedForwarder, feeSettingsAndAllowListOwner);
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
-        feeSettings = new FeeSettings(
+        feeSettings = createFeeSettings(
+            trustedForwarder,
+            feeSettingsAndAllowListOwner,
             fees,
             feeSettingsAndAllowListOwner,
             feeSettingsAndAllowListOwner,
@@ -37,6 +38,7 @@ contract tokenTest is Test {
 
         address tokenHolder = address(this);
 
+        vm.startPrank(feeSettingsAndAllowListOwner);
         allowList.set(pauser, requirements);
         allowList.set(transferer, requirements);
         allowList.set(tokenHolder, requirements);

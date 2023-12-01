@@ -37,6 +37,8 @@ The following statements about the smart contracts should always be true
 - As soon as a value has been set for an address, map(address) always returns this value until a new value is set or remove is called.
 - After remove has been called for an address, map(address) returns 0 until a new value is set.
 - Only the owner of AllowList can set or remove addresses.
+- All functions can be called directly or as meta transaction using EIP-2771.
+- Calling a function directly or through EIP-2771 yield equivalent results given equivalent inputs.
 
 ## FeeSettings.sol
 
@@ -44,9 +46,24 @@ The following statements about the smart contracts should always be true
 - CrowdinvestingFees are always less or equal to 10%.
 - PrivateOfferFees are awlays less or equal to 5%.
 - The feeCollector can never be 0.
-- Only owner can change feeCollector and all fee numerators and denominators.
+- Only owner can change feeCollector and all fee default numerators and default denominators.
 - Increasing fees is only possible with a delay of at least 12 weeks.
 - Decreasing fees is possible without delay.
+- Only owner can appoint or demote managers.
+- Custom fees can only be set by managers.
+- Custom fees can only be removed by managers.
+- Custom fees can never be set for token address 0.
+- Custom fees are only applied if they are lower than the default fee.
+- Custom fees are only applied before their expiry date.
+- Custom fees are only applied to the customers they are intended for, identified by their token address.
+- Custom fee collectors can only be set by managers.
+- Custom fee collectors can only be removed by managers.
+- If a custom fee collector is set, it is used instead of the default fee collector in the appropriate view functions.
+- Custom fee collectors can never be set for token address 0.
+- Querying fees for token address 0 always returns the default fee.
+- Querying fee collectors for token address 0 always returns the default fee collector.
+- All functions can be called directly or as meta transaction using EIP-2771.
+- Calling a function directly or through EIP-2771 yield equivalent results given equivalent inputs.
 
 ## PrivateOffer.sol
 

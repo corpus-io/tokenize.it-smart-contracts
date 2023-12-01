@@ -7,6 +7,7 @@ import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
+import "./resources/CloneCreators.sol";
 
 contract CrowdinvestingTest is Test {
     Crowdinvesting crowdinvesting;
@@ -38,10 +39,16 @@ contract CrowdinvestingTest is Test {
     uint256 public constant minAmountPerBuyer = maxAmountOfTokenToBeSold / 200; // 0.1 token
 
     function setUp() public {
-        list = new AllowList();
+        list = createAllowList(trustedForwarder, platformAdmin);
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 100);
-        vm.prank(platformAdmin);
-        feeSettings = new FeeSettings(fees, platformAdmin, platformAdmin, platformAdmin);
+        feeSettings = createFeeSettings(
+            trustedForwarder,
+            platformAdmin,
+            fees,
+            platformAdmin,
+            platformAdmin,
+            platformAdmin
+        );
         vm.prank(platformAdmin);
         token = Token(
             tokenFactory.createTokenProxy(
@@ -114,7 +121,7 @@ contract CrowdinvestingTest is Test {
         );
         vm.prank(platformAdmin);
         feeSettings.planFeeChange(fees);
-        vm.warp(fees.time + 1 seconds);
+        vm.warp(fees.validityDate + 1 seconds);
         vm.prank(platformAdmin);
         feeSettings.executeFeeChange();
 
@@ -137,7 +144,7 @@ contract CrowdinvestingTest is Test {
         uint256 _maxMintAmount = 2 ** 256 - 1; // need maximum possible value because we are using a fake token with variable decimals
         uint256 _paymentTokenAmount = 1000 * 10 ** _paymentTokenDecimals;
 
-        list = new AllowList();
+        list = createAllowList(trustedForwarder, platformAdmin);
         Token _token = Token(
             tokenFactory.createTokenProxy(
                 0,
@@ -207,7 +214,8 @@ contract CrowdinvestingTest is Test {
         // receiver should have the 990 FPT that were paid, minus the fee
 
         uint currencyAmount = 990 * 10 ** _paymentTokenDecimals;
-        uint256 currencyFee = currencyAmount / FeeSettings(address(token.feeSettings())).crowdinvestingFeeDenominator();
+        uint256 currencyFee = currencyAmount /
+            FeeSettings(address(token.feeSettings())).defaultCrowdinvestingFeeDenominator();
         assertTrue(
             paymentToken.balanceOf(receiver) == currencyAmount - currencyFee,
             "receiver has wrong amount of currency"
@@ -219,7 +227,7 @@ contract CrowdinvestingTest is Test {
             "fee collector has wrong amount of currency"
         );
         assertEq(
-            tokenAmount / FeeSettings(address(token.feeSettings())).tokenFeeDenominator(),
+            tokenAmount / FeeSettings(address(token.feeSettings())).defaultTokenFeeDenominator(),
             _token.balanceOf(feeSettings.feeCollector()),
             "fee collector has wrong amount of token"
         );
@@ -256,7 +264,7 @@ contract CrowdinvestingTest is Test {
             uint256 _maxMintAmount = 2 ** 256 - 1; // need maximum possible value because we are using a fake token with variable decimals
             uint256 _paymentTokenAmount = 1000 * 10 ** _paymentTokenDecimals;
 
-            list = new AllowList();
+            list = createAllowList(trustedForwarder, platformAdmin);
             Token _token = Token(
                 tokenFactory.createTokenProxy(
                     0,
@@ -325,7 +333,7 @@ contract CrowdinvestingTest is Test {
             // receiver should have the 990 FPT that were paid, minus the fee
             uint currencyAmount = 990 * 10 ** _paymentTokenDecimals;
             uint256 currencyFee = currencyAmount /
-                FeeSettings(address(token.feeSettings())).crowdinvestingFeeDenominator();
+                FeeSettings(address(token.feeSettings())).defaultCrowdinvestingFeeDenominator();
             assertTrue(
                 paymentToken.balanceOf(receiver) == currencyAmount - currencyFee,
                 "receiver has wrong amount of currency"
@@ -337,7 +345,7 @@ contract CrowdinvestingTest is Test {
                 "fee collector has wrong amount of currency"
             );
             assertEq(
-                tokenAmount / FeeSettings(address(token.feeSettings())).tokenFeeDenominator(),
+                tokenAmount / FeeSettings(address(token.feeSettings())).defaultTokenFeeDenominator(),
                 _token.balanceOf(feeSettings.feeCollector()),
                 "fee collector has wrong amount of token"
             );
