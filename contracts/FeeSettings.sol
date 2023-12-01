@@ -55,14 +55,14 @@ contract FeeSettings is
     mapping(address => Fees) public customFees;
 
     /// address the token fees have to be paid to
-    address private defaultFokenFeeCollector;
+    address private defaultTokenFeeCollector;
     /// address the crowdinvesting fees have to be paid to
     address private defaultCrowdinvestingFeeCollector;
     /// address the private offer fees have to be paid to
     address private defaultPrivateOfferFeeCollector;
 
     /**
-     * if `customTokenFeeCollector[tokenAddress]` is 0x0, the fees must be paid to `defaultFokenFeeCollector`
+     * if `customTokenFeeCollector[tokenAddress]` is 0x0, the fees must be paid to `defaultTokenFeeCollector`
      * otherwise, the fees must be paid to `customTokenFeeCollector[tokenAddress]`
      */
     mapping(address => address) public customTokenFeeCollector;
@@ -190,7 +190,7 @@ contract FeeSettings is
         defaultPrivateOfferFeeDenominator = _fees.privateOfferFeeDenominator;
 
         require(_tokenFeeCollector != address(0), "Fee collector cannot be 0x0");
-        defaultFokenFeeCollector = _tokenFeeCollector;
+        defaultTokenFeeCollector = _tokenFeeCollector;
 
         require(_crowdinvestingFeeCollector != address(0), "Fee collector cannot be 0x0");
         defaultCrowdinvestingFeeCollector = _crowdinvestingFeeCollector;
@@ -288,7 +288,7 @@ contract FeeSettings is
         address _personalOfferFeeCollector
     ) external onlyOwner {
         require(_tokenFeeCollector != address(0), "Fee collector cannot be 0x0");
-        defaultFokenFeeCollector = _tokenFeeCollector;
+        defaultTokenFeeCollector = _tokenFeeCollector;
         require(_crowdinvestingFeeCollector != address(0), "Fee collector cannot be 0x0");
         defaultCrowdinvestingFeeCollector = _crowdinvestingFeeCollector;
         require(_personalOfferFeeCollector != address(0), "Fee collector cannot be 0x0");
@@ -455,7 +455,7 @@ contract FeeSettings is
         if (customTokenFeeCollector[_token] != address(0)) {
             return customTokenFeeCollector[_token];
         }
-        return defaultFokenFeeCollector;
+        return defaultTokenFeeCollector;
     }
 
     /**
@@ -588,7 +588,7 @@ contract FeeSettings is
      * @return The token fee collector
      */
     function feeCollector() external view override(IFeeSettingsV1) returns (address) {
-        return defaultFokenFeeCollector;
+        return defaultTokenFeeCollector;
     }
 
     /**
