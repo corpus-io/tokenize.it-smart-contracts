@@ -53,6 +53,14 @@ contract FeeSettingsTest is Test {
         );
     }
 
+    function testLogicContractCannotBeInitialized() public {
+        FeeSettings logic = new FeeSettings(trustedForwarder);
+        vm.expectRevert("Initializable: contract is already initialized");
+        logic.initialize(admin, fees, admin, admin, admin);
+
+        assertEq(logic.owner(), address(0), "Owner should be 0");
+    }
+
     function testEnforceFeeRangeInInitializer(uint32 numerator, uint32 denominator) public {
         vm.assume(denominator > 0);
         vm.assume(!tokenOrPrivateOfferFeeInValidRange(numerator, denominator));
@@ -1147,5 +1155,105 @@ contract FeeSettingsTest is Test {
         vm.expectRevert("Only managers can call this function");
         vm.prank(_rando);
         feeSettings.removeCustomPrivateOfferFeeCollector(exampleTokenAddress);
+    }
+
+    function testSettingCustomFeeCollectorFor0AddressReverts() public {
+        vm.expectRevert("Fee collector cannot be 0x0");
+        vm.prank(admin);
+        feeSettings.setCustomTokenFeeCollector(exampleTokenAddress, address(0));
+
+        vm.expectRevert("Fee collector cannot be 0x0");
+        vm.prank(admin);
+        feeSettings.setCustomCrowdinvestingFeeCollector(exampleTokenAddress, address(0));
+
+        vm.expectRevert("Fee collector cannot be 0x0");
+        vm.prank(admin);
+        feeSettings.setCustomPrivateOfferFeeCollector(exampleTokenAddress, address(0));
+    }
+
+    function testSettingCustomFeesFor0AddressReverts() public {
+        vm.expectRevert("Token cannot be 0x0");
+        vm.prank(admin);
+        feeSettings.setCustomFee(address(0), Fees(1, 100, 1, 50, 1, 20, 0));
+    }
+
+    function testCustomFeeCollectorsOnlyApplyToSpecifiedAddress(address specifiedAddress, address someAddress) public {
+        vm.assume(specifiedAddress != address(0));
+        vm.assume(specifiedAddress != someAddress);
+
+        address customFeeCollector = address(75);
+        assertTrue(customFeeCollector != admin);
+
+        vm.startPrank(admin);
+
+        // check token fee collector
+        feeSettings.setCustomTokenFeeCollector(specifiedAddress, customFeeCollector);
+        assertEq(
+            feeSettings.tokenFeeCollector(specifiedAddress),
+            customFeeCollector,
+            "Token fee collector wrong for specifiedAddress"
+        );
+        assertEq(
+            feeSettings.crowdinvestingFeeCollector(specifiedAddress),
+            admin,
+            "Crowdinvesting fee collector wrong for specifiedAddress"
+        );
+        assertEq(
+            feeSettings.privateOfferFeeCollector(specifiedAddress),
+            admin,
+            "Token fee collector wrong for specifiedAddress"
+        );
+
+        assertEq(feeSettings.tokenFeeCollector(someAddress), admin, "Token fee collector wrong");
+        assertEq(feeSettings.crowdinvestingFeeCollector(someAddress), admin, "Crowdinvesting fee collector wrong");
+        assertEq(feeSettings.privateOfferFeeCollector(someAddress), admin, "Private offer fee collector wrong");
+
+        feeSettings.removeCustomTokenFeeCollector(specifiedAddress);
+
+        // test crowdinvesting fee collector
+        feeSettings.setCustomCrowdinvestingFeeCollector(specifiedAddress, customFeeCollector);
+        assertEq(
+            feeSettings.tokenFeeCollector(specifiedAddress),
+            admin,
+            "Token fee collector wrong for specifiedAddress"
+        );
+        assertEq(
+            feeSettings.crowdinvestingFeeCollector(specifiedAddress),
+            customFeeCollector,
+            "Crowdinvesting fee collector wrong for specifiedAddress"
+        );
+        assertEq(
+            feeSettings.privateOfferFeeCollector(specifiedAddress),
+            admin,
+            "Token fee collector wrong for specifiedAddress"
+        );
+
+        assertEq(feeSettings.tokenFeeCollector(someAddress), admin, "Token fee collector wrong");
+        assertEq(feeSettings.crowdinvestingFeeCollector(someAddress), admin, "Crowdinvesting fee collector wrong");
+        assertEq(feeSettings.privateOfferFeeCollector(someAddress), admin, "Private offer fee collector wrong");
+
+        feeSettings.removeCustomCrowdinvestingFeeCollector(specifiedAddress);
+
+        // test private offer fee collector
+        feeSettings.setCustomPrivateOfferFeeCollector(specifiedAddress, customFeeCollector);
+        assertEq(
+            feeSettings.tokenFeeCollector(specifiedAddress),
+            admin,
+            "Token fee collector wrong for specifiedAddress"
+        );
+        assertEq(
+            feeSettings.crowdinvestingFeeCollector(specifiedAddress),
+            admin,
+            "Crowdinvesting fee collector wrong for specifiedAddress"
+        );
+        assertEq(
+            feeSettings.privateOfferFeeCollector(specifiedAddress),
+            customFeeCollector,
+            "Token fee collector wrong for specifiedAddress"
+        );
+
+        assertEq(feeSettings.tokenFeeCollector(someAddress), admin, "Token fee collector wrong");
+        assertEq(feeSettings.crowdinvestingFeeCollector(someAddress), admin, "Crowdinvesting fee collector wrong");
+        assertEq(feeSettings.privateOfferFeeCollector(someAddress), admin, "Private offer fee collector wrong");
     }
 }
