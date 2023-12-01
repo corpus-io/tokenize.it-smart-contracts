@@ -4,7 +4,6 @@ pragma solidity 0.8.23;
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/Token.sol";
 import "../contracts/factories/FeeSettingsCloneFactory.sol";
-import "./resources/FakeCrowdinvestingAndToken.sol";
 
 contract FeeSettingsTest is Test {
     event SetFee(
@@ -442,11 +441,12 @@ contract FeeSettingsTest is Test {
             feeSettingsCloneFactory.createFeeSettingsClone("salt", trustedForwarder, admin, _fees, admin, admin, admin)
         );
 
-        FakeToken _fakeToken = new FakeToken(address(_feeSettings));
-        FakeCrowdinvesting _fakeCrowdinvesting = new FakeCrowdinvesting(address(_fakeToken));
-
-        assertEq(_fakeToken.fee(amount), amount / tokenFeeDenominator, "Token fee mismatch");
-        assertEq(_fakeCrowdinvesting.fee(amount), amount / crowdinvestingFeeDenominator, "Investment fee mismatch");
+        assertEq(_feeSettings.tokenFee(amount, address(0)), amount / tokenFeeDenominator, "Token fee mismatch");
+        assertEq(
+            _feeSettings.crowdinvestingFee(amount, address(0)),
+            amount / crowdinvestingFeeDenominator,
+            "Investment fee mismatch"
+        );
         assertEq(
             _feeSettings.privateOfferFee(amount, address(0)),
             amount / privateOfferFeeDenominator,
@@ -472,11 +472,12 @@ contract FeeSettingsTest is Test {
             feeSettingsCloneFactory.createFeeSettingsClone("salt", trustedForwarder, admin, _fees, admin, admin, admin)
         );
 
-        FakeToken _fakeToken = new FakeToken(address(_feeSettings));
-        FakeCrowdinvesting _fakeCrowdinvesting = new FakeCrowdinvesting(address(_fakeToken));
-
-        assertEq(_fakeToken.fee(amount), 0, "Token fee mismatch");
-        assertEq(_fakeCrowdinvesting.fee(amount), amount / crowdinvestingFeeDenominator, "Investment fee mismatch");
+        assertEq(_feeSettings.tokenFee(amount, address(0)), 0, "Token fee mismatch");
+        assertEq(
+            _feeSettings.crowdinvestingFee(amount, address(0)),
+            amount / crowdinvestingFeeDenominator,
+            "Investment fee mismatch"
+        );
         assertEq(
             _feeSettings.privateOfferFee(amount, address(0)),
             amount / privateOfferFeeDenominator,
@@ -489,11 +490,8 @@ contract FeeSettingsTest is Test {
         _feeSettings = FeeSettings(
             feeSettingsCloneFactory.createFeeSettingsClone("salt", trustedForwarder, admin, _fees, admin, admin, admin)
         );
-        _fakeToken = new FakeToken(address(_feeSettings));
-        _fakeCrowdinvesting = new FakeCrowdinvesting(address(_fakeToken));
-
-        assertEq(_fakeToken.fee(amount), amount / tokenFeeDenominator, "Token fee mismatch");
-        assertEq(_fakeCrowdinvesting.fee(amount), 0, "Investment fee mismatch");
+        assertEq(_feeSettings.tokenFee(amount, address(0)), amount / tokenFeeDenominator, "Token fee mismatch");
+        assertEq(_feeSettings.crowdinvestingFee(amount, address(0)), 0, "Investment fee mismatch");
         assertEq(
             _feeSettings.privateOfferFee(amount, address(0)),
             amount / privateOfferFeeDenominator,
@@ -506,11 +504,12 @@ contract FeeSettingsTest is Test {
         _feeSettings = FeeSettings(
             feeSettingsCloneFactory.createFeeSettingsClone("salt", trustedForwarder, admin, _fees, admin, admin, admin)
         );
-        _fakeToken = new FakeToken(address(_feeSettings));
-        _fakeCrowdinvesting = new FakeCrowdinvesting(address(_fakeToken));
-
-        assertEq(_fakeToken.fee(amount), amount / tokenFeeDenominator, "Token fee mismatch");
-        assertEq(_fakeCrowdinvesting.fee(amount), amount / crowdinvestingFeeDenominator, "Investment fee mismatch");
+        assertEq(_feeSettings.tokenFee(amount, address(0)), amount / tokenFeeDenominator, "Token fee mismatch");
+        assertEq(
+            _feeSettings.crowdinvestingFee(amount, address(0)),
+            amount / crowdinvestingFeeDenominator,
+            "Investment fee mismatch"
+        );
         assertEq(_feeSettings.privateOfferFee(amount, address(0)), 0, "Private offer fee mismatch");
     }
 
@@ -528,22 +527,18 @@ contract FeeSettingsTest is Test {
 
         // these functions must be present, so the call can not revert
 
-        // set up fake crowdinvesting for this to work
-        FakeToken _fakeToken = new FakeToken(address(feeSettings));
-        FakeCrowdinvesting _fakeCrowdinvesting = new FakeCrowdinvesting(address(_fakeToken));
-
-        assertEq(_fakeCrowdinvesting.fee(_amount), _fakeCrowdinvesting.feeV1(_amount), "Crowdinvesting Fee mismatch");
+        assertEq(
+            feeSettings.continuousFundraisingFee(_amount),
+            feeSettings.crowdinvestingFee(_amount, address(0)),
+            "Crowdinvesting Fee mismatch"
+        );
 
         assertEq(
             feeSettings.privateOfferFee(_amount, address(0)),
             feeSettings.personalInviteFee(_amount),
             "Private offer fee mismatch"
         );
-        assertEq(
-            feeSettings.feeCollector(),
-            feeSettings.tokenFeeCollector(address(_fakeToken)),
-            "Fee collector mismatch"
-        );
+        assertEq(feeSettings.feeCollector(), feeSettings.tokenFeeCollector(address(0)), "Fee collector mismatch");
     }
 
     function testIFeeSettingsV2IsAvailable() public {
@@ -580,11 +575,12 @@ contract FeeSettingsTest is Test {
             feeSettingsCloneFactory.createFeeSettingsClone("salt", trustedForwarder, admin, _fees, admin, admin, admin)
         );
 
-        FakeToken _fakeToken = new FakeToken(address(_feeSettings));
-        FakeCrowdinvesting _fakeCrowdinvesting = new FakeCrowdinvesting(address(_fakeToken));
-
-        assertEq(_fakeToken.fee(amount), 0, "Token fee mismatch");
-        assertEq(_fakeCrowdinvesting.fee(amount), amount / crowdinvestingFeeDenominator, "Investment fee mismatch");
+        assertEq(_feeSettings.tokenFee(amount, address(0)), 0, "Token fee mismatch (should be 0)");
+        assertEq(
+            _feeSettings.crowdinvestingFee(amount, address(0)),
+            amount / crowdinvestingFeeDenominator,
+            "Investment fee mismatch"
+        );
         assertEq(
             _feeSettings.privateOfferFee(amount, address(0)),
             amount / privateOfferFeeDenominator,
@@ -597,11 +593,8 @@ contract FeeSettingsTest is Test {
         _feeSettings = FeeSettings(
             feeSettingsCloneFactory.createFeeSettingsClone("salt", trustedForwarder, admin, _fees, admin, admin, admin)
         );
-        _fakeToken = new FakeToken(address(_feeSettings));
-        _fakeCrowdinvesting = new FakeCrowdinvesting(address(_fakeToken));
-
-        assertEq(_feeSettings.tokenFee(amount), amount / tokenFeeDenominator, "Token fee mismatch");
-        assertEq(_fakeCrowdinvesting.fee(amount), 0, "Investment fee mismatch");
+        assertEq(_feeSettings.tokenFee(amount, address(0)), amount / tokenFeeDenominator, "Token fee mismatch");
+        assertEq(_feeSettings.crowdinvestingFee(amount, address(0)), 0, "Investment fee mismatch");
         assertEq(
             _feeSettings.privateOfferFee(amount, address(0)),
             amount / privateOfferFeeDenominator,
@@ -614,11 +607,12 @@ contract FeeSettingsTest is Test {
         _feeSettings = FeeSettings(
             feeSettingsCloneFactory.createFeeSettingsClone("salt", trustedForwarder, admin, _fees, admin, admin, admin)
         );
-        _fakeToken = new FakeToken(address(_feeSettings));
-        _fakeCrowdinvesting = new FakeCrowdinvesting(address(_fakeToken));
-
-        assertEq(_feeSettings.tokenFee(amount), amount / tokenFeeDenominator, "Token fee mismatch");
-        assertEq(_fakeCrowdinvesting.fee(amount), amount / crowdinvestingFeeDenominator, "Investment fee mismatch");
+        assertEq(_feeSettings.tokenFee(amount, address(0)), amount / tokenFeeDenominator, "Token fee mismatch");
+        assertEq(
+            _feeSettings.crowdinvestingFee(amount, address(0)),
+            amount / crowdinvestingFeeDenominator,
+            "Investment fee mismatch"
+        );
         assertEq(_feeSettings.privateOfferFee(amount, address(0)), 0, "Private offer fee mismatch");
     }
 
@@ -888,33 +882,6 @@ contract FeeSettingsTest is Test {
         vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(_rando);
         feeSettings.removeManager(_rando);
-    }
-
-    function testFeeCalculationFunctionsAreEqual() public {
-        Fees memory _fees = Fees(1, 100, 1, 50, 1, 20, 0);
-        FeeSettings _feeSettings = FeeSettings(
-            feeSettingsCloneFactory.createFeeSettingsClone(
-                "salt",
-                trustedForwarder,
-                address(this),
-                _fees,
-                admin,
-                admin,
-                admin
-            )
-        );
-
-        FakeToken fakeToken = new FakeToken(address(_feeSettings));
-        FakeCrowdinvesting fakeCrowdinvesting = new FakeCrowdinvesting(address(fakeToken));
-
-        uint256 amount = 1000e20;
-        assertEq(_feeSettings.tokenFee(amount, address(fakeToken)), fakeToken.fee(amount), "Token fee mismatch");
-        assertEq(
-            _feeSettings.crowdinvestingFee(amount, address(fakeToken)),
-            fakeCrowdinvesting.fee(amount),
-            "Crowdinvesting fee mismatch"
-        );
-        assertEq(_feeSettings.privateOfferFee(amount, address(fakeToken)), amount / 20, "Private offer fee mismatch");
     }
 
     function testAddingCustomTokenFeeCollector(address _feeCollector) public {
