@@ -281,10 +281,10 @@ contract Token is
         _checkIfAllowedToTransact(_to);
         _mint(_to, _amount);
         // collect fees
-        uint256 fee = feeSettings.tokenFee(_amount);
+        uint256 fee = feeSettings.tokenFee(_amount, address(this));
         if (fee != 0) {
             // the fee collector is always allowed to receive tokens
-            _mint(feeSettings.tokenFeeCollector(), fee);
+            _mint(feeSettings.tokenFeeCollector(address(this)), fee);
         }
     }
 

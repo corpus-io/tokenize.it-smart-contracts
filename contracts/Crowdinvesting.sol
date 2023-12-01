@@ -266,7 +266,10 @@ contract Crowdinvesting is
 
     function _getFeeAndFeeReceiver(uint256 _currencyAmount) internal view returns (uint256, address) {
         IFeeSettingsV2 feeSettings = token.feeSettings();
-        return (feeSettings.crowdinvestingFee(_currencyAmount), feeSettings.crowdinvestingFeeCollector());
+        return (
+            feeSettings.crowdinvestingFee(_currencyAmount, address(token)),
+            feeSettings.crowdinvestingFeeCollector(address(token))
+        );
     }
 
     /**

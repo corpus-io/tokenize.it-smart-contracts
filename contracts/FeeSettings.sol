@@ -458,7 +458,7 @@ contract FeeSettings is
      * @param _token The token to return the token fee collector for
      * @return The fee collector
      */
-    function tokenFeeCollector(address _token) public view returns (address) {
+    function tokenFeeCollector(address _token) public view override(IFeeSettingsV2) returns (address) {
         if (customTokenFeeCollector[_token] != address(0)) {
             return customTokenFeeCollector[_token];
         }
@@ -466,40 +466,15 @@ contract FeeSettings is
     }
 
     /**
-     * @notice Returns the token fee collector
-     * @dev This function is called in the Token contract during the mint process.
-     * Therefore, we can use _msgSender() to determine the token address. If a different
-     * address calls this function, the results may not be accurate, as they will not correctly
-     * reflect a custom fee collector. If not calling from a token contract, use
-     * `tokenFeeCollector(address)` instead.
-     * @return The fee collector
-     */
-    function tokenFeeCollector() public view override(IFeeSettingsV2) returns (address) {
-        return tokenFeeCollector(_msgSender());
-    }
-
-    /**
      * @notice Returns the crowdinvesting fee collector for a given token
      * @param _token The token to return the crowdinvesting fee collector for
      * @return The fee collector
      */
-    function crowdinvestingFeeCollector(address _token) public view returns (address) {
+    function crowdinvestingFeeCollector(address _token) public view override(IFeeSettingsV2) returns (address) {
         if (customCrowdinvestingFeeCollector[_token] != address(0)) {
             return customCrowdinvestingFeeCollector[_token];
         }
         return defaultCrowdinvestingFeeCollector;
-    }
-
-    /**
-     * @notice Returns the crowdinvesting fee collector
-     * @dev This function is called in the Crowdinvesting contract during the mint process.
-     * As the crowdinvesting contract exposes a public variable `token`, we can use it to determine
-     * the token it is selling. If this function is called from an address not exposing the correct token,
-     * it might fail or return wrong results. Therefore, use `crowdinvestingFeeCollector(address)` instead.
-     * @return The fee collector
-     */
-    function crowdinvestingFeeCollector() external view override(IFeeSettingsV2) returns (address) {
-        return crowdinvestingFeeCollector(ICrowdinvestingLike(_msgSender()).token());
     }
 
     /**
@@ -524,16 +499,7 @@ contract FeeSettings is
         return (amount * numerator) / denominator;
     }
 
-    /**
-     * @notice Returns the fee for a given token amount
-     * @dev Custom fees are only applied correctly when this function is called from the token contract itself.
-     * To calculate fees when calling from a different address, use `tokenFee(uint256, address)` instead.
-     */
-    function tokenFee(uint256 _tokenAmount) external view override(IFeeSettingsV1, IFeeSettingsV2) returns (uint256) {
-        return tokenFee(_tokenAmount, _msgSender());
-    }
-
-    function tokenFee(uint256 _tokenAmount, address _token) public view returns (uint256) {
+    function tokenFee(uint256 _tokenAmount, address _token) public view override(IFeeSettingsV2) returns (uint256) {
         uint256 baseFee = _fee(_tokenAmount, defaultTokenFeeNumerator, defaultTokenFeeDenominator);
         if (customFees[_token].validityDate > block.timestamp) {
             uint256 customFee = _fee(
@@ -549,24 +515,15 @@ contract FeeSettings is
     }
 
     /**
-     * @notice Calculates the fee for a given currency amount in Crowdinvesting.sol
-     * @dev Custom fees are only applied correctly when this function is called from the crowdinvesting contract itself.
-     * To calculate fees when calling from a different address, use `crowdinvestingFee(uint256, address)` instead.
-     * @param _currencyAmount The amount of currency to calculate the fee for
-     * @return The fee
-     */
-    function crowdinvestingFee(uint256 _currencyAmount) public view override(IFeeSettingsV2) returns (uint256) {
-        address token = address(ICrowdinvestingLike(_msgSender()).token());
-        return crowdinvestingFee(_currencyAmount, token);
-    }
-
-    /**
      * Calculates the fee for a given currency amount in Crowdinvesting (v5) or ContinuousFundraising (v4)
      * @param _currencyAmount how much currency is raised
      * @param _token the token that is sold through the crowdinvesting
      * @return the fee
      */
-    function crowdinvestingFee(uint256 _currencyAmount, address _token) public view returns (uint256) {
+    function crowdinvestingFee(
+        uint256 _currencyAmount,
+        address _token
+    ) public view override(IFeeSettingsV2) returns (uint256) {
         uint256 baseFee = _fee(_currencyAmount, defaultCrowdinvestingFeeNumerator, defaultCrowdinvestingFeeDenominator);
         if (customFees[_token].validityDate > block.timestamp) {
             uint256 customFee = _fee(
@@ -642,6 +599,15 @@ contract FeeSettings is
     }
 
     /**
+     * @notice Returns the fee for a given token amount
+     * @dev Custom fees are only applied correctly when this function is called from the token contract itself.
+     * To calculate fees when calling from a different address, use `tokenFee(uint256, address)` instead.
+     */
+    function tokenFee(uint256 _tokenAmount) external view override(IFeeSettingsV1) returns (uint256) {
+        return tokenFee(_tokenAmount, _msgSender());
+    }
+
+    /**
      * @notice calculate the fee for a given currency amount in Crowdinvesting (formerly ContinuousFundraising)
      * @dev this is a compatibility function for IFeeSettingsV1. It enables older token contracts to use the new fee settings contract.
      * @param _currencyAmount The amount of currency to calculate the fee for
@@ -649,7 +615,7 @@ contract FeeSettings is
     function continuousFundraisingFee(
         uint256 _currencyAmount
     ) external view override(IFeeSettingsV1) returns (uint256) {
-        return crowdinvestingFee(_currencyAmount);
+        return crowdinvestingFee(_currencyAmount, address(0));
     }
 
     /**
