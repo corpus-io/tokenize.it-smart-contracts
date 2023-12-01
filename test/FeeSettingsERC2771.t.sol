@@ -62,6 +62,9 @@ contract FeeSettingERC2771Test is Test {
         vm.prank(platformColdWallet);
         feeSettings.addManager(platformHotWallet);
 
+        // log fee settings address
+        console.log("feeSettings", address(feeSettings));
+
         // register domainSeparator with forwarder
         domainSeparator = ERC2771helper.registerDomain(
             forwarder,
@@ -73,18 +76,22 @@ contract FeeSettingERC2771Test is Test {
         requestType = ERC2771helper.registerRequestType(forwarder, "mint", "address _to,uint256 _amount");
     }
 
-    function testMintWithLocalForwarder(uint32 _customFeeDenominator, address _token) public {
-        vm.assume(_customFeeDenominator > 20);
-        vm.assume(_token != address(0));
+    function testSetCustomFeeWithLocalForwarder(uint32 _customFeeDenominator, address _token) public {
         setCustomFeeWithERC2771(new Forwarder(), _customFeeDenominator, _token);
     }
 
-    // function testMintWithMainnetGSNForwarder(uint32 _customFeeDenominator) public {
+    // function testSetCustomFeeWithMainnetGSNForwarder(uint32 _customFeeDenominator, address _token) public {
     //     // uses deployed forwarder on mainnet with fork. https://docs-v2.opengsn.org/networks/ethereum/mainnet.html
-    //     setCustomFeeWithERC2771(Forwarder(payable(0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA)), _customFeeDenominator);
+    //     setCustomFeeWithERC2771(
+    //         Forwarder(payable(0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA)),
+    //         _customFeeDenominator,
+    //         _token
+    //     );
     // }
 
     function setCustomFeeWithERC2771(Forwarder _forwarder, uint32 _customFeeDenominator, address _token) public {
+        vm.assume(_customFeeDenominator > 20);
+        vm.assume(_token != address(0));
         setUpFeeSettingsWithForwarder(_forwarder);
 
         Fees memory customFees = Fees(
