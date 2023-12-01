@@ -164,8 +164,6 @@ contract Crowdinvesting is
         minAmountPerBuyer = _arguments.minAmountPerBuyer;
         maxAmountPerBuyer = _arguments.maxAmountPerBuyer;
         priceBase = _arguments.tokenPrice;
-        priceMin = _arguments.priceMin;
-        priceMax = _arguments.priceMax;
         maxAmountOfTokenToBeSold = _arguments.maxAmountOfTokenToBeSold;
         currency = _arguments.currency;
         token = _arguments.token;
