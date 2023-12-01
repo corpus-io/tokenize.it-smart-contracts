@@ -186,7 +186,7 @@ contract PrivateOfferTimeLockTest is Test {
 
         assertEq(
             token.balanceOf(token.feeSettings().privateOfferFeeCollector(address(token))),
-            token.feeSettings().tokenFee(arguments.tokenAmount),
+            token.feeSettings().tokenFee(arguments.tokenAmount, address(token)),
             "feeCollector token balance is not correct"
         );
 
