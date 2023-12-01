@@ -8,13 +8,6 @@ import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol
 import "./interfaces/IFeeSettings.sol";
 
 /**
- * interface a crowdinvesting contract provides to retrieve the token address
- */
-interface ICrowdinvestingLike {
-    function token() external view returns (address);
-}
-
-/**
  * @title FeeSettings
  * @author malteish, cjentzsch
  * @notice The FeeSettings contract is used to manage fees paid to the tokenize.it platfom
