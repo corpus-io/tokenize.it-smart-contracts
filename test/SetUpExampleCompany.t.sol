@@ -28,17 +28,6 @@ contract CompanySetUpTest is Test {
     FakePaymentToken paymentToken;
     ERC2771Helper ERC2771helper;
 
-    // copied from openGSN IForwarder
-    struct ForwardRequest {
-        address from;
-        address to;
-        uint256 value;
-        uint256 gas;
-        uint256 nonce;
-        bytes data;
-        uint256 validUntil;
-    }
-
     // note: this struct is only used to reduce the number of local variables in the test function,
     // because solidity contracts can only have 16 local variables :(
     struct EIP2612Data {
