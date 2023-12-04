@@ -398,7 +398,7 @@ contract Crowdinvesting is
     /// set auto pause date
     function _setLastBuyDate(uint256 _lastBuyDate) internal {
         if (_lastBuyDate != 0) {
-            require(_lastBuyDate > block.timestamp, "lastBuyDate needs to be in the future");
+            require(_lastBuyDate > block.timestamp, "lastBuyDate needs to be 0 or in the future");
         }
         lastBuyDate = _lastBuyDate;
         emit SetLastBuyDate(_lastBuyDate);
