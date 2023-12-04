@@ -20,7 +20,7 @@ contract AllowListCloneFactoryTest is Test {
     function testAddressPrediction(bytes32 _rawSalt, address _owner) public {
         vm.assume(_owner != address(0));
 
-        bytes32 salt = keccak256(abi.encodePacked(_rawSalt, trustedForwarder, _owner));
+        bytes32 salt = keccak256(abi.encode(_rawSalt, trustedForwarder, _owner));
 
         address expected1 = factory.predictCloneAddress(salt);
         address expected2 = factory.predictCloneAddress(_rawSalt, trustedForwarder, _owner);

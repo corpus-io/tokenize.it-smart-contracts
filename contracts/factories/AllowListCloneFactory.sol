@@ -65,6 +65,6 @@ contract AllowListCloneFactory is CloneFactory {
         address _trustedForwarder,
         address _owner
     ) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(_rawSalt, _trustedForwarder, _owner));
+        return keccak256(abi.encode(_rawSalt, _trustedForwarder, _owner));
     }
 }
