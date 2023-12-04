@@ -116,7 +116,7 @@ contract MainnetCurrencies is Test {
             maxAmountOfTokenToBeSold,
             _currency,
             token,
-            0,
+            type(uint256).max,
             address(0)
         );
         Crowdinvesting _crowdinvesting = Crowdinvesting(
