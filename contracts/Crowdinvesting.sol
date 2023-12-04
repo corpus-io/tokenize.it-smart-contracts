@@ -97,7 +97,7 @@ contract Crowdinvesting is
     mapping(address => uint256) public tokensBought;
 
     /// During every buy, the lastBuyDate is checked. If it is in the past, the buy is rejected.
-    /// @dev setting this to 0 disables this feature.
+    /// @dev in order to disable this feature, set some distant date in the future, like type(uint256).max
     uint256 public lastBuyDate;
 
     /// @notice CurrencyReceiver has been changed to `newCurrencyReceiver`
@@ -397,9 +397,7 @@ contract Crowdinvesting is
 
     /// set auto pause date
     function _setLastBuyDate(uint256 _lastBuyDate) internal {
-        if (_lastBuyDate != 0) {
-            require(_lastBuyDate > block.timestamp, "lastBuyDate needs to be in the future");
-        }
+        require(_lastBuyDate > block.timestamp, "lastBuyDate needs to be in the future");
         lastBuyDate = _lastBuyDate;
         emit SetLastBuyDate(_lastBuyDate);
     }

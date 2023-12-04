@@ -8,7 +8,7 @@ import "../contracts/factories/FeeSettingsCloneFactory.sol";
 import "./resources/ERC2771Helper.sol";
 import "./resources/CloneCreators.sol";
 
-contract tokenTest is Test {
+contract tokenCrowdinvestingCloneFactory is Test {
     using ECDSA for bytes32;
 
     AllowList allowList;
@@ -42,7 +42,7 @@ contract tokenTest is Test {
     uint256 public constant exampleMaxAmountOfTokenToBeSold = 82398479821374;
     IERC20 public constant exampleCurrency = IERC20(address(1));
     Token public constant exampleToken = Token(address(2));
-    uint256 public constant exampleLastBuyDate = 0;
+    uint256 public constant exampleLastBuyDate = type(uint256).max;
     address public constant examplePriceOracle = address(3);
 
     event RequirementsChanged(uint256 newRequirements);
@@ -94,6 +94,7 @@ contract tokenTest is Test {
         vm.assume(_tokenPriceMin <= _tokenPrice);
         vm.assume(_tokenPriceMax >= _tokenPrice);
         vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
+        vm.assume(_lastBuyDate > block.timestamp);
 
         // create new clone factory so we can use the local forwarder
         fundraisingImplementation = new Crowdinvesting(exampleTrustedForwarder);
@@ -321,6 +322,7 @@ contract tokenTest is Test {
         vm.assume(_priceMax >= _priceBase);
         vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
         vm.assume(_maxAmountPerBuyer > 0);
+        vm.assume(_lastBuyDate > block.timestamp);
 
         // create new clone factory so we can use the local forwarder
         fundraisingImplementation = new Crowdinvesting(exampleTrustedForwarder);

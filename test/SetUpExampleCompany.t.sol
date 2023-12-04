@@ -216,7 +216,7 @@ contract CompanySetUpTest is Test {
             maxAmountOfTokenToBeSold,
             paymentToken,
             token,
-            0,
+            type(uint256).max,
             address(0)
         );
 

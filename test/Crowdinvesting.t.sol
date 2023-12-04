@@ -91,7 +91,7 @@ contract CrowdinvestingTest is Test {
             maxAmountOfTokenToBeSold,
             paymentToken,
             token,
-            0,
+            type(uint256).max,
             address(0)
         );
         crowdinvesting = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
@@ -128,7 +128,7 @@ contract CrowdinvestingTest is Test {
                 maxAmountOfTokenToBeSold,
                 paymentToken,
                 token,
-                0,
+                type(uint256).max,
                 address(0)
             )
         );
@@ -184,7 +184,7 @@ contract CrowdinvestingTest is Test {
             maxAmountOfTokenToBeSold,
             paymentToken,
             token,
-            0,
+            type(uint256).max,
             address(0)
         );
         vm.expectRevert("CrowdinvestingCloneFactory: Unexpected trustedForwarder");
@@ -244,6 +244,12 @@ contract CrowdinvestingTest is Test {
         tempArgs.token = Token(address(0));
         vm.expectRevert("token can not be zero address");
         factory.createCrowdinvestingClone(0, trustedForwarder, tempArgs);
+
+        // lastBuyDate in the past
+        tempArgs = cloneCrowdinvestingInitializerArguments(arguments);
+        tempArgs.lastBuyDate = block.timestamp - 1;
+        vm.expectRevert("lastBuyDate needs to be in the future");
+        factory.createCrowdinvestingClone(0, trustedForwarder, tempArgs);
     }
 
     /*
@@ -291,7 +297,7 @@ contract CrowdinvestingTest is Test {
             _maxMintAmount,
             maliciousPaymentToken,
             _token,
-            0,
+            type(uint256).max,
             address(0)
         );
 
@@ -1166,7 +1172,7 @@ contract CrowdinvestingTest is Test {
             UINT256_MAX,
             paymentToken,
             token,
-            0,
+            type(uint256).max,
             address(0)
         );
         vm.prank(owner);
@@ -1214,7 +1220,7 @@ contract CrowdinvestingTest is Test {
             _tokenBuyAmount,
             paymentToken,
             token,
-            0,
+            type(uint256).max,
             address(0)
         );
         vm.prank(owner);
@@ -1296,7 +1302,7 @@ contract CrowdinvestingTest is Test {
     }
 
     function testLastBuyDateInConstructor(uint256 _lastBuyDate, uint256 testDate) public {
-        vm.assume(_lastBuyDate > 0);
+        vm.assume(_lastBuyDate > block.timestamp);
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             address(this),
             payable(receiver),

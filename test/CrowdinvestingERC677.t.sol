@@ -89,7 +89,7 @@ contract CrowdinvestingTest is Test {
             maxAmountOfTokenToBeSold,
             paymentToken,
             token,
-            0,
+            type(uint256).max,
             address(0)
         );
 
@@ -153,7 +153,7 @@ contract CrowdinvestingTest is Test {
             _maxMintAmount,
             maliciousPaymentToken,
             _token,
-            0,
+            type(uint256).max,
             address(0)
         );
         Crowdinvesting _crowdinvesting = Crowdinvesting(
