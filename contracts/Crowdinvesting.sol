@@ -188,7 +188,6 @@ contract Crowdinvesting is
     ) external onlyOwner whenPaused {
         _activateDynamicPricing(_priceOracle, _priceMin, _priceMax);
         coolDownStart = block.timestamp;
-        emit DynamicPricingActivated(address(_priceOracle), _priceMin, _priceMax);
     }
 
     /**
