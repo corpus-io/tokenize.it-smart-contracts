@@ -94,6 +94,7 @@ contract tokenTest is Test {
         vm.assume(_tokenPriceMin <= _tokenPrice);
         vm.assume(_tokenPriceMax >= _tokenPrice);
         vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
+        vm.assume(_lastBuyDate > block.timestamp || _lastBuyDate == 0);
 
         // create new clone factory so we can use the local forwarder
         fundraisingImplementation = new Crowdinvesting(exampleTrustedForwarder);
@@ -321,6 +322,7 @@ contract tokenTest is Test {
         vm.assume(_priceMax >= _priceBase);
         vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
         vm.assume(_maxAmountPerBuyer > 0);
+        vm.assume(_lastBuyDate > block.timestamp || _lastBuyDate == 0);
 
         // create new clone factory so we can use the local forwarder
         fundraisingImplementation = new Crowdinvesting(exampleTrustedForwarder);

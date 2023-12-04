@@ -1296,7 +1296,7 @@ contract CrowdinvestingTest is Test {
     }
 
     function testLastBuyDateInConstructor(uint256 _lastBuyDate, uint256 testDate) public {
-        vm.assume(_lastBuyDate > 0);
+        vm.assume(_lastBuyDate > block.timestamp || _lastBuyDate == 0);
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             address(this),
             payable(receiver),
@@ -1325,7 +1325,7 @@ contract CrowdinvestingTest is Test {
         console.log("lastBuyDate: ", _lastBuyDate);
         console.log("block.timestamp: ", block.timestamp);
 
-        if (testDate > _lastBuyDate) {
+        if (_lastBuyDate != 0 && testDate > _lastBuyDate) {
             // auto-pause should trigger
             vm.startPrank(buyer);
             paymentToken.approve(address(_crowdinvesting), type(uint256).max);
