@@ -76,6 +76,9 @@ contract PrivateOffer {
         require(_arguments.currencyReceiver != address(0), "_arguments.currencyReceiver can not be zero address");
         require(_arguments.tokenPrice != 0, "_arguments.tokenPrice can not be zero"); // a simple mint from the token contract will do in that case
         require(block.timestamp <= _arguments.expiration, "Deal expired");
+        require(_arguments.token != Token(address(0)), "_arguments.token can not be zero address");
+        require(_arguments.currency != IERC20(address(0)), "_arguments.currency can not be zero address");
+        require(_arguments.tokenAmount != 0, "_arguments.tokenAmount can not be zero");
 
         // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
         uint256 currencyAmount = Math.ceilDiv(
