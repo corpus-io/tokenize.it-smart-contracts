@@ -131,7 +131,7 @@ contract PriceLinearCloneFactory is CloneFactory {
     ) internal pure returns (bytes32) {
         return
             keccak256(
-                abi.encodePacked(
+                abi.encode(
                     _rawSalt,
                     _trustedForwarder,
                     _owner,

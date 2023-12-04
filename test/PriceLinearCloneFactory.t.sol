@@ -34,7 +34,7 @@ contract PriceLinearCloneFactoryTest is Test {
         vm.assume(_startTimeOrBlockNumber > 100);
 
         bytes32 salt = keccak256(
-            abi.encodePacked(
+            abi.encode(
                 _rawSalt,
                 trustedForwarder,
                 _owner,

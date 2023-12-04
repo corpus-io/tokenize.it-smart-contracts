@@ -347,8 +347,7 @@ contract tokenTest is Test {
 
         assertEq(crowdinvesting.maxAmountPerBuyer(), _maxAmountPerBuyer, "maxAmountPerBuyer not set");
         assertEq(crowdinvesting.priceBase(), _priceBase, "priceBase not set");
-        assertEq(crowdinvesting.priceMin(), _priceMin, "priceMin not set");
-        assertEq(crowdinvesting.priceMax(), _priceMax, "priceMax not set");
+
         assertEq(
             crowdinvesting.maxAmountOfTokenToBeSold(),
             _maxAmountOfTokenToBeSold,
@@ -358,6 +357,14 @@ contract tokenTest is Test {
         assertEq(address(crowdinvesting.token()), address(_token), "token not set");
         assertEq(crowdinvesting.lastBuyDate(), _lastBuyDate, "lastBuyDate not set");
         assertEq(address(crowdinvesting.priceOracle()), _priceOracle, "priceOracle not set");
+
+        if (_priceOracle != address(0)) {
+            assertEq(crowdinvesting.priceMin(), _priceMin, "priceMin not set");
+            assertEq(crowdinvesting.priceMax(), _priceMax, "priceMax not set");
+        } else {
+            assertEq(crowdinvesting.priceMin(), 0, "priceMin wrong");
+            assertEq(crowdinvesting.priceMax(), 0, "priceMax wrong");
+        }
     }
 
     /*

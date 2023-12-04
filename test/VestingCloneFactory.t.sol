@@ -24,7 +24,7 @@ contract VestingCloneFactoryTest is Test {
         Vesting _implementation = new Vesting(_trustedForwarder);
         VestingCloneFactory _factory = new VestingCloneFactory(address(_implementation));
 
-        bytes32 salt = keccak256(abi.encodePacked(_salt, _trustedForwarder, _owner, _token));
+        bytes32 salt = keccak256(abi.encode(_salt, _trustedForwarder, _owner, _token));
         address expected1 = _factory.predictCloneAddress(salt);
         address expected2 = _factory.predictCloneAddress(_salt, _trustedForwarder, _owner, _token);
         assertEq(expected1, expected2, "address prediction with salt and params not equal");
@@ -39,7 +39,7 @@ contract VestingCloneFactoryTest is Test {
         vm.assume(_wrongTrustedForwarder != address(0));
         vm.assume(_wrongTrustedForwarder != trustedForwarder);
 
-        bytes32 _salt = keccak256(abi.encodePacked(_wrongTrustedForwarder));
+        bytes32 _salt = keccak256(abi.encode(_wrongTrustedForwarder));
         address _owner = address(2);
         address _token = address(3);
 

@@ -63,7 +63,7 @@ contract tokenProxyFactoryTest is Test {
         vm.assume(address(_allowList) != address(0));
 
         bytes32 salt = keccak256(
-            abi.encodePacked(_salt, trustedForwarder, feeSettings, _admin, _allowList, _requirements, _name, _symbol)
+            abi.encode(_salt, trustedForwarder, feeSettings, _admin, _allowList, _requirements, _name, _symbol)
         );
         address expected1 = factory.predictProxyAddress(salt);
         address expected2 = factory.predictProxyAddress(
