@@ -213,7 +213,7 @@ contract CrowdinvestingTest is Test {
         assertEq(token.balanceOf(buyer), 0, "Buyer should have 0 tokens before");
         uint256 buyerPaymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
         vm.prank(buyer);
-        crowdinvesting.buy(1e18, buyer);
+        crowdinvesting.buy(1e18, type(uint256).max, buyer);
         assertTrue(token.balanceOf(buyer) == 1e18, "Buyer should have 1 token");
         assertEq(
             paymentToken.balanceOf(buyer),

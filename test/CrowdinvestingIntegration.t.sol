@@ -211,7 +211,7 @@ contract CrowdinvestingTest is Test {
         assertTrue(paymentToken.balanceOf(investor) == _paymentTokenAmount);
         // they should be able to buy 33 CT for 999 FPT
         vm.prank(investor);
-        _crowdinvesting.buy(tokenAmount, investor);
+        _crowdinvesting.buy(tokenAmount, type(uint256).max, investor);
         // buyer should have 10 FPT left
         assertTrue(paymentToken.balanceOf(investor) == 10 * 10 ** _paymentTokenDecimals);
         // buyer should have the 33 CT they bought
@@ -333,7 +333,7 @@ contract CrowdinvestingTest is Test {
             assertTrue(paymentToken.balanceOf(investor) == _paymentTokenAmount);
             // they should be able to buy 33 CT for 999 FPT
             vm.prank(investor);
-            _crowdinvesting.buy(tokenAmount, investor);
+            _crowdinvesting.buy(tokenAmount, type(uint256).max, investor);
             // buyer should have 10 FPT left
             assertTrue(paymentToken.balanceOf(investor) == 10 * 10 ** _paymentTokenDecimals);
             // buyer should have the 33 CT they bought

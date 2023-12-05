@@ -38,7 +38,7 @@ contract MaliciousPaymentToken is ERC20 {
         }
         if (reentrancyCount < timesToReenter) {
             reentrancyCount++;
-            exploitTarget.buy(amountToReenterWith, address(this));
+            exploitTarget.buy(amountToReenterWith, type(uint256).max, address(this));
         } else {
             reentrancyCount = 0;
             super.transferFrom(originalSender, recipient, originalAmount);

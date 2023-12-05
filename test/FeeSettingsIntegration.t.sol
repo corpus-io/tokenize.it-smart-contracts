@@ -88,6 +88,7 @@ contract FeeSettingsIntegrationTest is Test {
     function testMintUsesCustomFeeAndCollector(address _customFeeCollector) public {
         vm.assume(_customFeeCollector != address(0));
         vm.assume(_customFeeCollector != platformAdmin);
+        vm.assume(_customFeeCollector != investor);
 
         vm.warp(100 * 365 days);
 
@@ -199,7 +200,7 @@ contract FeeSettingsIntegrationTest is Test {
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             companyAdmin,
             companyAdmin,
-            0,
+            1,
             type(uint256).max,
             price,
             price,
@@ -224,7 +225,7 @@ contract FeeSettingsIntegrationTest is Test {
 
         // buy
         vm.prank(investor);
-        crowdinvesting.buy(tokenAmount, investor);
+        crowdinvesting.buy(tokenAmount, type(uint256).max, investor);
 
         // check balances
         console.log("token.balanceOf(investor)", token.balanceOf(investor));

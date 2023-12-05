@@ -471,7 +471,7 @@ contract tokenTest is Test {
         // can't buy when paused
         vm.prank(rando);
         vm.expectRevert("Pausable: paused");
-        crowdinvesting.buy(1, address(this));
+        crowdinvesting.buy(1, type(uint256).max, address(this));
 
         vm.warp(block.timestamp + 1 days + 1);
         vm.prank(_admin);

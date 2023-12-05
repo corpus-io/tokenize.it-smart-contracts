@@ -127,7 +127,7 @@ factory.createCrowdinvestingClone(
 
 The contract needs to be given a minting allowance in the company token contract by calling `increaseMintingAllowance` from an address which has the role of the MintAllower. The allowance should be set to `_maxAmountOfTokenToBeSold` tokens.
 
-An investor can buy tokens by calling the `buy(uint _amount)` function.
+An investor can buy tokens by calling the `buy(uint256 _tokenAmount, uint256 _maxCurrencyAmount,address _tokenReceiver)` function.
 `_amount` ist the amount of tokens they are buying, in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate).
 
 The investor needs to give a sufficient allowance in the currency contract to the Crowdinvesting contract for the deal to be successful.
