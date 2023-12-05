@@ -197,7 +197,7 @@ contract FeeSettingsIntegrationTest is Test {
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             companyAdmin,
             companyAdmin,
-            0,
+            1,
             type(uint256).max,
             price,
             price,
