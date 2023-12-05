@@ -370,6 +370,51 @@ contract CrowdinvestingTest is Test {
         assertTrue(crowdinvesting.tokensBought(buyer) == tokenBuyAmount, "crowdinvesting has sold tokens to buyer");
     }
 
+    function testBuyWithMaxCurrencyAmount(uint256 tokenBuyAmount, uint256 maxCurrencyAmount) public {
+        vm.assume(tokenBuyAmount >= crowdinvesting.minAmountPerBuyer());
+        vm.assume(tokenBuyAmount <= crowdinvesting.maxAmountPerBuyer());
+        uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * crowdinvesting.priceBase(), 10 ** 18);
+        vm.assume(costInPaymentToken <= paymentToken.balanceOf(buyer));
+
+        uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
+
+        FeeSettings localFeeSettings = FeeSettings(address(token.feeSettings()));
+        FakeCrowdinvesting fakeCrowdinvesting = new FakeCrowdinvesting(address(token));
+
+        if (maxCurrencyAmount >= costInPaymentToken) {
+            vm.prank(buyer);
+            vm.expectEmit(true, true, true, true, address(crowdinvesting));
+            emit TokensBought(buyer, tokenBuyAmount, costInPaymentToken);
+            crowdinvesting.buy(tokenBuyAmount, maxCurrencyAmount, buyer);
+            assertTrue(
+                paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore - costInPaymentToken,
+                "buyer has paid"
+            );
+            assertTrue(token.balanceOf(buyer) == tokenBuyAmount, "buyer has tokens");
+            assertTrue(
+                paymentToken.balanceOf(receiver) == costInPaymentToken - fakeCrowdinvesting.fee(costInPaymentToken),
+                "receiver has payment tokens"
+            );
+            assertTrue(
+                paymentToken.balanceOf(
+                    FeeSettings(address(token.feeSettings())).crowdinvestingFeeCollector(address(token))
+                ) == fakeCrowdinvesting.fee(costInPaymentToken),
+                "fee collector has collected fee in payment tokens"
+            );
+            assertTrue(
+                token.balanceOf(FeeSettings(address(token.feeSettings())).tokenFeeCollector(address(token))) ==
+                    localFeeSettings.tokenFee(tokenBuyAmount),
+                "fee collector has collected fee in tokens"
+            );
+            assertTrue(crowdinvesting.tokensSold() == tokenBuyAmount, "crowdinvesting has sold tokens");
+            assertTrue(crowdinvesting.tokensBought(buyer) == tokenBuyAmount, "crowdinvesting has sold tokens to buyer");
+        } else {
+            vm.prank(buyer);
+            vm.expectRevert("Purchase more expensive than _maxCurrencyAmount");
+            crowdinvesting.buy(tokenBuyAmount, maxCurrencyAmount, buyer);
+        }
+    }
+
     function testBuyTooMuch() public {
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
 
