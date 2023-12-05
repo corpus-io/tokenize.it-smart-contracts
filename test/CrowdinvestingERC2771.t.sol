@@ -25,17 +25,6 @@ contract CrowdinvestingTest is Test {
 
     CrowdinvestingInitializerArguments arguments;
 
-    // copied from openGSN IForwarder
-    struct ForwardRequest {
-        address from;
-        address to;
-        uint256 value;
-        uint256 gas;
-        uint256 nonce;
-        bytes data;
-        uint256 validUntil;
-    }
-
     address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant mintAllower = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
@@ -153,7 +142,12 @@ contract CrowdinvestingTest is Test {
         // todo: get nonce from forwarder
 
         // build request
-        bytes memory payload = abi.encodeWithSelector(crowdinvesting.buy.selector, tokenBuyAmount, buyer);
+        bytes memory payload = abi.encodeWithSelector(
+            crowdinvesting.buy.selector,
+            tokenBuyAmount,
+            type(uint256).max,
+            buyer
+        );
 
         IForwarder.ForwardRequest memory request = IForwarder.ForwardRequest({
             from: buyer,

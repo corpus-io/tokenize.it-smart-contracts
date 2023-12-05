@@ -86,6 +86,7 @@ contract FeeSettingsIntegrationTest is Test {
     function testMintUsesCustomFeeAndCollector(address _customFeeCollector) public {
         vm.assume(_customFeeCollector != address(0));
         vm.assume(_customFeeCollector != platformAdmin);
+        vm.assume(_customFeeCollector != investor);
 
         vm.warp(100 * 365 days);
 

@@ -315,7 +315,12 @@ contract CompanySetUpTest is Test {
         */
 
         // build request
-        payload = abi.encodeWithSelector(crowdinvesting.buy.selector, tokenBuyAmount, investorColdWallet);
+        payload = abi.encodeWithSelector(
+            crowdinvesting.buy.selector,
+            tokenBuyAmount,
+            type(uint256).max,
+            investorColdWallet
+        );
 
         request = IForwarder.ForwardRequest({
             from: investor,
