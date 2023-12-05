@@ -267,7 +267,7 @@ contract TokenERC2771Test is Test {
         require(digest.recover(signature) == request.from, "FWD: signature mismatch");
 
         // // encode buy call and sign it https://book.getfoundry.sh/cheatcodes/sign
-        // bytes memory buyCallData = abi.encodeWithSignature("buy(uint256)", tokenBuyAmount);
+        // bytes memory buyCallData = abi.encodeWithSignature("buy(uint256)", type(uint256).max, tokenBuyAmount);
 
         /*
             execute request and check results

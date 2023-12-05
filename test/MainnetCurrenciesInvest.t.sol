@@ -147,7 +147,7 @@ contract MainnetCurrencies is Test {
 
         // buy tokens
         vm.prank(buyer);
-        _crowdinvesting.buy(maxAmountPerBuyer, buyer);
+        _crowdinvesting.buy(maxAmountPerBuyer, type(uint256).max, buyer);
 
         // check buyer has tokens and receiver has _currency afterwards
         assertEq(token.balanceOf(buyer), amountOfTokenToBuy, "buyer has tokens");

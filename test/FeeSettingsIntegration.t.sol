@@ -222,7 +222,7 @@ contract FeeSettingsIntegrationTest is Test {
 
         // buy
         vm.prank(investor);
-        crowdinvesting.buy(tokenAmount, investor);
+        crowdinvesting.buy(tokenAmount, type(uint256).max, investor);
 
         // check balances
         console.log("token.balanceOf(investor)", token.balanceOf(investor));

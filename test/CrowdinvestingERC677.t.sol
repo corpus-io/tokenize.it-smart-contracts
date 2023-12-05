@@ -189,7 +189,7 @@ contract CrowdinvestingTest is Test {
         uint256 buyAmount = _maxMintAmount / 100000;
         vm.prank(buyer);
         vm.expectRevert("ReentrancyGuard: reentrant call");
-        _crowdinvesting.buy(buyAmount, buyer);
+        _crowdinvesting.buy(buyAmount, type(uint256).max, buyer);
     }
 
     function testERC677BuyHappyCase(uint256 tokenBuyAmount) public {
@@ -383,9 +383,9 @@ contract CrowdinvestingTest is Test {
         assertTrue(crowdinvesting.tokensBought(person1) == 0, "person1 has bought tokens");
 
         vm.prank(buyer);
-        crowdinvesting.buy(tokenAmount1, buyer);
+        crowdinvesting.buy(tokenAmount1, type(uint256).max, buyer);
         vm.prank(buyer);
-        crowdinvesting.buy(tokenAmount2, person1);
+        crowdinvesting.buy(tokenAmount2, type(uint256).max, person1);
 
         // check all entries are correct after
         assertTrue(
