@@ -274,12 +274,19 @@ contract Crowdinvesting is
 
     /**
      * @notice Buy `amount` tokens and mint them to `_tokenReceiver`.
-     * @param _amount amount of tokens to buy, in bits (smallest subunit of token)
+     * @param _tokenAmount amount of tokens to buy, in bits (smallest subunit of token)
+     * @param _maxCurrencyAmount maximum amount of currency to spend, in bits (smallest subunit of currency)
      * @param _tokenReceiver address the tokens should be minted to
      */
-    function buy(uint256 _amount, address _tokenReceiver) public whenNotPaused nonReentrant {
+    function buy(
+        uint256 _tokenAmount,
+        uint256 _maxCurrencyAmount,
+        address _tokenReceiver
+    ) public whenNotPaused nonReentrant {
         // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
-        uint256 currencyAmount = Math.ceilDiv(_amount * getPrice(), 10 ** token.decimals());
+        uint256 currencyAmount = Math.ceilDiv(_tokenAmount * getPrice(), 10 ** token.decimals());
+
+        require(currencyAmount <= _maxCurrencyAmount, "Purchase more expensive than _maxCurrencyAmount");
 
         IERC20 _currency = currency;
 
@@ -289,9 +296,9 @@ contract Crowdinvesting is
         }
 
         _currency.safeTransferFrom(_msgSender(), currencyReceiver, currencyAmount - fee);
-        _checkAndDeliver(_amount, _tokenReceiver);
+        _checkAndDeliver(_tokenAmount, _tokenReceiver);
 
-        emit TokensBought(_msgSender(), _amount, currencyAmount);
+        emit TokensBought(_msgSender(), _tokenAmount, currencyAmount);
     }
 
     /**
