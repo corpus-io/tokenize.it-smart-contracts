@@ -78,6 +78,10 @@ contract PrivateOffer {
         require(_arguments.token != Token(address(0)), "_arguments.token can not be zero address");
         require(_arguments.currency != IERC20(address(0)), "_arguments.currency can not be zero address");
         require(_arguments.tokenAmount != 0, "_arguments.tokenAmount can not be zero");
+        require(
+            _arguments.token.allowList().map(address(_arguments.currency)) > 0,
+            "currency needs to be on the allowlist"
+        );
 
         // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
         uint256 currencyAmount = Math.ceilDiv(
