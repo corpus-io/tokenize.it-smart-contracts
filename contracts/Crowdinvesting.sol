@@ -328,7 +328,7 @@ contract Crowdinvesting is
         }
         uint256 amount = (_currencyAmount * 10 ** token.decimals()) / getPrice();
 
-        // if a minimum amount was provided in data, use it as minimum.
+        // if a minimum amount was provided in data, enforce it.
         if (_data.length >= 64) {
             require(amount >= abi.decode(_data[32:64], (uint256)), "Purchase yields less tokens than demanded.");
         }
