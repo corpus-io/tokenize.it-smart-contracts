@@ -134,16 +134,7 @@ contract TokenProxyFactory is Factory {
     ) private pure returns (bytes32) {
         return
             keccak256(
-                abi.encodePacked(
-                    _rawSalt,
-                    _trustedForwarder,
-                    _feeSettings,
-                    _admin,
-                    _allowList,
-                    _requirements,
-                    _name,
-                    _symbol
-                )
+                abi.encode(_rawSalt, _trustedForwarder, _feeSettings, _admin, _allowList, _requirements, _name, _symbol)
             );
     }
 }

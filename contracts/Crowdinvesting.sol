@@ -132,6 +132,9 @@ contract Crowdinvesting is
     /// @notice Dynamic pricing has been deactivated and priceBase is used
     event DynamicPricingDeactivated();
 
+    /// LastBuyDate has been changed to `lastBuyDate`
+    event SetLastBuyDate(uint256 lastBuyDate);
+
     /**
      * This constructor creates a logic contract that is used to clone new fundraising contracts.
      * It has no owner, and can not be used directly.
@@ -167,7 +170,7 @@ contract Crowdinvesting is
         maxAmountOfTokenToBeSold = _arguments.maxAmountOfTokenToBeSold;
         currency = _arguments.currency;
         token = _arguments.token;
-        lastBuyDate = _arguments.lastBuyDate;
+        _setLastBuyDate(_arguments.lastBuyDate);
 
         // price oracle activation is optional
         if (_arguments.priceOracle != address(0)) {
@@ -188,7 +191,6 @@ contract Crowdinvesting is
     ) external onlyOwner whenPaused {
         _activateDynamicPricing(_priceOracle, _priceMin, _priceMax);
         coolDownStart = block.timestamp;
-        emit DynamicPricingActivated(address(_priceOracle), _priceMin, _priceMax);
     }
 
     /**
@@ -279,12 +281,14 @@ contract Crowdinvesting is
         // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
         uint256 currencyAmount = Math.ceilDiv(_amount * getPrice(), 10 ** token.decimals());
 
+        IERC20 _currency = currency;
+
         (uint256 fee, address feeCollector) = _getFeeAndFeeReceiver(currencyAmount);
         if (fee != 0) {
-            currency.safeTransferFrom(_msgSender(), feeCollector, fee);
+            _currency.safeTransferFrom(_msgSender(), feeCollector, fee);
         }
 
-        currency.safeTransferFrom(_msgSender(), currencyReceiver, currencyAmount - fee);
+        _currency.safeTransferFrom(_msgSender(), currencyReceiver, currencyAmount - fee);
         _checkAndDeliver(_amount, _tokenReceiver);
 
         emit TokensBought(_msgSender(), _amount, currencyAmount);
@@ -389,8 +393,17 @@ contract Crowdinvesting is
 
     /// set auto pause date
     function setLastBuyDate(uint256 _lastBuyDate) external onlyOwner whenPaused {
-        lastBuyDate = _lastBuyDate;
+        _setLastBuyDate(_lastBuyDate);
         coolDownStart = block.timestamp;
+    }
+
+    /// set auto pause date
+    function _setLastBuyDate(uint256 _lastBuyDate) internal {
+        if (_lastBuyDate != 0) {
+            require(_lastBuyDate > block.timestamp, "lastBuyDate needs to be 0 or in the future");
+        }
+        lastBuyDate = _lastBuyDate;
+        emit SetLastBuyDate(_lastBuyDate);
     }
 
     /**
