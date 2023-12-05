@@ -387,6 +387,10 @@ contract CrowdinvestingTest is Test {
             emit TokensBought(buyer, tokenBuyAmount, costInPaymentToken);
             crowdinvesting.buy(tokenBuyAmount, maxCurrencyAmount, buyer);
             assertTrue(
+                paymentTokenBalanceBefore - paymentToken.balanceOf(buyer) <= maxCurrencyAmount,
+                "buyer has paid too much!"
+            );
+            assertTrue(
                 paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore - costInPaymentToken,
                 "buyer has paid"
             );

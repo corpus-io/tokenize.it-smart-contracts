@@ -305,8 +305,11 @@ contract Crowdinvesting is
      * ERC 677 compatibility - this function make this contract a TransferAndCall recipient
      * @param _from address of the sender
      * @param _currencyAmount how much currency was received
-     * @param _data additional information. If the first 32 bytes of _data are not zero, they are interpreted as the address of the token receiver.
-     *     Otherwise, the tokens are sent to the sender.
+     * @param _data additional information.
+     * If the first 32 bytes of _data are not zero, they are interpreted as the address of the token receiver.
+     * Otherwise, the tokens are sent to the sender.
+     * If the second 32 bytes of _data are not zero, they are interpreted as the minimum amount of tokens to buy.
+     * Otherwise, the amount of tokens to buy is not limited and could be lower than expected.
      * @return true if the buy was successful. Otherwise, the transaction is reverted. This is an antipattern, but the return value is required by the interface.
      */
     function onTokenTransfer(
@@ -318,12 +321,17 @@ contract Crowdinvesting is
 
         // if a recipient address was provided in data, use it as receiver. Otherwise, use _from as receiver.
         address tokenReceiver;
-        if (_data.length == 32) {
-            tokenReceiver = abi.decode(_data, (address));
+        if (_data.length >= 32) {
+            tokenReceiver = abi.decode(_data[:32], (address));
         } else {
             tokenReceiver = _from;
         }
         uint256 amount = (_currencyAmount * 10 ** token.decimals()) / getPrice();
+
+        // if a minimum amount was provided in data, use it as minimum.
+        if (_data.length >= 64) {
+            require(amount >= abi.decode(_data[32:64], (uint256)), "Purchase yields less tokens than demanded.");
+        }
 
         // move payment to currencyReceiver and feeCollector
         (uint256 fee, address feeCollector) = _getFeeAndFeeReceiver(_currencyAmount);
