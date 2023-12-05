@@ -53,7 +53,18 @@ contract CrowdinvestingTest is Test {
     uint256 public constant minAmountPerBuyer = maxAmountOfTokenToBeSold / 200; // 0.1 token
 
     function setUp() public {
+        // set up currency
+        vm.prank(paymentTokenProvider);
+        paymentToken = new FakePaymentToken(paymentTokenAmount, paymentTokenDecimals); // 1000 tokens with 6 decimals
+        // transfer currency to buyer
+        vm.prank(paymentTokenProvider);
+        paymentToken.transfer(buyer, paymentTokenAmount);
+        assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
+
         list = createAllowList(trustedForwarder, owner);
+        vm.prank(owner);
+        list.set(address(paymentToken), 1);
+
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 100);
         feeSettings = createFeeSettings(
             trustedForwarder,
@@ -70,14 +81,6 @@ contract CrowdinvestingTest is Test {
         token = Token(
             tokenCloneFactory.createTokenProxy(0, trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST")
         );
-
-        // set up currency
-        vm.prank(paymentTokenProvider);
-        paymentToken = new FakePaymentToken(paymentTokenAmount, paymentTokenDecimals); // 1000 tokens with 6 decimals
-        // transfer currency to buyer
-        vm.prank(paymentTokenProvider);
-        paymentToken.transfer(buyer, paymentTokenAmount);
-        assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
 
         vm.prank(owner);
         factory = new CrowdinvestingCloneFactory(address(new Crowdinvesting(trustedForwarder)));
@@ -441,10 +444,14 @@ contract CrowdinvestingTest is Test {
         assertTrue(crowdinvesting.priceBase() == price, "Price not as expected");
         assertTrue(crowdinvesting.getPrice() > price, "Price should have changed!");
 
+        IERC20 newCurrency = IERC20(address(20));
+        vm.prank(owner);
+        list.set(address(newCurrency), 1);
+
         // change price
         vm.startPrank(owner);
         crowdinvesting.pause();
-        crowdinvesting.setCurrencyAndTokenPrice(IERC20(address(20)), price / 2);
+        crowdinvesting.setCurrencyAndTokenPrice(newCurrency, price / 2);
         vm.warp(201 days);
         crowdinvesting.unpause();
 

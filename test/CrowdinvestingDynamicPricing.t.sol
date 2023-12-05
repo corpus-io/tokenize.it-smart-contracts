@@ -89,8 +89,12 @@ contract CrowdinvestingTest is Test {
         assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
 
         // set up platform
-        vm.startPrank(platformAdmin);
+        vm.prank(platformAdmin);
         list = createAllowList(trustedForwarder, owner);
+        vm.prank(owner);
+        list.set(address(paymentToken), 1);
+
+        vm.startPrank(platformAdmin);
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 100);
         FeeSettings feeLogic = new FeeSettings(trustedForwarder);
         FeeSettingsCloneFactory feeSettingsCloneFactory = new FeeSettingsCloneFactory(address(feeLogic));

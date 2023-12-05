@@ -39,7 +39,18 @@ contract CrowdinvestingTest is Test {
     uint256 public constant minAmountPerBuyer = maxAmountOfTokenToBeSold / 200; // 0.1 token
 
     function setUp() public {
+        // set up currency
+        vm.prank(paymentTokenProvider);
+        paymentToken = new FakePaymentToken(paymentTokenAmount, paymentTokenDecimals); // 1000 tokens with 6 decimals
+        // transfer currency to buyer
+        vm.prank(paymentTokenProvider);
+        paymentToken.transfer(investor, paymentTokenAmount);
+        assertTrue(paymentToken.balanceOf(investor) == paymentTokenAmount);
+
         list = createAllowList(trustedForwarder, platformAdmin);
+        vm.prank(platformAdmin);
+        list.set(address(paymentToken), 1);
+
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 100);
         feeSettings = createFeeSettings(
             trustedForwarder,
@@ -62,14 +73,6 @@ contract CrowdinvestingTest is Test {
                 "TEST"
             )
         );
-
-        // set up currency
-        vm.prank(paymentTokenProvider);
-        paymentToken = new FakePaymentToken(paymentTokenAmount, paymentTokenDecimals); // 1000 tokens with 6 decimals
-        // transfer currency to buyer
-        vm.prank(paymentTokenProvider);
-        paymentToken.transfer(investor, paymentTokenAmount);
-        assertTrue(paymentToken.balanceOf(investor) == paymentTokenAmount);
 
         vm.prank(companyOwner);
 
@@ -160,8 +163,10 @@ contract CrowdinvestingTest is Test {
 
         vm.prank(paymentTokenProvider);
         paymentToken = new FakePaymentToken(_paymentTokenAmount, _paymentTokenDecimals);
-        vm.prank(companyOwner);
+        vm.prank(platformAdmin);
+        list.set(address(paymentToken), 1);
 
+        vm.prank(companyOwner);
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             address(this),
             payable(receiver),
@@ -280,6 +285,9 @@ contract CrowdinvestingTest is Test {
 
             vm.prank(paymentTokenProvider);
             paymentToken = new FakePaymentToken(_paymentTokenAmount, _paymentTokenDecimals);
+            vm.prank(platformAdmin);
+            list.set(address(paymentToken), 1);
+
             vm.prank(companyOwner);
 
             CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(

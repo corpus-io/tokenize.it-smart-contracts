@@ -107,8 +107,17 @@ contract CompanySetUpTest is Test {
             platformFeeCollector
         );
 
+        // set up currency. In real life (irl) this would be a real currency, but for testing purposes we use a fake one.
+        vm.prank(paymentTokenProvider);
+        paymentToken = new FakePaymentToken(paymentTokenAmount, paymentTokenDecimals); // 1000 tokens with 6 decimals
+        vm.prank(paymentTokenProvider);
+        paymentToken.transfer(investor, paymentTokenAmount); // transfer currency to investor so they can buy tokens later
+        assertTrue(paymentToken.balanceOf(investor) == paymentTokenAmount);
+
         // set up AllowList
         list = createAllowList(address(8), platformAdmin);
+        vm.prank(platformAdmin);
+        list.set(address(paymentToken), 1);
 
         // investor registers with the platform
         // after kyc, the platform adds the investor to the allowlist with all the properties they were able to proof
@@ -116,13 +125,6 @@ contract CompanySetUpTest is Test {
         list.set(investorColdWallet, requirements); // it is possible to set more bits to true than the requirements, but not less, for the investor to be allowed to invest
 
         // setting up AllowList and FeeSettings is one-time step. These contracts will be used by all companies.
-
-        // set up currency. In real life (irl) this would be a real currency, but for testing purposes we use a fake one.
-        vm.prank(paymentTokenProvider);
-        paymentToken = new FakePaymentToken(paymentTokenAmount, paymentTokenDecimals); // 1000 tokens with 6 decimals
-        vm.prank(paymentTokenProvider);
-        paymentToken.transfer(investor, paymentTokenAmount); // transfer currency to investor so they can buy tokens later
-        assertTrue(paymentToken.balanceOf(investor) == paymentTokenAmount);
     }
 
     function deployToken(Forwarder forwarder) public {

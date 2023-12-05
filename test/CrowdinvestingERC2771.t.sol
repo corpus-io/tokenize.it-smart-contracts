@@ -65,7 +65,19 @@ contract CrowdinvestingTest is Test {
     uint32 paymentTokenFeeDenominator = 50;
 
     function setUp() public {
+        buyer = vm.addr(buyerPrivateKey);
+        // set up currency
+        vm.prank(paymentTokenProvider);
+        paymentToken = new FakePaymentToken(paymentTokenAmount, paymentTokenDecimals); // 1000 tokens with 6 decimals
+        // transfer currency to buyer
+        vm.prank(paymentTokenProvider);
+        paymentToken.transfer(buyer, paymentTokenAmount);
+        assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
+
         list = createAllowList(trustedForwarder, owner);
+        vm.prank(owner);
+        list.set(address(paymentToken), 1);
+
         Fees memory fees = Fees(
             1,
             tokenFeeDenominator,
@@ -84,16 +96,6 @@ contract CrowdinvestingTest is Test {
         );
 
         ERC2771helper = new ERC2771Helper();
-
-        buyer = vm.addr(buyerPrivateKey);
-
-        // set up currency
-        vm.prank(paymentTokenProvider);
-        paymentToken = new FakePaymentToken(paymentTokenAmount, paymentTokenDecimals); // 1000 tokens with 6 decimals
-        // transfer currency to buyer
-        vm.prank(paymentTokenProvider);
-        paymentToken.transfer(buyer, paymentTokenAmount);
-        assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
 
         tokenBuyAmount = 5 * 10 ** token.decimals();
         costInPaymentToken = (tokenBuyAmount * price) / 10 ** 18;

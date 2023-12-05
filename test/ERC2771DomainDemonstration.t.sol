@@ -110,6 +110,10 @@ contract TokenERC2771Test is Test {
             address(new Crowdinvesting(address(forwarder)))
         );
 
+        // add payment token to allow list
+        vm.prank(platformAdmin);
+        allowList.set(address(paymentToken), 1);
+
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments({
             owner: companyAdmin,
             currencyReceiver: receiver,

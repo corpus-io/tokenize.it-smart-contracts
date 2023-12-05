@@ -42,7 +42,12 @@ contract PrivateOfferFactoryTest is Test {
         Vesting vestingImplementation = new Vesting(trustedForwarder);
         VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
         factory = new PrivateOfferFactory(vestingCloneFactory);
+        currency = new ERC20MintableByAnyone("currency", "CUR");
+
         list = createAllowList(trustedForwarder, owner);
+        vm.prank(owner);
+        list.set(address(currency), 1);
+
         Fees memory fees = Fees(0, 100, 0, 100, 0, 100, 0);
         feeSettings = createFeeSettings(trustedForwarder, address(this), fees, admin, admin, admin);
 
@@ -51,7 +56,6 @@ contract PrivateOfferFactoryTest is Test {
         token = Token(
             tokenCloneFactory.createTokenProxy(0, trustedForwarder, feeSettings, admin, list, 0x0, "token", "TOK")
         );
-        currency = new ERC20MintableByAnyone("currency", "CUR");
     }
 
     function testDeployContract(bytes32 _salt) public {
