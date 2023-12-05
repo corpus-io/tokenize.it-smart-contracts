@@ -160,9 +160,9 @@ contract Crowdinvesting is
             _arguments.minAmountPerBuyer <= _arguments.maxAmountPerBuyer,
             "_minAmountPerBuyer needs to be smaller or equal to _maxAmountPerBuyer"
         );
+        require(_arguments.minAmountPerBuyer != 0, "_minAmountPerBuyer needs to be larger than zero");
         require(_arguments.tokenPrice != 0, "_tokenPrice needs to be a non-zero amount");
         require(_arguments.maxAmountOfTokenToBeSold != 0, "_maxAmountOfTokenToBeSold needs to be larger than zero");
-
         currencyReceiver = _arguments.currencyReceiver;
         minAmountPerBuyer = _arguments.minAmountPerBuyer;
         maxAmountPerBuyer = _arguments.maxAmountPerBuyer;
@@ -363,6 +363,7 @@ contract Crowdinvesting is
      */
     function setMinAmountPerBuyer(uint256 _minAmountPerBuyer) external onlyOwner whenPaused {
         require(_minAmountPerBuyer <= maxAmountPerBuyer, "_minAmount needs to be smaller or equal to maxAmount");
+        require(_minAmountPerBuyer != 0, "_minAmountPerBuyer needs to be larger than zero");
         minAmountPerBuyer = _minAmountPerBuyer;
         emit MinAmountPerBuyerChanged(_minAmountPerBuyer);
         coolDownStart = block.timestamp;

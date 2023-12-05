@@ -208,6 +208,12 @@ contract CrowdinvestingTest is Test {
         vm.expectRevert("_minAmountPerBuyer needs to be smaller or equal to _maxAmountPerBuyer");
         factory.createCrowdinvestingClone(0, trustedForwarder, tempArgs);
 
+        // token minAmount 0
+        tempArgs = cloneCrowdinvestingInitializerArguments(arguments);
+        tempArgs.minAmountPerBuyer = 0;
+        vm.expectRevert("_minAmountPerBuyer needs to be larger than zero");
+        factory.createCrowdinvestingClone(0, trustedForwarder, tempArgs);
+
         // price 0
         tempArgs = cloneCrowdinvestingInitializerArguments(arguments);
         tempArgs.tokenPrice = 0;
@@ -756,6 +762,7 @@ contract CrowdinvestingTest is Test {
     */
     function testUpdateMinAmountPerBuyerPaused(uint256 newMinAmountPerBuyer) public {
         vm.assume(newMinAmountPerBuyer <= crowdinvesting.maxAmountPerBuyer());
+        vm.assume(newMinAmountPerBuyer > 0);
         assertTrue(crowdinvesting.minAmountPerBuyer() == minAmountPerBuyer);
         vm.prank(owner);
         crowdinvesting.pause();
@@ -769,6 +776,10 @@ contract CrowdinvestingTest is Test {
         vm.expectRevert("_minAmount needs to be smaller or equal to maxAmount");
         vm.prank(owner);
         crowdinvesting.setMinAmountPerBuyer(_maxAmountPerBuyer + 1); //crowdinvesting.maxAmountPerBuyer() + 1);
+
+        vm.expectRevert("_minAmountPerBuyer needs to be larger than zero");
+        vm.prank(owner);
+        crowdinvesting.setMinAmountPerBuyer(0); //crowdinvesting.maxAmountPerBuyer() + 1);
 
         console.log("minAmount: ", crowdinvesting.minAmountPerBuyer());
         console.log("maxAmount: ", crowdinvesting.maxAmountPerBuyer());
@@ -1116,26 +1127,6 @@ contract CrowdinvestingTest is Test {
         crowdinvesting.unpause();
     }
 
-    // /*
-    //     try to unpause too soon after setCurrencyAndTokenPrice
-    // */
-    // function testUnpauseTooSoonAfterSetCurrencyAndTokenPrice() public {
-    //     uint256 time = block.timestamp;
-    //     vm.warp(time);
-    //     vm.prank(owner);
-    //     crowdinvesting.pause();
-    //     assertTrue(crowdinvesting.paused());
-    //     assertTrue(crowdinvesting.coolDownStart() == time);
-    //     vm.warp(time + 2 hours);
-    //     vm.prank(owner);
-    //     crowdinvesting.setCurrencyAndTokenPrice(paymentToken, 700);
-    //     assertTrue(crowdinvesting.coolDownStart() == time + 2 hours);
-    //     vm.warp(time + crowdinvesting.delay() + 1 hours);
-    //     vm.prank(owner);
-    //     vm.expectRevert("There needs to be at minimum one day to change parameters");
-    //     crowdinvesting.unpause(); // must fail because of the parameter update
-    // }
-
     /*
         try to unpause too soon after setCurrencyAndTokenPrice
     */
@@ -1207,7 +1198,7 @@ contract CrowdinvestingTest is Test {
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             address(this),
             payable(receiver),
-            0,
+            1,
             UINT256_MAX,
             _price,
             _price,
