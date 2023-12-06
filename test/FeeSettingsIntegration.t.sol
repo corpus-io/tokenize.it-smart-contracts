@@ -61,7 +61,7 @@ contract FeeSettingsIntegrationTest is Test {
 
         AllowList allowList = createAllowList(trustedForwarder, owner);
         vm.prank(owner);
-        allowList.set(address(currency), 1);
+        allowList.set(address(currency), TRUSTED_CURRENCY);
 
         Token tokenLogic = new Token(trustedForwarder);
         TokenProxyFactory tokenProxyFactory = new TokenProxyFactory(address(tokenLogic));

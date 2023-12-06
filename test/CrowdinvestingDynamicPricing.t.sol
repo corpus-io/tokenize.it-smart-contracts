@@ -92,7 +92,7 @@ contract CrowdinvestingTest is Test {
         vm.prank(platformAdmin);
         list = createAllowList(trustedForwarder, owner);
         vm.prank(owner);
-        list.set(address(paymentToken), 1);
+        list.set(address(paymentToken), TRUSTED_CURRENCY);
 
         vm.startPrank(platformAdmin);
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 100);

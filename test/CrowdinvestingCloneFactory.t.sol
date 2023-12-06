@@ -70,7 +70,7 @@ contract tokenTest is Test {
         vm.stopPrank();
 
         vm.prank(feeSettingsAndAllowListOwner);
-        allowList.set(address(exampleCurrency), 1);
+        allowList.set(address(exampleCurrency), TRUSTED_CURRENCY);
 
         Token tokenImplementation = new Token(trustedForwarder);
         tokenFactory = new TokenProxyFactory(address(tokenImplementation));
@@ -112,7 +112,7 @@ contract tokenTest is Test {
         vm.assume(_lastBuyDate > block.timestamp || _lastBuyDate == 0);
 
         vm.prank(feeSettingsAndAllowListOwner);
-        allowList.set(address(_currency), 1);
+        allowList.set(address(_currency), TRUSTED_CURRENCY);
 
         Token _token = Token(
             tokenFactory.createTokenProxy(
@@ -267,7 +267,7 @@ contract tokenTest is Test {
         vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
 
         vm.prank(feeSettingsAndAllowListOwner);
-        allowList.set(address(_currency), 1);
+        allowList.set(address(_currency), TRUSTED_CURRENCY);
 
         Token _token = Token(
             tokenFactory.createTokenProxy(
@@ -368,7 +368,7 @@ contract tokenTest is Test {
         vm.assume(_lastBuyDate > block.timestamp || _lastBuyDate == 0);
 
         vm.prank(feeSettingsAndAllowListOwner);
-        allowList.set(address(_currency), 1);
+        allowList.set(address(_currency), TRUSTED_CURRENCY);
 
         Token _token = Token(
             tokenFactory.createTokenProxy(

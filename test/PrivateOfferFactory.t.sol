@@ -46,7 +46,7 @@ contract PrivateOfferFactoryTest is Test {
 
         list = createAllowList(trustedForwarder, owner);
         vm.prank(owner);
-        list.set(address(currency), 1);
+        list.set(address(currency), TRUSTED_CURRENCY);
 
         Fees memory fees = Fees(0, 100, 0, 100, 0, 100, 0);
         feeSettings = createFeeSettings(trustedForwarder, address(this), fees, admin, admin, admin);

@@ -41,7 +41,7 @@ contract PrivateOfferTimeLockTest is Test {
 
         list = createAllowList(trustedForwarder, address(this));
         list.set(tokenReceiver, requirements);
-        list.set(address(currency), 1);
+        list.set(address(currency), TRUSTED_CURRENCY);
 
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
         feeSettings = createFeeSettings(trustedForwarder, address(this), fees, admin, admin, admin);

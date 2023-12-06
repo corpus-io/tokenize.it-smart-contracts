@@ -63,7 +63,7 @@ contract CrowdinvestingTest is Test {
 
         list = createAllowList(trustedForwarder, owner);
         vm.prank(owner);
-        list.set(address(paymentToken), 1);
+        list.set(address(paymentToken), TRUSTED_CURRENCY);
 
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 100);
         feeSettings = createFeeSettings(
@@ -446,7 +446,7 @@ contract CrowdinvestingTest is Test {
 
         IERC20 newCurrency = IERC20(address(20));
         vm.prank(owner);
-        list.set(address(newCurrency), 1);
+        list.set(address(newCurrency), TRUSTED_CURRENCY);
 
         // change price
         vm.startPrank(owner);

@@ -117,7 +117,7 @@ contract CompanySetUpTest is Test {
         // set up AllowList
         list = createAllowList(address(8), platformAdmin);
         vm.prank(platformAdmin);
-        list.set(address(paymentToken), 1);
+        list.set(address(paymentToken), TRUSTED_CURRENCY);
 
         // investor registers with the platform
         // after kyc, the platform adds the investor to the allowlist with all the properties they were able to proof

@@ -49,7 +49,7 @@ contract CrowdinvestingTest is Test {
 
         list = createAllowList(trustedForwarder, platformAdmin);
         vm.prank(platformAdmin);
-        list.set(address(paymentToken), 1);
+        list.set(address(paymentToken), TRUSTED_CURRENCY);
 
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 100);
         feeSettings = createFeeSettings(
@@ -164,7 +164,7 @@ contract CrowdinvestingTest is Test {
         vm.prank(paymentTokenProvider);
         paymentToken = new FakePaymentToken(_paymentTokenAmount, _paymentTokenDecimals);
         vm.prank(platformAdmin);
-        list.set(address(paymentToken), 1);
+        list.set(address(paymentToken), TRUSTED_CURRENCY);
 
         vm.prank(companyOwner);
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
@@ -286,7 +286,7 @@ contract CrowdinvestingTest is Test {
             vm.prank(paymentTokenProvider);
             paymentToken = new FakePaymentToken(_paymentTokenAmount, _paymentTokenDecimals);
             vm.prank(platformAdmin);
-            list.set(address(paymentToken), 1);
+            list.set(address(paymentToken), TRUSTED_CURRENCY);
 
             vm.prank(companyOwner);
 

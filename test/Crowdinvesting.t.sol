@@ -62,7 +62,7 @@ contract CrowdinvestingTest is Test {
 
         list = createAllowList(trustedForwarder, owner);
         vm.prank(owner);
-        list.set(address(paymentToken), 1);
+        list.set(address(paymentToken), TRUSTED_CURRENCY);
 
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 100);
         feeSettings = createFeeSettings(
@@ -288,7 +288,7 @@ contract CrowdinvestingTest is Test {
         vm.prank(paymentTokenProvider);
         maliciousPaymentToken = new MaliciousPaymentToken(_paymentTokenAmount);
         vm.prank(owner);
-        list.set(address(maliciousPaymentToken), 1);
+        list.set(address(maliciousPaymentToken), TRUSTED_CURRENCY);
 
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             address(this),
@@ -835,7 +835,7 @@ contract CrowdinvestingTest is Test {
 
         FakePaymentToken newPaymentToken = new FakePaymentToken(700, 3);
         vm.startPrank(owner);
-        list.set(address(newPaymentToken), 1);
+        list.set(address(newPaymentToken), TRUSTED_CURRENCY);
 
         crowdinvesting.pause();
         vm.expectEmit(true, true, true, true, address(crowdinvesting));
@@ -1201,7 +1201,7 @@ contract CrowdinvestingTest is Test {
         paymentToken.transfer(buyer, UINT256_MAX);
 
         vm.prank(owner);
-        list.set(address(paymentToken), 1);
+        list.set(address(paymentToken), TRUSTED_CURRENCY);
 
         // create the crowdinvesting contract
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
@@ -1252,7 +1252,7 @@ contract CrowdinvestingTest is Test {
         paymentToken.transfer(buyer, maxCurrencyAmount);
 
         vm.prank(owner);
-        list.set(address(paymentToken), 1);
+        list.set(address(paymentToken), TRUSTED_CURRENCY);
 
         // create the crowdinvesting contract
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
