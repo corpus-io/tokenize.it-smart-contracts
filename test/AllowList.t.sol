@@ -108,7 +108,31 @@ contract AllowListTest is Test {
         assertTrue(list.map(address(y)) == attributesY, "y not set");
     }
 
-    function testRandoSetsMultiple(address x, uint256 attributesX, address y, uint256 attributesY) public {
+    // function testSetMultipleRandom(address[] memory addresses, uint256[] memory attributes) public {
+    //     uint256 length = addresses.length < attributes.length ? addresses.length : attributes.length;
+    //     vm.prank(owner);
+    //     list.set(addresses[:length], attributes[:length]);
+    //     // assertTrue(list.map(address(x)) == attributesX, "x not set");
+    //     // assertTrue(list.map(address(y)) == attributesY, "y not set");
+    // }
+
+    function testSetMultipleWithUnequalArrays(address x, uint256 attributesX, address y) public {
+        vm.assume(x != address(0));
+        vm.assume(y != address(0));
+        vm.assume(x != y);
+        assertTrue(list.map(address(x)) == 0, "x already on list");
+        assertTrue(list.map(address(y)) == 0, "y already on list");
+        address[] memory addresses = new address[](2);
+        addresses[0] = address(x);
+        addresses[1] = address(y);
+        uint256[] memory attributes = new uint256[](1);
+        attributes[0] = attributesX;
+        vm.prank(owner);
+        vm.expectRevert("lengths do not match");
+        list.set(addresses, attributes);
+    }
+
+    function testRandoCanNotSetMultiple(address x, uint256 attributesX, address y, uint256 attributesY) public {
         vm.assume(x != address(0));
         vm.assume(x != owner);
         vm.assume(y != address(0));
@@ -124,6 +148,41 @@ contract AllowListTest is Test {
         list.set(addresses, attributes);
         assertTrue(list.map(address(x)) == 0, "x was set");
         assertTrue(list.map(address(y)) == 0, "y was set");
+    }
+
+    function testRemoveMultiple(address x, uint256 attributesX, address y, uint256 attributesY) public {
+        vm.assume(x != address(0));
+        vm.assume(y != address(0));
+        vm.assume(x != y);
+        address[] memory addresses = new address[](2);
+        addresses[0] = address(x);
+        addresses[1] = address(y);
+        uint256[] memory attributes = new uint256[](2);
+        attributes[0] = attributesX;
+        attributes[1] = attributesY;
+        vm.prank(owner);
+        list.set(addresses, attributes);
+        assertTrue(list.map(address(x)) == attributesX, "x not set");
+        assertTrue(list.map(address(y)) == attributesY, "y not set");
+
+        // now remove both
+        vm.prank(owner);
+        list.remove(addresses);
+        assertTrue(list.map(address(x)) == 0, "x not removed");
+        assertTrue(list.map(address(y)) == 0, "y not removed");
+    }
+
+    function testRandoCannotRemoveMultiple(address rando) public {
+        vm.assume(rando != address(0));
+        vm.assume(rando != owner);
+
+        address[] memory addresses = new address[](2);
+        addresses[0] = address(3);
+        addresses[1] = address(5);
+
+        vm.prank(rando);
+        vm.expectRevert("Ownable: caller is not the owner");
+        list.remove(addresses);
     }
 
     function testRemove(address x) public {
