@@ -68,9 +68,16 @@ contract AllowList is Ownable2StepUpgradeable, ERC2771ContextUpgradeable {
      * @param _addr address to be set
      * @param _attributes new attributes
      */
-    function set(address _addr, uint256 _attributes) external onlyOwner {
+    function set(address _addr, uint256 _attributes) public onlyOwner {
         map[_addr] = _attributes;
         emit Set(_addr, _attributes);
+    }
+
+    function set(address[] calldata _addr, uint256[] calldata _attributes) external onlyOwner {
+        require(_addr.length == _attributes.length, "lengths do not match");
+        for (uint256 i = 0; i < _addr.length; i++) {
+            set(_addr[i], _attributes[i]);
+        }
     }
 
     /**
