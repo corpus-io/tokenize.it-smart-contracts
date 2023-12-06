@@ -4,6 +4,9 @@ pragma solidity 0.8.23;
 import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol";
 
+/// @dev bit #200 is defined as special bit for the "trusted currency" attribute
+uint256 constant TRUSTED_CURRENCY = 2 ^ 200;
+
 /**
  * @title AllowList
  * @author malteish, cjentzsch

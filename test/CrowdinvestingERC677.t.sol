@@ -49,7 +49,18 @@ contract CrowdinvestingTest is Test {
     uint256 public constant minAmountPerBuyer = maxAmountOfTokenToBeSold / 200; // 0.1 token
 
     function setUp() public {
+        // set up currency
+        vm.prank(paymentTokenProvider);
+        paymentToken = new FakePaymentToken(paymentTokenAmount, paymentTokenDecimals); // 1000 tokens with 6 decimals
+        // transfer currency to buyer
+        vm.prank(paymentTokenProvider);
+        paymentToken.transfer(buyer, paymentTokenAmount);
+        assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
+
         list = createAllowList(trustedForwarder, owner);
+        vm.prank(owner);
+        list.set(address(paymentToken), TRUSTED_CURRENCY);
+
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 100);
         feeSettings = createFeeSettings(
             trustedForwarder,
@@ -66,14 +77,6 @@ contract CrowdinvestingTest is Test {
         token = Token(
             tokenCloneFactory.createTokenProxy(0, trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST")
         );
-
-        // set up currency
-        vm.prank(paymentTokenProvider);
-        paymentToken = new FakePaymentToken(paymentTokenAmount, paymentTokenDecimals); // 1000 tokens with 6 decimals
-        // transfer currency to buyer
-        vm.prank(paymentTokenProvider);
-        paymentToken.transfer(buyer, paymentTokenAmount);
-        assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
 
         vm.prank(owner);
         factory = new CrowdinvestingCloneFactory(address(new Crowdinvesting(trustedForwarder)));
@@ -125,7 +128,13 @@ contract CrowdinvestingTest is Test {
         uint256 _maxMintAmount = 1000 * 10 ** 18; // 2**256 - 1; // need maximum possible value because we are using a fake token with variable decimals
         uint256 _paymentTokenAmount = 100000 * 10 ** _paymentTokenDecimals;
 
+        vm.prank(paymentTokenProvider);
+        maliciousPaymentToken = new MaliciousPaymentToken(_paymentTokenAmount);
+
         list = createAllowList(trustedForwarder, owner);
+        vm.prank(owner);
+        list.set(address(maliciousPaymentToken), TRUSTED_CURRENCY);
+
         Token _token = Token(
             tokenCloneFactory.createTokenProxy(
                 0,
@@ -138,8 +147,7 @@ contract CrowdinvestingTest is Test {
                 "TEST"
             )
         );
-        vm.prank(paymentTokenProvider);
-        maliciousPaymentToken = new MaliciousPaymentToken(_paymentTokenAmount);
+
         vm.prank(owner);
 
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(

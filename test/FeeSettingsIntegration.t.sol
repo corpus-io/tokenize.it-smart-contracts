@@ -54,7 +54,14 @@ contract FeeSettingsIntegrationTest is Test {
             )
         );
 
+        vm.startPrank(paymentTokenProvider);
+        currency = new FakePaymentToken(currencyAmount, 18);
+        currency.transfer(investor, currencyAmount);
+        vm.stopPrank();
+
         AllowList allowList = createAllowList(trustedForwarder, owner);
+        vm.prank(owner);
+        allowList.set(address(currency), TRUSTED_CURRENCY);
 
         Token tokenLogic = new Token(trustedForwarder);
         TokenProxyFactory tokenProxyFactory = new TokenProxyFactory(address(tokenLogic));
@@ -76,11 +83,6 @@ contract FeeSettingsIntegrationTest is Test {
 
         // using a fake vesting clone factory here because we don't need this functionality for this test
         privateOfferFactory = new PrivateOfferFactory(VestingCloneFactory(address(294)));
-
-        vm.startPrank(paymentTokenProvider);
-        currency = new FakePaymentToken(currencyAmount, 18);
-        currency.transfer(investor, currencyAmount);
-        vm.stopPrank();
     }
 
     function testMintUsesCustomFeeAndCollector(address _customFeeCollector) public {

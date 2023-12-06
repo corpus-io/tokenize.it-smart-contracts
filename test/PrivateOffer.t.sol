@@ -46,9 +46,13 @@ contract PrivateOfferTest is Test {
         Vesting vestingImplementation = new Vesting(trustedForwarder);
         VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
         factory = new PrivateOfferFactory(vestingCloneFactory);
-        list = createAllowList(trustedForwarder, address(this));
 
+        vm.prank(paymentTokenProvider);
+        currency = new FakePaymentToken(0, 18);
+
+        list = createAllowList(trustedForwarder, address(this));
         list.set(tokenReceiver, requirements);
+        list.set(address(currency), TRUSTED_CURRENCY);
 
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
         feeSettings = createFeeSettings(
@@ -74,9 +78,6 @@ contract PrivateOfferTest is Test {
                 "TOK"
             )
         );
-
-        vm.prank(paymentTokenProvider);
-        currency = new FakePaymentToken(0, 18);
     }
 
     function testAcceptDeal(uint256 rawSalt) public {

@@ -103,6 +103,9 @@ contract MainnetCurrencies is Test {
         uint256 _currencyCost = (amountOfTokenToBuy * _price) / 10 ** token.decimals();
         uint256 _currencyAmount = _currencyCost * 2;
 
+        vm.prank(owner);
+        list.set(address(_currency), TRUSTED_CURRENCY);
+
         // set up fundcrowdinvesting with _currency
 
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
@@ -193,6 +196,9 @@ contract MainnetCurrencies is Test {
     function privateOfferWithIERC20Currency(IERC20 _currency) public {
         //bytes memory creationCode = type(PrivateOffer).creationCode;
         uint256 expiration = block.timestamp + 1000;
+
+        vm.prank(owner);
+        list.set(address(_currency), TRUSTED_CURRENCY);
 
         PrivateOfferArguments memory arguments = PrivateOfferArguments(
             buyer,

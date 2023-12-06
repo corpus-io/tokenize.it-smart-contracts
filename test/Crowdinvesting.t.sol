@@ -52,7 +52,18 @@ contract CrowdinvestingTest is Test {
     uint256 public constant lastBuyDate = 12859023;
 
     function setUp() public {
+        // set up currency
+        vm.prank(paymentTokenProvider);
+        paymentToken = new FakePaymentToken(paymentTokenAmount, paymentTokenDecimals); // 1000 tokens with 6 decimals
+        // transfer currency to buyer
+        vm.prank(paymentTokenProvider);
+        paymentToken.transfer(buyer, paymentTokenAmount);
+        assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
+
         list = createAllowList(trustedForwarder, owner);
+        vm.prank(owner);
+        list.set(address(paymentToken), TRUSTED_CURRENCY);
+
         Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 100);
         feeSettings = createFeeSettings(
             trustedForwarder,
@@ -69,14 +80,6 @@ contract CrowdinvestingTest is Test {
         token = Token(
             tokenCloneFactory.createTokenProxy(0, trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST")
         );
-
-        // set up currency
-        vm.prank(paymentTokenProvider);
-        paymentToken = new FakePaymentToken(paymentTokenAmount, paymentTokenDecimals); // 1000 tokens with 6 decimals
-        // transfer currency to buyer
-        vm.prank(paymentTokenProvider);
-        paymentToken.transfer(buyer, paymentTokenAmount);
-        assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
 
         vm.prank(owner);
         factory = new CrowdinvestingCloneFactory(address(new Crowdinvesting(trustedForwarder)));
@@ -285,6 +288,7 @@ contract CrowdinvestingTest is Test {
         vm.prank(paymentTokenProvider);
         maliciousPaymentToken = new MaliciousPaymentToken(_paymentTokenAmount);
         vm.prank(owner);
+        list.set(address(maliciousPaymentToken), TRUSTED_CURRENCY);
 
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             address(this),
@@ -830,13 +834,15 @@ contract CrowdinvestingTest is Test {
         assertTrue(crowdinvesting.currency() == paymentToken);
 
         FakePaymentToken newPaymentToken = new FakePaymentToken(700, 3);
+        vm.startPrank(owner);
+        list.set(address(newPaymentToken), TRUSTED_CURRENCY);
 
-        vm.prank(owner);
         crowdinvesting.pause();
-        vm.prank(owner);
         vm.expectEmit(true, true, true, true, address(crowdinvesting));
         emit TokenPriceAndCurrencyChanged(newPrice, newPaymentToken);
         crowdinvesting.setCurrencyAndTokenPrice(newPaymentToken, newPrice);
+        vm.stopPrank();
+
         assertTrue(crowdinvesting.priceBase() == newPrice);
         assertTrue(crowdinvesting.currency() == newPaymentToken);
         vm.prank(owner);
@@ -1194,6 +1200,9 @@ contract CrowdinvestingTest is Test {
         vm.prank(paymentTokenProvider);
         paymentToken.transfer(buyer, UINT256_MAX);
 
+        vm.prank(owner);
+        list.set(address(paymentToken), TRUSTED_CURRENCY);
+
         // create the crowdinvesting contract
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             address(this),
@@ -1241,6 +1250,9 @@ contract CrowdinvestingTest is Test {
         // transfer currency to buyer
         vm.prank(paymentTokenProvider);
         paymentToken.transfer(buyer, maxCurrencyAmount);
+
+        vm.prank(owner);
+        list.set(address(paymentToken), TRUSTED_CURRENCY);
 
         // create the crowdinvesting contract
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
