@@ -145,6 +145,48 @@ contract VestingTest is Test {
         assertEq(token.balanceOf(_beneficiary), 8e17, "beneficiary balance is wrong");
     }
 
+    function testCreateTransferrableVest(address _beneficiary, address rando) public {
+        vm.assume(_beneficiary != address(0));
+        vm.assume(rando != address(0));
+        vm.assume(rando != _beneficiary);
+        vm.assume(_beneficiary != trustedForwarder);
+
+        uint256 amount = 10 ** 18;
+
+        vm.startPrank(owner);
+        uint64 id = vesting.createVesting(amount, _beneficiary, 0, 0, 100 days, false);
+        vm.stopPrank();
+
+        // mint tokens and transfer them to vesting contract
+        token.mint(address(vesting), amount);
+
+        assertEq(vesting.beneficiary(id), _beneficiary, "beneficiary is wrong");
+        assertEq(vesting.allocation(id), amount, "allocation is wrong");
+        assertEq(vesting.released(id), 0, "released is wrong");
+        assertEq(vesting.start(id), 0, "start is wrong");
+        assertEq(vesting.cliff(id), 0, "cliff is wrong");
+        assertEq(vesting.duration(id), 100 days, "duration is wrong");
+        assertEq(vesting.isMintable(id), false, "Vesting plan not mintable");
+
+        assertEq(token.balanceOf(_beneficiary), 0, "beneficiary balance is wrong");
+        assertEq(token.balanceOf(address(vesting)), amount, "vesting balance is wrong");
+
+        // rando can not release tokens
+        vm.warp(10 days);
+        vm.prank(rando);
+        vm.expectRevert("Only beneficiary can release tokens");
+        vesting.release(id);
+
+        // beneficiary can release tokens
+        vm.warp(80 days);
+        vm.prank(_beneficiary);
+        vesting.release(id);
+
+        assertEq(vesting.released(id), 8e17, "released amount is wrong");
+        assertEq(token.balanceOf(_beneficiary), 8e17, "beneficiary balance is wrong");
+        assertEq(token.balanceOf(address(vesting)), 2e17, "vesting balance is wrong");
+    }
+
     function testPauseBeforeCliff(address _beneficiary) public {
         vm.assume(_beneficiary != address(0));
         vm.assume(_beneficiary != trustedForwarder);
