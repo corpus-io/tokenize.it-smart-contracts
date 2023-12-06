@@ -164,7 +164,7 @@ contract Crowdinvesting is
         require(_arguments.tokenPrice != 0, "_tokenPrice needs to be a non-zero amount");
         require(_arguments.maxAmountOfTokenToBeSold != 0, "_maxAmountOfTokenToBeSold needs to be larger than zero");
         require(
-            _arguments.token.allowList().map(address(_arguments.currency)) > 0,
+            _arguments.token.allowList().map(address(_arguments.currency)) == TRUSTED_CURRENCY,
             "currency needs to be on the allowlist"
         );
         currencyReceiver = _arguments.currencyReceiver;
@@ -393,7 +393,7 @@ contract Crowdinvesting is
     function setCurrencyAndTokenPrice(IERC20 _currency, uint256 _tokenPrice) external onlyOwner whenPaused {
         require(address(_currency) != address(0), "currency can not be zero address");
         require(_tokenPrice != 0, "_tokenPrice needs to be a non-zero amount");
-        require(token.allowList().map(address(_currency)) > 0, "currency needs to be on the allowlist");
+        require(token.allowList().map(address(_currency)) == TRUSTED_CURRENCY, "currency needs to be on the allowlist");
 
         priceOracle = IPriceDynamic(address(0)); // deactivate dynamic pricing because price changed, so min and max need to be updated
         priceBase = _tokenPrice;

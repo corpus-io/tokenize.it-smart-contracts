@@ -79,7 +79,7 @@ contract PrivateOffer {
         require(_arguments.currency != IERC20(address(0)), "_arguments.currency can not be zero address");
         require(_arguments.tokenAmount != 0, "_arguments.tokenAmount can not be zero");
         require(
-            _arguments.token.allowList().map(address(_arguments.currency)) > 0,
+            _arguments.token.allowList().map(address(_arguments.currency)) == TRUSTED_CURRENCY,
             "currency needs to be on the allowlist"
         );
 
