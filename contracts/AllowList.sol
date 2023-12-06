@@ -64,13 +64,59 @@ contract AllowList is Ownable2StepUpgradeable, ERC2771ContextUpgradeable {
     }
 
     /**
+     * Initializes a new AllowList clone.
+     * @param _owner the owner of the contract
+     */
+    function initialize(
+        address _owner,
+        address[] calldata _addresses,
+        uint256[] calldata _attributes
+    ) public initializer {
+        require(_owner != address(0), "owner can not be zero address");
+        _transferOwnership(_owner);
+        _set(_addresses, _attributes);
+    }
+
+    /**
      * @notice sets (or updates) the attributes for an address
      * @param _addr address to be set
      * @param _attributes new attributes
      */
     function set(address _addr, uint256 _attributes) external onlyOwner {
+        _set(_addr, _attributes);
+    }
+
+    /**
+     * @notice sets (or updates) the attributes for an address
+     * @param _addr address to be set
+     * @param _attributes new attributes
+     */
+    function _set(address _addr, uint256 _attributes) internal {
         map[_addr] = _attributes;
         emit Set(_addr, _attributes);
+    }
+
+    /**
+     * Sets (or updates) the attributes for multiple addresses.
+     * @dev both arrays need to be of equal length
+     * @param _addr array of addresses to be added to allowList
+     * @param _attributes array of attributes to be assigned to addresses
+     */
+    function set(address[] calldata _addr, uint256[] calldata _attributes) external onlyOwner {
+        _set(_addr, _attributes);
+    }
+
+    /**
+     * Sets (or updates) the attributes for multiple addresses.
+     * @dev both arrays need to be of equal length
+     * @param _addr array of addresses to be added to allowList
+     * @param _attributes array of attributes to be assigned to addresses
+     */
+    function _set(address[] calldata _addr, uint256[] calldata _attributes) internal {
+        require(_addr.length == _attributes.length, "lengths do not match");
+        for (uint256 i = 0; i < _addr.length; i++) {
+            _set(_addr[i], _attributes[i]);
+        }
     }
 
     /**
@@ -78,9 +124,19 @@ contract AllowList is Ownable2StepUpgradeable, ERC2771ContextUpgradeable {
      * @dev this is a convenience function, it is equivalent to calling set(_addr, 0)
      * @param _addr address to be removed
      */
-    function remove(address _addr) external onlyOwner {
+    function remove(address _addr) public onlyOwner {
         delete map[_addr];
         emit Set(_addr, 0);
+    }
+
+    /**
+     * purges multiple addresses from the allowList
+     * @param _addr array of addresses to be removed from allowList
+     */
+    function remove(address[] calldata _addr) external onlyOwner {
+        for (uint256 i = 0; i < _addr.length; i++) {
+            remove(_addr[i]);
+        }
     }
 
     /**

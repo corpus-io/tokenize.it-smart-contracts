@@ -78,4 +78,24 @@ contract AllowListCloneFactoryTest is Test {
         vm.expectRevert("ERC1167: create2 failed");
         factory.createAllowListClone(bytes32(uint256(0)), trustedForwarder, _owner);
     }
+
+    function testInitializeWithAddresses(address x, uint256 attributesX, address y, uint256 attributesY) public {
+        vm.assume(x != address(0));
+        vm.assume(y != address(0));
+        vm.assume(x != y);
+
+        address[] memory addresses = new address[](2);
+        addresses[0] = address(x);
+        addresses[1] = address(y);
+        uint256[] memory attributes = new uint256[](2);
+        attributes[0] = attributesX;
+        attributes[1] = attributesY;
+
+        AllowList list = AllowList(
+            factory.createAllowListClone(bytes32(uint256(0)), trustedForwarder, companyAdmin, addresses, attributes)
+        );
+
+        assertTrue(list.map(address(x)) == attributesX, "x not set");
+        assertTrue(list.map(address(y)) == attributesY, "y not set");
+    }
 }

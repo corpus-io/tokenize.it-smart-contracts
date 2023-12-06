@@ -71,7 +71,7 @@ contract FeeSettingERC2771Test is Test {
         setUpAllowListWithForwarder(_forwarder);
 
         // 1. build request
-        bytes memory payload = abi.encodeWithSelector(allowList.set.selector, _dude, _attributes);
+        bytes memory payload = abi.encodeWithSignature("set(address,uint256)", _dude, _attributes);
 
         IForwarder.ForwardRequest memory request = IForwarder.ForwardRequest({
             from: companyAdmin,

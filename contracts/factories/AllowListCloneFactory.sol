@@ -38,6 +38,33 @@ contract AllowListCloneFactory is CloneFactory {
     }
 
     /**
+     * Create a clone and initialize it with the given addresses and attributes
+     * @dev addresses and attributes do not change the address of the clone
+     * @param _rawSalt this value influences the address of the clone, but not the initialization
+     * @param _trustedForwarder the trusted forwarder (ERC2771) can not be changed, but is checked for security
+     * @param _owner address that will own the new clone
+     * @return address of the new clone
+     */
+    function createAllowListClone(
+        bytes32 _rawSalt,
+        address _trustedForwarder,
+        address _owner,
+        address[] calldata _addresses,
+        uint256[] calldata _attributes
+    ) external returns (address) {
+        bytes32 salt = _generateSalt(_rawSalt, _trustedForwarder, _owner);
+        address clone = Clones.cloneDeterministic(implementation, salt);
+        AllowList cloneAllowList = AllowList(clone);
+        require(
+            cloneAllowList.isTrustedForwarder(_trustedForwarder),
+            "AllowListCloneFactory: Unexpected trustedForwarder"
+        );
+        cloneAllowList.initialize(_owner, _addresses, _attributes);
+        emit NewClone(clone);
+        return clone;
+    }
+
+    /**
      * Return the address a clone would have if it was created with these parameters.
      * @param _rawSalt this value influences the address of the clone, but not the initialization
      * @param _trustedForwarder the trusted forwarder (ERC2771) can not be changed, but is checked for security

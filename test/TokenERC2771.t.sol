@@ -20,17 +20,6 @@ contract TokenERC2771Test is Test {
     //Forwarder trustedForwarder;
     ERC2771Helper ERC2771helper;
 
-    // copied from openGSN IForwarder
-    struct ForwardRequest {
-        address from;
-        address to;
-        uint256 value;
-        uint256 gas;
-        uint256 nonce;
-        bytes data;
-        uint256 validUntil;
-    }
-
     address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
 
     // DO NOT USE IN PRODUCTION! Key was generated online for testing only.
