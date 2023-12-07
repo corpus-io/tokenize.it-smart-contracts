@@ -20,8 +20,8 @@ contract tokenTest is Test {
     address public constant exampleTokenFeeCollector = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
     address public constant exampleCrowdinvestingFeeCollector = 0x4109709eCFa91A80626ff3989d68F67f5b1DD124;
     address public constant examplePrivateOfferFeeCollector = 0x4109709eCFa91A80626ff3989d68F67f5b1DD124;
-    Fees exampleFees1 = Fees(1, 30, 2, 40, 3, 90, 0);
-    Fees exampleFees2 = Fees(0, 3, 1, 50, 2, 80, 0);
+    Fees exampleFees1 = Fees(1, 2, 3, 0);
+    Fees exampleFees2 = Fees(70, 80, 90, 0);
 
     function setUp() public {
         factory = new FeeSettingsCloneFactory(address(new FeeSettings(exampleTrustedForwarder)));
@@ -230,30 +230,17 @@ contract tokenTest is Test {
             exampleFees1.tokenFeeNumerator,
             "defaultTokenFeeNumerator not set"
         );
-        assertEq(
-            feeSettings.defaultTokenFeeDenominator(),
-            exampleFees1.tokenFeeDenominator,
-            "defaultTokenFeeDenominator not set"
-        );
+
         assertEq(
             feeSettings.defaultCrowdinvestingFeeNumerator(),
             exampleFees1.crowdinvestingFeeNumerator,
             "defaultCrowdinvestingFeeNumerator not set"
         );
-        assertEq(
-            feeSettings.defaultCrowdinvestingFeeDenominator(),
-            exampleFees1.crowdinvestingFeeDenominator,
-            "defaultCrowdinvestingFeeDenominator not set"
-        );
+
         assertEq(
             feeSettings.defaultPrivateOfferFeeNumerator(),
             exampleFees1.privateOfferFeeNumerator,
             "defaultPrivateOfferFeeNumerator not set"
-        );
-        assertEq(
-            feeSettings.defaultPrivateOfferFeeDenominator(),
-            exampleFees1.privateOfferFeeDenominator,
-            "defaultPrivateOfferFeeDenominator not set"
         );
     }
 }
