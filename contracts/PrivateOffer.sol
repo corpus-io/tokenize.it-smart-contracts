@@ -80,7 +80,7 @@ contract PrivateOffer {
         require(_arguments.tokenAmount != 0, "_arguments.tokenAmount can not be zero");
         require(
             _arguments.token.allowList().map(address(_arguments.currency)) == TRUSTED_CURRENCY,
-            "currency needs to be on the allowlist"
+            "currency needs to be on the allowlist with TRUSTED_CURRENCY attribute"
         );
 
         // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
