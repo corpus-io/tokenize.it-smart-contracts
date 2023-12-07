@@ -4,13 +4,15 @@
 
 Tokenize.it has already deployed these contracts:
 
-1. [allowList](../contracts/AllowList.sol)
-2. [feeSettings](../contracts/FeeSettings.sol)
+1. [AllowListFactory](../contracts/AllowListCloneFactory.sol)
+2. [FeeSettingsFactory](../contracts/FeeSettingsCloneFactory.sol)
 3. [TokenFactory](../contracts/TokenProxyFactory.sol)
 4. [PrivateOfferFactory](../contracts/PrivateOfferFactory.sol)
 5. [CrowdinvestingFactory](../contracts/CrowdinvestingCloneFactory.sol)
 6. [VestingFactory](../contracts/VestingCloneFactory.sol)
 7. [PriceLinearFactory](../contracts/PriceLinearCloneFactory.sol) or other dynamic pricing factories
+8. [allowList](../contracts/AllowList.sol)
+9. [feeSettings](../contracts/FeeSettings.sol)
 
 These will be used for the next steps. The factories will not be explained in detail here, but can be found in the [contracts](../contracts) folder. They provide functions to calculate the future address of a contract, and deploy it using [CREATE2](https://docs.openzeppelin.com/cli/2.8/deploying-with-create2).
 
