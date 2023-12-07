@@ -207,4 +207,11 @@ contract AllowListTest is Test {
         assertTrue(list.map(address(0)) == 0);
         assertTrue(list.map(x) == 0);
     }
+
+    function testTrustedCurrencyBit() public {
+        assertTrue(
+            TRUSTED_CURRENCY == 2 ** 255,
+            "TRUSTED_CURRENCY has wrong value. Must stay constant or old contracts might break"
+        );
+    }
 }

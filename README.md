@@ -122,6 +122,8 @@ These implementations have been checked and tested to work well with the tokeniz
 - partial payments due to the currency deducting a transfer fee
 - other issues
 
+To enforce the use of trusted currencies only, they are added to the [AllowList.sol](contracts/AllowList.sol) contract with the special `TRUSTED_CURRENCY` bit. PrivateOffers and Crowdinvesting campaigns will only accept currencies that are on the AllowList and have the `TRUSTED_CURRENCY` bit set. This makes using a malicious currency by mistake impossible, but still allows either the platform or other operators of their own AllowLists to edit and extend the list of supported currencies.
+
 # Resources
 
 The following resources are available regarding the contracts:

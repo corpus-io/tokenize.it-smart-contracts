@@ -4,8 +4,19 @@ pragma solidity 0.8.23;
 import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol";
 
-/// @dev bit #200 is defined as special bit for the "trusted currency" attribute
-uint256 constant TRUSTED_CURRENCY = 2 ^ 200;
+/**
+ * @dev the last bit is defined as special bit for the "trusted currency" attribute.
+ * This specific bit was chosen for this purpose because the allowList operators are
+ * unlikely to use it by chance in day to day operations. Contracts should check if this
+ * bit is set and all others are unset to ensure that the address is a trusted currency
+ * (hint: == 2**255).
+ * All other bits being zero means that the address has not proven any other relevant attributes
+ * to the allowList operator other than being a trusted currency, and thus the address is not
+ * able to receive tokens that require KYC or other attributes. This is intended behavior,
+ * as currency contracts receiving tokens is usually not intended.
+ * This constant is defined here so other contracts can easily access it.
+ */
+uint256 constant TRUSTED_CURRENCY = 2 ** 255;
 
 /**
  * @title AllowList

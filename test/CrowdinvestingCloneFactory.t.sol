@@ -428,6 +428,36 @@ contract tokenTest is Test {
         }
     }
 
+    function testInitializationRevertsWithUntrustedCurrency(address someCurrency, uint256 currencyAttributes) public {
+        vm.assume(someCurrency != address(0));
+        vm.assume(currencyAttributes != TRUSTED_CURRENCY);
+        vm.prank(feeSettingsAndAllowListOwner);
+        allowList.set(someCurrency, currencyAttributes);
+
+        CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
+            exampleOwner,
+            exampleCurrencyReceiver,
+            exampleMinAmountPerBuyer,
+            exampleMaxAmountPerBuyer,
+            exampleTokenPrice,
+            exampleMinTokenPrice,
+            exampleMaxTokenPrice,
+            exampleMaxAmountOfTokenToBeSold,
+            IERC20(someCurrency),
+            exampleToken,
+            exampleLastBuyDate,
+            examplePriceOracle
+        );
+
+        vm.expectRevert("currency needs to be on the allowlist with TRUSTED_CURRENCY attribute");
+        fundraisingFactory.createCrowdinvestingClone("salt", trustedForwarder, arguments);
+
+        // test deployment succeeds with trusted currency
+        vm.prank(feeSettingsAndAllowListOwner);
+        allowList.set(someCurrency, TRUSTED_CURRENCY);
+        fundraisingFactory.createCrowdinvestingClone("salt", trustedForwarder, arguments);
+    }
+
     /*
         pausing and unpausing
     */

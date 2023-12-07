@@ -1232,6 +1232,22 @@ contract CrowdinvestingTest is Test {
         crowdinvesting.buy(_tokenBuyAmount, type(uint256).max, buyer);
     }
 
+    function testSettingInvalidCurrencyReverts(address someCurrency, uint256 currencyAttributes) public {
+        vm.assume(someCurrency != address(0));
+        vm.assume(currencyAttributes != TRUSTED_CURRENCY);
+        vm.prank(owner);
+        list.set(someCurrency, currencyAttributes);
+
+        vm.startPrank(owner);
+        crowdinvesting.pause();
+        vm.expectRevert("currency needs to be on the allowlist with TRUSTED_CURRENCY attribute");
+        crowdinvesting.setCurrencyAndTokenPrice(IERC20(someCurrency), 1);
+
+        // check the settings works when the currency is on the allowlist with TRUSTED_CURRENCY attribute
+        list.set(someCurrency, TRUSTED_CURRENCY);
+        crowdinvesting.setCurrencyAndTokenPrice(IERC20(someCurrency), 1);
+    }
+
     function testRoundsUp(uint256 _tokenBuyAmount, uint256 _price) public {
         vm.assume(_tokenBuyAmount > 0);
         vm.assume(_price > 0);
