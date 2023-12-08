@@ -30,7 +30,7 @@ contract tokenTest is Test {
 
     function setUp() public {
         allowList = createAllowList(trustedForwarder, admin);
-        Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
+        Fees memory fees = Fees(100, 100, 100, 0);
         feeSettings = createFeeSettings(trustedForwarder, feeSettingsOwner, fees, admin, admin, admin);
         Token implementation = new Token(trustedForwarder);
         TokenProxyFactory tokenCloneFactory = new TokenProxyFactory(address(implementation));
@@ -86,7 +86,7 @@ contract tokenTest is Test {
 
     function testSuggestNewFeeSettingsWrongCaller(address wrongUpdater) public {
         vm.assume(wrongUpdater != feeSettings.owner());
-        Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
+        Fees memory fees = Fees(0, 0, 0, 0);
         FeeSettings newFeeSettings = createFeeSettings(trustedForwarder, address(this), fees, pauser, pauser, pauser);
         vm.prank(wrongUpdater);
         vm.expectRevert("Only fee settings owner can suggest fee settings update");
@@ -94,7 +94,7 @@ contract tokenTest is Test {
     }
 
     function testSuggestNewFeeSettingsFeeCollector() public {
-        Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
+        Fees memory fees = Fees(0, 0, 0, 0);
         FeeSettings newFeeSettings = createFeeSettings(trustedForwarder, address(this), fees, pauser, pauser, pauser);
         vm.prank(feeSettings.feeCollector());
         vm.expectRevert("Only fee settings owner can suggest fee settings update");
@@ -109,7 +109,7 @@ contract tokenTest is Test {
 
     function testSuggestNewFeeSettings(address newCollector) public {
         vm.assume(newCollector != address(0));
-        Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
+        Fees memory fees = Fees(0, 0, 0, 0);
         FeeSettings newFeeSettings = createFeeSettings(
             trustedForwarder,
             address(this),
@@ -119,8 +119,8 @@ contract tokenTest is Test {
             newCollector
         );
         FeeSettings oldFeeSettings = FeeSettings(address(token.feeSettings()));
-        uint oldInvestmentFeeDenominator = oldFeeSettings.defaultCrowdinvestingFeeDenominator();
-        uint oldTokenFeeDenominator = oldFeeSettings.defaultTokenFeeDenominator();
+        uint oldInvestmentFeeNumerator = oldFeeSettings.defaultCrowdinvestingFeeNumerator();
+        uint oldTokenFeeNumerator = oldFeeSettings.defaultTokenFeeNumerator();
         vm.expectEmit(true, true, true, true, address(token));
         emit NewFeeSettingsSuggested(newFeeSettings);
         vm.prank(feeSettings.owner());
@@ -133,19 +133,18 @@ contract tokenTest is Test {
         );
         assertTrue(token.suggestedFeeSettings() == newFeeSettings, "suggested fee settings not set!");
         assertTrue(
-            FeeSettings(address(token.feeSettings())).defaultCrowdinvestingFeeDenominator() ==
-                oldInvestmentFeeDenominator,
+            FeeSettings(address(token.feeSettings())).defaultCrowdinvestingFeeNumerator() == oldInvestmentFeeNumerator,
             "investment fee denominator changed!"
         );
         assertTrue(
-            FeeSettings(address(token.feeSettings())).defaultTokenFeeDenominator() == oldTokenFeeDenominator,
+            FeeSettings(address(token.feeSettings())).defaultTokenFeeNumerator() == oldTokenFeeNumerator,
             "token fee denominator changed!"
         );
     }
 
     function testAcceptNewFeeSettings(address newCollector) public {
         vm.assume(newCollector != address(0));
-        Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
+        Fees memory fees = Fees(0, 0, 0, 0);
         FeeSettings newFeeSettings = createFeeSettings(
             trustedForwarder,
             address(this),
@@ -155,8 +154,8 @@ contract tokenTest is Test {
             newCollector
         );
         FeeSettings oldFeeSettings = FeeSettings(address(token.feeSettings()));
-        uint oldInvestmentFeeDenominator = oldFeeSettings.defaultCrowdinvestingFeeDenominator();
-        uint oldTokenFeeDenominator = oldFeeSettings.defaultTokenFeeDenominator();
+        uint oldInvestmentFeeNumerator = oldFeeSettings.defaultCrowdinvestingFeeNumerator();
+        uint oldTokenFeeNumerator = oldFeeSettings.defaultTokenFeeNumerator();
         vm.prank(feeSettings.owner());
         token.suggestNewFeeSettings(newFeeSettings);
 
@@ -168,19 +167,18 @@ contract tokenTest is Test {
         assertTrue(FeeSettings(address(token.feeSettings())) == newFeeSettings, "fee settings not changed!");
         assertEq(FeeSettings(address(token.feeSettings())).feeCollector(), newCollector, "Wrong feeCollector");
         assertTrue(
-            FeeSettings(address(token.feeSettings())).defaultCrowdinvestingFeeDenominator() !=
-                oldInvestmentFeeDenominator,
+            FeeSettings(address(token.feeSettings())).defaultCrowdinvestingFeeNumerator() != oldInvestmentFeeNumerator,
             "investment fee denominator changed!"
         );
         assertTrue(
-            FeeSettings(address(token.feeSettings())).defaultTokenFeeDenominator() != oldTokenFeeDenominator,
+            FeeSettings(address(token.feeSettings())).defaultTokenFeeNumerator() != oldTokenFeeNumerator,
             "token fee denominator changed!"
         );
     }
 
     function testAcceptFeeCollectorInsteadOfFeeSettings(address newFeeSettingsPretendAddress) public {
         vm.assume(newFeeSettingsPretendAddress != address(0));
-        Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
+        Fees memory fees = Fees(0, 0, 0, 0);
         FeeSettings newFeeSettings = createFeeSettings(
             trustedForwarder,
             address(this),
@@ -202,7 +200,7 @@ contract tokenTest is Test {
     }
 
     function testAcceptWrongFeeSettings() public {
-        Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
+        Fees memory fees = Fees(0, 0, 0, 0);
         FeeSettings realNewFeeSettings = createFeeSettings(
             trustedForwarder,
             feeSettings.owner(),
@@ -327,7 +325,7 @@ contract tokenTest is Test {
     }
 
     function testFeeSettingsUpdateRevertsWhenContractFailsERC165Check() public {
-        Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
+        Fees memory fees = Fees(0, 0, 0, 0);
         FeeSettings[] memory feeSettingsArray = new FeeSettings[](3);
         feeSettingsArray[0] = new FeeSettingsFailERC165Check0(fees, feeSettings.feeCollector());
         feeSettingsArray[1] = new FeeSettingsFailERC165Check1(fees, feeSettings.feeCollector());

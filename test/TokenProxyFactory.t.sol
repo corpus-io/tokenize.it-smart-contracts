@@ -29,7 +29,7 @@ contract tokenProxyFactoryTest is Test {
 
     function setUp() public {
         allowList = createAllowList(trustedForwarder, feeSettingsAndAllowListOwner);
-        Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
+        Fees memory fees = Fees(100, 100, 100, 0);
         feeSettings = createFeeSettings(
             trustedForwarder,
             feeSettingsAndAllowListOwner,
@@ -163,7 +163,7 @@ contract tokenProxyFactoryTest is Test {
         FeeSettings _feeSettings = createFeeSettings(
             trustedForwarder,
             address(this),
-            Fees(1, 100, 1, 100, 1, 100, 0),
+            Fees(100, 100, 100, 0),
             feeSettingsAndAllowListOwner,
             feeSettingsAndAllowListOwner,
             feeSettingsAndAllowListOwner
@@ -230,7 +230,7 @@ contract tokenProxyFactoryTest is Test {
         FeeSettings _feeSettings = createFeeSettings(
             trustedForwarder,
             address(this),
-            Fees(1, 100, 1, 100, 1, 100, 0),
+            Fees(100, 100, 100, 0),
             feeSettingsAndAllowListOwner,
             feeSettingsAndAllowListOwner,
             feeSettingsAndAllowListOwner
@@ -282,7 +282,7 @@ contract tokenProxyFactoryTest is Test {
         FeeSettings _feeSettings = createFeeSettings(
             trustedForwarder,
             address(this),
-            Fees(1, 100, 1, 100, 1, 100, 0),
+            Fees(100, 100, 100, 0),
             feeSettingsAndAllowListOwner,
             feeSettingsAndAllowListOwner,
             feeSettingsAndAllowListOwner
@@ -337,7 +337,7 @@ contract tokenProxyFactoryTest is Test {
         vm.assume(_tokenSpender != trustedForwarder);
         vm.assume(bytes(name).length > 0);
         vm.assume(bytes(symbol).length > 0);
-        vm.assume(_tokenPermitAmount < (type(uint256).max / 10) * 9); // leave room for fees
+        vm.assume(_tokenPermitAmount < type(uint256).max / feeSettings.FEE_DENOMINATOR()); // leave room for fees
         vm.assume(
             _tokenOwnerPrivateKey < 115792089237316195423570985008687907852837564279074904382605163141518161494337
         );
