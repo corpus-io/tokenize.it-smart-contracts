@@ -137,7 +137,7 @@ contract FeeSettingERC2771Test is Test {
         require(digest.recover(signature) == request.from, "FWD: signature mismatch");
 
         // 4. check state before execution
-        (uint32 feeNumerator, , , uint64 endTime) = feeSettings.customFees(_token);
+        (uint32 feeNumerator, , , uint64 endTime) = feeSettings.fees(_token);
         console.log("feeNumerator", feeNumerator);
         console.log("endTime", endTime);
         assertTrue(feeNumerator == 0, "Custom fee not 0 before");
@@ -158,7 +158,7 @@ contract FeeSettingERC2771Test is Test {
         _forwarder.execute(request, domainSeparator, requestType, suffixData, signature);
 
         // 6. check state after execution
-        (feeNumerator, , , endTime) = feeSettings.customFees(_token);
+        (feeNumerator, , , endTime) = feeSettings.fees(_token);
         console.log("feeNumerator", feeNumerator);
         console.log("endTime", endTime);
         assertTrue(feeNumerator == _customTokenFeeNumerator, "Custom fee not set");

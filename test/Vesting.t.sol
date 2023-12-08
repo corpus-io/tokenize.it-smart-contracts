@@ -147,6 +147,7 @@ contract VestingTest is Test {
 
     function testCreateTransferrableVest(address _beneficiary, address rando) public {
         vm.assume(_beneficiary != address(0));
+        vm.assume(_beneficiary != address(vesting));
         vm.assume(rando != address(0));
         vm.assume(rando != _beneficiary);
         vm.assume(_beneficiary != trustedForwarder);

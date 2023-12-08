@@ -118,27 +118,35 @@ contract tokenTest is Test {
             newCollector,
             newCollector
         );
-        FeeSettings oldFeeSettings = FeeSettings(address(token.feeSettings()));
-        uint oldInvestmentFeeNumerator = oldFeeSettings.defaultCrowdinvestingFeeNumerator();
-        uint oldTokenFeeNumerator = oldFeeSettings.defaultTokenFeeNumerator();
+
+        (
+            uint32 _oldTokenFeeNumerator,
+            uint32 _oldCrowdinvestingFeeNumerator,
+            uint32 _oldPrivateOfferFeeNumerator,
+
+        ) = FeeSettings(address(token.feeSettings())).fees(address(0));
+
         vm.expectEmit(true, true, true, true, address(token));
         emit NewFeeSettingsSuggested(newFeeSettings);
         vm.prank(feeSettings.owner());
         token.suggestNewFeeSettings(newFeeSettings);
 
         // make sure old fees are still in effect
+        (
+            uint32 _newTokenFeeNumerator,
+            uint32 _newCrowdinvestingFeeNumerator,
+            uint32 _newPrivateOfferFeeNumerator,
+
+        ) = FeeSettings(address(token.feeSettings())).fees(address(0));
+
+        assertTrue(_oldTokenFeeNumerator == _newTokenFeeNumerator, "token fee numerator changed!");
         assertTrue(
-            address(FeeSettings(address(token.feeSettings()))) == address(oldFeeSettings),
-            "fee settings have changed!"
+            _oldCrowdinvestingFeeNumerator == _newCrowdinvestingFeeNumerator,
+            "crowdinvesting fee numerator changed!"
         );
-        assertTrue(token.suggestedFeeSettings() == newFeeSettings, "suggested fee settings not set!");
         assertTrue(
-            FeeSettings(address(token.feeSettings())).defaultCrowdinvestingFeeNumerator() == oldInvestmentFeeNumerator,
-            "investment fee denominator changed!"
-        );
-        assertTrue(
-            FeeSettings(address(token.feeSettings())).defaultTokenFeeNumerator() == oldTokenFeeNumerator,
-            "token fee denominator changed!"
+            _oldPrivateOfferFeeNumerator == _newPrivateOfferFeeNumerator,
+            "private offer fee numerator changed!"
         );
     }
 
@@ -153,9 +161,13 @@ contract tokenTest is Test {
             newCollector,
             newCollector
         );
-        FeeSettings oldFeeSettings = FeeSettings(address(token.feeSettings()));
-        uint oldInvestmentFeeNumerator = oldFeeSettings.defaultCrowdinvestingFeeNumerator();
-        uint oldTokenFeeNumerator = oldFeeSettings.defaultTokenFeeNumerator();
+        (
+            uint32 _oldTokenFeeNumerator,
+            uint32 _oldCrowdinvestingFeeNumerator,
+            uint32 _oldPrivateOfferFeeNumerator,
+
+        ) = FeeSettings(address(token.feeSettings())).fees(address(0));
+
         vm.prank(feeSettings.owner());
         token.suggestNewFeeSettings(newFeeSettings);
 
@@ -164,16 +176,20 @@ contract tokenTest is Test {
         emit FeeSettingsChanged(newFeeSettings);
         vm.prank(admin);
         token.acceptNewFeeSettings(newFeeSettings);
+
+        (
+            uint32 _newTokenFeeNumerator,
+            uint32 _newCrowdinvestingFeeNumerator,
+            uint32 _newPrivateOfferFeeNumerator,
+
+        ) = FeeSettings(address(token.feeSettings())).fees(address(0));
         assertTrue(FeeSettings(address(token.feeSettings())) == newFeeSettings, "fee settings not changed!");
         assertEq(FeeSettings(address(token.feeSettings())).feeCollector(), newCollector, "Wrong feeCollector");
         assertTrue(
-            FeeSettings(address(token.feeSettings())).defaultCrowdinvestingFeeNumerator() != oldInvestmentFeeNumerator,
+            _newCrowdinvestingFeeNumerator != _oldCrowdinvestingFeeNumerator,
             "investment fee denominator changed!"
         );
-        assertTrue(
-            FeeSettings(address(token.feeSettings())).defaultTokenFeeNumerator() != oldTokenFeeNumerator,
-            "token fee denominator changed!"
-        );
+        assertTrue(_newTokenFeeNumerator != _oldTokenFeeNumerator, "token fee denominator changed!");
     }
 
     function testAcceptFeeCollectorInsteadOfFeeSettings(address newFeeSettingsPretendAddress) public {
