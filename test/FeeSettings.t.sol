@@ -65,13 +65,13 @@ contract FeeSettingsTest is Test {
 
         console.log("Testing token fee");
         _fees = Fees(numerator, 1, 1, 0);
-        vm.expectRevert("Token fee must be equal or less 5%");
+        vm.expectRevert("Token fee must be <= 5%");
         feeSettingsCloneFactory.createFeeSettingsClone("salt", trustedForwarder, admin, _fees, admin, admin, admin);
 
         console.log("Testing Crowdinvesting fee");
         _fees = Fees(1, numerator, 1, 0);
         if (!crowdinvestingFeeInValidRange(numerator)) {
-            vm.expectRevert("Crowdinvesting fee must be equal or less 10%");
+            vm.expectRevert("Crowdinvesting fee must be <= 10%");
             feeSettingsCloneFactory.createFeeSettingsClone("salt", trustedForwarder, admin, _fees, admin, admin, admin);
         } else {
             // this should not revert, as the fee is in valid range for crowdinvesting
@@ -80,7 +80,7 @@ contract FeeSettingsTest is Test {
 
         console.log("Testing PrivateOffer fee");
         _fees = Fees(1, 1, numerator, 0);
-        vm.expectRevert("PrivateOffer fee must be equal or less 5%");
+        vm.expectRevert("PrivateOffer fee must be <= 5%");
         feeSettingsCloneFactory.createFeeSettingsClone("salt", trustedForwarder, admin, _fees, admin, admin, admin);
     }
 
@@ -89,7 +89,7 @@ contract FeeSettingsTest is Test {
         vm.assume(!tokenOrPrivateOfferFeeInValidRange(numerator));
 
         Fees memory feeChange = Fees(numerator, 1, 1, uint64(block.timestamp + 7884001));
-        vm.expectRevert("Token fee must be equal or less 5%");
+        vm.expectRevert("Token fee must be <= 5%");
         vm.prank(admin);
         feeSettings.planFeeChange(feeChange);
     }
@@ -99,7 +99,7 @@ contract FeeSettingsTest is Test {
         vm.assume(!crowdinvestingFeeInValidRange(numerator));
 
         Fees memory feeChange = Fees(1, numerator, 1, uint64(block.timestamp + 7884001));
-        vm.expectRevert("Crowdinvesting fee must be equal or less 10%");
+        vm.expectRevert("Crowdinvesting fee must be <= 10%");
         vm.prank(admin);
         feeSettings.planFeeChange(feeChange);
     }
@@ -109,7 +109,7 @@ contract FeeSettingsTest is Test {
         vm.assume(!tokenOrPrivateOfferFeeInValidRange(numerator));
 
         Fees memory feeChange = Fees(1, 1, numerator, uint64(block.timestamp + 7884001));
-        vm.expectRevert("PrivateOffer fee must be equal or less 5%");
+        vm.expectRevert("PrivateOffer fee must be <= 5%");
         vm.prank(admin);
         feeSettings.planFeeChange(feeChange);
     }
