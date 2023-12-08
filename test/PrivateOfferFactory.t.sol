@@ -48,7 +48,7 @@ contract PrivateOfferFactoryTest is Test {
         vm.prank(owner);
         list.set(address(currency), TRUSTED_CURRENCY);
 
-        Fees memory fees = Fees(0, 100, 0, 100, 0, 100, 0);
+        Fees memory fees = Fees(0, 0, 0, 0);
         feeSettings = createFeeSettings(trustedForwarder, address(this), fees, admin, admin, admin);
 
         Token implementation = new Token(trustedForwarder);
