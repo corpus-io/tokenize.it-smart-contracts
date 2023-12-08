@@ -411,10 +411,26 @@ contract FeeSettings is
      * General linear fee calculation function
      * @param amount how many erc20 tokens are transferred
      * @param numerator fee numerator
-     * @param denominator fee denominator
      */
-    function _fee(uint256 amount, uint32 numerator, uint32 denominator) internal pure returns (uint256) {
-        return (amount * numerator) / denominator;
+    function _fee(uint256 amount, uint32 numerator) internal pure returns (uint256) {
+        return (amount * numerator) / FEE_DENOMINATOR;
+    }
+
+    function _customFee(
+        uint256 amount,
+        uint32 defaultNumerator,
+        uint32 customNumerator,
+        uint64 customValidityDate
+    ) internal view returns (uint256) {
+        if (customValidityDate < uint64(block.timestamp)) {
+            return _fee(amount, defaultNumerator);
+        }
+        uint256 defaultFee = _fee(amount, defaultNumerator);
+        uint256 customFee = _fee(amount, customNumerator);
+        if (customFee < defaultFee) {
+            return customFee;
+        }
+        return defaultFee;
     }
 
     /**
@@ -423,14 +439,13 @@ contract FeeSettings is
      * @param _token address of the token contract minting the tokens
      */
     function tokenFee(uint256 _tokenAmount, address _token) public view override(IFeeSettingsV2) returns (uint256) {
-        uint256 baseFee = _fee(_tokenAmount, defaultTokenFeeNumerator, FEE_DENOMINATOR);
-        if (customFees[_token].validityDate > block.timestamp) {
-            uint256 customFee = _fee(_tokenAmount, customFees[_token].tokenFeeNumerator, FEE_DENOMINATOR);
-            if (customFee < baseFee) {
-                return customFee;
-            }
-        }
-        return baseFee;
+        return
+            _customFee(
+                _tokenAmount,
+                defaultTokenFeeNumerator,
+                customFees[_token].tokenFeeNumerator,
+                customFees[_token].validityDate
+            );
     }
 
     /**
@@ -443,14 +458,13 @@ contract FeeSettings is
         uint256 _currencyAmount,
         address _token
     ) public view override(IFeeSettingsV2) returns (uint256) {
-        uint256 baseFee = _fee(_currencyAmount, defaultCrowdinvestingFeeNumerator, FEE_DENOMINATOR);
-        if (customFees[_token].validityDate > block.timestamp) {
-            uint256 customFee = _fee(_currencyAmount, customFees[_token].crowdinvestingFeeNumerator, FEE_DENOMINATOR);
-            if (customFee < baseFee) {
-                return customFee;
-            }
-        }
-        return baseFee;
+        return
+            _customFee(
+                _currencyAmount,
+                defaultCrowdinvestingFeeNumerator,
+                customFees[_token].crowdinvestingFeeNumerator,
+                customFees[_token].validityDate
+            );
     }
 
     /**
@@ -462,14 +476,13 @@ contract FeeSettings is
         uint256 _currencyAmount,
         address _token
     ) public view override(IFeeSettingsV2) returns (uint256) {
-        uint256 baseFee = _fee(_currencyAmount, defaultPrivateOfferFeeNumerator, FEE_DENOMINATOR);
-        if (customFees[_token].validityDate > block.timestamp) {
-            uint256 customFee = _fee(_currencyAmount, customFees[_token].privateOfferFeeNumerator, FEE_DENOMINATOR);
-            if (customFee < baseFee) {
-                return customFee;
-            }
-        }
-        return baseFee;
+        return
+            _customFee(
+                _currencyAmount,
+                defaultPrivateOfferFeeNumerator,
+                customFees[_token].privateOfferFeeNumerator,
+                customFees[_token].validityDate
+            );
     }
 
     /**
