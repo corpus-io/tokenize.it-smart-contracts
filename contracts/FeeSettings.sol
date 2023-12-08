@@ -40,20 +40,20 @@ contract FeeSettings is
     mapping(address => Fees) public fees;
 
     /**
-     * if `customTokenFeeCollector[tokenAddress]` is 0x0, the fees must be paid to `customTokenFeeCollector[address(0)]`
-     * otherwise, the fees must be paid to `customTokenFeeCollector[tokenAddress]`
+     * if `tokenFeeCollectors[tokenAddress]` is 0x0, the fees must be paid to `tokenFeeCollectors[address(0)]`
+     * otherwise, the fees must be paid to `tokenFeeCollectors[tokenAddress]`
      */
-    mapping(address => address) public customTokenFeeCollector;
+    mapping(address => address) public tokenFeeCollectors;
     /**
-     * if `customCrowdinvestingFeeCollector[tokenAddress]` is 0x0, the fees must be paid to `customCrowdinvestingFeeCollector[address(0)]`
-     * otherwise, the fees must be paid to `customCrowdinvestingFeeCollector[tokenAddress]`
+     * if `crowdinvestingFeeCollectors[tokenAddress]` is 0x0, the fees must be paid to `crowdinvestingFeeCollectors[address(0)]`
+     * otherwise, the fees must be paid to `crowdinvestingFeeCollectors[tokenAddress]`
      */
-    mapping(address => address) public customCrowdinvestingFeeCollector;
+    mapping(address => address) public crowdinvestingFeeCollectors;
     /**
-     * if `customPrivateOfferFeeCollector[tokenAddress]` is 0x0, the fees must be paid to `customPrivateOfferFeeCollector[address(0)]`
-     * otherwise, the fees must be paid to `customPrivateOfferFeeCollector[tokenAddress]`
+     * if `privateOfferFeeCollectors[tokenAddress]` is 0x0, the fees must be paid to `privateOfferFeeCollectors[address(0)]`
+     * otherwise, the fees must be paid to `privateOfferFeeCollectors[tokenAddress]`
      */
-    mapping(address => address) public customPrivateOfferFeeCollector;
+    mapping(address => address) public privateOfferFeeCollectors;
 
     /// new fee settings that can be activated (after a delay in case of fee increase)
     Fees public proposedDefaultFees;
@@ -149,13 +149,13 @@ contract FeeSettings is
         fees[address(0)] = _fees;
 
         require(_tokenFeeCollector != address(0), "Fee collector cannot be 0x0");
-        customTokenFeeCollector[address(0)] = _tokenFeeCollector;
+        tokenFeeCollectors[address(0)] = _tokenFeeCollector;
 
         require(_crowdinvestingFeeCollector != address(0), "Fee collector cannot be 0x0");
-        customCrowdinvestingFeeCollector[address(0)] = _crowdinvestingFeeCollector;
+        crowdinvestingFeeCollectors[address(0)] = _crowdinvestingFeeCollector;
 
         require(_privateOfferFeeCollector != address(0), "Fee collector cannot be 0x0");
-        customPrivateOfferFeeCollector[address(0)] = _privateOfferFeeCollector;
+        privateOfferFeeCollectors[address(0)] = _privateOfferFeeCollector;
     }
 
     /**
@@ -224,11 +224,11 @@ contract FeeSettings is
         address _personalOfferFeeCollector
     ) external onlyOwner {
         require(_tokenFeeCollector != address(0), "Fee collector cannot be 0x0");
-        customTokenFeeCollector[address(0)] = _tokenFeeCollector;
+        tokenFeeCollectors[address(0)] = _tokenFeeCollector;
         require(_crowdinvestingFeeCollector != address(0), "Fee collector cannot be 0x0");
-        customCrowdinvestingFeeCollector[address(0)] = _crowdinvestingFeeCollector;
+        crowdinvestingFeeCollectors[address(0)] = _crowdinvestingFeeCollector;
         require(_personalOfferFeeCollector != address(0), "Fee collector cannot be 0x0");
-        customPrivateOfferFeeCollector[address(0)] = _personalOfferFeeCollector;
+        privateOfferFeeCollectors[address(0)] = _personalOfferFeeCollector;
         emit FeeCollectorsChanged(_tokenFeeCollector, _crowdinvestingFeeCollector, _personalOfferFeeCollector);
     }
 
@@ -301,7 +301,7 @@ contract FeeSettings is
     function setCustomTokenFeeCollector(address _token, address _feeCollector) external onlyManager {
         require(_feeCollector != address(0), "Fee collector cannot be 0x0");
         require(_token != address(0), "Token cannot be 0x0");
-        customTokenFeeCollector[_token] = _feeCollector;
+        tokenFeeCollectors[_token] = _feeCollector;
         emit SetCustomTokenFeeCollector(_token, _feeCollector);
     }
 
@@ -313,7 +313,7 @@ contract FeeSettings is
     function setCustomCrowdinvestingFeeCollector(address _token, address _feeCollector) external onlyManager {
         require(_feeCollector != address(0), "Fee collector cannot be 0x0");
         require(_token != address(0), "Token cannot be 0x0");
-        customCrowdinvestingFeeCollector[_token] = _feeCollector;
+        crowdinvestingFeeCollectors[_token] = _feeCollector;
         emit SetCustomCrowdinvestingFeeCollector(_token, _feeCollector);
     }
 
@@ -325,7 +325,7 @@ contract FeeSettings is
     function setCustomPrivateOfferFeeCollector(address _token, address _feeCollector) external onlyManager {
         require(_feeCollector != address(0), "Fee collector cannot be 0x0");
         require(_token != address(0), "Token cannot be 0x0");
-        customPrivateOfferFeeCollector[_token] = _feeCollector;
+        privateOfferFeeCollectors[_token] = _feeCollector;
         emit SetCustomPrivateOfferFeeCollector(_token, _feeCollector);
     }
 
@@ -335,7 +335,7 @@ contract FeeSettings is
      */
     function removeCustomTokenFeeCollector(address _token) external onlyManager {
         require(_token != address(0), "Token cannot be 0x0");
-        delete customTokenFeeCollector[_token];
+        delete tokenFeeCollectors[_token];
         emit RemoveCustomTokenFeeCollector(_token);
     }
 
@@ -345,7 +345,7 @@ contract FeeSettings is
      */
     function removeCustomCrowdinvestingFeeCollector(address _token) external onlyManager {
         require(_token != address(0), "Token cannot be 0x0");
-        delete customCrowdinvestingFeeCollector[_token];
+        delete crowdinvestingFeeCollectors[_token];
         emit RemoveCustomCrowdinvestingFeeCollector(_token);
     }
 
@@ -355,7 +355,7 @@ contract FeeSettings is
      */
     function removeCustomPrivateOfferFeeCollector(address _token) external onlyManager {
         require(_token != address(0), "Token cannot be 0x0");
-        delete customPrivateOfferFeeCollector[_token];
+        delete privateOfferFeeCollectors[_token];
         emit RemoveCustomPrivateOfferFeeCollector(_token);
     }
 
@@ -365,10 +365,10 @@ contract FeeSettings is
      * @return The fee collector
      */
     function tokenFeeCollector(address _token) public view override(IFeeSettingsV2) returns (address) {
-        if (customTokenFeeCollector[_token] != address(0)) {
-            return customTokenFeeCollector[_token];
+        if (tokenFeeCollectors[_token] != address(0)) {
+            return tokenFeeCollectors[_token];
         }
-        return customTokenFeeCollector[address(0)];
+        return tokenFeeCollectors[address(0)];
     }
 
     /**
@@ -377,10 +377,10 @@ contract FeeSettings is
      * @return The fee collector
      */
     function crowdinvestingFeeCollector(address _token) public view override(IFeeSettingsV2) returns (address) {
-        if (customCrowdinvestingFeeCollector[_token] != address(0)) {
-            return customCrowdinvestingFeeCollector[_token];
+        if (crowdinvestingFeeCollectors[_token] != address(0)) {
+            return crowdinvestingFeeCollectors[_token];
         }
-        return customCrowdinvestingFeeCollector[address(0)];
+        return crowdinvestingFeeCollectors[address(0)];
     }
 
     /**
@@ -389,10 +389,10 @@ contract FeeSettings is
      * @return The fee collector
      */
     function privateOfferFeeCollector(address _token) public view override(IFeeSettingsV2) returns (address) {
-        if (customPrivateOfferFeeCollector[_token] != address(0)) {
-            return customPrivateOfferFeeCollector[_token];
+        if (privateOfferFeeCollectors[_token] != address(0)) {
+            return privateOfferFeeCollectors[_token];
         }
-        return customPrivateOfferFeeCollector[address(0)];
+        return privateOfferFeeCollectors[address(0)];
     }
 
     /**
@@ -514,7 +514,7 @@ contract FeeSettings is
      * @return The token fee collector
      */
     function feeCollector() external view override(IFeeSettingsV1) returns (address) {
-        return customTokenFeeCollector[address(0)];
+        return tokenFeeCollectors[address(0)];
     }
 
     /**

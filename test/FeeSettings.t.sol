@@ -788,7 +788,7 @@ contract FeeSettingsTest is Test {
         vm.assume(_feeCollector != admin);
 
         assertEq(
-            feeSettings.customTokenFeeCollector(exampleTokenAddress),
+            feeSettings.tokenFeeCollectors(exampleTokenAddress),
             address(0),
             "Should not be custom fee collector yet"
         );
@@ -803,7 +803,7 @@ contract FeeSettingsTest is Test {
         vm.prank(admin);
         feeSettings.setCustomTokenFeeCollector(exampleTokenAddress, _feeCollector);
 
-        assertEq(feeSettings.customTokenFeeCollector(exampleTokenAddress), _feeCollector, "Custom fee collector wrong");
+        assertEq(feeSettings.tokenFeeCollectors(exampleTokenAddress), _feeCollector, "Custom fee collector wrong");
         assertEq(
             feeSettings.tokenFeeCollector(exampleTokenAddress),
             _feeCollector,
@@ -829,7 +829,7 @@ contract FeeSettingsTest is Test {
         feeSettings.removeCustomTokenFeeCollector(exampleTokenAddress);
 
         assertEq(
-            feeSettings.customTokenFeeCollector(exampleTokenAddress),
+            feeSettings.tokenFeeCollectors(exampleTokenAddress),
             address(0),
             "Should not be custom fee collector yet"
         );
@@ -847,7 +847,7 @@ contract FeeSettingsTest is Test {
         vm.assume(_feeCollector != admin);
 
         assertEq(
-            feeSettings.customCrowdinvestingFeeCollector(exampleTokenAddress),
+            feeSettings.crowdinvestingFeeCollectors(exampleTokenAddress),
             address(0),
             "Should not be custom fee collector yet"
         );
@@ -858,7 +858,7 @@ contract FeeSettingsTest is Test {
         feeSettings.setCustomCrowdinvestingFeeCollector(exampleTokenAddress, _feeCollector);
 
         assertEq(
-            feeSettings.customCrowdinvestingFeeCollector(exampleTokenAddress),
+            feeSettings.crowdinvestingFeeCollectors(exampleTokenAddress),
             _feeCollector,
             "Custom fee collector wrong"
         );
@@ -886,7 +886,7 @@ contract FeeSettingsTest is Test {
         feeSettings.removeCustomCrowdinvestingFeeCollector(exampleTokenAddress);
 
         assertEq(
-            feeSettings.customCrowdinvestingFeeCollector(exampleTokenAddress),
+            feeSettings.crowdinvestingFeeCollectors(exampleTokenAddress),
             address(0),
             "Should not be custom fee collector yet"
         );
@@ -899,7 +899,7 @@ contract FeeSettingsTest is Test {
         vm.assume(_feeCollector != admin);
 
         assertEq(
-            feeSettings.customPrivateOfferFeeCollector(exampleTokenAddress),
+            feeSettings.privateOfferFeeCollectors(exampleTokenAddress),
             address(0),
             "Should not be custom fee collector yet"
         );
@@ -910,7 +910,7 @@ contract FeeSettingsTest is Test {
         feeSettings.setCustomPrivateOfferFeeCollector(exampleTokenAddress, _feeCollector);
 
         assertEq(
-            feeSettings.customPrivateOfferFeeCollector(exampleTokenAddress),
+            feeSettings.privateOfferFeeCollectors(exampleTokenAddress),
             _feeCollector,
             "Custom fee collector wrong"
         );
@@ -938,7 +938,7 @@ contract FeeSettingsTest is Test {
         feeSettings.removeCustomPrivateOfferFeeCollector(exampleTokenAddress);
 
         assertEq(
-            feeSettings.customPrivateOfferFeeCollector(exampleTokenAddress),
+            feeSettings.privateOfferFeeCollectors(exampleTokenAddress),
             address(0),
             "Should not be custom fee collector yet"
         );
@@ -957,17 +957,17 @@ contract FeeSettingsTest is Test {
         feeSettings.addManager(_manager);
 
         assertEq(
-            feeSettings.customTokenFeeCollector(exampleTokenAddress),
+            feeSettings.tokenFeeCollectors(exampleTokenAddress),
             address(0),
             "Should not be custom fee collector yet"
         );
         assertEq(
-            feeSettings.customCrowdinvestingFeeCollector(exampleTokenAddress),
+            feeSettings.crowdinvestingFeeCollectors(exampleTokenAddress),
             address(0),
             "Should not be custom fee collector yet"
         );
         assertEq(
-            feeSettings.customPrivateOfferFeeCollector(exampleTokenAddress),
+            feeSettings.privateOfferFeeCollectors(exampleTokenAddress),
             address(0),
             "Should not be custom fee collector yet"
         );
@@ -979,17 +979,17 @@ contract FeeSettingsTest is Test {
         vm.stopPrank();
 
         assertEq(
-            feeSettings.customTokenFeeCollector(exampleTokenAddress),
+            feeSettings.tokenFeeCollectors(exampleTokenAddress),
             _customFeeCollector,
             "Custom fee collector wrong"
         );
         assertEq(
-            feeSettings.customCrowdinvestingFeeCollector(exampleTokenAddress),
+            feeSettings.crowdinvestingFeeCollectors(exampleTokenAddress),
             _customFeeCollector,
             "Custom fee collector wrong"
         );
         assertEq(
-            feeSettings.customPrivateOfferFeeCollector(exampleTokenAddress),
+            feeSettings.privateOfferFeeCollectors(exampleTokenAddress),
             _customFeeCollector,
             "Custom fee collector wrong"
         );
@@ -1001,17 +1001,17 @@ contract FeeSettingsTest is Test {
         vm.stopPrank();
 
         assertEq(
-            feeSettings.customTokenFeeCollector(exampleTokenAddress),
+            feeSettings.tokenFeeCollectors(exampleTokenAddress),
             address(0),
             "Should not be custom fee collector yet"
         );
         assertEq(
-            feeSettings.customCrowdinvestingFeeCollector(exampleTokenAddress),
+            feeSettings.crowdinvestingFeeCollectors(exampleTokenAddress),
             address(0),
             "Should not be custom fee collector yet"
         );
         assertEq(
-            feeSettings.customPrivateOfferFeeCollector(exampleTokenAddress),
+            feeSettings.privateOfferFeeCollectors(exampleTokenAddress),
             address(0),
             "Should not be custom fee collector yet"
         );

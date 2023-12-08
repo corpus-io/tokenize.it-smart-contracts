@@ -220,25 +220,30 @@ contract tokenTest is Test {
             _crowdinvestingFeeCollector,
             "crowdinvestingFeeCollector not set"
         );
+
         assertEq(
             feeSettings.privateOfferFeeCollector(exampleToken),
             _privateOfferFeeCollector,
             "privateOfferFeeCollector not set"
         );
-        assertEq(
-            feeSettings.defaultTokenFeeNumerator(),
-            exampleFees1.tokenFeeNumerator,
-            "defaultTokenFeeNumerator not set"
-        );
+
+        (
+            uint32 _tokenFeeNumerator,
+            uint32 _crowdinvestingFeeNumerator,
+            uint32 _privateOfferFeeNumerator,
+
+        ) = feeSettings.fees(address(0));
+
+        assertEq(_tokenFeeNumerator, exampleFees1.tokenFeeNumerator, "defaultTokenFeeNumerator not set");
 
         assertEq(
-            feeSettings.defaultCrowdinvestingFeeNumerator(),
+            _crowdinvestingFeeNumerator,
             exampleFees1.crowdinvestingFeeNumerator,
             "defaultCrowdinvestingFeeNumerator not set"
         );
 
         assertEq(
-            feeSettings.defaultPrivateOfferFeeNumerator(),
+            _privateOfferFeeNumerator,
             exampleFees1.privateOfferFeeNumerator,
             "defaultPrivateOfferFeeNumerator not set"
         );
