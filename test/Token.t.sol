@@ -30,7 +30,7 @@ contract tokenTest is Test {
     function setUp() public {
         allowList = createAllowList(trustedForwarder, admin);
         vm.prank(feeSettingsOwner);
-        Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
+        Fees memory fees = Fees(100, 100, 100, 0);
         feeSettings = createFeeSettings(trustedForwarder, address(this), fees, admin, admin, admin);
         token = Token(
             tokenCloneFactory.createTokenProxy(
@@ -244,7 +244,7 @@ contract tokenTest is Test {
     }
 
     function testSetUpMinter(uint256 newAllowance, uint256 mintAmount) public {
-        vm.assume(newAllowance < type(uint256).max / 2); // avoid overflow because of fees
+        vm.assume(newAllowance < type(uint256).max / FeeSettings(address(token.feeSettings())).FEE_DENOMINATOR()); // avoid overflow because of fees
         vm.assume(mintAmount <= newAllowance);
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
@@ -271,7 +271,7 @@ contract tokenTest is Test {
     }
 
     function testMintOnce(uint256 x) public {
-        vm.assume(x <= UINT256_MAX - x / FeeSettings(address(token.feeSettings())).defaultTokenFeeDenominator()); // avoid overflow
+        vm.assume(x <= UINT256_MAX / FeeSettings(address(token.feeSettings())).FEE_DENOMINATOR()); // avoid overflow
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
         vm.prank(admin);
@@ -303,7 +303,7 @@ contract tokenTest is Test {
     }
 
     function testMintAllowerDoesNotNeedAllowance(uint256 x) public {
-        vm.assume(x <= UINT256_MAX - x / FeeSettings(address(token.feeSettings())).defaultTokenFeeDenominator()); // avoid overflow
+        vm.assume(x <= UINT256_MAX / FeeSettings(address(token.feeSettings())).FEE_DENOMINATOR()); // avoid overflow
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
         vm.prank(admin);
@@ -327,8 +327,7 @@ contract tokenTest is Test {
 
     function testIncreaseAllowance(uint256 x, uint256 y) public {
         vm.assume(
-            x < UINT256_MAX - y &&
-                x + y <= UINT256_MAX - (x + y) / FeeSettings(address(token.feeSettings())).defaultTokenFeeDenominator()
+            x < UINT256_MAX - y && x + y <= UINT256_MAX / FeeSettings(address(token.feeSettings())).FEE_DENOMINATOR()
         ); // avoid overflow
 
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
@@ -399,10 +398,7 @@ contract tokenTest is Test {
     @notice test if the minter can mint exactly the amount of tokens that is allowed, but in multiple steps
     */
     function testMintAgain(uint256 totalMintAmount, uint256 steps) public {
-        vm.assume(
-            totalMintAmount <=
-                UINT256_MAX - totalMintAmount / FeeSettings(address(token.feeSettings())).defaultTokenFeeDenominator()
-        ); // avoid overflow
+        vm.assume(totalMintAmount <= UINT256_MAX / FeeSettings(address(token.feeSettings())).FEE_DENOMINATOR()); // avoid overflow
         //vm.assume(steps < 200);
 
         steps = steps % 100; // don't be ridiculous
@@ -443,7 +439,7 @@ contract tokenTest is Test {
     }
 
     function testBurnSimple(uint256 x) public {
-        vm.assume(x <= UINT256_MAX - x / FeeSettings(address(token.feeSettings())).defaultTokenFeeDenominator()); // avoid overflow
+        vm.assume(x <= UINT256_MAX / FeeSettings(address(token.feeSettings())).FEE_DENOMINATOR()); // avoid overflow
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
         bytes32 role = token.BURNER_ROLE();
 
@@ -454,21 +450,21 @@ contract tokenTest is Test {
         assertTrue(token.mintingAllowance(minter) == x);
 
         console.log("minting %s tokens", x);
-        console.log("fee demoninator: %s", FeeSettings(address(token.feeSettings())).defaultTokenFeeDenominator());
+        console.log("fee demoninator: %s", FeeSettings(address(token.feeSettings())).FEE_DENOMINATOR());
         console.log("amount: %s", x);
 
-        console.log("remainder: %s", x % FeeSettings(address(token.feeSettings())).defaultTokenFeeDenominator());
+        console.log("remainder: %s", x % FeeSettings(address(token.feeSettings())).FEE_DENOMINATOR());
         console.log(
             "amount without remainder: %s",
-            x - (x % FeeSettings(address(token.feeSettings())).defaultTokenFeeDenominator())
+            x - (x % FeeSettings(address(token.feeSettings())).FEE_DENOMINATOR())
         );
 
         console.log(
             "total tokens to mint (amount + fee): %s",
-            x + x / FeeSettings(address(token.feeSettings())).defaultTokenFeeDenominator()
+            x + x / FeeSettings(address(token.feeSettings())).FEE_DENOMINATOR()
         );
 
-        uint fee = x / FeeSettings(address(token.feeSettings())).defaultTokenFeeDenominator();
+        uint fee = x / FeeSettings(address(token.feeSettings())).FEE_DENOMINATOR();
         console.log("fee: %s", fee);
         vm.prank(minter);
         token.mint(pauser, x);
@@ -485,7 +481,7 @@ contract tokenTest is Test {
     Burn with requirements
      */
     function testBurnWithRequirements(uint256 x) public {
-        vm.assume(x <= UINT256_MAX - x / FeeSettings(address(token.feeSettings())).defaultTokenFeeDenominator()); // avoid overflow
+        vm.assume(x <= UINT256_MAX / FeeSettings(address(token.feeSettings())).FEE_DENOMINATOR()); // avoid overflow
         vm.prank(mintAllower);
         token.increaseMintingAllowance(minter, x);
         assertTrue(token.mintingAllowance(minter) == x);

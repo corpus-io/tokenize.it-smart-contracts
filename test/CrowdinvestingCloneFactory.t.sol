@@ -51,7 +51,7 @@ contract tokenTest is Test {
         vm.startPrank(feeSettingsAndAllowListOwner);
         allowList = createAllowList(trustedForwarder, feeSettingsAndAllowListOwner);
 
-        Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
+        Fees memory fees = Fees(100, 100, 100, 0);
         FeeSettings feeSettingsLogicContract = new FeeSettings(trustedForwarder);
         FeeSettingsCloneFactory feeSettingsCloneFactory = new FeeSettingsCloneFactory(
             address(feeSettingsLogicContract)

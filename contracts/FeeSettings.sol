@@ -20,29 +20,23 @@ contract FeeSettings is
     IFeeSettingsV1
 {
     /// max token fee is 5%
-    uint32 public constant MAX_TOKEN_FEE_NUMERATOR = 1;
-    uint32 public constant MAX_TOKEN_FEE_DENOMINATOR = 20;
+    uint32 public constant MAX_TOKEN_FEE_NUMERATOR = 500;
     /// max crowdinvesting fee is 10%
-    uint32 public constant MAX_CONTINUOUS_FUNDRAISING_FEE_NUMERATOR = 1;
-    uint32 public constant MAX_CONTINUOUS_FUNDRAISING_FEE_DENOMINATOR = 10;
+    uint32 public constant MAX_CROWDINVESTING_FEE_NUMERATOR = 1000;
     /// max private offer fee is 5%
-    uint32 public constant MAX_PERSONAL_INVITE_FEE_NUMERATOR = 1;
-    uint32 public constant MAX_PERSONAL_INVITE_FEE_DENOMINATOR = 20;
+    uint32 public constant MAX_PRIVATE_OFFER_FEE_NUMERATOR = 500;
+
+    /// Denominator to calculate all fees
+    uint32 public constant FEE_DENOMINATOR = 10000;
 
     /// Numerator to calculate fees paid in Token.sol.
     uint32 public defaultTokenFeeNumerator;
-    /// Denominator to calculate fees paid in Token.sol.
-    uint32 public defaultTokenFeeDenominator;
 
     /// Numerator to calculate fees paid in Crowdinvesting.sol.
     uint32 public defaultCrowdinvestingFeeNumerator;
-    /// Denominator to calculate fees paid in Crowdinvesting.sol.
-    uint32 public defaultCrowdinvestingFeeDenominator;
 
     /// Numerator to calculate fees paid in PrivateOffer.sol.
     uint32 public defaultPrivateOfferFeeNumerator;
-    /// Denominator to calculate fees paid in PrivateOffer.sol.
-    uint32 public defaultPrivateOfferFeeDenominator;
 
     /**
      * special fees for specific customers. If a customer has a custom fee, the custom
@@ -86,39 +80,23 @@ contract FeeSettings is
     /**
      * @notice Default fees have been changed
      * @param tokenFeeNumerator a in fraction a/b that defines the fee paid in Token: fee = amount * a / b
-     * @param tokenFeeDenominator b in fraction a/b that defines the fee paid in Token: fee = amount * a / b
      * @param crowdinvestingFeeNumerator a in fraction a/b that defines the fee paid in currency for crowdinvesting: fee = amount * a / b
-     * @param crowdinvestingFeeDenominator b in fraction a/b that defines the fee paid in currency for crowdinvesting: fee = amount * a / b
      * @param privateOfferFeeNumerator a in fraction a/b that defines the fee paid in currency for private offers: fee = amount * a / b
-     * @param privateOfferFeeDenominator b in fraction a/b that defines the fee paid in currency for private offers: fee = amount * a / b
      */
-    event SetFee(
-        uint32 tokenFeeNumerator,
-        uint32 tokenFeeDenominator,
-        uint32 crowdinvestingFeeNumerator,
-        uint32 crowdinvestingFeeDenominator,
-        uint32 privateOfferFeeNumerator,
-        uint32 privateOfferFeeDenominator
-    );
+    event SetFee(uint32 tokenFeeNumerator, uint32 crowdinvestingFeeNumerator, uint32 privateOfferFeeNumerator);
 
     /**
      * @notice Default fees have been changed
      * @param tokenFeeNumerator a in fraction a/b that defines the fee paid in Token: fee = amount * a / b
-     * @param tokenFeeDenominator b in fraction a/b that defines the fee paid in Token: fee = amount * a / b
      * @param crowdinvestingFeeNumerator a in fraction a/b that defines the fee paid in currency for crowdinvesting: fee = amount * a / b
-     * @param crowdinvestingFeeDenominator b in fraction a/b that defines the fee paid in currency for crowdinvesting: fee = amount * a / b
      * @param privateOfferFeeNumerator a in fraction a/b that defines the fee paid in currency for private offers: fee = amount * a / b
-     * @param privateOfferFeeDenominator b in fraction a/b that defines the fee paid in currency for private offers: fee = amount * a / b
      * @param time The time when the custom fee expires
      */
     event SetCustomFee(
         address indexed token,
         uint32 tokenFeeNumerator,
-        uint32 tokenFeeDenominator,
         uint32 crowdinvestingFeeNumerator,
-        uint32 crowdinvestingFeeDenominator,
         uint32 privateOfferFeeNumerator,
-        uint32 privateOfferFeeDenominator,
         uint256 time
     );
 
@@ -140,11 +118,13 @@ contract FeeSettings is
     event RemoveCustomPrivateOfferFeeCollector(address indexed token);
 
     /**
-     * @notice The fee collector has been changed to `newFeeCollector`
-     * @param newFeeCollector The new fee collector
+     * @notice The fee collectors have changed
+     * @param newTokenFeeCollector The new fee collector for token fees
+     * @param newCrowdinvestingFeeCollector The new fee collector for crowdinvesting fees
+     * @param newPrivateOfferFeeCollector The new fee collector for private offer fees
      */
     event FeeCollectorsChanged(
-        address indexed newFeeCollector,
+        address indexed newTokenFeeCollector,
         address indexed newCrowdinvestingFeeCollector,
         address indexed newPrivateOfferFeeCollector
     );
@@ -183,11 +163,8 @@ contract FeeSettings is
 
         checkFeeLimits(_fees);
         defaultTokenFeeNumerator = _fees.tokenFeeNumerator;
-        defaultTokenFeeDenominator = _fees.tokenFeeDenominator;
         defaultCrowdinvestingFeeNumerator = _fees.crowdinvestingFeeNumerator;
-        defaultCrowdinvestingFeeDenominator = _fees.crowdinvestingFeeDenominator;
         defaultPrivateOfferFeeNumerator = _fees.privateOfferFeeNumerator;
-        defaultPrivateOfferFeeDenominator = _fees.privateOfferFeeDenominator;
 
         require(_tokenFeeCollector != address(0), "Fee collector cannot be 0x0");
         defaultTokenFeeCollector = _tokenFeeCollector;
@@ -225,24 +202,9 @@ contract FeeSettings is
 
         // if at least one fee increases, enforce minimum delay
         if (
-            _isFractionAGreater(
-                _fees.tokenFeeNumerator,
-                _fees.tokenFeeDenominator,
-                defaultTokenFeeNumerator,
-                defaultTokenFeeDenominator
-            ) ||
-            _isFractionAGreater(
-                _fees.crowdinvestingFeeNumerator,
-                _fees.crowdinvestingFeeDenominator,
-                defaultCrowdinvestingFeeNumerator,
-                defaultCrowdinvestingFeeDenominator
-            ) ||
-            _isFractionAGreater(
-                _fees.privateOfferFeeNumerator,
-                _fees.privateOfferFeeDenominator,
-                defaultPrivateOfferFeeNumerator,
-                defaultPrivateOfferFeeDenominator
-            )
+            _fees.tokenFeeNumerator > defaultTokenFeeNumerator ||
+            _fees.crowdinvestingFeeNumerator > defaultCrowdinvestingFeeNumerator ||
+            _fees.privateOfferFeeNumerator > defaultPrivateOfferFeeNumerator
         ) {
             require(
                 _fees.validityDate > block.timestamp + 12 weeks,
@@ -262,19 +224,9 @@ contract FeeSettings is
             "Fee change must be executed after the change time"
         );
         defaultTokenFeeNumerator = proposedDefaultFees.tokenFeeNumerator;
-        defaultTokenFeeDenominator = proposedDefaultFees.tokenFeeDenominator;
         defaultCrowdinvestingFeeNumerator = proposedDefaultFees.crowdinvestingFeeNumerator;
-        defaultCrowdinvestingFeeDenominator = proposedDefaultFees.crowdinvestingFeeDenominator;
         defaultPrivateOfferFeeNumerator = proposedDefaultFees.privateOfferFeeNumerator;
-        defaultPrivateOfferFeeDenominator = proposedDefaultFees.privateOfferFeeDenominator;
-        emit SetFee(
-            defaultTokenFeeNumerator,
-            defaultTokenFeeDenominator,
-            defaultCrowdinvestingFeeNumerator,
-            defaultCrowdinvestingFeeDenominator,
-            defaultPrivateOfferFeeNumerator,
-            defaultPrivateOfferFeeDenominator
-        );
+        emit SetFee(defaultTokenFeeNumerator, defaultCrowdinvestingFeeNumerator, defaultPrivateOfferFeeNumerator);
         delete proposedDefaultFees;
     }
 
@@ -297,59 +249,16 @@ contract FeeSettings is
     }
 
     /**
-     * Compares two fractions and returns true if the first one is greater than the second one
-     * @param aNumerator numerator in fraction aNumerator/aDenominator
-     * @param aDenominator denominator in fraction aNumerator/aDenominator
-     * @param bNumerator numerator in fraction bNumerator/bDenominator
-     * @param bDenominator denominator in fraction bNumerator/bDenominator
-     */
-    function _isFractionAGreater(
-        uint32 aNumerator,
-        uint32 aDenominator,
-        uint32 bNumerator,
-        uint32 bDenominator
-    ) internal pure returns (bool) {
-        return uint256(aNumerator) * bDenominator > uint256(bNumerator) * aDenominator;
-    }
-
-    /**
      * @notice Checks if the given fee settings are valid
      * @param _fees The fees to check
      */
     function checkFeeLimits(Fees memory _fees) internal pure {
+        require(_fees.tokenFeeNumerator <= MAX_TOKEN_FEE_NUMERATOR, "Token fee must be <= 5%");
         require(
-            _fees.tokenFeeDenominator > 0 &&
-                _fees.crowdinvestingFeeDenominator > 0 &&
-                _fees.privateOfferFeeDenominator > 0,
-            "Denominator cannot be 0"
+            _fees.crowdinvestingFeeNumerator <= MAX_CROWDINVESTING_FEE_NUMERATOR,
+            "Crowdinvesting fee must be <= 10%"
         );
-        require(
-            !_isFractionAGreater(
-                _fees.tokenFeeNumerator,
-                _fees.tokenFeeDenominator,
-                MAX_TOKEN_FEE_NUMERATOR,
-                MAX_TOKEN_FEE_DENOMINATOR
-            ),
-            "Token fee must be equal or less 5%"
-        );
-        require(
-            !_isFractionAGreater(
-                _fees.crowdinvestingFeeNumerator,
-                _fees.crowdinvestingFeeDenominator,
-                MAX_CONTINUOUS_FUNDRAISING_FEE_NUMERATOR,
-                MAX_CONTINUOUS_FUNDRAISING_FEE_DENOMINATOR
-            ),
-            "Crowdinvesting fee must be equal or less 10%"
-        );
-        require(
-            !_isFractionAGreater(
-                _fees.privateOfferFeeNumerator,
-                _fees.privateOfferFeeDenominator,
-                MAX_PERSONAL_INVITE_FEE_NUMERATOR,
-                MAX_PERSONAL_INVITE_FEE_DENOMINATOR
-            ),
-            "PrivateOffer fee must be equal or less 5%"
-        );
+        require(_fees.privateOfferFeeNumerator <= MAX_PRIVATE_OFFER_FEE_NUMERATOR, "PrivateOffer fee must be <= 5%");
     }
 
     /**
@@ -365,11 +274,8 @@ contract FeeSettings is
         emit SetCustomFee(
             _token,
             _fees.tokenFeeNumerator,
-            _fees.tokenFeeDenominator,
             _fees.crowdinvestingFeeNumerator,
-            _fees.crowdinvestingFeeDenominator,
             _fees.privateOfferFeeNumerator,
-            _fees.privateOfferFeeDenominator,
             _fees.validityDate
         );
     }
@@ -486,25 +392,48 @@ contract FeeSettings is
      * General linear fee calculation function
      * @param amount how many erc20 tokens are transferred
      * @param numerator fee numerator
-     * @param denominator fee denominator
      */
-    function _fee(uint256 amount, uint32 numerator, uint32 denominator) internal pure returns (uint256) {
-        return (amount * numerator) / denominator;
+    function _fee(uint256 amount, uint32 numerator) internal pure returns (uint256) {
+        return (amount * numerator) / FEE_DENOMINATOR;
     }
 
-    function tokenFee(uint256 _tokenAmount, address _token) public view override(IFeeSettingsV2) returns (uint256) {
-        uint256 baseFee = _fee(_tokenAmount, defaultTokenFeeNumerator, defaultTokenFeeDenominator);
-        if (customFees[_token].validityDate > block.timestamp) {
-            uint256 customFee = _fee(
-                _tokenAmount,
-                customFees[_token].tokenFeeNumerator,
-                customFees[_token].tokenFeeDenominator
-            );
-            if (customFee < baseFee) {
-                return customFee;
-            }
+    /**
+     * Calculates the fee for a given amount of tokens
+     * @param amount how many erc20 tokens are transferred
+     * @param defaultNumerator default fee numerator
+     * @param customNumerator custom fee numerator
+     * @param customValidityDate custom fee validity date
+     */
+    function _customFee(
+        uint256 amount,
+        uint32 defaultNumerator,
+        uint32 customNumerator,
+        uint64 customValidityDate
+    ) internal view returns (uint256) {
+        if (customValidityDate < uint64(block.timestamp)) {
+            return _fee(amount, defaultNumerator);
         }
-        return baseFee;
+        uint256 defaultFee = _fee(amount, defaultNumerator);
+        uint256 customFee = _fee(amount, customNumerator);
+        if (customFee < defaultFee) {
+            return customFee;
+        }
+        return defaultFee;
+    }
+
+    /**
+     * calculates the token fee in tokens for the given token amount
+     * @param _tokenAmount number of tokens that are minted
+     * @param _token address of the token contract minting the tokens
+     */
+    function tokenFee(uint256 _tokenAmount, address _token) public view override(IFeeSettingsV2) returns (uint256) {
+        return
+            _customFee(
+                _tokenAmount,
+                defaultTokenFeeNumerator,
+                customFees[_token].tokenFeeNumerator,
+                customFees[_token].validityDate
+            );
     }
 
     /**
@@ -517,18 +446,13 @@ contract FeeSettings is
         uint256 _currencyAmount,
         address _token
     ) public view override(IFeeSettingsV2) returns (uint256) {
-        uint256 baseFee = _fee(_currencyAmount, defaultCrowdinvestingFeeNumerator, defaultCrowdinvestingFeeDenominator);
-        if (customFees[_token].validityDate > block.timestamp) {
-            uint256 customFee = _fee(
+        return
+            _customFee(
                 _currencyAmount,
+                defaultCrowdinvestingFeeNumerator,
                 customFees[_token].crowdinvestingFeeNumerator,
-                customFees[_token].crowdinvestingFeeDenominator
+                customFees[_token].validityDate
             );
-            if (customFee < baseFee) {
-                return customFee;
-            }
-        }
-        return baseFee;
     }
 
     /**
@@ -540,18 +464,13 @@ contract FeeSettings is
         uint256 _currencyAmount,
         address _token
     ) public view override(IFeeSettingsV2) returns (uint256) {
-        uint256 baseFee = _fee(_currencyAmount, defaultPrivateOfferFeeNumerator, defaultPrivateOfferFeeDenominator);
-        if (customFees[_token].validityDate > block.timestamp) {
-            uint256 customFee = _fee(
+        return
+            _customFee(
                 _currencyAmount,
+                defaultPrivateOfferFeeNumerator,
                 customFees[_token].privateOfferFeeNumerator,
-                customFees[_token].privateOfferFeeDenominator
+                customFees[_token].validityDate
             );
-            if (customFee < baseFee) {
-                return customFee;
-            }
-        }
-        return baseFee;
     }
 
     /**

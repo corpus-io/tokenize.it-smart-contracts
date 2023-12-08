@@ -95,7 +95,7 @@ contract CrowdinvestingTest is Test {
         list.set(address(paymentToken), TRUSTED_CURRENCY);
 
         vm.startPrank(platformAdmin);
-        Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 100);
+        Fees memory fees = Fees(100, 100, 100, 100);
         FeeSettings feeLogic = new FeeSettings(trustedForwarder);
         FeeSettingsCloneFactory feeSettingsCloneFactory = new FeeSettingsCloneFactory(address(feeLogic));
         feeSettings = IFeeSettingsV2(

@@ -41,7 +41,7 @@ contract tokenProxyUpgradeTest is Test {
 
     function setUp() public {
         allowList = createAllowList(trustedForwarder, feeSettingsAndAllowListOwner);
-        Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
+        Fees memory fees = Fees(100, 100, 100, 0);
         feeSettings = createFeeSettings(
             trustedForwarder,
             feeSettingsAndAllowListOwner,

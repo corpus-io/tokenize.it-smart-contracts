@@ -61,7 +61,7 @@ contract CrowdinvestingTest is Test {
         vm.prank(owner);
         list.set(address(paymentToken), TRUSTED_CURRENCY);
 
-        Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 100);
+        Fees memory fees = Fees(100, 100, 100, 100);
         feeSettings = createFeeSettings(
             trustedForwarder,
             address(this),
@@ -344,7 +344,7 @@ contract CrowdinvestingTest is Test {
 
         console.log("bytes lenght: ", data.length);
 
-        if (minTokenAmount < tokenBuyAmount) {
+        if (minTokenAmount <= tokenBuyAmount) {
             vm.startPrank(addressWithFunds);
             paymentToken.transferAndCall(address(crowdinvesting), currencyAmount, data);
             vm.stopPrank();

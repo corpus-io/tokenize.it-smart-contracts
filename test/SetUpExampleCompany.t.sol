@@ -68,8 +68,8 @@ contract CompanySetUpTest is Test {
     uint256 tokenBuyAmount;
     uint256 costInPaymentToken;
 
-    uint32 tokenFeeDenominator = 100;
-    uint32 paymentTokenFeeDenominator = 50;
+    uint32 tokenFeeNumerator = 100;
+    uint32 paymentTokenFeeNumerator = 200;
 
     string name = "ProductiveExampleCompany";
     string symbol = "PEC";
@@ -89,15 +89,7 @@ contract CompanySetUpTest is Test {
         companyAdmin = vm.addr(companyAdminPrivateKey);
 
         // set up FeeSettings
-        Fees memory fees = Fees(
-            1,
-            tokenFeeDenominator,
-            1,
-            paymentTokenFeeDenominator,
-            1,
-            paymentTokenFeeDenominator,
-            0
-        );
+        Fees memory fees = Fees(tokenFeeNumerator, paymentTokenFeeNumerator, paymentTokenFeeNumerator, 0);
         feeSettings = createFeeSettings(
             address(8), // fake forwarder
             platformAdmin,

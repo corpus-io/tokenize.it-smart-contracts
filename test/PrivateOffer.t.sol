@@ -54,7 +54,7 @@ contract PrivateOfferTest is Test {
         list.set(tokenReceiver, requirements);
         list.set(address(currency), TRUSTED_CURRENCY);
 
-        Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
+        Fees memory fees = Fees(100, 100, 100, 0);
         feeSettings = createFeeSettings(
             trustedForwarder,
             address(this),
@@ -200,7 +200,7 @@ contract PrivateOfferTest is Test {
         address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
 
         // set fees to 0, otherwise extra tokens are minted which causes an overflow
-        Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
+        Fees memory fees = Fees(0, 0, 0, 0);
         FeeSettings(address(token.feeSettings())).planFeeChange(fees);
         FeeSettings(address(token.feeSettings())).executeFeeChange();
 
