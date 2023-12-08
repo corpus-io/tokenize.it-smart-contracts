@@ -416,6 +416,13 @@ contract FeeSettings is
         return (amount * numerator) / FEE_DENOMINATOR;
     }
 
+    /**
+     * Calculates the fee for a given amount of tokens
+     * @param amount how many erc20 tokens are transferred
+     * @param defaultNumerator default fee numerator
+     * @param customNumerator custom fee numerator
+     * @param customValidityDate custom fee validity date
+     */
     function _customFee(
         uint256 amount,
         uint32 defaultNumerator,
