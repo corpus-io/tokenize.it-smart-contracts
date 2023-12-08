@@ -253,11 +253,11 @@ contract FeeSettingsTest is Test {
             uint32 _crowdinvestingFeeNumerator,
             uint32 _privateOfferFeeNumerator,
 
-        ) = feeSettings.fees(address(0));
+        ) = _feeSettings.fees(address(0));
 
-        assertEq(_tokenFeeNumerator, 0);
-        assertEq(_crowdinvestingFeeNumerator, 0);
-        assertEq(_privateOfferFeeNumerator, 0);
+        assertEq(_tokenFeeNumerator, 0, "Token fee numerator mismatch");
+        assertEq(_crowdinvestingFeeNumerator, 0, "Crowdinvesting fee numerator mismatch");
+        assertEq(_privateOfferFeeNumerator, 0, "PrivateOffer fee numerator mismatch");
 
         vm.prank(admin);
         vm.expectRevert("Fee change must be at least 12 weeks in the future");
@@ -1146,5 +1146,25 @@ contract FeeSettingsTest is Test {
         assertEq(feeSettings.tokenFeeCollector(someAddress), admin, "Token fee collector wrong");
         assertEq(feeSettings.crowdinvestingFeeCollector(someAddress), admin, "Crowdinvesting fee collector wrong");
         assertEq(feeSettings.privateOfferFeeCollector(someAddress), admin, "Private offer fee collector wrong");
+    }
+
+    function testRemovingCustomFeeFor0AddressReverts() public {
+        vm.expectRevert("Token cannot be 0x0");
+        vm.prank(admin);
+        feeSettings.removeCustomFee(address(0));
+    }
+
+    function testRemovingCustomFeeCollectorsFor0AddressReverts() public {
+        vm.expectRevert("Token cannot be 0x0");
+        vm.prank(admin);
+        feeSettings.removeCustomTokenFeeCollector(address(0));
+
+        vm.expectRevert("Token cannot be 0x0");
+        vm.prank(admin);
+        feeSettings.removeCustomCrowdinvestingFeeCollector(address(0));
+
+        vm.expectRevert("Token cannot be 0x0");
+        vm.prank(admin);
+        feeSettings.removeCustomPrivateOfferFeeCollector(address(0));
     }
 }

@@ -288,6 +288,7 @@ contract FeeSettings is
      * @param _token The token for which the custom fee should be removed
      */
     function removeCustomFee(address _token) external onlyManager {
+        require(_token != address(0), "Token cannot be 0x0");
         delete fees[_token];
         emit RemoveCustomFee(_token);
     }
@@ -333,6 +334,7 @@ contract FeeSettings is
      * @param _token the token for which the custom fee collector is removed
      */
     function removeCustomTokenFeeCollector(address _token) external onlyManager {
+        require(_token != address(0), "Token cannot be 0x0");
         delete customTokenFeeCollector[_token];
         emit RemoveCustomTokenFeeCollector(_token);
     }
@@ -342,6 +344,7 @@ contract FeeSettings is
      * @param _token the token for which the custom fee collector is removed
      */
     function removeCustomCrowdinvestingFeeCollector(address _token) external onlyManager {
+        require(_token != address(0), "Token cannot be 0x0");
         delete customCrowdinvestingFeeCollector[_token];
         emit RemoveCustomCrowdinvestingFeeCollector(_token);
     }
@@ -351,6 +354,7 @@ contract FeeSettings is
      * @param _token the token for which the custom fee collector is removed
      */
     function removeCustomPrivateOfferFeeCollector(address _token) external onlyManager {
+        require(_token != address(0), "Token cannot be 0x0");
         delete customPrivateOfferFeeCollector[_token];
         emit RemoveCustomPrivateOfferFeeCollector(_token);
     }
