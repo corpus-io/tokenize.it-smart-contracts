@@ -49,9 +49,8 @@ contract TokenERC2612Test is Test {
     address public constant feeCollector = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
 
     uint32 public constant tokenFeeNumerator = 0;
-    uint32 public constant tokenFeeDenominator = 1;
-    uint32 public constant crowdinvestingFeeDenominator = 50;
-    uint32 public constant privateOfferFeeDenominator = 70;
+    uint32 public constant crowdinvestingFeeNumerator = 200;
+    uint32 public constant privateOfferFeeNumerator = 150;
 
     uint256 public constant tokenMintAmount = UINT256_MAX - 1; // -1 to avoid overflow caused by fee mint
     bytes32 domainSeparator;
@@ -65,15 +64,7 @@ contract TokenERC2612Test is Test {
         allowList = createAllowList(trustedForwarder, platformAdmin);
 
         // deploy fee settings
-        Fees memory fees = Fees(
-            tokenFeeNumerator,
-            tokenFeeDenominator,
-            1,
-            crowdinvestingFeeDenominator,
-            1,
-            privateOfferFeeDenominator,
-            0
-        );
+        Fees memory fees = Fees(tokenFeeNumerator, crowdinvestingFeeNumerator, privateOfferFeeNumerator, 0);
         feeSettings = createFeeSettings(
             trustedForwarder,
             platformAdmin,

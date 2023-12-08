@@ -61,7 +61,7 @@ contract MainnetCurrencies is Test {
 
     function setUp() public {
         list = createAllowList(trustedForwarder, owner);
-        Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
+        Fees memory fees = Fees(100, 100, 100, 0);
         feeSettings = createFeeSettings(trustedForwarder, address(this), fees, admin, admin, admin);
 
         Token implementation = new Token(trustedForwarder);
@@ -103,6 +103,9 @@ contract MainnetCurrencies is Test {
         uint256 _currencyCost = (amountOfTokenToBuy * _price) / 10 ** token.decimals();
         uint256 _currencyAmount = _currencyCost * 2;
 
+        vm.prank(owner);
+        list.set(address(_currency), TRUSTED_CURRENCY);
+
         // set up fundcrowdinvesting with _currency
 
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
@@ -116,7 +119,7 @@ contract MainnetCurrencies is Test {
             maxAmountOfTokenToBeSold,
             _currency,
             token,
-            0,
+            type(uint256).max,
             address(0)
         );
         Crowdinvesting _crowdinvesting = Crowdinvesting(
@@ -147,7 +150,7 @@ contract MainnetCurrencies is Test {
 
         // buy tokens
         vm.prank(buyer);
-        _crowdinvesting.buy(maxAmountPerBuyer, buyer);
+        _crowdinvesting.buy(maxAmountPerBuyer, type(uint256).max, buyer);
 
         // check buyer has tokens and receiver has _currency afterwards
         assertEq(token.balanceOf(buyer), amountOfTokenToBuy, "buyer has tokens");
@@ -193,6 +196,9 @@ contract MainnetCurrencies is Test {
     function privateOfferWithIERC20Currency(IERC20 _currency) public {
         //bytes memory creationCode = type(PrivateOffer).creationCode;
         uint256 expiration = block.timestamp + 1000;
+
+        vm.prank(owner);
+        list.set(address(_currency), TRUSTED_CURRENCY);
 
         PrivateOfferArguments memory arguments = PrivateOfferArguments(
             buyer,

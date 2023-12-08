@@ -30,7 +30,7 @@ contract tokenTest is Test {
 
     function setUp() public {
         allowList = createAllowList(trustedForwarder, admin);
-        Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
+        Fees memory fees = Fees(100, 100, 100, 0);
         feeSettings = createFeeSettings(trustedForwarder, feeSettingsOwner, fees, admin, admin, admin);
         Token implementation = new Token(trustedForwarder);
         TokenProxyFactory tokenCloneFactory = new TokenProxyFactory(address(implementation));
@@ -86,7 +86,7 @@ contract tokenTest is Test {
 
     function testSuggestNewFeeSettingsWrongCaller(address wrongUpdater) public {
         vm.assume(wrongUpdater != feeSettings.owner());
-        Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
+        Fees memory fees = Fees(0, 0, 0, 0);
         FeeSettings newFeeSettings = createFeeSettings(trustedForwarder, address(this), fees, pauser, pauser, pauser);
         vm.prank(wrongUpdater);
         vm.expectRevert("Only fee settings owner can suggest fee settings update");
@@ -94,7 +94,7 @@ contract tokenTest is Test {
     }
 
     function testSuggestNewFeeSettingsFeeCollector() public {
-        Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
+        Fees memory fees = Fees(0, 0, 0, 0);
         FeeSettings newFeeSettings = createFeeSettings(trustedForwarder, address(this), fees, pauser, pauser, pauser);
         vm.prank(feeSettings.feeCollector());
         vm.expectRevert("Only fee settings owner can suggest fee settings update");
@@ -109,7 +109,7 @@ contract tokenTest is Test {
 
     function testSuggestNewFeeSettings(address newCollector) public {
         vm.assume(newCollector != address(0));
-        Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
+        Fees memory fees = Fees(0, 0, 0, 0);
         FeeSettings newFeeSettings = createFeeSettings(
             trustedForwarder,
             address(this),
@@ -118,34 +118,41 @@ contract tokenTest is Test {
             newCollector,
             newCollector
         );
-        FeeSettings oldFeeSettings = FeeSettings(address(token.feeSettings()));
-        uint oldInvestmentFeeDenominator = oldFeeSettings.defaultCrowdinvestingFeeDenominator();
-        uint oldTokenFeeDenominator = oldFeeSettings.defaultTokenFeeDenominator();
+
+        (
+            uint32 _oldTokenFeeNumerator,
+            uint32 _oldCrowdinvestingFeeNumerator,
+            uint32 _oldPrivateOfferFeeNumerator,
+
+        ) = FeeSettings(address(token.feeSettings())).fees(address(0));
+
         vm.expectEmit(true, true, true, true, address(token));
         emit NewFeeSettingsSuggested(newFeeSettings);
         vm.prank(feeSettings.owner());
         token.suggestNewFeeSettings(newFeeSettings);
 
         // make sure old fees are still in effect
+        (
+            uint32 _newTokenFeeNumerator,
+            uint32 _newCrowdinvestingFeeNumerator,
+            uint32 _newPrivateOfferFeeNumerator,
+
+        ) = FeeSettings(address(token.feeSettings())).fees(address(0));
+
+        assertTrue(_oldTokenFeeNumerator == _newTokenFeeNumerator, "token fee numerator changed!");
         assertTrue(
-            address(FeeSettings(address(token.feeSettings()))) == address(oldFeeSettings),
-            "fee settings have changed!"
+            _oldCrowdinvestingFeeNumerator == _newCrowdinvestingFeeNumerator,
+            "crowdinvesting fee numerator changed!"
         );
-        assertTrue(token.suggestedFeeSettings() == newFeeSettings, "suggested fee settings not set!");
         assertTrue(
-            FeeSettings(address(token.feeSettings())).defaultCrowdinvestingFeeDenominator() ==
-                oldInvestmentFeeDenominator,
-            "investment fee denominator changed!"
-        );
-        assertTrue(
-            FeeSettings(address(token.feeSettings())).defaultTokenFeeDenominator() == oldTokenFeeDenominator,
-            "token fee denominator changed!"
+            _oldPrivateOfferFeeNumerator == _newPrivateOfferFeeNumerator,
+            "private offer fee numerator changed!"
         );
     }
 
     function testAcceptNewFeeSettings(address newCollector) public {
         vm.assume(newCollector != address(0));
-        Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
+        Fees memory fees = Fees(0, 0, 0, 0);
         FeeSettings newFeeSettings = createFeeSettings(
             trustedForwarder,
             address(this),
@@ -154,9 +161,13 @@ contract tokenTest is Test {
             newCollector,
             newCollector
         );
-        FeeSettings oldFeeSettings = FeeSettings(address(token.feeSettings()));
-        uint oldInvestmentFeeDenominator = oldFeeSettings.defaultCrowdinvestingFeeDenominator();
-        uint oldTokenFeeDenominator = oldFeeSettings.defaultTokenFeeDenominator();
+        (
+            uint32 _oldTokenFeeNumerator,
+            uint32 _oldCrowdinvestingFeeNumerator,
+            uint32 _oldPrivateOfferFeeNumerator,
+
+        ) = FeeSettings(address(token.feeSettings())).fees(address(0));
+
         vm.prank(feeSettings.owner());
         token.suggestNewFeeSettings(newFeeSettings);
 
@@ -165,22 +176,25 @@ contract tokenTest is Test {
         emit FeeSettingsChanged(newFeeSettings);
         vm.prank(admin);
         token.acceptNewFeeSettings(newFeeSettings);
+
+        (
+            uint32 _newTokenFeeNumerator,
+            uint32 _newCrowdinvestingFeeNumerator,
+            uint32 _newPrivateOfferFeeNumerator,
+
+        ) = FeeSettings(address(token.feeSettings())).fees(address(0));
         assertTrue(FeeSettings(address(token.feeSettings())) == newFeeSettings, "fee settings not changed!");
         assertEq(FeeSettings(address(token.feeSettings())).feeCollector(), newCollector, "Wrong feeCollector");
         assertTrue(
-            FeeSettings(address(token.feeSettings())).defaultCrowdinvestingFeeDenominator() !=
-                oldInvestmentFeeDenominator,
+            _newCrowdinvestingFeeNumerator != _oldCrowdinvestingFeeNumerator,
             "investment fee denominator changed!"
         );
-        assertTrue(
-            FeeSettings(address(token.feeSettings())).defaultTokenFeeDenominator() != oldTokenFeeDenominator,
-            "token fee denominator changed!"
-        );
+        assertTrue(_newTokenFeeNumerator != _oldTokenFeeNumerator, "token fee denominator changed!");
     }
 
     function testAcceptFeeCollectorInsteadOfFeeSettings(address newFeeSettingsPretendAddress) public {
         vm.assume(newFeeSettingsPretendAddress != address(0));
-        Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
+        Fees memory fees = Fees(0, 0, 0, 0);
         FeeSettings newFeeSettings = createFeeSettings(
             trustedForwarder,
             address(this),
@@ -202,7 +216,7 @@ contract tokenTest is Test {
     }
 
     function testAcceptWrongFeeSettings() public {
-        Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
+        Fees memory fees = Fees(0, 0, 0, 0);
         FeeSettings realNewFeeSettings = createFeeSettings(
             trustedForwarder,
             feeSettings.owner(),
@@ -327,7 +341,7 @@ contract tokenTest is Test {
     }
 
     function testFeeSettingsUpdateRevertsWhenContractFailsERC165Check() public {
-        Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
+        Fees memory fees = Fees(0, 0, 0, 0);
         FeeSettings[] memory feeSettingsArray = new FeeSettings[](3);
         feeSettingsArray[0] = new FeeSettingsFailERC165Check0(fees, feeSettings.feeCollector());
         feeSettingsArray[1] = new FeeSettingsFailERC165Check1(fees, feeSettings.feeCollector());

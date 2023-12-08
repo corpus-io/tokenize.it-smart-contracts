@@ -55,7 +55,7 @@ The contract needs to be given a minting allowance of maximum amount of tokens t
 
 ## Factories
 
-Most of the contracts in this repository are deployed using factory contracts. This has two reasons:
+All of the contracts in this repository are deployed using factory contracts. This has two reasons:
 
 1. Deterministic addresses. We can tell our customers which address their contract will have before it is deployed. This is important for the customer to be able to prepare their legal documents, which often require the address of the contract. Then, once the legal work is done (which can take days or even weeks), we can deploy the contract to the address we told them.
 2. Gas efficiency. Instead of deploying full contracts, we deploy clones or proxies when possible. This saves a lot of gas, especially when deploying many contracts.

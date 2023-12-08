@@ -46,11 +46,15 @@ contract PrivateOfferTest is Test {
         Vesting vestingImplementation = new Vesting(trustedForwarder);
         VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
         factory = new PrivateOfferFactory(vestingCloneFactory);
+
+        vm.prank(paymentTokenProvider);
+        currency = new FakePaymentToken(0, 18);
+
         list = createAllowList(trustedForwarder, address(this));
-
         list.set(tokenReceiver, requirements);
+        list.set(address(currency), TRUSTED_CURRENCY);
 
-        Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
+        Fees memory fees = Fees(100, 100, 100, 0);
         feeSettings = createFeeSettings(
             trustedForwarder,
             address(this),
@@ -74,9 +78,6 @@ contract PrivateOfferTest is Test {
                 "TOK"
             )
         );
-
-        vm.prank(paymentTokenProvider);
-        currency = new FakePaymentToken(0, 18);
     }
 
     function testAcceptDeal(uint256 rawSalt) public {
@@ -199,7 +200,7 @@ contract PrivateOfferTest is Test {
         address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
 
         // set fees to 0, otherwise extra tokens are minted which causes an overflow
-        Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
+        Fees memory fees = Fees(0, 0, 0, 0);
         FeeSettings(address(token.feeSettings())).planFeeChange(fees);
         FeeSettings(address(token.feeSettings())).executeFeeChange();
 
@@ -308,10 +309,8 @@ contract PrivateOfferTest is Test {
     }
 
     function ensureReverts(uint256 _tokenBuyAmount, uint256 _nominalPrice) public {
-        //uint rawSalt = 0;
         bytes32 salt = bytes32(uint256(8));
 
-        //bytes memory creationCode = type(PrivateOffer).creationCode;
         uint256 expiration = block.timestamp + 1000;
 
         PrivateOfferArguments memory arguments = PrivateOfferArguments(
@@ -334,13 +333,11 @@ contract PrivateOfferTest is Test {
         uint maxCurrencyAmount = UINT256_MAX;
 
         vm.prank(paymentTokenProvider);
-        currency.mint(tokenReceiver, maxCurrencyAmount);
-
-        vm.prank(tokenReceiver);
+        currency.mint(currencyPayer, maxCurrencyAmount);
+        vm.prank(currencyPayer);
         currency.approve(expectedAddress, maxCurrencyAmount);
 
-        // make sure balances are as expected before deployment
-        vm.expectRevert();
+        vm.expectRevert("Create2: Failed on deploy");
         factory.deployPrivateOffer(salt, arguments);
     }
 
@@ -349,8 +346,54 @@ contract PrivateOfferTest is Test {
         vm.assume(_tokenPrice > 0);
 
         vm.assume(UINT256_MAX / _tokenPrice < _tokenBuyAmount);
-        //vm.assume(UINT256_MAX / _tokenBuyAmount > _tokenPrice);
         ensureReverts(_tokenBuyAmount, _tokenPrice);
+    }
+
+    function testInvalidCurrency(uint256 _attributes) public {
+        vm.assume(_attributes != TRUSTED_CURRENCY);
+
+        // remove trusted currency from allowlist
+        list.set(address(currency), _attributes);
+
+        uint256 _tokenBuyAmount = 200e18;
+        uint256 _nominalPrice = 3e6;
+        bytes32 salt = bytes32(uint256(8));
+
+        uint256 expiration = block.timestamp + 1000;
+
+        PrivateOfferArguments memory arguments = PrivateOfferArguments(
+            currencyPayer,
+            tokenReceiver,
+            currencyReceiver,
+            _tokenBuyAmount,
+            _nominalPrice,
+            expiration,
+            currency,
+            token
+        );
+        address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
+
+        vm.startPrank(admin);
+        console.log("expectedAddress: %s", token.mintingAllowance(expectedAddress));
+        token.increaseMintingAllowance(expectedAddress, _tokenBuyAmount);
+        vm.stopPrank();
+
+        uint maxCurrencyAmount = UINT256_MAX;
+
+        vm.prank(paymentTokenProvider);
+        currency.mint(currencyPayer, maxCurrencyAmount);
+        vm.prank(currencyPayer);
+        currency.approve(expectedAddress, maxCurrencyAmount);
+
+        vm.prank(tokenReceiver);
+        currency.approve(expectedAddress, maxCurrencyAmount);
+
+        vm.expectRevert("Create2: Failed on deploy");
+        factory.deployPrivateOffer(salt, arguments);
+
+        // restore trusted currency on allowlist and make sure it works again
+        list.set(address(currency), TRUSTED_CURRENCY);
+        factory.deployPrivateOffer(salt, arguments);
     }
 
     function testAcceptWithDifferentTokenReceiver(uint256 rawSalt) public {

@@ -82,6 +82,7 @@ The following statements about the smart contracts should always be true
 - tokenPrice can never be negative.
 - No settings can be updated.
 - No settings can be changed before deployment without the contract address changing.
+- A private offer that uses a currency that does not have the TRUSTED_CURRENCY attribute on the AllowList will revert during deployment.
 
 ## PrivateOfferFactory.sol
 
@@ -118,6 +119,8 @@ The following statements about the smart contracts should always be true
 - In sum, the contract will never mint more tokens to the buyers than maxAmountOfTokenToBeSold at the time of minting. This does not take into account the tokens minted to feeCollector in Token.sol.
 - All functions can be called directly or as meta transaction using ERC2771.
 - Calling a function directly or through ERC2771 yield equivalent results given equivalent inputs.
+- Initialization is only possible with a currency that has the TRUSTED_CURRENCY attribute on the AllowList.
+- Setting a new currency is only possible if the new currency has the TRUSTED_CURRENCY attribute on the AllowList.
 
 ## Vesting.sol
 

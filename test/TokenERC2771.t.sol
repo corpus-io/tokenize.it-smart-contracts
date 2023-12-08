@@ -20,17 +20,6 @@ contract TokenERC2771Test is Test {
     //Forwarder trustedForwarder;
     ERC2771Helper ERC2771helper;
 
-    // copied from openGSN IForwarder
-    struct ForwardRequest {
-        address from;
-        address to;
-        uint256 value;
-        uint256 gas;
-        uint256 nonce;
-        bytes data;
-        uint256 validUntil;
-    }
-
     address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
 
     // DO NOT USE IN PRODUCTION! Key was generated online for testing only.
@@ -47,9 +36,9 @@ contract TokenERC2771Test is Test {
     address public constant platformAdmin = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
     address public constant feeCollector = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
 
-    uint32 public constant tokenFeeDenominator = 100;
-    uint32 public constant crowdinvestingFeeDenominator = 50;
-    uint32 public constant privateOfferFeeDenominator = 70;
+    uint32 public constant tokenFeeNumerator = 100;
+    uint32 public constant crowdinvestingFeeNumerator = 200;
+    uint32 public constant privateOfferFeeNumerator = 250;
 
     bytes32 domainSeparator;
     bytes32 requestType;
@@ -62,15 +51,7 @@ contract TokenERC2771Test is Test {
         allowList = createAllowList(trustedForwarder, platformAdmin);
 
         // deploy fee settings
-        Fees memory fees = Fees(
-            1,
-            tokenFeeDenominator,
-            1,
-            crowdinvestingFeeDenominator,
-            1,
-            privateOfferFeeDenominator,
-            0
-        );
+        Fees memory fees = Fees(tokenFeeNumerator, crowdinvestingFeeNumerator, privateOfferFeeNumerator, 0);
         vm.prank(platformAdmin);
         feeSettings = createFeeSettings(
             trustedForwarder,
@@ -125,7 +106,7 @@ contract TokenERC2771Test is Test {
     }
 
     function mintWithERC2771(Forwarder _forwarder, uint256 _tokenMintAmount) public {
-        vm.assume(_tokenMintAmount < UINT256_MAX - feeSettings.tokenFee(_tokenMintAmount));
+        vm.assume(_tokenMintAmount < UINT256_MAX / feeSettings.FEE_DENOMINATOR());
 
         setUpTokenWithForwarder(_forwarder);
 

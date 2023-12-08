@@ -25,17 +25,6 @@ contract CrowdinvestingTest is Test {
 
     CrowdinvestingInitializerArguments arguments;
 
-    // copied from openGSN IForwarder
-    struct ForwardRequest {
-        address from;
-        address to;
-        uint256 value;
-        uint256 gas;
-        uint256 nonce;
-        bytes data;
-        uint256 validUntil;
-    }
-
     address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
     address public constant mintAllower = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
@@ -61,20 +50,24 @@ contract CrowdinvestingTest is Test {
     uint256 tokenBuyAmount;
     uint256 costInPaymentToken;
 
-    uint32 tokenFeeDenominator = 100;
-    uint32 paymentTokenFeeDenominator = 50;
+    uint32 tokenFeeNumerator = 100;
+    uint32 paymentTokenFeeNumerator = 200;
 
     function setUp() public {
+        buyer = vm.addr(buyerPrivateKey);
+        // set up currency
+        vm.prank(paymentTokenProvider);
+        paymentToken = new FakePaymentToken(paymentTokenAmount, paymentTokenDecimals); // 1000 tokens with 6 decimals
+        // transfer currency to buyer
+        vm.prank(paymentTokenProvider);
+        paymentToken.transfer(buyer, paymentTokenAmount);
+        assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
+
         list = createAllowList(trustedForwarder, owner);
-        Fees memory fees = Fees(
-            1,
-            tokenFeeDenominator,
-            1,
-            paymentTokenFeeDenominator,
-            1,
-            paymentTokenFeeDenominator,
-            0
-        );
+        vm.prank(owner);
+        list.set(address(paymentToken), TRUSTED_CURRENCY);
+
+        Fees memory fees = Fees(tokenFeeNumerator, paymentTokenFeeNumerator, paymentTokenFeeNumerator, 0);
         feeSettings = createFeeSettings(trustedForwarder, address(this), fees, admin, admin, admin);
 
         Token implementation = new Token(trustedForwarder);
@@ -84,16 +77,6 @@ contract CrowdinvestingTest is Test {
         );
 
         ERC2771helper = new ERC2771Helper();
-
-        buyer = vm.addr(buyerPrivateKey);
-
-        // set up currency
-        vm.prank(paymentTokenProvider);
-        paymentToken = new FakePaymentToken(paymentTokenAmount, paymentTokenDecimals); // 1000 tokens with 6 decimals
-        // transfer currency to buyer
-        vm.prank(paymentTokenProvider);
-        paymentToken.transfer(buyer, paymentTokenAmount);
-        assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
 
         tokenBuyAmount = 5 * 10 ** token.decimals();
         costInPaymentToken = (tokenBuyAmount * price) / 10 ** 18;
@@ -153,7 +136,12 @@ contract CrowdinvestingTest is Test {
         // todo: get nonce from forwarder
 
         // build request
-        bytes memory payload = abi.encodeWithSelector(crowdinvesting.buy.selector, tokenBuyAmount, buyer);
+        bytes memory payload = abi.encodeWithSelector(
+            crowdinvesting.buy.selector,
+            tokenBuyAmount,
+            type(uint256).max,
+            buyer
+        );
 
         IForwarder.ForwardRequest memory request = IForwarder.ForwardRequest({
             from: buyer,
@@ -184,20 +172,20 @@ contract CrowdinvestingTest is Test {
         require(digest.recover(signature) == request.from, "FWD: signature mismatch");
 
         // // encode buy call and sign it https://book.getfoundry.sh/cheatcodes/sign
-        // bytes memory buyCallData = abi.encodeWithSignature("buy(uint256)", tokenBuyAmount);
+        // bytes memory buyCallData = abi.encodeWithSignature("buy(uint256)", type(uint256).max, tokenBuyAmount);
 
         /*
             execute request and check results
         */
         vm.prank(buyer);
-        assertEq(token.balanceOf(buyer), 0);
-        assertEq(paymentToken.balanceOf(receiver), 0);
-        assertEq(paymentToken.balanceOf(address(crowdinvesting)), 0);
-        assertEq(token.balanceOf(address(crowdinvesting)), 0);
-        assertEq(token.balanceOf(receiver), 0);
-        assertEq(token.balanceOf(address(forwarder)), 0);
-        assertTrue(crowdinvesting.tokensSold() == 0);
-        assertTrue(crowdinvesting.tokensBought(buyer) == 0);
+        assertEq(token.balanceOf(buyer), 0, "buyer has tokens before");
+        assertEq(paymentToken.balanceOf(receiver), 0, "receiver has payment tokens before");
+        assertEq(paymentToken.balanceOf(address(crowdinvesting)), 0, "crowdinvesting has payment tokens before");
+        assertEq(token.balanceOf(address(crowdinvesting)), 0, "crowdinvesting has tokens before");
+        assertEq(token.balanceOf(receiver), 0, "receiver has tokens before");
+        assertEq(token.balanceOf(address(forwarder)), 0, "forwarder has tokens before");
+        assertTrue(crowdinvesting.tokensSold() == 0, "tokens sold before");
+        assertTrue(crowdinvesting.tokensBought(buyer) == 0, "tokens bought before");
         //assertTrue(vm.getNonce(buyer) == 0); // it seems forge does not increase nonces with prank
 
         console.log("Token balance of buyer before: ", token.balanceOf(buyer));
@@ -211,24 +199,32 @@ contract CrowdinvestingTest is Test {
         console.log("Gas used: ", gasBefore - gasleft());
 
         // investor receives as many tokens as they paid for
-        assertTrue(token.balanceOf(buyer) == tokenBuyAmount);
+        assertTrue(token.balanceOf(buyer) == tokenBuyAmount, "buyer has tokens after");
         // but fee collector receives additional tokens
-        assertTrue(token.balanceOf(feeSettings.feeCollector()) == tokenBuyAmount / tokenFeeDenominator);
+        assertTrue(
+            token.balanceOf(feeSettings.feeCollector()) == tokenBuyAmount / tokenFeeNumerator,
+            "fee collector has tokens after"
+        );
 
         // receiver receives payment tokens after fee has been deducted
         assertEq(
             paymentToken.balanceOf(receiver),
-            costInPaymentToken - costInPaymentToken / paymentTokenFeeDenominator
+            costInPaymentToken - (costInPaymentToken * paymentTokenFeeNumerator) / feeSettings.FEE_DENOMINATOR(),
+            "receiver has payment tokens after"
         );
         // fee collector receives fee in payment tokens
-        assertEq(paymentToken.balanceOf(feeSettings.feeCollector()), costInPaymentToken / paymentTokenFeeDenominator);
+        assertEq(
+            paymentToken.balanceOf(feeSettings.feeCollector()),
+            (costInPaymentToken * paymentTokenFeeNumerator) / feeSettings.FEE_DENOMINATOR(),
+            "fee collector has payment tokens after"
+        );
 
-        assertEq(paymentToken.balanceOf(address(crowdinvesting)), 0);
-        assertEq(token.balanceOf(address(crowdinvesting)), 0);
-        assertEq(token.balanceOf(receiver), 0);
-        assertEq(token.balanceOf(address(forwarder)), 0);
-        assertTrue(crowdinvesting.tokensSold() == tokenBuyAmount);
-        assertTrue(crowdinvesting.tokensBought(buyer) == tokenBuyAmount);
+        assertEq(paymentToken.balanceOf(address(crowdinvesting)), 0, "crowdinvesting has payment tokens after");
+        assertEq(token.balanceOf(address(crowdinvesting)), 0, "crowdinvesting has tokens after");
+        assertEq(token.balanceOf(receiver), 0, "receiver has tokens after");
+        assertEq(token.balanceOf(address(forwarder)), 0, "forwarder has tokens after");
+        assertTrue(crowdinvesting.tokensSold() == tokenBuyAmount, "tokens sold after");
+        assertTrue(crowdinvesting.tokensBought(buyer) == tokenBuyAmount, "tokens bought after");
         //assertTrue(vm.getNonce(buyer) == 0);
 
         console.log("paymentToken balance of receiver after: ", paymentToken.balanceOf(receiver));
