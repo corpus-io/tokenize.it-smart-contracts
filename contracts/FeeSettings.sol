@@ -29,15 +29,6 @@ contract FeeSettings is
     /// Denominator to calculate all fees
     uint32 public constant FEE_DENOMINATOR = 10000;
 
-    /// Numerator to calculate fees paid in Token.sol.
-    uint32 public defaultTokenFeeNumerator;
-
-    /// Numerator to calculate fees paid in Crowdinvesting.sol.
-    uint32 public defaultCrowdinvestingFeeNumerator;
-
-    /// Numerator to calculate fees paid in PrivateOffer.sol.
-    uint32 public defaultPrivateOfferFeeNumerator;
-
     /**
      * special fees for specific customers. If a customer has a custom fee, the custom
      * fee is used instead of the default fee.
@@ -46,27 +37,20 @@ contract FeeSettings is
      * The `time` field is the time up to which the custom fee is valid.
      * Afterwards, standard fees are used.
      */
-    mapping(address => Fees) public customFees;
-
-    /// address the token fees have to be paid to
-    address private defaultTokenFeeCollector;
-    /// address the crowdinvesting fees have to be paid to
-    address private defaultCrowdinvestingFeeCollector;
-    /// address the private offer fees have to be paid to
-    address private defaultPrivateOfferFeeCollector;
+    mapping(address => Fees) public fees;
 
     /**
-     * if `customTokenFeeCollector[tokenAddress]` is 0x0, the fees must be paid to `defaultTokenFeeCollector`
+     * if `customTokenFeeCollector[tokenAddress]` is 0x0, the fees must be paid to `customTokenFeeCollector[address(0)]`
      * otherwise, the fees must be paid to `customTokenFeeCollector[tokenAddress]`
      */
     mapping(address => address) public customTokenFeeCollector;
     /**
-     * if `customCrowdinvestingFeeCollector[tokenAddress]` is 0x0, the fees must be paid to `defaultCrowdinvestingFeeCollector`
+     * if `customCrowdinvestingFeeCollector[tokenAddress]` is 0x0, the fees must be paid to `customCrowdinvestingFeeCollector[address(0)]`
      * otherwise, the fees must be paid to `customCrowdinvestingFeeCollector[tokenAddress]`
      */
     mapping(address => address) public customCrowdinvestingFeeCollector;
     /**
-     * if `customPrivateOfferFeeCollector[tokenAddress]` is 0x0, the fees must be paid to `defaultPrivateOfferFeeCollector`
+     * if `customPrivateOfferFeeCollector[tokenAddress]` is 0x0, the fees must be paid to `customPrivateOfferFeeCollector[address(0)]`
      * otherwise, the fees must be paid to `customPrivateOfferFeeCollector[tokenAddress]`
      */
     mapping(address => address) public customPrivateOfferFeeCollector;
@@ -74,7 +58,7 @@ contract FeeSettings is
     /// new fee settings that can be activated (after a delay in case of fee increase)
     Fees public proposedDefaultFees;
 
-    /// stores who is a manager. Managers can change customFees, but nothing else.
+    /// stores who is a manager. Managers can change fees and fee collectors for specific tokens
     mapping(address => bool) public managers;
 
     /**
@@ -162,18 +146,16 @@ contract FeeSettings is
         _transferOwnership(_owner);
 
         checkFeeLimits(_fees);
-        defaultTokenFeeNumerator = _fees.tokenFeeNumerator;
-        defaultCrowdinvestingFeeNumerator = _fees.crowdinvestingFeeNumerator;
-        defaultPrivateOfferFeeNumerator = _fees.privateOfferFeeNumerator;
+        fees[address(0)] = _fees;
 
         require(_tokenFeeCollector != address(0), "Fee collector cannot be 0x0");
-        defaultTokenFeeCollector = _tokenFeeCollector;
+        customTokenFeeCollector[address(0)] = _tokenFeeCollector;
 
         require(_crowdinvestingFeeCollector != address(0), "Fee collector cannot be 0x0");
-        defaultCrowdinvestingFeeCollector = _crowdinvestingFeeCollector;
+        customCrowdinvestingFeeCollector[address(0)] = _crowdinvestingFeeCollector;
 
         require(_privateOfferFeeCollector != address(0), "Fee collector cannot be 0x0");
-        defaultPrivateOfferFeeCollector = _privateOfferFeeCollector;
+        customPrivateOfferFeeCollector[address(0)] = _privateOfferFeeCollector;
     }
 
     /**
@@ -202,9 +184,9 @@ contract FeeSettings is
 
         // if at least one fee increases, enforce minimum delay
         if (
-            _fees.tokenFeeNumerator > defaultTokenFeeNumerator ||
-            _fees.crowdinvestingFeeNumerator > defaultCrowdinvestingFeeNumerator ||
-            _fees.privateOfferFeeNumerator > defaultPrivateOfferFeeNumerator
+            _fees.tokenFeeNumerator > fees[address(0)].tokenFeeNumerator ||
+            _fees.crowdinvestingFeeNumerator > fees[address(0)].crowdinvestingFeeNumerator ||
+            _fees.privateOfferFeeNumerator > fees[address(0)].privateOfferFeeNumerator
         ) {
             require(
                 _fees.validityDate > block.timestamp + 12 weeks,
@@ -223,10 +205,12 @@ contract FeeSettings is
             block.timestamp >= proposedDefaultFees.validityDate,
             "Fee change must be executed after the change time"
         );
-        defaultTokenFeeNumerator = proposedDefaultFees.tokenFeeNumerator;
-        defaultCrowdinvestingFeeNumerator = proposedDefaultFees.crowdinvestingFeeNumerator;
-        defaultPrivateOfferFeeNumerator = proposedDefaultFees.privateOfferFeeNumerator;
-        emit SetFee(defaultTokenFeeNumerator, defaultCrowdinvestingFeeNumerator, defaultPrivateOfferFeeNumerator);
+        fees[address(0)] = proposedDefaultFees;
+        emit SetFee(
+            proposedDefaultFees.tokenFeeNumerator,
+            proposedDefaultFees.crowdinvestingFeeNumerator,
+            proposedDefaultFees.privateOfferFeeNumerator
+        );
         delete proposedDefaultFees;
     }
 
@@ -240,11 +224,11 @@ contract FeeSettings is
         address _personalOfferFeeCollector
     ) external onlyOwner {
         require(_tokenFeeCollector != address(0), "Fee collector cannot be 0x0");
-        defaultTokenFeeCollector = _tokenFeeCollector;
+        customTokenFeeCollector[address(0)] = _tokenFeeCollector;
         require(_crowdinvestingFeeCollector != address(0), "Fee collector cannot be 0x0");
-        defaultCrowdinvestingFeeCollector = _crowdinvestingFeeCollector;
+        customCrowdinvestingFeeCollector[address(0)] = _crowdinvestingFeeCollector;
         require(_personalOfferFeeCollector != address(0), "Fee collector cannot be 0x0");
-        defaultPrivateOfferFeeCollector = _personalOfferFeeCollector;
+        customPrivateOfferFeeCollector[address(0)] = _personalOfferFeeCollector;
         emit FeeCollectorsChanged(_tokenFeeCollector, _crowdinvestingFeeCollector, _personalOfferFeeCollector);
     }
 
@@ -289,7 +273,7 @@ contract FeeSettings is
         checkFeeLimits(_fees);
         require(_token != address(0), "Token cannot be 0x0");
         require(_fees.validityDate > block.timestamp, "Custom fee expiry time must be in the future");
-        customFees[_token] = _fees;
+        fees[_token] = _fees;
         emit SetCustomFee(
             _token,
             _fees.tokenFeeNumerator,
@@ -304,7 +288,7 @@ contract FeeSettings is
      * @param _token The token for which the custom fee should be removed
      */
     function removeCustomFee(address _token) external onlyManager {
-        delete customFees[_token];
+        delete fees[_token];
         emit RemoveCustomFee(_token);
     }
 
@@ -380,7 +364,7 @@ contract FeeSettings is
         if (customTokenFeeCollector[_token] != address(0)) {
             return customTokenFeeCollector[_token];
         }
-        return defaultTokenFeeCollector;
+        return customTokenFeeCollector[address(0)];
     }
 
     /**
@@ -392,7 +376,7 @@ contract FeeSettings is
         if (customCrowdinvestingFeeCollector[_token] != address(0)) {
             return customCrowdinvestingFeeCollector[_token];
         }
-        return defaultCrowdinvestingFeeCollector;
+        return customCrowdinvestingFeeCollector[address(0)];
     }
 
     /**
@@ -404,7 +388,7 @@ contract FeeSettings is
         if (customPrivateOfferFeeCollector[_token] != address(0)) {
             return customPrivateOfferFeeCollector[_token];
         }
-        return defaultPrivateOfferFeeCollector;
+        return customPrivateOfferFeeCollector[address(0)];
     }
 
     /**
@@ -417,7 +401,7 @@ contract FeeSettings is
     }
 
     /**
-     * Calculates the fee for a given amount of tokens
+     * Calculates the fee for a given amount of tokens.
      * @param amount how many erc20 tokens are transferred
      * @param defaultNumerator default fee numerator
      * @param customNumerator custom fee numerator
@@ -449,9 +433,9 @@ contract FeeSettings is
         return
             _customFee(
                 _tokenAmount,
-                defaultTokenFeeNumerator,
-                customFees[_token].tokenFeeNumerator,
-                customFees[_token].validityDate
+                fees[address(0)].tokenFeeNumerator,
+                fees[_token].tokenFeeNumerator,
+                fees[_token].validityDate
             );
     }
 
@@ -468,9 +452,9 @@ contract FeeSettings is
         return
             _customFee(
                 _currencyAmount,
-                defaultCrowdinvestingFeeNumerator,
-                customFees[_token].crowdinvestingFeeNumerator,
-                customFees[_token].validityDate
+                fees[address(0)].crowdinvestingFeeNumerator,
+                fees[_token].crowdinvestingFeeNumerator,
+                fees[_token].validityDate
             );
     }
 
@@ -486,9 +470,9 @@ contract FeeSettings is
         return
             _customFee(
                 _currencyAmount,
-                defaultPrivateOfferFeeNumerator,
-                customFees[_token].privateOfferFeeNumerator,
-                customFees[_token].validityDate
+                fees[address(0)].privateOfferFeeNumerator,
+                fees[_token].privateOfferFeeNumerator,
+                fees[_token].validityDate
             );
     }
 
@@ -526,7 +510,7 @@ contract FeeSettings is
      * @return The token fee collector
      */
     function feeCollector() external view override(IFeeSettingsV1) returns (address) {
-        return defaultTokenFeeCollector;
+        return customTokenFeeCollector[address(0)];
     }
 
     /**
