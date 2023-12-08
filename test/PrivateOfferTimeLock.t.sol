@@ -35,11 +35,15 @@ contract PrivateOfferTimeLockTest is Test {
         Vesting vestingImplementation = new Vesting(trustedForwarder);
         VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
         privateOfferFactory = new PrivateOfferFactory(vestingCloneFactory);
+
+        vm.prank(paymentTokenProvider);
+        currency = new FakePaymentToken(0, 18);
+
         list = createAllowList(trustedForwarder, address(this));
-
         list.set(tokenReceiver, requirements);
+        list.set(address(currency), TRUSTED_CURRENCY);
 
-        Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
+        Fees memory fees = Fees(100, 100, 100, 0);
         feeSettings = createFeeSettings(trustedForwarder, address(this), fees, admin, admin, admin);
 
         Token implementation = new Token(trustedForwarder);
@@ -56,9 +60,6 @@ contract PrivateOfferTimeLockTest is Test {
                 "TOK"
             )
         );
-
-        vm.prank(paymentTokenProvider);
-        currency = new FakePaymentToken(0, 18);
     }
 
     /**

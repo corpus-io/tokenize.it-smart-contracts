@@ -31,11 +31,11 @@ contract FeeSettingERC2771Test is Test {
     address public constant platformColdWallet = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
     address public constant feeCollector = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
 
-    uint32 public constant feeSettingsFeeDenominator = 100;
-    uint32 public constant crowdinvestingFeeDenominator = 50;
-    uint32 public constant privateOfferFeeDenominator = 70;
+    uint32 public constant feeSettingsFeeNumerator = 100;
+    uint32 public constant crowdinvestingFeeNumerator = 50;
+    uint32 public constant privateOfferFeeNumerator = 70;
 
-    Fees fees = Fees(1, feeSettingsFeeDenominator, 1, crowdinvestingFeeDenominator, 1, privateOfferFeeDenominator, 0);
+    Fees fees = Fees(feeSettingsFeeNumerator, crowdinvestingFeeNumerator, privateOfferFeeNumerator, 0);
 
     bytes32 domainSeparator;
     bytes32 requestType;
@@ -76,31 +76,30 @@ contract FeeSettingERC2771Test is Test {
         requestType = ERC2771helper.registerRequestType(forwarder, "mint", "address _to,uint256 _amount");
     }
 
-    function testSetCustomFeeWithLocalForwarder(uint32 _customFeeDenominator, address _token) public {
-        setCustomFeeWithERC2771(new Forwarder(), _customFeeDenominator, _token);
+    function testSetCustomFeeWithLocalForwarder(uint32 _customTokenFeeNumerator, address _token) public {
+        setCustomFeeWithERC2771(new Forwarder(), _customTokenFeeNumerator, _token);
     }
 
-    // function testSetCustomFeeWithMainnetGSNForwarder(uint32 _customFeeDenominator, address _token) public {
+    // function testSetCustomFeeWithMainnetGSNForwarder(uint32 _customTokenFeeNumerator, address _token) public {
     //     // uses deployed forwarder on mainnet with fork. https://docs-v2.opengsn.org/networks/ethereum/mainnet.html
     //     setCustomFeeWithERC2771(
     //         Forwarder(payable(0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA)),
-    //         _customFeeDenominator,
+    //         _customTokenFeeNumerator,
     //         _token
     //     );
     // }
 
-    function setCustomFeeWithERC2771(Forwarder _forwarder, uint32 _customFeeDenominator, address _token) public {
-        vm.assume(_customFeeDenominator > 20);
+    function setCustomFeeWithERC2771(Forwarder _forwarder, uint32 _customTokenFeeNumerator, address _token) public {
+        console.log("1");
+        vm.assume(_customTokenFeeNumerator <= 500);
         vm.assume(_token != address(0));
+
         setUpFeeSettingsWithForwarder(_forwarder);
 
         Fees memory customFees = Fees(
-            1,
-            _customFeeDenominator,
-            1,
-            crowdinvestingFeeDenominator,
-            1,
-            privateOfferFeeDenominator,
+            _customTokenFeeNumerator,
+            crowdinvestingFeeNumerator,
+            privateOfferFeeNumerator,
             100 * 365 days
         );
 
@@ -138,10 +137,10 @@ contract FeeSettingERC2771Test is Test {
         require(digest.recover(signature) == request.from, "FWD: signature mismatch");
 
         // 4. check state before execution
-        (, uint32 feeDenominator, , , , , uint64 endTime) = feeSettings.customFees(_token);
-        console.log("feeDenominator", feeDenominator);
+        (uint32 feeNumerator, , , uint64 endTime) = feeSettings.fees(_token);
+        console.log("feeNumerator", feeNumerator);
         console.log("endTime", endTime);
-        assertTrue(feeDenominator == 0, "Custom fee not 0 before");
+        assertTrue(feeNumerator == 0, "Custom fee not 0 before");
         assertTrue(endTime == 0, "Custom fee not 0 before");
 
         // check platformHotWallet is a manager
@@ -159,10 +158,10 @@ contract FeeSettingERC2771Test is Test {
         _forwarder.execute(request, domainSeparator, requestType, suffixData, signature);
 
         // 6. check state after execution
-        (, feeDenominator, , , , , endTime) = feeSettings.customFees(_token);
-        console.log("feeDenominator", feeDenominator);
+        (feeNumerator, , , endTime) = feeSettings.fees(_token);
+        console.log("feeNumerator", feeNumerator);
         console.log("endTime", endTime);
-        assertTrue(feeDenominator == _customFeeDenominator, "Custom fee not set");
+        assertTrue(feeNumerator == _customTokenFeeNumerator, "Custom fee not set");
         assertTrue(endTime > 0, "Custom fee not set");
     }
 }

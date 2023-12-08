@@ -45,7 +45,7 @@ contract DeployPlatform is Script {
         console.log("FeeSettingsCloneFactory deployed at: ", address(feeSettingsCloneFactory));
 
         console.log("Deploying FeeSettings contract...");
-        Fees memory fees = Fees(1, 100, 1, 100, 1, 100, 0);
+        Fees memory fees = Fees(100, 100, 100, 0);
         FeeSettings feeSettings = FeeSettings(
             feeSettingsCloneFactory.createFeeSettingsClone(
                 bytes32(0),

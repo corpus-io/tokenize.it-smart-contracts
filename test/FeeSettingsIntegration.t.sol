@@ -39,8 +39,8 @@ contract FeeSettingsIntegrationTest is Test {
     function setUp() public {
         FeeSettings feeSettingsLogic = new FeeSettings(trustedForwarder);
         FeeSettingsCloneFactory feeSettingsCloneFactory = new FeeSettingsCloneFactory(address(feeSettingsLogic));
-        customFees = Fees(2, 1000, 3, 1000, 5, 1000, 101 * 365 days);
-        Fees memory fees = Fees(1, 101, 2, 102, 3, 103, 0);
+        customFees = Fees(10, 20, 30, 101 * 365 days);
+        Fees memory fees = Fees(101, 102, 103, 0);
         vm.prank(platformAdmin);
         feeSettings = FeeSettings(
             feeSettingsCloneFactory.createFeeSettingsClone(
@@ -54,7 +54,14 @@ contract FeeSettingsIntegrationTest is Test {
             )
         );
 
+        vm.startPrank(paymentTokenProvider);
+        currency = new FakePaymentToken(currencyAmount, 18);
+        currency.transfer(investor, currencyAmount);
+        vm.stopPrank();
+
         AllowList allowList = createAllowList(trustedForwarder, owner);
+        vm.prank(owner);
+        allowList.set(address(currency), TRUSTED_CURRENCY);
 
         Token tokenLogic = new Token(trustedForwarder);
         TokenProxyFactory tokenProxyFactory = new TokenProxyFactory(address(tokenLogic));
@@ -76,16 +83,12 @@ contract FeeSettingsIntegrationTest is Test {
 
         // using a fake vesting clone factory here because we don't need this functionality for this test
         privateOfferFactory = new PrivateOfferFactory(VestingCloneFactory(address(294)));
-
-        vm.startPrank(paymentTokenProvider);
-        currency = new FakePaymentToken(currencyAmount, 18);
-        currency.transfer(investor, currencyAmount);
-        vm.stopPrank();
     }
 
     function testMintUsesCustomFeeAndCollector(address _customFeeCollector) public {
         vm.assume(_customFeeCollector != address(0));
         vm.assume(_customFeeCollector != platformAdmin);
+        vm.assume(_customFeeCollector != investor);
 
         vm.warp(100 * 365 days);
 
@@ -102,7 +105,7 @@ contract FeeSettingsIntegrationTest is Test {
         assertEq(token.balanceOf(investor), tokenAmount, "token.balanceOf(investor) != 100e18 after");
         assertEq(
             token.balanceOf(_customFeeCollector),
-            (tokenAmount * 2) / 1000,
+            (tokenAmount * 10) / 10000,
             "token.balanceOf(customFeeCollector) != 3e18 after"
         );
     }
@@ -165,7 +168,7 @@ contract FeeSettingsIntegrationTest is Test {
         // hint: token fees are paid to platform admin because we do not set a custom token fee receiver
         assertEq(
             token.balanceOf(platformAdmin),
-            (tokenAmount * 2) / 1000,
+            (tokenAmount * 10) / 10000,
             "token.balanceOf(customFeeCollector) != 2e18 after"
         );
 
@@ -174,7 +177,7 @@ contract FeeSettingsIntegrationTest is Test {
         console.log("currency.balanceOf(_customFeeCollector)", currency.balanceOf(_customFeeCollector));
         assertEq(
             currency.balanceOf(_customFeeCollector),
-            (currencyAmount * 5) / 1000,
+            (currencyAmount * 30) / 10000,
             "currency.balanceOf(customFeeCollector) wrong after"
         );
     }
@@ -191,13 +194,14 @@ contract FeeSettingsIntegrationTest is Test {
         vm.stopPrank();
 
         assertEq(token.balanceOf(investor), 0, "token.balanceOf(investor) != 0 before");
-        assertEq(currency.balanceOf(_customFeeCollector), 0, "token.balanceOf(customFeeCollector) != 0 before");
+        assertEq(currency.balanceOf(_customFeeCollector), 0, "currency.balanceOf(customFeeCollector) != 0 before");
+        assertEq(token.balanceOf(platformAdmin), 0, "token.balanceOf(platformAdmin) != 0 before");
 
         // set up crowdinvesting
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             companyAdmin,
             companyAdmin,
-            0,
+            1,
             type(uint256).max,
             price,
             price,
@@ -222,7 +226,7 @@ contract FeeSettingsIntegrationTest is Test {
 
         // buy
         vm.prank(investor);
-        crowdinvesting.buy(tokenAmount, investor);
+        crowdinvesting.buy(tokenAmount, type(uint256).max, investor);
 
         // check balances
         console.log("token.balanceOf(investor)", token.balanceOf(investor));
@@ -231,7 +235,7 @@ contract FeeSettingsIntegrationTest is Test {
         // hint: token fees are paid to platform admin because we do not set a custom token fee receiver
         assertEq(
             token.balanceOf(platformAdmin),
-            (tokenAmount * 2) / 1000,
+            (tokenAmount) / 1000,
             "token.balanceOf(customFeeCollector) != 2e18 after"
         );
 
@@ -240,7 +244,7 @@ contract FeeSettingsIntegrationTest is Test {
         console.log("currency.balanceOf(_customFeeCollector)", currency.balanceOf(_customFeeCollector));
         assertEq(
             currency.balanceOf(_customFeeCollector),
-            (currencyAmount * 3) / 1000,
+            (currencyAmount * 2) / 1000,
             "currency.balanceOf(customFeeCollector) wrong after"
         );
     }

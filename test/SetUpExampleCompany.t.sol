@@ -28,17 +28,6 @@ contract CompanySetUpTest is Test {
     FakePaymentToken paymentToken;
     ERC2771Helper ERC2771helper;
 
-    // copied from openGSN IForwarder
-    struct ForwardRequest {
-        address from;
-        address to;
-        uint256 value;
-        uint256 gas;
-        uint256 nonce;
-        bytes data;
-        uint256 validUntil;
-    }
-
     // note: this struct is only used to reduce the number of local variables in the test function,
     // because solidity contracts can only have 16 local variables :(
     struct EIP2612Data {
@@ -79,8 +68,8 @@ contract CompanySetUpTest is Test {
     uint256 tokenBuyAmount;
     uint256 costInPaymentToken;
 
-    uint32 tokenFeeDenominator = 100;
-    uint32 paymentTokenFeeDenominator = 50;
+    uint32 tokenFeeNumerator = 100;
+    uint32 paymentTokenFeeNumerator = 200;
 
     string name = "ProductiveExampleCompany";
     string symbol = "PEC";
@@ -100,15 +89,7 @@ contract CompanySetUpTest is Test {
         companyAdmin = vm.addr(companyAdminPrivateKey);
 
         // set up FeeSettings
-        Fees memory fees = Fees(
-            1,
-            tokenFeeDenominator,
-            1,
-            paymentTokenFeeDenominator,
-            1,
-            paymentTokenFeeDenominator,
-            0
-        );
+        Fees memory fees = Fees(tokenFeeNumerator, paymentTokenFeeNumerator, paymentTokenFeeNumerator, 0);
         feeSettings = createFeeSettings(
             address(8), // fake forwarder
             platformAdmin,
@@ -118,8 +99,17 @@ contract CompanySetUpTest is Test {
             platformFeeCollector
         );
 
+        // set up currency. In real life (irl) this would be a real currency, but for testing purposes we use a fake one.
+        vm.prank(paymentTokenProvider);
+        paymentToken = new FakePaymentToken(paymentTokenAmount, paymentTokenDecimals); // 1000 tokens with 6 decimals
+        vm.prank(paymentTokenProvider);
+        paymentToken.transfer(investor, paymentTokenAmount); // transfer currency to investor so they can buy tokens later
+        assertTrue(paymentToken.balanceOf(investor) == paymentTokenAmount);
+
         // set up AllowList
         list = createAllowList(address(8), platformAdmin);
+        vm.prank(platformAdmin);
+        list.set(address(paymentToken), TRUSTED_CURRENCY);
 
         // investor registers with the platform
         // after kyc, the platform adds the investor to the allowlist with all the properties they were able to proof
@@ -127,13 +117,6 @@ contract CompanySetUpTest is Test {
         list.set(investorColdWallet, requirements); // it is possible to set more bits to true than the requirements, but not less, for the investor to be allowed to invest
 
         // setting up AllowList and FeeSettings is one-time step. These contracts will be used by all companies.
-
-        // set up currency. In real life (irl) this would be a real currency, but for testing purposes we use a fake one.
-        vm.prank(paymentTokenProvider);
-        paymentToken = new FakePaymentToken(paymentTokenAmount, paymentTokenDecimals); // 1000 tokens with 6 decimals
-        vm.prank(paymentTokenProvider);
-        paymentToken.transfer(investor, paymentTokenAmount); // transfer currency to investor so they can buy tokens later
-        assertTrue(paymentToken.balanceOf(investor) == paymentTokenAmount);
     }
 
     function deployToken(Forwarder forwarder) public {
@@ -326,7 +309,12 @@ contract CompanySetUpTest is Test {
         */
 
         // build request
-        payload = abi.encodeWithSelector(crowdinvesting.buy.selector, tokenBuyAmount, investorColdWallet);
+        payload = abi.encodeWithSelector(
+            crowdinvesting.buy.selector,
+            tokenBuyAmount,
+            type(uint256).max,
+            investorColdWallet
+        );
 
         request = IForwarder.ForwardRequest({
             from: investor,

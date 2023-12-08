@@ -47,7 +47,7 @@ contract VestingDemoTest is Test {
         FeeSettings feeSettings = createFeeSettings(
             trustedForwarder,
             platformAdmin,
-            Fees(1, 100, 1, 200, 1, 200, 0),
+            Fees(100, 500, 200, 0),
             platformAdmin,
             platformAdmin,
             platformAdmin

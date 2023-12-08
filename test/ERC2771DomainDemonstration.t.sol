@@ -41,9 +41,9 @@ contract TokenERC2771Test is Test {
     address public constant platformAdmin = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
     address public constant feeCollector = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
 
-    uint32 public constant tokenFeeDenominator = 100;
-    uint32 public constant crowdinvestingFeeDenominator = 50;
-    uint32 public constant privateOfferFeeDenominator = 70;
+    uint32 public constant tokenFeeNumerator = 100;
+    uint32 public constant crowdinvestingFeeNumerator = 200;
+    uint32 public constant privateOfferFeeNumerator = 150;
 
     bytes32 domainSeparator;
     bytes32 requestType;
@@ -57,15 +57,7 @@ contract TokenERC2771Test is Test {
         allowList = createAllowList(trustedForwarder, platformAdmin);
 
         // deploy fee settings
-        Fees memory fees = Fees(
-            1,
-            tokenFeeDenominator,
-            1,
-            crowdinvestingFeeDenominator,
-            1,
-            privateOfferFeeDenominator,
-            0
-        );
+        Fees memory fees = Fees(tokenFeeNumerator, crowdinvestingFeeNumerator, privateOfferFeeNumerator, 0);
         vm.prank(platformAdmin);
         feeSettings = createFeeSettings(
             trustedForwarder,
@@ -109,6 +101,10 @@ contract TokenERC2771Test is Test {
         CrowdinvestingCloneFactory fundraisingFactory = new CrowdinvestingCloneFactory(
             address(new Crowdinvesting(address(forwarder)))
         );
+
+        // add payment token to allow list
+        vm.prank(platformAdmin);
+        allowList.set(address(paymentToken), TRUSTED_CURRENCY);
 
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments({
             owner: companyAdmin,
@@ -267,7 +263,7 @@ contract TokenERC2771Test is Test {
         require(digest.recover(signature) == request.from, "FWD: signature mismatch");
 
         // // encode buy call and sign it https://book.getfoundry.sh/cheatcodes/sign
-        // bytes memory buyCallData = abi.encodeWithSignature("buy(uint256)", tokenBuyAmount);
+        // bytes memory buyCallData = abi.encodeWithSignature("buy(uint256)", type(uint256).max, tokenBuyAmount);
 
         /*
             execute request and check results

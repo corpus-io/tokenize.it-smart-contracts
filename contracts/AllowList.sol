@@ -5,6 +5,20 @@ import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol";
 
 /**
+ * @dev the last bit is defined as special bit for the "trusted currency" attribute.
+ * This specific bit was chosen for this purpose because the allowList operators are
+ * unlikely to use it by chance in day to day operations. Contracts should check if this
+ * bit is set and all others are unset to ensure that the address is a trusted currency
+ * (hint: == 2**255).
+ * All other bits being zero means that the address has not proven any other relevant attributes
+ * to the allowList operator other than being a trusted currency, and thus the address is not
+ * able to receive tokens that require KYC or other attributes. This is intended behavior,
+ * as currency contracts receiving tokens is usually not intended.
+ * This constant is defined here so other contracts can easily access it.
+ */
+uint256 constant TRUSTED_CURRENCY = 2 ** 255;
+
+/**
  * @title AllowList
  * @author malteish, cjentzsch
  * @notice  The AllowList contract is used to manage a list of addresses and attest each address certain attributes.
@@ -64,13 +78,59 @@ contract AllowList is Ownable2StepUpgradeable, ERC2771ContextUpgradeable {
     }
 
     /**
+     * Initializes a new AllowList clone.
+     * @param _owner the owner of the contract
+     */
+    function initialize(
+        address _owner,
+        address[] calldata _addresses,
+        uint256[] calldata _attributes
+    ) public initializer {
+        require(_owner != address(0), "owner can not be zero address");
+        _transferOwnership(_owner);
+        _set(_addresses, _attributes);
+    }
+
+    /**
      * @notice sets (or updates) the attributes for an address
      * @param _addr address to be set
      * @param _attributes new attributes
      */
     function set(address _addr, uint256 _attributes) external onlyOwner {
+        _set(_addr, _attributes);
+    }
+
+    /**
+     * @notice sets (or updates) the attributes for an address
+     * @param _addr address to be set
+     * @param _attributes new attributes
+     */
+    function _set(address _addr, uint256 _attributes) internal {
         map[_addr] = _attributes;
         emit Set(_addr, _attributes);
+    }
+
+    /**
+     * Sets (or updates) the attributes for multiple addresses.
+     * @dev both arrays need to be of equal length
+     * @param _addr array of addresses to be added to allowList
+     * @param _attributes array of attributes to be assigned to addresses
+     */
+    function set(address[] calldata _addr, uint256[] calldata _attributes) external onlyOwner {
+        _set(_addr, _attributes);
+    }
+
+    /**
+     * Sets (or updates) the attributes for multiple addresses.
+     * @dev both arrays need to be of equal length
+     * @param _addr array of addresses to be added to allowList
+     * @param _attributes array of attributes to be assigned to addresses
+     */
+    function _set(address[] calldata _addr, uint256[] calldata _attributes) internal {
+        require(_addr.length == _attributes.length, "lengths do not match");
+        for (uint256 i = 0; i < _addr.length; i++) {
+            _set(_addr[i], _attributes[i]);
+        }
     }
 
     /**
@@ -78,9 +138,19 @@ contract AllowList is Ownable2StepUpgradeable, ERC2771ContextUpgradeable {
      * @dev this is a convenience function, it is equivalent to calling set(_addr, 0)
      * @param _addr address to be removed
      */
-    function remove(address _addr) external onlyOwner {
+    function remove(address _addr) public onlyOwner {
         delete map[_addr];
         emit Set(_addr, 0);
+    }
+
+    /**
+     * purges multiple addresses from the allowList
+     * @param _addr array of addresses to be removed from allowList
+     */
+    function remove(address[] calldata _addr) external onlyOwner {
+        for (uint256 i = 0; i < _addr.length; i++) {
+            remove(_addr[i]);
+        }
     }
 
     /**

@@ -27,7 +27,7 @@ contract tokenTest is Test {
 
     function setUp() public {
         allowList = createAllowList(trustedForwarder, feeSettingsAndAllowListOwner);
-        Fees memory fees = Fees(0, 1, 0, 1, 0, 1, 0);
+        Fees memory fees = Fees(0, 0, 0, 0);
         feeSettings = createFeeSettings(
             trustedForwarder,
             feeSettingsAndAllowListOwner,

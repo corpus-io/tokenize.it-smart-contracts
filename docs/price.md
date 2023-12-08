@@ -53,7 +53,7 @@ The error introduced by rounding is less than or equal to one currency bit. For 
   ```
   The unit is omitted, so the price will be 2\*10^8
 - investor wants to buy 150 tokens
-- they call Crowdinvesting.buy(150 \* 10\*\*18)
+- they call Crowdinvesting.buy(150 \* 10\*\*18, 150 \* 200 \* 10\*\*6, tokenReceiver)
 - so \_amount is 150 \* 10\*\*18
 - 150 \* 10^18 \* 2 \* 10^8 = 300 \* 10^26 = 3 \* 10^28
 - calculate amount due in USDC bits: 3 \* 10^28/10^18 = 3 \* 10^10

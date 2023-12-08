@@ -4,13 +4,15 @@
 
 Tokenize.it has already deployed these contracts:
 
-1. [allowList](../contracts/AllowList.sol)
-2. [feeSettings](../contracts/FeeSettings.sol)
+1. [AllowListFactory](../contracts/AllowListCloneFactory.sol)
+2. [FeeSettingsFactory](../contracts/FeeSettingsCloneFactory.sol)
 3. [TokenFactory](../contracts/TokenProxyFactory.sol)
 4. [PrivateOfferFactory](../contracts/PrivateOfferFactory.sol)
 5. [CrowdinvestingFactory](../contracts/CrowdinvestingCloneFactory.sol)
 6. [VestingFactory](../contracts/VestingCloneFactory.sol)
 7. [PriceLinearFactory](../contracts/PriceLinearCloneFactory.sol) or other dynamic pricing factories
+8. [allowList](../contracts/AllowList.sol)
+9. [feeSettings](../contracts/FeeSettings.sol)
 
 These will be used for the next steps. The factories will not be explained in detail here, but can be found in the [contracts](../contracts) folder. They provide functions to calculate the future address of a contract, and deploy it using [CREATE2](https://docs.openzeppelin.com/cli/2.8/deploying-with-create2).
 
@@ -127,7 +129,7 @@ factory.createCrowdinvestingClone(
 
 The contract needs to be given a minting allowance in the company token contract by calling `increaseMintingAllowance` from an address which has the role of the MintAllower. The allowance should be set to `_maxAmountOfTokenToBeSold` tokens.
 
-An investor can buy tokens by calling the `buy(uint _amount)` function.
+An investor can buy tokens by calling the `buy(uint256 _tokenAmount, uint256 _maxCurrencyAmount,address _tokenReceiver)` function.
 `_amount` ist the amount of tokens they are buying, in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate).
 
 The investor needs to give a sufficient allowance in the currency contract to the Crowdinvesting contract for the deal to be successful.

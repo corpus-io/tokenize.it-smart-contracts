@@ -58,10 +58,7 @@ interface IFeeSettingsV2 {
  */
 struct Fees {
     uint32 tokenFeeNumerator;
-    uint32 tokenFeeDenominator;
     uint32 crowdinvestingFeeNumerator;
-    uint32 crowdinvestingFeeDenominator;
     uint32 privateOfferFeeNumerator;
-    uint32 privateOfferFeeDenominator;
     uint64 validityDate;
 }
