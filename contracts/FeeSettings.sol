@@ -233,35 +233,16 @@ contract FeeSettings is
     }
 
     /**
-     * Compares two fractions and returns true if the first one is greater than the second one
-     * @param aNumerator numerator in fraction aNumerator/aDenominator
-     * @param aDenominator denominator in fraction aNumerator/aDenominator
-     * @param bNumerator numerator in fraction bNumerator/bDenominator
-     * @param bDenominator denominator in fraction bNumerator/bDenominator
-     */
-    function _isFractionAGreater(
-        uint32 aNumerator,
-        uint32 aDenominator,
-        uint32 bNumerator,
-        uint32 bDenominator
-    ) internal pure returns (bool) {
-        return uint256(aNumerator) * bDenominator > uint256(bNumerator) * aDenominator;
-    }
-
-    /**
      * @notice Checks if the given fee settings are valid
      * @param _fees The fees to check
      */
     function checkFeeLimits(Fees memory _fees) internal pure {
-        require(_fees.tokenFeeNumerator <= MAX_TOKEN_FEE_NUMERATOR, "Token fee must be equal or less 5%");
+        require(_fees.tokenFeeNumerator <= MAX_TOKEN_FEE_NUMERATOR, "Token fee must be <= 5%");
         require(
             _fees.crowdinvestingFeeNumerator <= MAX_CROWDINVESTING_FEE_NUMERATOR,
-            "Crowdinvesting fee must be equal or less 10%"
+            "Crowdinvesting fee must be <= 10%"
         );
-        require(
-            _fees.privateOfferFeeNumerator <= MAX_PRIVATE_OFFER_FEE_NUMERATOR,
-            "PrivateOffer fee must be equal or less 5%"
-        );
+        require(_fees.privateOfferFeeNumerator <= MAX_PRIVATE_OFFER_FEE_NUMERATOR, "PrivateOffer fee must be <= 5%");
     }
 
     /**
