@@ -7,6 +7,12 @@ import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol
 
 import "./interfaces/IFeeSettings.sol";
 
+enum FeeType {
+    Token,
+    Crowdinvesting,
+    PrivateOffer
+}
+
 /**
  * @title FeeSettings
  * @author malteish, cjentzsch
@@ -474,6 +480,44 @@ contract FeeSettings is
                 fees[_token].privateOfferFeeNumerator,
                 fees[_token].validityDate
             );
+    }
+
+    function fee(FeeType _feeType, uint256 _amount, address _token) external view returns (uint256) {
+        if (fees[_token].validityDate < uint64(block.timestamp)) {
+            if (_feeType == FeeType.Token) {
+                return _fee(_amount, fees[address(0)].tokenFeeNumerator);
+            } else if (_feeType == FeeType.Crowdinvesting) {
+                return _fee(_amount, fees[address(0)].crowdinvestingFeeNumerator);
+            } else if (_feeType == FeeType.PrivateOffer) {
+                return _fee(_amount, fees[address(0)].privateOfferFeeNumerator);
+            }
+        } else {
+            if (_feeType == FeeType.Token) {
+                return
+                    _customFee(
+                        _amount,
+                        fees[address(0)].tokenFeeNumerator,
+                        fees[_token].tokenFeeNumerator,
+                        fees[_token].validityDate
+                    );
+            } else if (_feeType == FeeType.Crowdinvesting) {
+                return
+                    _customFee(
+                        _amount,
+                        fees[address(0)].crowdinvestingFeeNumerator,
+                        fees[_token].crowdinvestingFeeNumerator,
+                        fees[_token].validityDate
+                    );
+            } else if (_feeType == FeeType.PrivateOffer) {
+                return
+                    _customFee(
+                        _amount,
+                        fees[address(0)].privateOfferFeeNumerator,
+                        fees[_token].privateOfferFeeNumerator,
+                        fees[_token].validityDate
+                    );
+            }
+        }
     }
 
     /**
