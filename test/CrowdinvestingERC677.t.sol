@@ -344,7 +344,7 @@ contract CrowdinvestingTest is Test {
 
         console.log("bytes lenght: ", data.length);
 
-        if (minTokenAmount < tokenBuyAmount) {
+        if (minTokenAmount <= tokenBuyAmount) {
             vm.startPrank(addressWithFunds);
             paymentToken.transferAndCall(address(crowdinvesting), currencyAmount, data);
             vm.stopPrank();
