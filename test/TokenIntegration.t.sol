@@ -161,12 +161,9 @@ contract tokenTest is Test {
             newCollector,
             newCollector
         );
-        (
-            uint32 _oldTokenFeeNumerator,
-            uint32 _oldCrowdinvestingFeeNumerator,
-            uint32 _oldPrivateOfferFeeNumerator,
-
-        ) = FeeSettings(address(token.feeSettings())).fees(address(0));
+        (uint32 _oldTokenFeeNumerator, uint32 _oldCrowdinvestingFeeNumerator, , ) = FeeSettings(
+            address(token.feeSettings())
+        ).fees(address(0));
 
         vm.prank(feeSettings.owner());
         token.suggestNewFeeSettings(newFeeSettings);
@@ -177,12 +174,9 @@ contract tokenTest is Test {
         vm.prank(admin);
         token.acceptNewFeeSettings(newFeeSettings);
 
-        (
-            uint32 _newTokenFeeNumerator,
-            uint32 _newCrowdinvestingFeeNumerator,
-            uint32 _newPrivateOfferFeeNumerator,
-
-        ) = FeeSettings(address(token.feeSettings())).fees(address(0));
+        (uint32 _newTokenFeeNumerator, uint32 _newCrowdinvestingFeeNumerator, , ) = FeeSettings(
+            address(token.feeSettings())
+        ).fees(address(0));
         assertTrue(FeeSettings(address(token.feeSettings())) == newFeeSettings, "fee settings not changed!");
         assertEq(FeeSettings(address(token.feeSettings())).feeCollector(), newCollector, "Wrong feeCollector");
         assertTrue(
