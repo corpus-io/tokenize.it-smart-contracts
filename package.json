@@ -1,6 +1,6 @@
 {
   "name": "@tokenize.it/contracts",
-  "version": "5.0.0-beta0",
+  "version": "5.0.0-beta2",
   "description": "Tokenize.it smart contracts for company tokenization, crowdinvesting, private offers and employee participation",
   "keywords": [
     "evm",
@@ -44,7 +44,8 @@
   "publishConfig": {
     "ignore": [
       "src/",
-      "test/"
+      "test/",
+      "**/*.t.sol*"
     ]
   },
   "devDependencies": {
@@ -81,8 +82,8 @@
   },
   "dependencies": {
     "@opengsn/contracts": "2.2.5",
-    "@openzeppelin/contracts": "4.9.3",
-    "@openzeppelin/contracts-upgradeable": "4.9.3"
+    "@openzeppelin/contracts": "4.9.5",
+    "@openzeppelin/contracts-upgradeable": "4.9.5"
   },
   "scripts": {
     "prepack": "yarn npmignore --auto && yarn test && yarn build ",
