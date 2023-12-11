@@ -332,6 +332,7 @@ contract tokenProxyFactoryTest is Test {
         address _relayer
     ) public {
         vm.assume(_relayer != address(0));
+        vm.assume(admin != trustedForwarder);
         vm.assume(_tokenSpender != address(0));
         vm.assume(_tokenSpender != feeSettingsAndAllowListOwner);
         vm.assume(_tokenSpender != trustedForwarder);
