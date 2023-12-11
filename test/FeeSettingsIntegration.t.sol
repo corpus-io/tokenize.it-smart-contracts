@@ -112,6 +112,7 @@ contract FeeSettingsIntegrationTest is Test {
 
     function testPrivateOfferUsesCustomFeeAndCollector(address _customFeeCollector) public {
         vm.assume(_customFeeCollector != address(0));
+        vm.assume(_customFeeCollector != investor);
         vm.assume(_customFeeCollector != platformAdmin);
 
         vm.warp(100 * 365 days);
