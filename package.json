@@ -87,10 +87,10 @@
   },
   "scripts": {
     "prepack": "yarn npmignore --auto && yarn test && yarn build ",
-    "build": "yarn hardhat compile && yarn tsc --declaration",
+    "build": "yarn clean && yarn hardhat compile && yarn tsc --declaration",
     "test": "forge test --no-match-test Mainnet",
     "coverage": "forge coverage --report lcov && genhtml lcov.info --branch-coverage --output-directory=./coverage",
-    "clean": "yarn hardhat clean && forge clean"
+    "clean": "yarn hardhat clean && forge clean && rm -rf ./dist ./coverage ./cache"
   },
   "prettier": {
     "singleQuote": true,
