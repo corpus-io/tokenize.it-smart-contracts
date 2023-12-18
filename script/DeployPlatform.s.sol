@@ -17,12 +17,12 @@ contract DeployPlatform is Script {
         address deployerAddress = vm.addr(deployerPrivateKey);
 
         // Goerli
-        //address platformColdWallet = 0x1695F52e342f3554eC8BC06621B7f5d1644cCE39;
-        //address platformAdminWallet = 0x1695F52e342f3554eC8BC06621B7f5d1644cCE39;
+        address platformColdWallet = 0x1695F52e342f3554eC8BC06621B7f5d1644cCE39;
+        address trustedForwarder = 0x0445d09A1917196E1DC12EdB7334C70c1FfB1623;
 
         // Mainnet
-        address platformColdWallet = 0x9E23f8AA17B2721cf69D157b8a15bd7b64ac881C;
-        address trustedForwarder = 0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA;
+        // address platformColdWallet = 0x9E23f8AA17B2721cf69D157b8a15bd7b64ac881C;
+        // address trustedForwarder = 0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA;
 
         console.log("Deployer address: ", deployerAddress);
 
@@ -36,7 +36,7 @@ contract DeployPlatform is Script {
         console.log("FeeSettingsCloneFactory deployed at: ", address(feeSettingsCloneFactory));
 
         console.log("Deploying FeeSettings contract...");
-        Fees memory fees = Fees(100, 100, 100, 0);
+        Fees memory fees = Fees(200, 600, 200, 0);
         FeeSettings feeSettings = FeeSettings(
             feeSettingsCloneFactory.createFeeSettingsClone(
                 bytes32(0),
@@ -49,31 +49,27 @@ contract DeployPlatform is Script {
             )
         );
         console.log("FeeSettings deployed at: ", address(feeSettings));
-        feeSettings.transferOwnership(platformColdWallet);
-        console.log("Started ownership transfer to: ", platformColdWallet);
 
-        console.log("Deploying AllowListCloneFactory contract...");
-        AllowList allowListLogicContract = new AllowList(trustedForwarder);
-        AllowListCloneFactory allowListCloneFactory = new AllowListCloneFactory(address(allowListLogicContract));
-        console.log("AllowListCloneFactory deployed at: ", address(allowListCloneFactory));
+        // console.log("Deploying AllowListCloneFactory contract...");
+        // AllowList allowListLogicContract = new AllowList(trustedForwarder);
+        // AllowListCloneFactory allowListCloneFactory = new AllowListCloneFactory(address(allowListLogicContract));
+        // console.log("AllowListCloneFactory deployed at: ", address(allowListCloneFactory));
 
-        console.log("Deploying AllowList contract...");
-        AllowList allowList = AllowList(
-            allowListCloneFactory.createAllowListClone(bytes32(0), trustedForwarder, platformColdWallet)
-        );
-        console.log("Allowlist deployed at: ", address(allowList));
+        // console.log("Deploying AllowList contract...");
+        // AllowList allowList = AllowList(
+        //     allowListCloneFactory.createAllowListClone(bytes32(0), trustedForwarder, platformColdWallet)
+        // );
+        // console.log("Allowlist deployed at: ", address(allowList));
 
-        console.log("Deploying VestingCloneFactory contract...");
-        Vesting vestingImplementation = new Vesting(trustedForwarder);
-        VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
-        console.log("VestingCloneFactory deployed at: ", address(vestingCloneFactory));
+        // console.log("Deploying VestingCloneFactory contract...");
+        // Vesting vestingImplementation = new Vesting(trustedForwarder);
+        // VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
+        // console.log("VestingCloneFactory deployed at: ", address(vestingCloneFactory));
 
-        console.log("Deploying PrivateOfferFactory contract...");
-        PrivateOfferFactory privateOfferFactory = new PrivateOfferFactory(vestingCloneFactory);
-        console.log("PrivateOfferFactory deployed at: ", address(privateOfferFactory));
+        // console.log("Deploying PrivateOfferFactory contract...");
+        // PrivateOfferFactory privateOfferFactory = new PrivateOfferFactory(vestingCloneFactory);
+        // console.log("PrivateOfferFactory deployed at: ", address(privateOfferFactory));
 
         vm.stopBroadcast();
-
-        console.log("Don't forget to check and finalize ownership transfers for all contracts!");
     }
 }
