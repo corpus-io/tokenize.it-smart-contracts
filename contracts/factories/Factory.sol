@@ -10,7 +10,7 @@ pragma solidity 0.8.23;
 
 abstract contract Factory {
     /// The address of the implementation contract
-    address immutable implementation;
+    address public immutable implementation;
 
     constructor(address _implementation) {
         require(_implementation != address(0), "Factory: implementation can not be zero");
