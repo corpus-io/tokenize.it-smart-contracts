@@ -9,6 +9,7 @@ import "../contracts/factories/AllowListCloneFactory.sol";
 import "../contracts/factories/PrivateOfferFactory.sol";
 import "../contracts/factories/VestingCloneFactory.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
+import "@opengsn/contracts/src/forwarder/Forwarder.sol";
 
 contract DeployPlatform is Script {
     function setUp() public {}
@@ -16,6 +17,11 @@ contract DeployPlatform is Script {
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployerAddress = vm.addr(deployerPrivateKey);
+        address platformColdWallet = 0x9E23f8AA17B2721cf69D157b8a15bd7b64ac881C; // Sepolia and Mainnet
+
+        /*
+         * config
+         */
 
         // Goerli
         // address platformColdWallet = 0x1695F52e342f3554eC8BC06621B7f5d1644cCE39;
@@ -29,18 +35,25 @@ contract DeployPlatform is Script {
         // trustedCurrencies[5] = address(0xcB444e90D8198415266c6a2724b7900fb12FC56E); // EURe
 
         // Mainnet
-        address platformColdWallet = 0x9E23f8AA17B2721cf69D157b8a15bd7b64ac881C;
-        address trustedForwarder = 0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA;
-        address[] memory trustedCurrencies = new address[](6);
-        trustedCurrencies[0] = address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2); // WEth
-        trustedCurrencies[1] = address(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599); // WBTC
-        trustedCurrencies[2] = address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48); // USDC
-        trustedCurrencies[3] = address(0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c); // EUROC
-        trustedCurrencies[4] = address(0x6B175474E89094C44Da98b954EedeAC495271d0F); // DAI
-        trustedCurrencies[5] = address(0x3231Cb76718CDeF2155FC47b5286d82e6eDA273f); // EURe
+        // address trustedForwarder = 0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA;
+        // address[] memory trustedCurrencies = new address[](6);
+        // trustedCurrencies[0] = address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2); // WEth
+        // trustedCurrencies[1] = address(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599); // WBTC
+        // trustedCurrencies[2] = address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48); // USDC
+        // trustedCurrencies[3] = address(0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c); // EUROC
+        // trustedCurrencies[4] = address(0x6B175474E89094C44Da98b954EedeAC495271d0F); // DAI
+        // trustedCurrencies[5] = address(0x3231Cb76718CDeF2155FC47b5286d82e6eDA273f); // EURe
 
+        // Sepolia
+        address trustedForwarder = 0x274ca5f21Cdde06B6E4Fe063f5087EB6Cf3eAe55;
+        address[] memory trustedCurrencies = new address[](2);
+        trustedCurrencies[0] = address(0x30627856Ef668F0A6a1ca9145C9538f7d5b42BDE); // tEUROC
+        trustedCurrencies[1] = address(0x86f488C7CC923d987b246994a0E5e20B3364fd92); // tUSDC
+
+        /*
+         * execution
+         */
         console.log("Deployer address: ", deployerAddress);
-
         vm.startBroadcast(deployerPrivateKey);
 
         console.log("Deploying FeeSettingsCloneFactory contract...");
@@ -71,6 +84,7 @@ contract DeployPlatform is Script {
         console.log("AllowListCloneFactory deployed at: ", address(allowListCloneFactory));
 
         console.log("Deploying AllowList contract...");
+
         uint256[] memory attributes = new uint256[](trustedCurrencies.length);
         for (uint256 i = 0; i < trustedCurrencies.length; i++) {
             attributes[i] = TRUSTED_CURRENCY;
@@ -99,6 +113,35 @@ contract DeployPlatform is Script {
         Token tokenImplementation = new Token(trustedForwarder);
         TokenProxyFactory tokenProxyFactory = new TokenProxyFactory(address(tokenImplementation));
         console.log("TokenProxyFactory deployed at: ", address(tokenProxyFactory));
+
+        // console.log("Deploying Tokens to use as currrency on testnet...");
+        // Token tUSDC = Token(
+        //     tokenProxyFactory.createTokenProxy(
+        //         bytes32(0),
+        //         trustedForwarder,
+        //         feeSettings,
+        //         platformColdWallet,
+        //         allowList,
+        //         0,
+        //         "tokenize.it_USDC",
+        //         "tUSDC"
+        //     )
+        // );
+        // console.log("tUSDC deployed at: ", address(tUSDC));
+        // Token tEUROC = Token(
+        //     tokenProxyFactory.createTokenProxy(
+        //         bytes32(0),
+        //         trustedForwarder,
+        //         feeSettings,
+        //         platformColdWallet,
+        //         allowList,
+        //         0,
+        //         "tokenize.it_EUROC",
+        //         "tEUROC"
+        //     )
+        // );
+        // console.log("tEUROC deployed at: ", address(tEUROC));
+        // console.log("Remember to add the tokens to the AllowList with attribute TRUSTED_CURRENCY: ", TRUSTED_CURRENCY);
 
         vm.stopBroadcast();
     }
