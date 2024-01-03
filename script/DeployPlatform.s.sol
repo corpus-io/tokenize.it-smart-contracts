@@ -46,9 +46,13 @@ contract DeployPlatform is Script {
 
         // Sepolia
         address trustedForwarder = 0x274ca5f21Cdde06B6E4Fe063f5087EB6Cf3eAe55;
-        address[] memory trustedCurrencies = new address[](2);
-        trustedCurrencies[0] = address(0x30627856Ef668F0A6a1ca9145C9538f7d5b42BDE); // tEUROC
-        trustedCurrencies[1] = address(0x86f488C7CC923d987b246994a0E5e20B3364fd92); // tUSDC
+        //TokenProxyFactory tokenProxyFactory = TokenProxyFactory(0x2e9Ffd03c9334789199d0b172a57F215f8426a42);
+        FeeSettings feeSettings = FeeSettings(0x86195b076cd59Fc8fE8C076dBc86374a96E0eAda);
+        AllowList allowList = AllowList(0xF64bd9d1b65daf7a57Bd1C2ab84ACBcf3C6B5438);
+
+        // address[] memory trustedCurrencies = new address[](2);
+        // trustedCurrencies[0] = address(0x30627856Ef668F0A6a1ca9145C9538f7d5b42BDE); // tEUROC
+        // trustedCurrencies[1] = address(0x86f488C7CC923d987b246994a0E5e20B3364fd92); // tUSDC
 
         /*
          * execution
@@ -56,92 +60,92 @@ contract DeployPlatform is Script {
         console.log("Deployer address: ", deployerAddress);
         vm.startBroadcast(deployerPrivateKey);
 
-        console.log("Deploying FeeSettingsCloneFactory contract...");
-        FeeSettings feeSettingsLogicContract = new FeeSettings(trustedForwarder);
-        FeeSettingsCloneFactory feeSettingsCloneFactory = new FeeSettingsCloneFactory(
-            address(feeSettingsLogicContract)
-        );
-        console.log("FeeSettingsCloneFactory deployed at: ", address(feeSettingsCloneFactory));
+        // console.log("Deploying FeeSettingsCloneFactory contract...");
+        // FeeSettings feeSettingsLogicContract = new FeeSettings(trustedForwarder);
+        // FeeSettingsCloneFactory feeSettingsCloneFactory = new FeeSettingsCloneFactory(
+        //     address(feeSettingsLogicContract)
+        // );
+        // console.log("FeeSettingsCloneFactory deployed at: ", address(feeSettingsCloneFactory));
 
-        console.log("Deploying FeeSettings contract...");
-        Fees memory fees = Fees(200, 600, 200, 0);
-        FeeSettings feeSettings = FeeSettings(
-            feeSettingsCloneFactory.createFeeSettingsClone(
-                bytes32(0),
-                trustedForwarder,
-                platformColdWallet,
-                fees,
-                platformColdWallet,
-                platformColdWallet,
-                platformColdWallet
-            )
-        );
-        console.log("FeeSettings deployed at: ", address(feeSettings));
+        // console.log("Deploying FeeSettings contract...");
+        // Fees memory fees = Fees(200, 600, 200, 0);
+        // FeeSettings feeSettings = FeeSettings(
+        //     feeSettingsCloneFactory.createFeeSettingsClone(
+        //         bytes32(0),
+        //         trustedForwarder,
+        //         platformColdWallet,
+        //         fees,
+        //         platformColdWallet,
+        //         platformColdWallet,
+        //         platformColdWallet
+        //     )
+        // );
+        // console.log("FeeSettings deployed at: ", address(feeSettings));
 
-        console.log("Deploying AllowListCloneFactory contract...");
-        AllowList allowListLogicContract = new AllowList(trustedForwarder);
-        AllowListCloneFactory allowListCloneFactory = new AllowListCloneFactory(address(allowListLogicContract));
-        console.log("AllowListCloneFactory deployed at: ", address(allowListCloneFactory));
+        // console.log("Deploying AllowListCloneFactory contract...");
+        // AllowList allowListLogicContract = new AllowList(trustedForwarder);
+        // AllowListCloneFactory allowListCloneFactory = new AllowListCloneFactory(address(allowListLogicContract));
+        // console.log("AllowListCloneFactory deployed at: ", address(allowListCloneFactory));
 
-        console.log("Deploying AllowList contract...");
+        // console.log("Deploying AllowList contract...");
 
-        uint256[] memory attributes = new uint256[](trustedCurrencies.length);
-        for (uint256 i = 0; i < trustedCurrencies.length; i++) {
-            attributes[i] = TRUSTED_CURRENCY;
-        }
-        AllowList allowList = AllowList(
-            allowListCloneFactory.createAllowListClone(
-                bytes32(0),
-                trustedForwarder,
-                platformColdWallet,
-                trustedCurrencies,
-                attributes
-            )
-        );
-        console.log("Allowlist deployed at: ", address(allowList));
+        // uint256[] memory attributes = new uint256[](trustedCurrencies.length);
+        // for (uint256 i = 0; i < trustedCurrencies.length; i++) {
+        //     attributes[i] = TRUSTED_CURRENCY;
+        // }
+        // AllowList allowList = AllowList(
+        //     allowListCloneFactory.createAllowListClone(
+        //         bytes32(0),
+        //         trustedForwarder,
+        //         platformColdWallet,
+        //         trustedCurrencies,
+        //         attributes
+        //     )
+        // );
+        // console.log("Allowlist deployed at: ", address(allowList));
 
-        console.log("Deploying VestingCloneFactory contract...");
-        Vesting vestingImplementation = new Vesting(trustedForwarder);
-        VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
-        console.log("VestingCloneFactory deployed at: ", address(vestingCloneFactory));
+        // console.log("Deploying VestingCloneFactory contract...");
+        // Vesting vestingImplementation = new Vesting(trustedForwarder);
+        // VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
+        // console.log("VestingCloneFactory deployed at: ", address(vestingCloneFactory));
 
-        console.log("Deploying PrivateOfferFactory contract...");
-        PrivateOfferFactory privateOfferFactory = new PrivateOfferFactory(vestingCloneFactory);
-        console.log("PrivateOfferFactory deployed at: ", address(privateOfferFactory));
+        // console.log("Deploying PrivateOfferFactory contract...");
+        // PrivateOfferFactory privateOfferFactory = new PrivateOfferFactory(vestingCloneFactory);
+        // console.log("PrivateOfferFactory deployed at: ", address(privateOfferFactory));
 
         console.log("Deploying TokenProxyFactory contract...");
         Token tokenImplementation = new Token(trustedForwarder);
         TokenProxyFactory tokenProxyFactory = new TokenProxyFactory(address(tokenImplementation));
         console.log("TokenProxyFactory deployed at: ", address(tokenProxyFactory));
 
-        // console.log("Deploying Tokens to use as currrency on testnet...");
-        // Token tUSDC = Token(
-        //     tokenProxyFactory.createTokenProxy(
-        //         bytes32(0),
-        //         trustedForwarder,
-        //         feeSettings,
-        //         platformColdWallet,
-        //         allowList,
-        //         0,
-        //         "tokenize.it_USDC",
-        //         "tUSDC"
-        //     )
-        // );
-        // console.log("tUSDC deployed at: ", address(tUSDC));
-        // Token tEUROC = Token(
-        //     tokenProxyFactory.createTokenProxy(
-        //         bytes32(0),
-        //         trustedForwarder,
-        //         feeSettings,
-        //         platformColdWallet,
-        //         allowList,
-        //         0,
-        //         "tokenize.it_EUROC",
-        //         "tEUROC"
-        //     )
-        // );
-        // console.log("tEUROC deployed at: ", address(tEUROC));
-        // console.log("Remember to add the tokens to the AllowList with attribute TRUSTED_CURRENCY: ", TRUSTED_CURRENCY);
+        console.log("Deploying Tokens to use as currrency on testnet...");
+        Token tUSDC = Token(
+            tokenProxyFactory.createTokenProxy(
+                bytes32(1),
+                trustedForwarder,
+                feeSettings,
+                platformColdWallet,
+                allowList,
+                0,
+                "tokenize.it_USDC",
+                "tUSDC"
+            )
+        );
+        console.log("tUSDC deployed at: ", address(tUSDC));
+        Token tEUROC = Token(
+            tokenProxyFactory.createTokenProxy(
+                bytes32(1),
+                trustedForwarder,
+                feeSettings,
+                platformColdWallet,
+                allowList,
+                0,
+                "tokenize.it_EUROC",
+                "tEUROC"
+            )
+        );
+        console.log("tEUROC deployed at: ", address(tEUROC));
+        console.log("Remember to add the tokens to the AllowList with attribute TRUSTED_CURRENCY: ", TRUSTED_CURRENCY);
 
         vm.stopBroadcast();
     }

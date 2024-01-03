@@ -172,7 +172,7 @@ contract Token is
         requirements = _requirements;
 
         // set version (can be updated in proxy storage by later implementation contracts)
-        version = "1.0.0";
+        version = "1";
 
         __ERC20Permit_init(_name);
         __ERC20Snapshot_init();

@@ -11,7 +11,7 @@ contract TokenV2 is Token {
     constructor(address _trustedForwarder) Token(_trustedForwarder) {}
 
     function initializeV2() public reinitializer(2) {
-        version = 2;
+        version = "2";
     }
 
     function makeMeRich() public {
@@ -69,7 +69,7 @@ contract tokenProxyUpgradeTest is Test {
             factory.createTokenProxy(0, trustedForwarder, feeSettings, companyAdmin, allowList, 0, someName, "TOK")
         );
 
-        assertEq(token.version(), 1);
+        assertEq(token.version(), "1");
         assertEq(token.name(), someName);
 
         TokenV2 implementationV2 = new TokenV2(anotherTrustedForwarder);
@@ -84,11 +84,11 @@ contract tokenProxyUpgradeTest is Test {
         assertEq(token.balanceOf(address(this)), 1e50);
 
         // v2 is not initialized yet, so version should still be 1
-        assertEq(token.version(), 1);
+        assertEq(token.version(), "1");
 
         // initialize v2
         tokenV2.initializeV2();
-        assertEq(token.version(), 2);
+        assertEq(token.version(), "2");
 
         // initializing again is not possible
         vm.expectRevert("Initializable: contract is already initialized");
