@@ -109,7 +109,7 @@ contract Token is
      * @dev The token contract is upgradeable, so the version is stored in the contract itself. Updating the logic contract address
      *  in the proxy will not change the version. If desired, the version must be changed in the new initializer function.
      */
-    uint256 public version;
+    string public version;
 
     /// @param newRequirements The new requirements that will be enforced from now on.
     event RequirementsChanged(uint newRequirements);
@@ -172,7 +172,7 @@ contract Token is
         requirements = _requirements;
 
         // set version (can be updated in proxy storage by later implementation contracts)
-        version = 1;
+        version = "1.0.0";
 
         __ERC20Permit_init(_name);
         __ERC20Snapshot_init();
