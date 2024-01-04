@@ -26,7 +26,7 @@ contract VestingCloneFactory is CloneFactory {
         address _trustedForwarder,
         address _owner,
         address _token
-    ) external returns (address) {
+    ) public returns (address) {
         bytes32 salt = keccak256(abi.encode(_rawSalt, _trustedForwarder, _owner, _token));
         address clone = Clones.cloneDeterministic(implementation, salt);
         Vesting vesting = Vesting(clone);
@@ -34,6 +34,37 @@ contract VestingCloneFactory is CloneFactory {
         vesting.initialize(_owner, _token);
         emit NewClone(clone);
         return clone;
+    }
+
+    function createVestingCloneWithLockupPlan(
+        bytes32 _rawSalt,
+        address _trustedForwarder,
+        address _owner,
+        address _token,
+        uint256 _allocation,
+        address _beneficiary,
+        uint64 _start,
+        uint64 _cliff,
+        uint64 _duration
+    ) external returns (address) {
+        // deploy the vesting contract
+        Vesting vesting = Vesting(createVestingClone(_rawSalt, _trustedForwarder, address(this), _token));
+
+        // create the vesting plan
+        vesting.createVesting(_allocation, _beneficiary, _start, _cliff, _duration, false); // this plan is not mintable
+
+        // remove the manager role from the vesting contract
+        vesting.removeManager(address(this));
+
+        // transfer ownership of the vesting contract
+        if (_owner == address(0)) {
+            // if the owner is 0, the vesting contract will not have an owner. So no one can interfere with the vesting.
+            vesting.renounceOwnership();
+        } else {
+            vesting.transferOwnership(_owner);
+        }
+
+        return address(vesting);
     }
 
     /**
