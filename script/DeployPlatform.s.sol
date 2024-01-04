@@ -121,7 +121,7 @@ contract DeployPlatform is Script {
         console.log("Deploying Tokens to use as currrency on testnet...");
         Token tUSDC = Token(
             tokenProxyFactory.createTokenProxy(
-                bytes32(1),
+                bytes32(0),
                 trustedForwarder,
                 feeSettings,
                 platformColdWallet,
@@ -134,7 +134,7 @@ contract DeployPlatform is Script {
         console.log("tUSDC deployed at: ", address(tUSDC));
         Token tEUROC = Token(
             tokenProxyFactory.createTokenProxy(
-                bytes32(1),
+                bytes32(0),
                 trustedForwarder,
                 feeSettings,
                 platformColdWallet,

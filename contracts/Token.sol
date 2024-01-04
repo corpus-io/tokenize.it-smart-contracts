@@ -132,6 +132,14 @@ contract Token is
     }
 
     /**
+     * Override decimals to be 6, as this is what circle uses on their tokens that we
+     * mimic here.
+     */
+    function decimals() public view virtual override returns (uint8) {
+        return 6;
+    }
+
+    /**
      * @notice Initializer for the token, replaces the constructor
      * @param _feeSettings fee settings contract that determines the fee for minting tokens
      * @param _admin address of the admin. Admin will initially have all roles and can grant roles to other addresses.
