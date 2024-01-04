@@ -36,6 +36,20 @@ contract VestingCloneFactory is CloneFactory {
         return clone;
     }
 
+    /**
+     * Create a new vesting clone with a lockup plan. The contract ownership can be renounced in the same transaction,
+     * leaving the contract without an owner and thus without any way to change the vesting plan or add other plans.
+     * @dev This function creates a transferrable vesting plan.
+     * @param _rawSalt value that influences the address of the clone, but not the initialization
+     * @param _trustedForwarder the trusted forwarder (ERC2771) can not be changed, but is checked for security
+     * @param _owner future owner of the vesting contract. If 0, the contract will not have an owner.
+     * @param _token token to vest
+     * @param _allocation amount of tokens to vest
+     * @param _beneficiary address receiving the tokens
+     * @param _start start date of the vesting
+     * @param _cliff cliff duration
+     * @param _duration total duration
+     */
     function createVestingCloneWithLockupPlan(
         bytes32 _rawSalt,
         address _trustedForwarder,
