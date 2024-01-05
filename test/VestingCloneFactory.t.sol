@@ -35,6 +35,188 @@ contract VestingCloneFactoryTest is Test {
         assertEq(expected1, actual, "address prediction failed");
     }
 
+    function testLockUpAddressPrediction(
+        bytes32 _rawSalt,
+        address _trustedForwarder,
+        address _owner,
+        address _token,
+        uint256 _allocation,
+        address _beneficiary,
+        uint64 _start,
+        uint64 _cliff,
+        uint64 _duration
+    ) public {
+        vm.assume(_owner != address(1));
+        vm.assume(
+            _trustedForwarder != address(0) &&
+                _trustedForwarder != address(1) &&
+                _trustedForwarder != address(this) &&
+                _trustedForwarder != address(factory)
+        );
+        vm.assume(_token != address(0) && _token != address(1));
+        vm.assume(_allocation != 0 && _allocation < type(uint256).max);
+        vm.assume(_beneficiary != address(0) && _beneficiary != address(1));
+        vm.assume(_start != 0 && _start < type(uint64).max);
+        vm.assume(_cliff != 0 && _cliff < type(uint64).max);
+        vm.assume(_duration != 0 && _duration < type(uint64).max);
+        vm.assume(_rawSalt != bytes32("a"));
+        Vesting _implementation = new Vesting(_trustedForwarder);
+        VestingCloneFactory _factory = new VestingCloneFactory(address(_implementation));
+
+        address expected = _factory.predictCloneAddressWithLockupPlan(
+            _rawSalt,
+            _trustedForwarder,
+            _owner,
+            _token,
+            _allocation,
+            _beneficiary,
+            _start,
+            _cliff,
+            _duration
+        );
+
+        vm.expectEmit(true, true, true, true, address(_factory));
+        emit NewClone(expected);
+        address actual = _factory.createVestingCloneWithLockupPlan(
+            _rawSalt,
+            _trustedForwarder,
+            _owner,
+            _token,
+            _allocation,
+            _beneficiary,
+            _start,
+            _cliff,
+            _duration
+        );
+        assertEq(expected, actual, "address prediction failed: expected != actual");
+
+        // test changing the salt changes the address
+        address changedAddress = _factory.predictCloneAddressWithLockupPlan(
+            bytes32("a"),
+            _trustedForwarder,
+            _owner,
+            _token,
+            _allocation,
+            _beneficiary,
+            _start,
+            _cliff,
+            _duration
+        );
+        assertNotEq(actual, changedAddress, "address prediction failed: salt");
+
+        // test changing the trustedForwarder changes the address
+        changedAddress = _factory.predictCloneAddressWithLockupPlan(
+            _rawSalt,
+            address(1),
+            _owner,
+            _token,
+            _allocation,
+            _beneficiary,
+            _start,
+            _cliff,
+            _duration
+        );
+        assertNotEq(actual, changedAddress, "address prediction failed: trustedForwarder");
+
+        // test changing the owner changes the address
+        changedAddress = _factory.predictCloneAddressWithLockupPlan(
+            _rawSalt,
+            _trustedForwarder,
+            address(1),
+            _token,
+            _allocation,
+            _beneficiary,
+            _start,
+            _cliff,
+            _duration
+        );
+        assertNotEq(actual, changedAddress, "address prediction failed: owner");
+
+        // test changing the token changes the address
+        changedAddress = _factory.predictCloneAddressWithLockupPlan(
+            _rawSalt,
+            _trustedForwarder,
+            _owner,
+            address(1),
+            _allocation,
+            _beneficiary,
+            _start,
+            _cliff,
+            _duration
+        );
+        assertNotEq(actual, changedAddress, "address prediction failed: token");
+
+        // test changing the allocation changes the address
+        changedAddress = _factory.predictCloneAddressWithLockupPlan(
+            _rawSalt,
+            _trustedForwarder,
+            _owner,
+            _token,
+            _allocation + 1,
+            _beneficiary,
+            _start,
+            _cliff,
+            _duration
+        );
+        assertNotEq(actual, changedAddress, "address prediction failed: allocation");
+
+        // test changing the beneficiary changes the address
+        changedAddress = _factory.predictCloneAddressWithLockupPlan(
+            _rawSalt,
+            _trustedForwarder,
+            _owner,
+            _token,
+            _allocation,
+            address(1),
+            _start,
+            _cliff,
+            _duration
+        );
+        assertNotEq(actual, changedAddress, "address prediction failed: beneficiary");
+
+        // test changing the start changes the address
+        changedAddress = _factory.predictCloneAddressWithLockupPlan(
+            _rawSalt,
+            _trustedForwarder,
+            _owner,
+            _token,
+            _allocation,
+            _beneficiary,
+            _start + 1,
+            _cliff,
+            _duration
+        );
+        assertNotEq(actual, changedAddress, "address prediction failed: start");
+
+        // test changing the cliff changes the address
+        changedAddress = _factory.predictCloneAddressWithLockupPlan(
+            _rawSalt,
+            _trustedForwarder,
+            _owner,
+            _token,
+            _allocation,
+            _beneficiary,
+            _start,
+            _cliff + 1,
+            _duration
+        );
+        assertNotEq(actual, changedAddress, "address prediction failed: cliff");
+
+        // test changing the duration changes the address
+        changedAddress = _factory.predictCloneAddressWithLockupPlan(
+            _rawSalt,
+            _trustedForwarder,
+            _owner,
+            _token,
+            _allocation,
+            _beneficiary,
+            _start,
+            _cliff,
+            _duration + 1
+        );
+        assertNotEq(actual, changedAddress, "address prediction failed: duration");
+    }
+
     function testWrongTrustedForwarderReverts(address _wrongTrustedForwarder) public {
         vm.assume(_wrongTrustedForwarder != address(0));
         vm.assume(_wrongTrustedForwarder != trustedForwarder);
