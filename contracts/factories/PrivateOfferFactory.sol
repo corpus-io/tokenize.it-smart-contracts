@@ -53,19 +53,10 @@ contract PrivateOfferFactory {
         address _vestingContractOwner,
         address trustedForwarder
     ) external returns (address) {
-        bytes32 salt = _getSalt(
-            _rawSalt,
-            _arguments,
-            _vestingStart,
-            _vestingCliff,
-            _vestingDuration,
-            _vestingContractOwner
-        );
-
         // deploy the vesting contract
         Vesting vesting = Vesting(
             vestingCloneFactory.createVestingCloneWithLockupPlan(
-                salt,
+                _rawSalt,
                 trustedForwarder,
                 _vestingContractOwner,
                 address(_arguments.token),
@@ -110,19 +101,16 @@ contract PrivateOfferFactory {
         address _vestingContractOwner,
         address trustedForwarder
     ) public view returns (address, address) {
-        bytes32 salt = _getSalt(
+        address vestingAddress = vestingCloneFactory.predictCloneAddressWithLockupPlan(
             _rawSalt,
-            _arguments,
+            trustedForwarder,
+            _vestingContractOwner,
+            address(_arguments.token),
+            _arguments.tokenAmount,
+            _arguments.tokenReceiver,
             _vestingStart,
             _vestingCliff,
-            _vestingDuration,
-            _vestingContractOwner
-        );
-        address vestingAddress = vestingCloneFactory.predictCloneAddress(
-            salt,
-            trustedForwarder,
-            address(vestingCloneFactory),
-            address(_arguments.token)
+            _vestingDuration
         );
 
         // since the vesting contracts address will be used as the token receiver, we need to use it for the prediction
