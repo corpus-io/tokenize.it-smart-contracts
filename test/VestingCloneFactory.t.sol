@@ -104,8 +104,9 @@ contract VestingCloneFactoryTest is Test {
         );
         assertNotEq(actual, changedAddress, "address prediction failed: salt");
 
-        // test changing the trustedForwarder changes the address
-        changedAddress = _factory.predictCloneAddressWithLockupPlan(
+        // ensure changing the trustedForwarder reverts
+        vm.expectRevert("VestingCloneFactory: Unexpected trustedForwarder");
+        _factory.predictCloneAddressWithLockupPlan(
             _rawSalt,
             address(1),
             _owner,
@@ -116,7 +117,6 @@ contract VestingCloneFactoryTest is Test {
             _cliff,
             _duration
         );
-        assertNotEq(actual, changedAddress, "address prediction failed: trustedForwarder");
 
         // test changing the owner changes the address
         changedAddress = _factory.predictCloneAddressWithLockupPlan(
