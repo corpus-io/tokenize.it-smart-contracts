@@ -139,6 +139,10 @@ contract VestingCloneFactory is CloneFactory {
         uint64 _cliff,
         uint64 _duration
     ) external view returns (address) {
+        require(
+            Vesting(implementation).isTrustedForwarder(_trustedForwarder),
+            "VestingCloneFactory: Unexpected trustedForwarder"
+        );
         bytes32 salt = keccak256(
             abi.encode(
                 _rawSalt,
