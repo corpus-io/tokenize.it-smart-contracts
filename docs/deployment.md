@@ -99,6 +99,12 @@ optimizer: {
       },
 ```
 
+#### Verify ERC1967Proxy
+
+```
+npx hardhat verify --network goerli 0x676Fae4c5b791D6Cb2732C27ec794c6378ABbC04 --constructor-args script/verificationArguments/hardhat/ERC1967Proxy.js
+```
+
 ### foundry
 
 Example for token verification:
