@@ -54,11 +54,11 @@ contract VestingCloneFactoryTest is Test {
                 _trustedForwarder != address(factory)
         );
         vm.assume(_token != address(0) && _token != address(1));
-        vm.assume(_allocation != 0 && _allocation < type(uint256).max);
+        vm.assume(_allocation != 0 && _allocation != 1);
         vm.assume(_beneficiary != address(0) && _beneficiary != address(1));
-        vm.assume(_start != 0 && _start < type(uint64).max);
-        vm.assume(_cliff != 0 && _cliff < type(uint64).max);
-        vm.assume(_duration != 0 && _duration < type(uint64).max);
+        vm.assume(_start != 0 && _start != 1);
+        vm.assume(_cliff != 0 && _cliff != 1);
+        vm.assume(_duration != 0 && _duration != 1);
         vm.assume(_rawSalt != bytes32("a"));
         Vesting _implementation = new Vesting(_trustedForwarder);
         VestingCloneFactory _factory = new VestingCloneFactory(address(_implementation));
@@ -152,7 +152,7 @@ contract VestingCloneFactoryTest is Test {
             _trustedForwarder,
             _owner,
             _token,
-            _allocation + 1,
+            1,
             _beneficiary,
             _start,
             _cliff,
@@ -182,7 +182,7 @@ contract VestingCloneFactoryTest is Test {
             _token,
             _allocation,
             _beneficiary,
-            _start + 1,
+            1,
             _cliff,
             _duration
         );
@@ -197,7 +197,7 @@ contract VestingCloneFactoryTest is Test {
             _allocation,
             _beneficiary,
             _start,
-            _cliff + 1,
+            1,
             _duration
         );
         assertNotEq(actual, changedAddress, "address prediction failed: cliff");
@@ -212,7 +212,7 @@ contract VestingCloneFactoryTest is Test {
             _beneficiary,
             _start,
             _cliff,
-            _duration + 1
+            1
         );
         assertNotEq(actual, changedAddress, "address prediction failed: duration");
     }
