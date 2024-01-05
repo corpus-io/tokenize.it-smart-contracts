@@ -53,45 +53,26 @@ contract PrivateOfferFactory {
         address _vestingContractOwner,
         address trustedForwarder
     ) external returns (address) {
-        bytes32 salt = _getSalt(
-            _rawSalt,
-            _arguments,
-            _vestingStart,
-            _vestingCliff,
-            _vestingDuration,
-            _vestingContractOwner
-        );
-
         // deploy the vesting contract
         Vesting vesting = Vesting(
-            vestingCloneFactory.createVestingClone(salt, trustedForwarder, address(this), address(_arguments.token))
+            vestingCloneFactory.createVestingCloneWithLockupPlan(
+                _rawSalt,
+                trustedForwarder,
+                _vestingContractOwner,
+                address(_arguments.token),
+                _arguments.tokenAmount,
+                _arguments.tokenReceiver,
+                _vestingStart,
+                _vestingCliff,
+                _vestingDuration
+            )
         );
 
-        // create the vesting plan
-        vesting.createVesting(
-            _arguments.tokenAmount,
-            _arguments.tokenReceiver,
-            _vestingStart,
-            _vestingCliff,
-            _vestingDuration,
-            false
-        ); // this plan is not mintable
-
-        vesting.removeManager(address(this));
-
-        // transfer ownership of the vesting contract
-        if (_vestingContractOwner == address(0)) {
-            // if the owner is 0, the vesting contract will not have an owner. So no one can interfere with the vesting.
-            vesting.renounceOwnership();
-        } else {
-            vesting.transferOwnership(_vestingContractOwner);
-        }
-
-        // deploy the private offer
+        // update currency receiver to be the vesting contract
         PrivateOfferArguments memory calldataArguments = _arguments;
         calldataArguments.tokenReceiver = address(vesting);
-        // update currency receiver to be the vesting contract
 
+        // deploy the private offer
         address privateOffer = _deployPrivateOffer(_rawSalt, calldataArguments);
 
         require(_arguments.token.balanceOf(address(vesting)) == _arguments.tokenAmount, "Execution failed");
@@ -120,19 +101,16 @@ contract PrivateOfferFactory {
         address _vestingContractOwner,
         address trustedForwarder
     ) public view returns (address, address) {
-        bytes32 salt = _getSalt(
+        address vestingAddress = vestingCloneFactory.predictCloneAddressWithLockupPlan(
             _rawSalt,
-            _arguments,
+            trustedForwarder,
+            _vestingContractOwner,
+            address(_arguments.token),
+            _arguments.tokenAmount,
+            _arguments.tokenReceiver,
             _vestingStart,
             _vestingCliff,
-            _vestingDuration,
-            _vestingContractOwner
-        );
-        address vestingAddress = vestingCloneFactory.predictCloneAddress(
-            salt,
-            trustedForwarder,
-            address(this),
-            address(_arguments.token)
+            _vestingDuration
         );
 
         // since the vesting contracts address will be used as the token receiver, we need to use it for the prediction

@@ -143,6 +143,9 @@ contract PrivateOfferFactoryTest is Test {
             trustedForwarder
         );
 
+        console.log("expectedPrivateOffer", expectedPrivateOffer);
+        console.log("expectedVesting", expectedVesting);
+
         // make sure no contract lives here yet
         assertFalse(Address.isContract(expectedPrivateOffer), "Private Offer address already contains contract");
         assertFalse(Address.isContract(expectedVesting), "Vesting address already contains contract");
