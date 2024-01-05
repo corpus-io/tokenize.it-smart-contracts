@@ -66,7 +66,7 @@ contract PrivateOfferOffchainPaymentTimeLockTest is Test {
      * @param attemptTime try to release tokens after this amount of time
      * @param releaseDuration how long the releasing of tokens should take
      */
-    function testPrivateOfferWithTimeLock(
+    function testPrivateOfferOffchainPaymentTimeLock(
         bytes32 salt,
         uint64 releaseStartTime,
         uint64 releaseDuration,
@@ -90,11 +90,16 @@ contract PrivateOfferOffchainPaymentTimeLockTest is Test {
         // as the payment happens off-chain, we just assume it happened
 
         // predict addresses
-        address expectedTimeLockAddress = vestingCloneFactory.predictCloneAddress(
+        address expectedTimeLockAddress = vestingCloneFactory.predictCloneAddressWithLockupPlan(
             salt,
             trustedForwarder,
-            address(vestingCloneFactory),
-            address(token)
+            address(0), // no owner
+            address(token),
+            tokenAmount,
+            tokenReceiver,
+            releaseStartTime,
+            releaseDuration,
+            releaseDuration
         );
 
         // add time lock and token receiver to the allow list
