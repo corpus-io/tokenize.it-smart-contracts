@@ -19,12 +19,10 @@ contract FeeSettings is
     IFeeSettingsV2,
     IFeeSettingsV1
 {
-    /// max token fee is 5%
-    uint32 public constant MAX_TOKEN_FEE_NUMERATOR = 500;
-    /// max crowdinvesting fee is 10%
-    uint32 public constant MAX_CROWDINVESTING_FEE_NUMERATOR = 1000;
-    /// max private offer fee is 5%
-    uint32 public constant MAX_PRIVATE_OFFER_FEE_NUMERATOR = 500;
+    /// max crowdinvesting fee (paid in token and cash combined) is 15%
+    uint32 public constant MAX_TOTAL_CROWDINVESTING_FEE_NUMERATOR = 1500;
+    /// max private offer fee (paid in token and cash combined) is 10%
+    uint32 public constant MAX_TOTAL_PRIVATE_OFFER_FEE_NUMERATOR = 1000;
 
     /// Denominator to calculate all fees
     uint32 public constant FEE_DENOMINATOR = 10000;
@@ -184,9 +182,11 @@ contract FeeSettings is
 
         // if at least one fee increases, enforce minimum delay
         if (
-            _fees.tokenFeeNumerator > fees[address(0)].tokenFeeNumerator ||
-            _fees.crowdinvestingFeeNumerator > fees[address(0)].crowdinvestingFeeNumerator ||
-            _fees.privateOfferFeeNumerator > fees[address(0)].privateOfferFeeNumerator
+            _fees.tokenFeeNumerator > fees[address(0)].tokenFeeNumerator || // token fee increases -> important for other products
+            _fees.crowdinvestingFeeNumerator + _fees.tokenFeeNumerator >
+            fees[address(0)].crowdinvestingFeeNumerator + fees[address(0)].tokenFeeNumerator || // crowdinvesting fee increases
+            _fees.privateOfferFeeNumerator + _fees.tokenFeeNumerator >
+            fees[address(0)].privateOfferFeeNumerator + fees[address(0)].tokenFeeNumerator // private offer fee increases
         ) {
             require(
                 _fees.validityDate > block.timestamp + 12 weeks,
@@ -237,12 +237,14 @@ contract FeeSettings is
      * @param _fees The fees to check
      */
     function checkFeeLimits(Fees memory _fees) internal pure {
-        require(_fees.tokenFeeNumerator <= MAX_TOKEN_FEE_NUMERATOR, "Token fee must be <= 5%");
         require(
-            _fees.crowdinvestingFeeNumerator <= MAX_CROWDINVESTING_FEE_NUMERATOR,
-            "Crowdinvesting fee must be <= 10%"
+            _fees.tokenFeeNumerator + _fees.crowdinvestingFeeNumerator <= MAX_TOTAL_CROWDINVESTING_FEE_NUMERATOR,
+            "Total Crowdinvesting fee must be <= 15%"
         );
-        require(_fees.privateOfferFeeNumerator <= MAX_PRIVATE_OFFER_FEE_NUMERATOR, "PrivateOffer fee must be <= 5%");
+        require(
+            _fees.tokenFeeNumerator + _fees.privateOfferFeeNumerator <= MAX_TOTAL_PRIVATE_OFFER_FEE_NUMERATOR,
+            "Total PrivateOffer fee must be <= 10%"
+        );
     }
 
     /**
