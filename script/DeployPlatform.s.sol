@@ -9,6 +9,7 @@ import "../contracts/factories/AllowListCloneFactory.sol";
 import "../contracts/factories/PrivateOfferFactory.sol";
 import "../contracts/factories/VestingCloneFactory.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
+import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "@opengsn/contracts/src/forwarder/Forwarder.sol";
 
 contract DeployPlatform is Script {
@@ -100,14 +101,14 @@ contract DeployPlatform is Script {
         // );
         // console.log("Allowlist deployed at: ", address(allowList));
 
-        console.log("Deploying VestingCloneFactory contract...");
-        Vesting vestingImplementation = new Vesting(trustedForwarder);
-        VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
-        console.log("VestingCloneFactory deployed at: ", address(vestingCloneFactory));
+        // console.log("Deploying VestingCloneFactory contract...");
+        // Vesting vestingImplementation = Vesting(0xa740Dd991655b2887321C71D8Ac0c171a0C9E969);
+        // VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
+        // console.log("VestingCloneFactory deployed at: ", address(vestingCloneFactory));
 
-        console.log("Deploying PrivateOfferFactory contract...");
-        PrivateOfferFactory privateOfferFactory = new PrivateOfferFactory(vestingCloneFactory);
-        console.log("PrivateOfferFactory deployed at: ", address(privateOfferFactory));
+        // console.log("Deploying PrivateOfferFactory contract...");
+        // PrivateOfferFactory privateOfferFactory = new PrivateOfferFactory(vestingCloneFactory);
+        // console.log("PrivateOfferFactory deployed at: ", address(privateOfferFactory));
 
         // console.log("Deploying TokenProxyFactory contract...");
         // Token tokenImplementation = new Token(trustedForwarder);
@@ -142,6 +143,14 @@ contract DeployPlatform is Script {
         // );
         // console.log("tEUROC deployed at: ", address(tEUROC));
         // console.log("Remember to add the tokens to the AllowList with attribute TRUSTED_CURRENCY: ", TRUSTED_CURRENCY);
+
+        // deploy crowdinvesting factory
+        console.log("Deploying CrowdinvestingFactory contract...");
+        Crowdinvesting crowdinvestingImplementation = new Crowdinvesting(trustedForwarder);
+        CrowdinvestingCloneFactory crowdinvestingCloneFactory = new CrowdinvestingCloneFactory(
+            address(crowdinvestingImplementation)
+        );
+        console.log("CrowdinvestingFactory deployed at: ", address(crowdinvestingCloneFactory));
 
         vm.stopBroadcast();
     }
