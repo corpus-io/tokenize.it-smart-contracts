@@ -18,7 +18,6 @@ contract DeployPlatform is Script {
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployerAddress = vm.addr(deployerPrivateKey);
-        address platformColdWallet = 0x9E23f8AA17B2721cf69D157b8a15bd7b64ac881C; // Sepolia and Mainnet
 
         /*
          * config
@@ -36,20 +35,33 @@ contract DeployPlatform is Script {
         // trustedCurrencies[5] = address(0xcB444e90D8198415266c6a2724b7900fb12FC56E); // EURe
 
         // Mainnet
-        address trustedForwarder = 0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA;
-        address[] memory trustedCurrencies = new address[](6);
-        trustedCurrencies[0] = address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2); // WEth
-        trustedCurrencies[1] = address(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599); // WBTC
-        trustedCurrencies[2] = address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48); // USDC
-        trustedCurrencies[3] = address(0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c); // EUROC
-        trustedCurrencies[4] = address(0x6B175474E89094C44Da98b954EedeAC495271d0F); // DAI
-        trustedCurrencies[5] = address(0x3231Cb76718CDeF2155FC47b5286d82e6eDA273f); // EURe
+        // address platformColdWallet = 0x9E23f8AA17B2721cf69D157b8a15bd7b64ac881C;
+        // address trustedForwarder = 0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA;
+        // address[] memory trustedCurrencies = new address[](6);
+        // trustedCurrencies[0] = address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2); // WEth
+        // trustedCurrencies[1] = address(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599); // WBTC
+        // trustedCurrencies[2] = address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48); // USDC
+        // trustedCurrencies[3] = address(0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c); // EUROC
+        // trustedCurrencies[4] = address(0x6B175474E89094C44Da98b954EedeAC495271d0F); // DAI
+        // trustedCurrencies[5] = address(0x3231Cb76718CDeF2155FC47b5286d82e6eDA273f); // EURe
 
         // Sepolia
+        // address platformColdWallet = 0x9E23f8AA17B2721cf69D157b8a15bd7b64ac881C;
         // address trustedForwarder = 0x274ca5f21Cdde06B6E4Fe063f5087EB6Cf3eAe55;
         // address[] memory trustedCurrencies = new address[](2);
         // trustedCurrencies[0] = address(0x30627856Ef668F0A6a1ca9145C9538f7d5b42BDE); // tEUROC
         // trustedCurrencies[1] = address(0x86f488C7CC923d987b246994a0E5e20B3364fd92); // tUSDC
+
+        // Gnosis Chiado
+        address platformColdWallet = 0x99b686F27413fd41F338aDD3Bce2eb60bBa7885E;
+        address trustedForwarder = 0x2659B6c5121049626363dBc1d22f267e79a0BFDE;
+        address[] memory trustedCurrencies = new address[](6);
+        trustedCurrencies[0] = address(0xb106ed7587365a16b6691a3D4B2A734f4E8268a2); // Monerium
+
+        // Gnosis Mainnet
+        // address trustedForwarder = 0x7eEae829DF28F9Ce522274D5771A6Be91d00E5ED;
+        // address[] memory trustedCurrencies = new address[](6);
+        // trustedCurrencies[0] = address(0xcB444e90D8198415266c6a2724b7900fb12FC56E); // Monerium
 
         /*
          * execution

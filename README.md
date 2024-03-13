@@ -72,14 +72,21 @@ In order to improve UX, though, a frontend will be offered. In order to improve 
 
 Several of the contracts implement [EIP-2771](https://eips.ethereum.org/EIPS/eip-2771), and therefore use a trusted forwarder. The forwarder will be set in the constructor and there is no way to change it after deployment. The forwarder used will be the openGSN v2 forwarder deployed on mainnet. Some information about this contract:
 
-- [Documentation and addresses](https://docs-v2.opengsn.org/networks/ethereum/mainnet.html)
+- [Documentation and addresses](https://docs-v2.opengsn.org/)
 - [Code](https://github.com/opengsn/gsn/blob/v2.2.5/packages/contracts/src/forwarder/Forwarder.sol)
 - [Audit reports](https://docs-v2.opengsn.org/audits.html)
-- Deployment: **0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA**
+- Deployment on Ethereum Mainnet: **0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA**
+
   - deployed 2022-04-21
+  - [official resources](https://docs-v2.opengsn.org/networks/xdai/xdai.html)
   - Visit on [etherscan](https://etherscan.io/address/0xaa3e82b4c4093b4ba13cb5714382c99adbf750ca) ([see transactions here](https://etherscan.io/txsInternal?a=0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA&&m=advanced&p=1))
   - This [dashboard](https://dune.com/oren/meta-transactions-on-ethereum-over-time) lists the forwarder as second most active forwarder contract with over 2000 transactions executed
   - used in our [tests](./test/CrowdinvestingERC2771.t.sol).
+
+- Deployment on Gnosis Chain: **0x7eEae829DF28F9Ce522274D5771A6Be91d00E5ED**
+  - deployed 2021-04-29
+  - [official resources](https://docs-v2.opengsn.org/networks/xdai/xdai.html)
+  - visit on [blockscout](https://gnosis.blockscout.com/address/0x7eEae829DF28F9Ce522274D5771A6Be91d00E5ED)
 
 The platform will maintain a hot wallet (EOA) in order to send transactions to the forwarder contract. This results in the following flow:
 

@@ -53,7 +53,10 @@ forge script script/DeployToken.s.sol --rpc-url $GOERLI_RPC_URL  --verify --broa
 ## Forwarder
 
 If the forwarder has not been deployed yet, e.g. when working in a testing environment, it can be deployed like this:
-`forge create node_modules/@opengsn/contracts/src/forwarder/Forwarder.sol:Forwarder --private-key $PRIVATE_KEY --rpc-url $GOERLI_RPC_URL --verify --etherscan-api-key $ETHERSCAN_API_KEY`
+
+```
+forge create node_modules/@opengsn/contracts/src/forwarder/Forwarder.sol:Forwarder --private-key $PRIVATE_KEY --rpc-url $GOERLI_RPC_URL --verify --etherscan-api-key $ETHERSCAN_API_KEY
+```
 
 ## Contract Verification
 
@@ -120,3 +123,11 @@ Provide the constructor arguments separated by whitespace in a file like this:
 ```
 
 More info can be found [here](https://book.getfoundry.sh/reference/forge/forge-verify-contract).
+
+#### Verify on Gnosis Chiado
+
+Use these settings for the Chiado network:
+
+```
+forge [... deployment commands ...] --rpc-url $CHIADO_RPC_URL --verify --verifier blockscout --verifier-url https://gnosis-chiado.blockscout.com/api?
+```

@@ -55,7 +55,7 @@ const config: HardhatUserConfig = {
     localhost: {
       url: 'http://localhost:8545',
     },
-    ropsten: {
+    chiado: {
       url: process.env.ROPSTEN_URL || '',
       accounts:
         process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
