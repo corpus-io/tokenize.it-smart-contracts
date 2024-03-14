@@ -53,15 +53,16 @@ contract DeployPlatform is Script {
         // trustedCurrencies[1] = address(0x86f488C7CC923d987b246994a0E5e20B3364fd92); // tUSDC
 
         // Gnosis Chiado
-        address platformColdWallet = 0x99b686F27413fd41F338aDD3Bce2eb60bBa7885E;
-        address trustedForwarder = 0x2659B6c5121049626363dBc1d22f267e79a0BFDE;
-        address[] memory trustedCurrencies = new address[](6);
-        trustedCurrencies[0] = address(0xb106ed7587365a16b6691a3D4B2A734f4E8268a2); // Monerium
+        // address platformColdWallet = 0x99b686F27413fd41F338aDD3Bce2eb60bBa7885E;
+        // address trustedForwarder = 0x2659B6c5121049626363dBc1d22f267e79a0BFDE;
+        // address[] memory trustedCurrencies = new address[](6);
+        // trustedCurrencies[0] = address(0xb106ed7587365a16b6691a3D4B2A734f4E8268a2); // Monerium
 
         // Gnosis Mainnet
-        // address trustedForwarder = 0x7eEae829DF28F9Ce522274D5771A6Be91d00E5ED;
-        // address[] memory trustedCurrencies = new address[](6);
-        // trustedCurrencies[0] = address(0xcB444e90D8198415266c6a2724b7900fb12FC56E); // Monerium
+        address platformColdWallet = 0x9E23f8AA17B2721cf69D157b8a15bd7b64ac881C;
+        address trustedForwarder = 0x7eEae829DF28F9Ce522274D5771A6Be91d00E5ED;
+        address[] memory trustedCurrencies = new address[](6);
+        trustedCurrencies[0] = address(0xcB444e90D8198415266c6a2724b7900fb12FC56E); // Monerium
 
         /*
          * execution
@@ -127,34 +128,34 @@ contract DeployPlatform is Script {
         TokenProxyFactory tokenProxyFactory = new TokenProxyFactory(address(tokenImplementation));
         console.log("TokenProxyFactory deployed at: ", address(tokenProxyFactory));
 
-        console.log("Deploying Tokens to use as currrency on testnet...");
-        Token tUSDC = Token(
-            tokenProxyFactory.createTokenProxy(
-                bytes32(0),
-                trustedForwarder,
-                feeSettings,
-                platformColdWallet,
-                allowList,
-                0,
-                "tokenize.it_USDC",
-                "tUSDC"
-            )
-        );
-        console.log("tUSDC deployed at: ", address(tUSDC));
-        Token tEUROC = Token(
-            tokenProxyFactory.createTokenProxy(
-                bytes32(0),
-                trustedForwarder,
-                feeSettings,
-                platformColdWallet,
-                allowList,
-                0,
-                "tokenize.it_EUROC",
-                "tEUROC"
-            )
-        );
-        console.log("tEUROC deployed at: ", address(tEUROC));
-        console.log("Remember to add the tokens to the AllowList with attribute TRUSTED_CURRENCY: ", TRUSTED_CURRENCY);
+        // console.log("Deploying Tokens to use as currrency on testnet...");
+        // Token tUSDC = Token(
+        //     tokenProxyFactory.createTokenProxy(
+        //         bytes32(0),
+        //         trustedForwarder,
+        //         feeSettings,
+        //         platformColdWallet,
+        //         allowList,
+        //         0,
+        //         "tokenize.it_USDC",
+        //         "tUSDC"
+        //     )
+        // );
+        // console.log("tUSDC deployed at: ", address(tUSDC));
+        // Token tEUROC = Token(
+        //     tokenProxyFactory.createTokenProxy(
+        //         bytes32(0),
+        //         trustedForwarder,
+        //         feeSettings,
+        //         platformColdWallet,
+        //         allowList,
+        //         0,
+        //         "tokenize.it_EUROC",
+        //         "tEUROC"
+        //     )
+        // );
+        // console.log("tEUROC deployed at: ", address(tEUROC));
+        // console.log("Remember to add the tokens to the AllowList with attribute TRUSTED_CURRENCY: ", TRUSTED_CURRENCY);
 
         // deploy crowdinvesting factory
         console.log("Deploying CrowdinvestingFactory contract...");

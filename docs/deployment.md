@@ -131,3 +131,19 @@ Use these settings for the Chiado network:
 ```
 forge [... deployment commands ...] --rpc-url $CHIADO_RPC_URL --verify --verifier blockscout --verifier-url https://gnosis-chiado.blockscout.com/api?
 ```
+
+#### Verify on Gnosis Mainnet
+
+- blockscout
+
+  ```
+  forge script script/DeployPlatform.s.sol:DeployPlatform --private-key $PRIVATE_KEY --rpc-url $GNOSIS_RPC_URL --verify --verifier blockscout --verifier-url https://gnosis.blockscout.com/api? --resume
+  ```
+
+  Note that the URL provided in the output will point to gnosisscan, but that is wrong. The verification only happens on blockscout.
+
+- gnosisscan (requires a gnosisscan api key):
+
+  ```
+  forge script script/DeployPlatform.s.sol:DeployPlatform --private-key $PRIVATE_KEY --rpc-url $GNOSIS_RPC_URL --verify --etherscan-api-key $GNOSISSCAN_API_KEY --resume
+  ```

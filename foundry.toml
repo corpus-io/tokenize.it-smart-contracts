@@ -16,3 +16,4 @@ gas_reports = ["AllowList", "Crowdinvesting", "FeeSettings", "PrivateOffer", "Pr
 [rpc_endpoints]
 goerli = "${GOERLI_RPC_URL}"
 chiado = "${CHIADO_RPC_URL}"
+gnosis = "${GNOSIS_RPC_URL}"
