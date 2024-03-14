@@ -55,8 +55,13 @@ const config: HardhatUserConfig = {
     localhost: {
       url: 'http://localhost:8545',
     },
-    ropsten: {
-      url: process.env.ROPSTEN_URL || '',
+    chiado: {
+      url: process.env.CHIADO_RPC_URL || '',
+      accounts:
+        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    },
+    gnosis: {
+      url: process.env.GNOSIS_RPC_URL || '',
       accounts:
         process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
