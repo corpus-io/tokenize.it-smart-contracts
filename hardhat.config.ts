@@ -82,6 +82,16 @@ const config: HardhatUserConfig = {
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY,
+    customChains: [
+      {
+        network: `chiado`,
+        chainId: 10200,
+        urls: {
+          apiURL: `https://gnosis-chiado.blockscout.com/api`,
+          browserURL: `https://blockscout.chiadochain.net`,
+        },
+      },
+    ],
   },
   typechain: {
     outDir: 'types',

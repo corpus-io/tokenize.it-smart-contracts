@@ -1,0 +1,12 @@
+module.exports = [
+  0,
+  [
+    '0x6591ca368519cec0c1b5eb34a6c2a4e2914d0c1e',
+    '0x8b1a9459178772ad1d36e8c7d501c5490a8a823d',
+  ],
+  [
+    '0x6591ca368519cec0c1b5eb34a6c2a4e2914d0c1e',
+    '0x8b1a9459178772ad1d36e8c7d501c5490a8a823d',
+  ],
+  '0x8b1a9459178772ad1d36e8c7d501c5490a8a823d',
+];
