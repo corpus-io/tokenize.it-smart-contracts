@@ -18,7 +18,7 @@ These are the most relevant contracts. Those that we deployed were verified on b
 | VestingCloneFactory        |                  | [0xCCC45E788bcf916b3b7cA79c2e1A1fC694aD03F7](https://gnosisscan.io/address/0xccc45e788bcf916b3b7ca79c2e1a1fc694ad03f7)         |                                          |
 | PrivateOfferFactory        |                  | [0x66330A3718F68c293046d39498EDC6a043CF7190](https://gnosisscan.io/address/0x66330a3718f68c293046d39498edc6a043cf7190)         |                                          |
 | FeeSettings                |                  | [0xFce9A1e8C063162f4F54f84ab8B2744D3Efc15A2](https://gnosisscan.io/address/0xFce9A1e8C063162f4F54f84ab8B2744D3Efc15A2)         |                                          |
-| AllowList                  |                  | [0xf2c479836b1f23eBE127CFB3B6dabf535d60B6DD](https://gnosisscan.io/address/0xf2c479836b1f23ebe127cfb3b6dabf535d60b6dd)         |
+| AllowList                  |                  | [0x6c6c8fd9629c9bcec625004012dd0aabd89960c8](https://gnosisscan.io/address/0x6c6c8fd9629c9bcec625004012dd0aabd89960c8)         |
 | CrowdinvestingCloneFactory |                  | [0x470586e0a7c2E641c39930B96E58E4300Be32cF3](https://gnosisscan.io/address/0x470586e0a7c2e641c39930b96e58e4300be32cf3)         |                                          |         |
 | monerium                   |                  | [0xcB444e90D8198415266c6a2724b7900fb12FC56E](https://gnosis.blockscout.com/token/0xcB444e90D8198415266c6a2724b7900fb12FC56E)   | these were deployed by the monerium team |
 
