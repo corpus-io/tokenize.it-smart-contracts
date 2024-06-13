@@ -75,7 +75,12 @@ const config: HardhatUserConfig = {
     currency: 'USD',
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
+    apiKey: {
+      mainnet: process.env.ETHERSCAN_API_KEY || '',
+      sepolia: process.env.ETHERSCAN_API_KEY || '',
+      chiado: process.env.GNOSISSCAN_API_KEY || '',
+      gnosis: process.env.GNOSISSCAN_API_KEY || '',
+    },
   },
   typechain: {
     outDir: 'types',
