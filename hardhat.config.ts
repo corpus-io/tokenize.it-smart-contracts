@@ -30,33 +30,32 @@ task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
  */
 const config: HardhatUserConfig = {
   solidity: {
-    version: '0.8.23',
-    settings: {
-      // optimizer: {
-      //   enabled: true,
-      //   runs: 10000,
-      // },
-      metadata: {
-        bytecodeHash: 'none',
+    compilers: [
+      {
+        version: '0.8.17',
       },
-      viaIR: true,
+      {
+        version: '0.8.23',
+      },
+    ],
+    settings: {
       optimizer: {
         enabled: true,
-        details: {
-          yulDetails: {
-            //optimizerSteps: 'u', // recommended by hh, but yields longer bytecode
-          },
-        },
+        runs: 200,
       },
-      // outputSelection: { "*": { "*": ["storageLayout"] } },
     },
   },
   networks: {
     localhost: {
       url: 'http://localhost:8545',
     },
-    ropsten: {
-      url: process.env.ROPSTEN_URL || '',
+    chiado: {
+      url: process.env.CHIADO_RPC_URL || '',
+      accounts:
+        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    },
+    gnosis: {
+      url: process.env.GNOSIS_RPC_URL || '',
       accounts:
         process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
