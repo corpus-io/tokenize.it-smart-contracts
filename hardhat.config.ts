@@ -81,7 +81,12 @@ const config: HardhatUserConfig = {
     currency: 'USD',
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
+    apiKey: {
+      mainnet: process.env.ETHERSCAN_API_KEY || '',
+      sepolia: process.env.ETHERSCAN_API_KEY || '',
+      chiado: process.env.GNOSISSCAN_API_KEY || '',
+      gnosis: process.env.GNOSISSCAN_API_KEY || '',
+    },
     customChains: [
       {
         network: `chiado`,
@@ -89,6 +94,19 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: `https://gnosis-chiado.blockscout.com/api`,
           browserURL: `https://blockscout.chiadochain.net`,
+        },
+      },
+      {
+        network: 'gnosis',
+        chainId: 100,
+        urls: {
+          // 3) Select to what explorer verify the contracts
+          // Gnosisscan https://gnosis.blockscout.com/api?
+          apiURL: 'https://api.gnosisscan.io/api',
+          browserURL: 'https://gnosisscan.io/',
+          // Blockscout
+          // apiURL: 'https://blockscout.com/xdai/mainnet/api',
+          // browserURL: 'https://blockscout.com/xdai/mainnet',
         },
       },
     ],
