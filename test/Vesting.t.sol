@@ -510,4 +510,21 @@ contract VestingTest is Test {
         vm.expectRevert("newStartTime must be after endTime");
         vesting.pauseVesting(id, exampleStart + exampleCliff + 1, exampleStart + exampleCliff / 2);
     }
+
+    /**
+     * this test causes a division by zero and ensures the transaction fails as it should
+     */
+    function testReleaseWithDivBy0() public {
+        uint64 start = 2 * 365 days;
+        uint64 duration = 0;
+        vm.startPrank(owner);
+        uint64 id = vesting.createVesting(exampleAmount, beneficiary, start, duration, duration, true);
+        vm.stopPrank();
+
+        vm.warp(start);
+
+        vm.startPrank(beneficiary);
+        vm.expectRevert(stdError.divisionError);
+        vesting.release(id);
+    }
 }
