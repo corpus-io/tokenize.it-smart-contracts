@@ -2,7 +2,7 @@ import { HardhatUserConfig, task } from 'hardhat/config';
 
 import 'dotenv/config';
 import 'hardhat-gas-reporter';
-import '@nomiclabs/hardhat-etherscan';
+import '@nomicfoundation/hardhat-verify';
 import '@nomicfoundation/hardhat-ethers';
 import '@nomicfoundation/hardhat-chai-matchers';
 import '@typechain/hardhat';
@@ -74,6 +74,9 @@ const config: HardhatUserConfig = {
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
     currency: 'USD',
+  },
+  sourcify: {
+    enabled: true,
   },
   etherscan: {
     apiKey: {
