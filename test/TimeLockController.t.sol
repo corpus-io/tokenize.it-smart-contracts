@@ -154,7 +154,7 @@ contract EscrowTest is Test {
     }
 
     function test_RandoCanNotTransfer(address rando) public {
-        vm.assume(rando != roofAccount && rando != platformColdAccount);
+        vm.assume(rando != roofAccount && rando != platformColdAccount && rando != address(timelock));
         assertEq(token.balanceOf(rando), 0, "rando should have 0 tokens");
         vm.prank(rando);
         vm.expectRevert();
