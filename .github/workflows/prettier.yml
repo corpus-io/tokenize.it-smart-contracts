@@ -3,8 +3,6 @@ on:
     branches-ignore:
       - main
   workflow_dispatch:
-    branches:
-      - '**'
 
 name: prettier
 
@@ -22,7 +20,7 @@ jobs:
       - name: Prettify code
         uses: creyD/prettier_action@v4.3
         with:
-          # This part is also where you can pass other options, for example:
-          prettier_options: --write **/*.{sol,md,js}
+          prettier_options: --write "**/*.{sol,md,js}"
           prettier_plugins: prettier-plugin-solidity
           prettier_version: 2.8.8
+          github_token: ${{ secrets.GITHUB_TOKEN }}
