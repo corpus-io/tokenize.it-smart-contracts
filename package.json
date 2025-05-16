@@ -95,12 +95,16 @@
   "prettier": {
     "singleQuote": true,
     "trailingComma": "all",
+    "plugins": [
+      "prettier-plugin-solidity"
+    ],
     "overrides": [
       {
         "files": "*.sol",
         "options": {
           "singleQuote": false,
-          "printWidth": 120
+          "printWidth": 120,
+          "parser": "solidity-parse"
         }
       }
     ]
