@@ -69,7 +69,7 @@ contract PrivateOffer {
         Token indexed token
     );
 
-    constructor(PrivateOfferArguments memory _arguments) {
+    constructor(PrivateOfferArguments memory _arguments, address _tokenHolder) {
         require(_arguments.currencyPayer != address(0), "_arguments.currencyPayer can not be zero address");
         require(_arguments.tokenReceiver != address(0), "_arguments.tokenReceiver can not be zero address");
         require(_arguments.currencyReceiver != address(0), "_arguments.currencyReceiver can not be zero address");
@@ -104,9 +104,7 @@ contract PrivateOffer {
             (currencyAmount - fee)
         );
 
-        // mint or transfer the tokens
-
-        _arguments.token.mint(_arguments.tokenReceiver, _arguments.tokenAmount);
+        _arguments.token.transferFrom(_tokenHolder, _arguments.tokenReceiver, _arguments.tokenAmount);
 
         emit Deal(
             _arguments.currencyPayer,
