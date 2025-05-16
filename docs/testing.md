@@ -1,5 +1,19 @@
 # Testing
 
+## Building the contracts
+
+```bash
+forge install
+forge build
+```
+
+In order to build without the time-consuming via-ir optimization, select the fastDev profile:
+
+```bash
+export FOUNDRY_PROFILE=fastDev
+forge build
+```
+
 ## Executing tests
 
 Most tests run locally, but some require a mainnet fork. Therefore, simply running `forge test` will likely fail (because it does not fork mainnet). Use these commands instead:
