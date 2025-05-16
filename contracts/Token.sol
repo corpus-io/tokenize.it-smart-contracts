@@ -109,7 +109,7 @@ contract Token is
      * @dev The token contract is upgradeable, so the version is stored in the contract itself. Updating the logic contract address
      *  in the proxy will not change the version. If desired, the version must be changed in the new initializer function.
      */
-    uint256 public version;
+     uint256 public version;
 
     /// @param newRequirements The new requirements that will be enforced from now on.
     event RequirementsChanged(uint newRequirements);

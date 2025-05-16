@@ -19,3 +19,4 @@ jobs:
         uses: creyD/prettier_action@v4.5
         with:
           prettier_plugins: 'prettier-plugin-solidity'
+          prettier_options: '--write **/*.{sol,md,js}'
