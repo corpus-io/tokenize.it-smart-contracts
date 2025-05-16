@@ -1,10 +1,10 @@
-on:
-  push:
-    branches-ignore:
-      - main
-  workflow_dispatch:
-
 name: prettier
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
 
 jobs:
   prettier:
@@ -13,22 +13,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          # Make sure the actual branch is checked out when running on pull requests
-          ref: ${{ github.head_ref }}
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
-      - name: Install Prettier and Plugins
-        run: yarn
 
       - name: Prettify code
-        uses: creyD/prettier_action@v4.4
-        with:
-          prettier_options: --write "**/*.{sol,md,js}"
-          prettier_plugins: prettier-plugin-solidity
-          prettier_version: 2.8.8
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+        uses: creyD/prettier_action@v4.5
