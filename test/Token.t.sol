@@ -128,12 +128,12 @@ contract tokenTest is Test {
         );
     }
 
-    function testFailAdmin() public {
-        assertTrue(token.hasRole(token.MINTALLOWER_ROLE(), address(this)));
+    function testThisIsNotMintAllower() public {
+        assertFalse(token.hasRole(token.MINTALLOWER_ROLE(), address(this)));
     }
 
-    function testFailAdmin2() public {
-        assertTrue(token.hasRole(token.MINTALLOWER_ROLE(), msg.sender));
+    function testMsgSenderIsNotMintAllower() public {
+        assertFalse(token.hasRole(token.MINTALLOWER_ROLE(), msg.sender));
     }
 
     /**
@@ -158,7 +158,8 @@ contract tokenTest is Test {
         assertFalse(token.hasRole(token.MINTALLOWER_ROLE(), x));
     }
 
-    function testFailSetRequirements() public {
+    function testThisCanNotSetRequirements() public {
+        vm.expectRevert();
         token.setRequirements(3);
     }
 
@@ -166,16 +167,18 @@ contract tokenTest is Test {
         assertTrue(token.decimals() == 18);
     }
 
-    function testFailSetRequirementsAdmin() public {
-        // admin has not the Requirements role, only the right to grant this role
+    function testAdminNotCanSetRequirements() public {
+        // admin does not have the Requirements role, only the right to grant this role
         vm.prank(admin);
+        vm.expectRevert();
         token.setRequirements(3);
     }
 
-    function testFailSetRequirementsX(address X) public {
+    function testXCanNotSetRequirements(address X) public {
         // x is missing the Requirements role
         vm.assume(X != requirer);
         vm.prank(X);
+        vm.expectRevert();
         token.setRequirements(3);
     }
 
@@ -237,10 +240,11 @@ contract tokenTest is Test {
         assertTrue(token.requirements() == newRequirements);
     }
 
-    function testFailSetRequirementsWrongRole() public {
+    function testPauserCanNotSetRequirements() public {
         vm.prank(pauser);
+        vm.expectRevert();
         token.setRequirements(3);
-        assertTrue(token.requirements() == 3);
+        assertTrue(token.requirements() == 0);
     }
 
     function testSetUpMinter(uint256 newAllowance, uint256 mintAmount) public {
@@ -380,8 +384,9 @@ contract tokenTest is Test {
         assertTrue(token.mintingAllowance(minter) == 0);
     }
 
-    function testFailMintAllowanceUsed(uint256 x) public {
-        vm.prank(admin);
+    function testMintingFailsIfMintAllowanceUsed(uint256 x) public {
+        vm.assume(x <= UINT256_MAX / FeeSettings(address(token.feeSettings())).FEE_DENOMINATOR()); // avoid overflow
+        vm.prank(mintAllower);
         token.increaseMintingAllowance(minter, x);
         assertTrue(token.mintingAllowance(minter) == x);
 
@@ -391,6 +396,7 @@ contract tokenTest is Test {
         assertTrue(token.mintingAllowance(minter) == 0);
 
         vm.prank(minter);
+        vm.expectRevert("MintingAllowance too low");
         token.mint(pauser, 1);
     }
 
@@ -427,14 +433,13 @@ contract tokenTest is Test {
         }
     }
 
-    function testFailZeroAllowanceMint(uint256 x) public {
+    function testMintingFailsIfMintAllowanceRevoked(uint256 x) public {
         vm.assume(x > 0);
 
-        vm.prank(admin);
-        token.decreaseMintingAllowance(minter, token.mintingAllowance(minter)); // set allowance to 0
         assertTrue(token.mintingAllowance(minter) == 0); // check allowance is 0
 
         vm.prank(minter);
+        vm.expectRevert("MintingAllowance too low");
         token.mint(pauser, x); // try to mint -> must fail!
     }
 
@@ -540,24 +545,10 @@ contract tokenTest is Test {
         token.transfer(_address, _amount);
     }
 
-    function testFailBurn0() public {
-        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
-        bytes32 role = token.BURNER_ROLE();
-
-        vm.prank(admin);
-        token.grantRole(roleMintAllower, mintAllower);
-        vm.prank(mintAllower);
-        token.decreaseMintingAllowance(minter, token.mintingAllowance(minter));
-        assertTrue(token.mintingAllowance(minter) == 0);
-
-        vm.prank(minter);
-        token.mint(pauser, 0);
-        assertTrue(token.balanceOf(pauser) == 0);
-        vm.prank(admin);
-        token.grantRole(role, burner);
+    function testBurningNonExistentTokensFails() public {
         vm.prank(burner);
+        vm.expectRevert("ERC20: burn amount exceeds balance");
         token.burn(pauser, 1);
-        assertTrue(token.balanceOf(pauser) == 0);
     }
 
     function testBeforeTokenTransfer() public {
@@ -595,9 +586,10 @@ contract tokenTest is Test {
         assertTrue(token.balanceOf(burner) == 50);
     }
 
-    function testFailBeforeTokenTransferRequirements1() public {
+    function testTokenTransferFailsIfRequirementsNotMet() public {
         // create tokens
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
+        bytes32 roleTransferer = token.TRANSFERER_ROLE();
 
         vm.prank(admin);
         token.grantRole(roleMintAllower, mintAllower);
@@ -605,8 +597,7 @@ contract tokenTest is Test {
         token.increaseMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
-        //testSetRequirements
-
+        //SetRequirements
         bytes32 role = token.REQUIREMENT_ROLE();
         vm.prank(admin);
         token.grantRole(role, requirer);
@@ -614,30 +605,20 @@ contract tokenTest is Test {
         token.setRequirements(3);
         assertTrue(token.requirements() == 3);
 
-        vm.prank(minter);
-        token.mint(pauser, 50);
-
-        assertTrue(token.balanceOf(pauser) == 50);
-
-        // create transferer
-        bytes32 roleTransfererAdmin = token.TRANSFERERADMIN_ROLE();
-        bytes32 roleTransferer = token.TRANSFERER_ROLE();
-
-        vm.prank(admin);
-        token.grantRole(roleTransfererAdmin, transfererAdmin);
-
-        vm.prank(transfererAdmin);
-        token.grantRole(roleTransferer, transferer);
         assertTrue(token.hasRole(roleTransferer, transferer));
 
-        vm.prank(transfererAdmin);
-        token.grantRole(roleTransferer, burner);
-        assertTrue(token.hasRole(roleTransferer, burner));
+        vm.prank(minter);
+        token.mint(transferer, 50);
+
+        assertTrue(token.balanceOf(transferer) == 50);
 
         // move tokens around
-        vm.prank(pauser);
+        vm.prank(transferer);
+        vm.expectRevert(
+            "Sender or Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
+        );
         token.transfer(burner, 50);
-        assertTrue(token.balanceOf(burner) == 50);
+        assertTrue(token.balanceOf(burner) == 0);
     }
 
     function testBeforeTokenTransferRequirementsOverfulfilled() public {
@@ -667,18 +648,13 @@ contract tokenTest is Test {
         assertTrue(token.balanceOf(pauser) == 50, "balance not minted");
     }
 
-    function testFailBeforeTokenTransferRequirementsNotfulfilled() public {
-        // create tokens
-        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
-
-        vm.prank(admin);
-        token.grantRole(roleMintAllower, mintAllower);
+    function testTokenTransferFailsIfRequirementsNotfulfilled() public {
+        // grant minting allowance
         vm.prank(mintAllower);
         token.increaseMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
-        //testSetRequirements
-
+        //SetRequirements
         bytes32 role = token.REQUIREMENT_ROLE();
         vm.prank(admin);
         token.grantRole(role, requirer);
@@ -687,11 +663,14 @@ contract tokenTest is Test {
         assertTrue(token.requirements() == 3);
 
         vm.prank(admin);
-        allowList.set(pauser, 4); // onle on bit set, but bit 1 and 2 (=3) should be set
+        allowList.set(pauser, 4); // only one bit set, but bit 1 and 2 (=3) should be set
         vm.prank(minter);
+        vm.expectRevert(
+            "Sender or Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
+        );
         token.mint(pauser, 50);
 
-        assertTrue(token.balanceOf(pauser) == 50);
+        assertTrue(token.balanceOf(pauser) == 0);
     }
 
     function testBeforeTokenTransferRequirements2() public {
@@ -742,18 +721,12 @@ contract tokenTest is Test {
         assertTrue(token.balanceOf(pauser) == 30);
     }
 
-    function testFailTransferPause() public {
-        // create tokens
-        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
-
-        vm.prank(admin);
-        token.grantRole(roleMintAllower, mintAllower);
+    function testTransferWhilePaused() public {
         vm.prank(mintAllower);
         token.increaseMintingAllowance(minter, 100);
         assertTrue(token.mintingAllowance(minter) == 100);
 
-        //testSetRequirements
-
+        //SetRequirements
         bytes32 role = token.REQUIREMENT_ROLE();
         vm.prank(admin);
         token.grantRole(role, requirer);
@@ -801,6 +774,7 @@ contract tokenTest is Test {
 
         // move tokens around with pause
         vm.prank(pauser);
+        vm.expectRevert("Pausable: paused");
         token.transfer(burner, 20);
         assertTrue(token.balanceOf(burner) == 20);
     }
@@ -1025,7 +999,7 @@ contract tokenTest is Test {
         assertTrue(token.balanceOf(person2) == 3);
     }
 
-    function testFailSetAllowanceTo0BeforeResetting() public {
+    function testIncreaseMintingAllowance() public {
         address person1 = vm.addr(1);
         address person2 = vm.addr(2);
 
@@ -1049,12 +1023,12 @@ contract tokenTest is Test {
 
         vm.prank(mintAllower);
         token.increaseMintingAllowance(minter, 10);
-        assertTrue(token.mintingAllowance(minter) == 10);
+        assertTrue(token.mintingAllowance(minter) == 60);
 
         vm.prank(minter);
-        //vm.expectRevert("Minting allowance exceeded");
-        token.mint(person2, 3);
-        assertTrue(token.balanceOf(person2) == 3);
+        token.mint(person2, 55);
+
+        assertTrue(token.balanceOf(person2) == 55);
     }
 
     function testDeployerDoesNotGetRole() public {
