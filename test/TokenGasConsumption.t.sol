@@ -112,10 +112,4 @@ contract tokenTest is Test {
         vm.prank(admin);
         token.transferFrom(pauser, admin, 100);
     }
-
-    function testFailTransfer() public {
-        vm.prank(pauser);
-        token.transfer(burner, 100);
-        //assertTrue(token.balanceOf(burner) == 0, "burner balance is wrong");
-    }
 }

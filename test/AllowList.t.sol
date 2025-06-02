@@ -36,15 +36,17 @@ contract AllowListTest is Test {
         assertTrue(list.owner() == owner);
     }
 
-    function testFailNotOwner(address x) public {
+    function testNotOwner(address x) public {
         vm.assume(x != owner);
         vm.prank(address(x));
+        vm.expectRevert("Ownable: caller is not the owner");
         list.set(address(0), 1);
     }
 
-    function testFailNotOwnerRemove(address x) public {
+    function testNotOwnerRemove(address x) public {
         vm.assume(x != owner);
         vm.prank(address(x));
+        vm.expectRevert("Ownable: caller is not the owner");
         list.remove(address(0));
     }
 

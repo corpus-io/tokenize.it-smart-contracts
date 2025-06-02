@@ -89,6 +89,7 @@ contract FeeSettingsIntegrationTest is Test {
         vm.assume(_customFeeCollector != address(0));
         vm.assume(_customFeeCollector != platformAdmin);
         vm.assume(_customFeeCollector != investor);
+        vm.assume(_customFeeCollector != companyAdmin);
 
         vm.warp(100 * 365 days);
 
@@ -114,7 +115,7 @@ contract FeeSettingsIntegrationTest is Test {
         vm.assume(_customFeeCollector != address(0));
         vm.assume(_customFeeCollector != investor);
         vm.assume(_customFeeCollector != platformAdmin);
-
+        vm.assume(_customFeeCollector != companyAdmin);
         vm.warp(100 * 365 days);
 
         vm.startPrank(platformAdmin);
@@ -186,6 +187,8 @@ contract FeeSettingsIntegrationTest is Test {
     function testCrowdinvestingUsesCustomFeeAndCollector(address _customFeeCollector) public {
         vm.assume(_customFeeCollector != address(0));
         vm.assume(_customFeeCollector != platformAdmin);
+        vm.assume(_customFeeCollector != companyAdmin);
+        vm.assume(_customFeeCollector != investor);
 
         vm.warp(100 * 365 days);
 
