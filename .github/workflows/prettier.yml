@@ -16,7 +16,7 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
       - name: Prettify code
-        uses: creyD/prettier_action@v4.5
+        uses: creyD/prettier_action@v4.6
         with:
           prettier_plugins: 'prettier-plugin-solidity'
           prettier_options: '--check **/*.{sol,md,js}'
