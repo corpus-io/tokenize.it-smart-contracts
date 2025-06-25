@@ -208,7 +208,8 @@ contract MainnetCurrencies is Test {
             price,
             expiration,
             _currency,
-            token
+            token,
+            address(0)
         );
         address expectedAddress = inviteFactory.predictPrivateOfferAddress(salt, arguments);
 

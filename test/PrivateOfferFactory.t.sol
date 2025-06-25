@@ -71,7 +71,8 @@ contract PrivateOfferFactoryTest is Test {
             price,
             _expiration,
             IERC20(address(currency)),
-            token
+            token,
+            address(0)
         );
         address expectedAddress = factory.predictPrivateOfferAddress(_salt, arguments);
 
@@ -129,7 +130,8 @@ contract PrivateOfferFactoryTest is Test {
             price,
             expiration,
             IERC20(address(currency)),
-            token
+            token,
+            address(0)
         );
 
         // predict addresses for vesting contract and private offer contract

@@ -401,7 +401,8 @@ contract CompanySetUpTest is Test {
             price,
             deadline,
             paymentToken,
-            token
+            token,
+            address(0)
         );
         privateOfferAddress = privateOfferFactory.predictPrivateOfferAddress(salt, arguments);
 

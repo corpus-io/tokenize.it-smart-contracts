@@ -137,7 +137,8 @@ contract FeeSettingsIntegrationTest is Test {
                 price,
                 block.timestamp + 1000,
                 currency,
-                token
+                token,
+                address(0)
             )
         );
 
@@ -159,7 +160,8 @@ contract FeeSettingsIntegrationTest is Test {
                 price,
                 block.timestamp + 1000,
                 currency,
-                token
+                token,
+                address(0)
             )
         );
 

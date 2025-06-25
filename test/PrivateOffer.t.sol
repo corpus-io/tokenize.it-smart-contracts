@@ -37,6 +37,7 @@ contract PrivateOfferTest is Test {
     address public constant currencyReceiver = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
     address public constant paymentTokenProvider = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
     address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
+    address public constant tokenHolder = 0xa109709ecfA91A80626ff3989D68F67F5b1dD12a;
 
     uint256 public constant price = 10000000;
 
@@ -80,7 +81,7 @@ contract PrivateOfferTest is Test {
         );
     }
 
-    function testAcceptDeal(uint256 rawSalt) public {
+    function testAcceptDealAndMintTokens(uint256 rawSalt) public {
         //uint rawSalt = 0;
         bytes32 salt = bytes32(rawSalt);
 
@@ -96,7 +97,8 @@ contract PrivateOfferTest is Test {
             price,
             expiration,
             currency,
-            token
+            token,
+            address(0)
         );
         address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
 
@@ -195,7 +197,8 @@ contract PrivateOfferTest is Test {
             _nominalPrice,
             expiration,
             currency,
-            token
+            token,
+            address(0)
         );
         address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
 
@@ -321,7 +324,8 @@ contract PrivateOfferTest is Test {
             _nominalPrice,
             expiration,
             currency,
-            token
+            token,
+            address(0)
         );
         address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
 
@@ -369,7 +373,8 @@ contract PrivateOfferTest is Test {
             _nominalPrice,
             expiration,
             currency,
-            token
+            token,
+            address(0)
         );
         address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
 
@@ -414,7 +419,8 @@ contract PrivateOfferTest is Test {
             price,
             expiration,
             currency,
-            token
+            token,
+            address(0)
         );
         address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
 
