@@ -95,6 +95,7 @@ contract CrowdinvestingTest is Test {
             paymentToken,
             token,
             0,
+            address(0),
             address(0)
         );
         crowdinvesting = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
@@ -132,6 +133,7 @@ contract CrowdinvestingTest is Test {
                 paymentToken,
                 token,
                 0,
+                address(0),
                 address(0)
             )
         );
@@ -159,6 +161,7 @@ contract CrowdinvestingTest is Test {
             paymentToken,
             token,
             lastBuyDate,
+            address(0),
             address(0)
         );
         Crowdinvesting _crowdinvesting = Crowdinvesting(
@@ -188,6 +191,7 @@ contract CrowdinvestingTest is Test {
             paymentToken,
             token,
             0,
+            address(0),
             address(0)
         );
         vm.expectRevert("CrowdinvestingCloneFactory: Unexpected trustedForwarder");
@@ -302,6 +306,7 @@ contract CrowdinvestingTest is Test {
             maliciousPaymentToken,
             _token,
             0,
+            address(0),
             address(0)
         );
 
@@ -1223,6 +1228,7 @@ contract CrowdinvestingTest is Test {
             paymentToken,
             token,
             0,
+            address(0),
             address(0)
         );
         vm.prank(owner);
@@ -1290,6 +1296,7 @@ contract CrowdinvestingTest is Test {
             paymentToken,
             token,
             0,
+            address(0),
             address(0)
         );
         vm.prank(owner);
@@ -1384,6 +1391,7 @@ contract CrowdinvestingTest is Test {
             paymentToken,
             token,
             _lastBuyDate,
+            address(0),
             address(0)
         );
         Crowdinvesting _crowdinvesting = Crowdinvesting(
@@ -1437,7 +1445,8 @@ contract CrowdinvestingTest is Test {
                 arguments.currency,
                 arguments.token,
                 arguments.lastBuyDate,
-                arguments.priceOracle
+                arguments.priceOracle,
+                arguments.tokenHolder
             );
     }
 }

@@ -90,6 +90,7 @@ contract CrowdinvestingTest is Test {
             paymentToken,
             token,
             0,
+            address(0),
             address(0)
         );
 
@@ -176,6 +177,7 @@ contract CrowdinvestingTest is Test {
             paymentToken,
             _token,
             0,
+            address(0),
             address(0)
         );
 
@@ -300,6 +302,7 @@ contract CrowdinvestingTest is Test {
                 paymentToken,
                 _token,
                 0,
+                address(0),
                 address(0)
             );
 

@@ -216,6 +216,7 @@ contract FeeSettingsIntegrationTest is Test {
             IERC20(address(currency)),
             token,
             101 * 365 days,
+            address(0),
             address(0)
         );
 

@@ -120,6 +120,7 @@ contract MainnetCurrencies is Test {
             _currency,
             token,
             type(uint256).max,
+            address(0),
             address(0)
         );
         Crowdinvesting _crowdinvesting = Crowdinvesting(
