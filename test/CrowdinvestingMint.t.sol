@@ -9,6 +9,7 @@ import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
 import "./resources/FakeCrowdinvestingAndToken.sol";
 import "./resources/CloneCreators.sol";
+import "./resources/CrowdinvestingArgumentHelper.sol";
 
 contract CrowdinvestingTest is Test {
     event CurrencyReceiverChanged(address indexed);
@@ -1427,26 +1428,5 @@ contract CrowdinvestingTest is Test {
             _crowdinvesting.buy(tokenBuyAmount, type(uint256).max, buyer);
             vm.stopPrank();
         }
-    }
-
-    function cloneCrowdinvestingInitializerArguments(
-        CrowdinvestingInitializerArguments memory arguments
-    ) public pure returns (CrowdinvestingInitializerArguments memory) {
-        return
-            CrowdinvestingInitializerArguments(
-                arguments.owner,
-                arguments.currencyReceiver,
-                arguments.minAmountPerBuyer,
-                arguments.maxAmountPerBuyer,
-                arguments.tokenPrice,
-                arguments.priceMin,
-                arguments.priceMax,
-                arguments.maxAmountOfTokenToBeSold,
-                arguments.currency,
-                arguments.token,
-                arguments.lastBuyDate,
-                arguments.priceOracle,
-                arguments.tokenHolder
-            );
     }
 }
