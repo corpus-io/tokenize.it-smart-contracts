@@ -14,7 +14,6 @@ import "./VestingCloneFactory.sol";
  * @dev One deployment of this contract can be used for deployment of any number of PrivateOffers using create2.
  */
 contract PrivateOfferCloneFactory is CloneFactory {
-    event Deploy(address indexed privateOffer);
     event NewPrivateOfferWithLockup(address privateOffer, address vesting);
 
     VestingCloneFactory public immutable vestingCloneFactory;
@@ -74,13 +73,13 @@ contract PrivateOfferCloneFactory is CloneFactory {
         );
 
         // update currency receiver to be the vesting contract
-        PrivateOfferArguments memory calldataArguments = _fixedArguments;
-        calldataArguments.tokenReceiver = address(vesting);
+        PrivateOfferVariableArguments memory variableArguments = _variableArguments;
+        variableArguments.tokenReceiver = address(vesting);
 
         // deploy the private offer
-        address privateOffer = _deployPrivateOffer(_rawSalt, calldataArguments);
+        address privateOffer = createPrivateOfferClone(_rawSalt, _fixedArguments, variableArguments);
 
-        require(_fixedArguments.token.balanceOf(address(vesting)) == _fixedArguments.tokenAmount, "Execution failed");
+        require(_fixedArguments.token.balanceOf(address(vesting)) == _variableArguments.tokenAmount, "Execution failed");
         emit NewPrivateOfferWithLockup(address(privateOffer), address(vesting));
         return address(vesting);
     }
@@ -110,7 +109,7 @@ contract PrivateOfferCloneFactory is CloneFactory {
         // change if the vesting conditions change.
         // # todo: mix vesting conditions into private offer address calculation for security
 
-        address privateOfferAddress = predictPrivateOfferAddress(
+        address privateOfferAddress = predictCloneAddress(
             _getSalt(_rawSalt, _fixedArguments, _vestingStart, _vestingCliff, _vestingDuration, _vestingContractOwner),
             _fixedArguments
         );
@@ -123,12 +122,12 @@ contract PrivateOfferCloneFactory is CloneFactory {
      * @param _salt Value influencing the addresses of the deployed contract, but nothing else.
      * @param _fixedArguments Parameters for the PrivateOffer contract (which also influence the address of the deployed contract)
      */
-    function predictPrivateOfferAddress(
+    function predictCloneAddress(
         bytes32 _salt,
         PrivateOfferFixedArguments memory _fixedArguments
     ) public view returns (address) {
-        bytes memory bytecode = _getBytecode(_fixedArguments);
-        return Create2.computeAddress(_salt, keccak256(bytecode)); // todo: this needs to use the clone functions
+        bytes32 salt = _getSalt(_rawSalt, _fixedArguments);
+        return Clones.predictDeterministicAddress(implementation, salt);
     }
 
     /**
@@ -140,13 +139,13 @@ contract PrivateOfferCloneFactory is CloneFactory {
      * @param _vestingDuration Total vesting duration.
      * @param _vestingContractOwner Address that will own the vesting contract (note: this is not the token receiver or the beneficiary, but rather the company admin)
      */
-    function _getSalt(
+    function _getSaltWithVesting(
         bytes32 _rawSalt,
         PrivateOfferFixedArguments calldata _fixedArguments,
         uint64 _vestingStart,
         uint64 _vestingCliff,
         uint64 _vestingDuration,
-        address _vestingContractOwner
+        address _vestingContractOwner,
     ) private pure returns (bytes32) {
         return
             keccak256(
@@ -156,32 +155,33 @@ contract PrivateOfferCloneFactory is CloneFactory {
                     _vestingStart,
                     _vestingCliff,
                     _vestingDuration,
-                    _vestingContractOwner
+                    _vestingContractOwner,
                 )
             );
     }
 
-    /**
-     * @dev Generates the bytecode of the contract to be deployed, using the parameters.
-     * @param _fixedArguments Arguments for the PrivateOffer contract.
-     * @return bytecode of the contract to be deployed.
-     */
-    function _getBytecode(PrivateOfferFixedArguments memory _fixedArguments) private pure returns (bytes memory) {
-        return abi.encodePacked(type(PrivateOffer).creationCode, abi.encode(_fixedArguments));
+    function _getSalt(
+        bytes32 _rawSalt,
+        PrivateOfferFixedArguments calldata _fixedArguments
+    ) private pure returns (bytes32) {
+        return keccak256(abi.encode(_rawSalt, _fixedArguments));
     }
 
     /**
      * Creates a PrivateOffer contract using create2.
      * @param _rawSalt Value influencing the addresses of the deployed contract, but nothing else.
      * @param _fixedArguments Parameters for the PrivateOffer contract (which also influence the address of the deployed contract)
+     * @param _variableArguments Parameters for the PrivateOffer contract (which don't influence the address of the deployed contract)
      */
-    function _deployPrivateOffer(
+    function _createPrivateOfferClone(
         bytes32 _rawSalt,
-        PrivateOfferFixedArguments memory _fixedArguments
+        PrivateOfferFixedArguments memory _fixedArguments,
+        PrivateOfferVariableArguments memory _variableArguments
     ) private returns (address) {
-        address privateOffer = Create2.deploy(0, _rawSalt, _getBytecode(_fixedArguments));
-
-        emit Deploy(privateOffer);
-        return privateOffer;
+        bytes32 salt = _getSalt(_rawSalt, _fixedArguments);
+        address clone = Clones.cloneDeterministic(implementation, salt);
+        PrivateOffer(clone).initialize(_fixedArguments, _variableArguments);
+        emit NewClone(clone);
+        return clone;
     }
 }
