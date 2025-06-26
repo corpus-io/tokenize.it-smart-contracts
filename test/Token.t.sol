@@ -65,7 +65,7 @@ contract tokenTest is Test {
         vm.stopPrank();
     }
 
-    function testSetUp() public {
+    function testSetUp() public view {
         assertTrue(token.hasRole(token.getRoleAdmin(token.REQUIREMENT_ROLE()), admin));
         assertTrue(token.allowList() == allowList);
         assertTrue(keccak256(bytes(token.name())) == keccak256(bytes("testToken")));
@@ -128,32 +128,32 @@ contract tokenTest is Test {
         );
     }
 
-    function testThisIsNotMintAllower() public {
+    function testThisIsNotMintAllower() public view {
         assertFalse(token.hasRole(token.MINTALLOWER_ROLE(), address(this)));
     }
 
-    function testMsgSenderIsNotMintAllower() public {
+    function testMsgSenderIsNotMintAllower() public view {
         assertFalse(token.hasRole(token.MINTALLOWER_ROLE(), msg.sender));
     }
 
     /**
     @notice test that addresses that are not the admin cannot perform the mint allower tasks
      */
-    function testIsNotAdmin(address x) public {
+    function testIsNotAdmin(address x) public view {
         // test would fail (to fail) if x = admin. This has actually happened! Abort test in that case.
         vm.assume(x != admin);
         assertFalse(token.hasRole(token.DEFAULT_ADMIN_ROLE(), x));
     }
 
-    function testAdmin() public {
+    function testAdmin() public view {
         assertTrue(token.hasRole(token.getRoleAdmin(token.REQUIREMENT_ROLE()), admin));
     }
 
-    function testMinterAdmin() public {
+    function testMinterAdmin() public view {
         assertTrue(token.hasRole(token.MINTALLOWER_ROLE(), mintAllower));
     }
 
-    function testMintAllower(address x) public {
+    function testMintAllower(address x) public view {
         vm.assume(x != mintAllower);
         assertFalse(token.hasRole(token.MINTALLOWER_ROLE(), x));
     }
@@ -163,7 +163,7 @@ contract tokenTest is Test {
         token.setRequirements(3);
     }
 
-    function testDecimals() public {
+    function testDecimals() public view {
         assertTrue(token.decimals() == 18);
     }
 

@@ -5,7 +5,7 @@ import "../lib/forge-std/src/Test.sol";
 import "../contracts/interfaces/IFeeSettings.sol";
 
 contract IFeeSettingsTest is Test {
-    function testManuallyVerifyInterfaceIDV1() public {
+    function testManuallyVerifyInterfaceIDV1() public pure {
         // see https://medium.com/@chiqing/ethereum-standard-erc165-explained-63b54ca0d273
         bytes4 expected = getFunctionSelector("tokenFee(uint256)");
         expected = expected ^ getFunctionSelector("continuousFundraisingFee(uint256)");
@@ -23,7 +23,7 @@ contract IFeeSettingsTest is Test {
         assertEq(actual, expected, "interface ID mismatch");
     }
 
-    function testManuallyVerifyInterfaceIDV2() public {
+    function testManuallyVerifyInterfaceIDV2() public pure {
         // see https://medium.com/@chiqing/ethereum-standard-erc165-explained-63b54ca0d273
         bytes4 expected = getFunctionSelector("crowdinvestingFee(uint256,address)");
         expected = expected ^ getFunctionSelector("crowdinvestingFeeCollector(address)");

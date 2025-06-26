@@ -307,7 +307,7 @@ contract VestingTest is Test {
         assertEq(token.balanceOf(_beneficiary), amount, "balance is wrong");
     }
 
-    function testNoWrongManagers(address rando) public {
+    function testNoWrongManagers(address rando) public view {
         vm.assume(rando != address(owner));
 
         assertFalse(vesting.managers(rando), "rando is a manager");

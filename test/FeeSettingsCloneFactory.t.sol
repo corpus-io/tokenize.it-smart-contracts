@@ -76,7 +76,7 @@ contract tokenTest is Test {
         assertEq(expected1, actual, "address prediction failed");
     }
 
-    function testChangingParametersChangesAddress() public {
+    function testChangingParametersChangesAddress() public view {
         address someAddress = address(42);
 
         address base = factory.predictCloneAddress(

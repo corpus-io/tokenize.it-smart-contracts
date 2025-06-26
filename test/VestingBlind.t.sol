@@ -580,7 +580,7 @@ contract VestingBlindTest is Test {
         uint64 _cliff,
         bool _isMintable,
         Vesting _vesting
-    ) public {
+    ) public view {
         assertEq(_vesting.beneficiary(_id), _beneficiary, "wrong beneficiary");
         assertEq(_vesting.allocation(_id), _allocation, "wrong allocation");
         assertEq(_vesting.start(_id), _start, "wrong start");

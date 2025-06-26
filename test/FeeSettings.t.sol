@@ -516,7 +516,7 @@ contract FeeSettingsTest is Test {
         assertEq(_feeSettings.privateOfferFee(amount, address(0)), 0, "Private offer fee mismatch");
     }
 
-    function testERC165IsAvailable() public {
+    function testERC165IsAvailable() public view {
         assertEq(
             feeSettings.supportsInterface(0x01ffc9a7), // type(IERC165).interfaceId
             true,
@@ -524,7 +524,7 @@ contract FeeSettingsTest is Test {
         );
     }
 
-    function testIFeeSettingsV1IsAvailable(uint256 _amount) public {
+    function testIFeeSettingsV1IsAvailable(uint256 _amount) public view {
         vm.assume(_amount < UINT256_MAX / 3);
         assertEq(feeSettings.supportsInterface(type(IFeeSettingsV1).interfaceId), true, "IFeeSettingsV1 not supported");
 
@@ -544,11 +544,11 @@ contract FeeSettingsTest is Test {
         assertEq(feeSettings.feeCollector(), feeSettings.tokenFeeCollector(address(0)), "Fee collector mismatch");
     }
 
-    function testIFeeSettingsV2IsAvailable() public {
+    function testIFeeSettingsV2IsAvailable() public view {
         assertEq(feeSettings.supportsInterface(type(IFeeSettingsV2).interfaceId), true, "IFeeSettingsV2 not supported");
     }
 
-    function testNonsenseInterfacesAreNotAvailable(bytes4 _nonsenseInterface) public {
+    function testNonsenseInterfacesAreNotAvailable(bytes4 _nonsenseInterface) public view {
         vm.assume(_nonsenseInterface != type(IFeeSettingsV1).interfaceId);
         vm.assume(_nonsenseInterface != type(IFeeSettingsV2).interfaceId);
         vm.assume(_nonsenseInterface != 0x01ffc9a7);
