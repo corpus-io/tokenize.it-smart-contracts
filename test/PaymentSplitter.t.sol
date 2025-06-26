@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
+import "../lib/forge-std/src/console.sol";
 import "./resources/FakePaymentToken.sol";
 import "@openzeppelin/contracts/finance/PaymentSplitter.sol";
 

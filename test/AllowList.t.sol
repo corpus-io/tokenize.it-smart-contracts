@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
+import "../lib/forge-std/src/console.sol";
 import "../contracts/factories/AllowListCloneFactory.sol";
 
 contract AllowListTest is Test {
@@ -32,7 +33,7 @@ contract AllowListTest is Test {
         factory.createAllowListClone("salt", trustedForwarder, address(0));
     }
 
-    function testOwner() public {
+    function testOwner() public view {
         assertTrue(list.owner() == owner);
     }
 
@@ -210,7 +211,7 @@ contract AllowListTest is Test {
         assertTrue(list.map(x) == 0);
     }
 
-    function testTrustedCurrencyBit() public {
+    function testTrustedCurrencyBit() public pure {
         assertTrue(
             TRUSTED_CURRENCY == 2 ** 255,
             "TRUSTED_CURRENCY has wrong value. Must stay constant or old contracts might break"
