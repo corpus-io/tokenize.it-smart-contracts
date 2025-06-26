@@ -24,6 +24,8 @@ struct PrivateOfferArguments {
     IERC20 currency;
     /// token to be bought
     Token token;
+    /// token provider. If set, tokens will be transferred from this address. If not set, tokens will be minted from the token contract.
+    address tokenHolder;
 }
 
 /**
@@ -104,7 +106,11 @@ contract PrivateOffer {
             (currencyAmount - fee)
         );
 
-        _arguments.token.mint(_arguments.tokenReceiver, _arguments.tokenAmount);
+        if (_arguments.tokenHolder != address(0)) {
+            _arguments.token.transferFrom(_arguments.tokenHolder, _arguments.tokenReceiver, _arguments.tokenAmount);
+        } else {
+            _arguments.token.mint(_arguments.tokenReceiver, _arguments.tokenAmount);
+        }
 
         emit Deal(
             _arguments.currencyPayer,

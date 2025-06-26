@@ -143,7 +143,8 @@ contract tokenTest is Test {
             _currency,
             _token,
             _lastBuyDate,
-            _priceOracle
+            _priceOracle,
+            address(0)
         );
 
         address expected1 = fundraisingFactory.predictCloneAddress(
@@ -190,7 +191,8 @@ contract tokenTest is Test {
             exampleCurrency,
             exampleToken,
             exampleLastBuyDate,
-            examplePriceOracle
+            examplePriceOracle,
+            address(0)
         );
 
         bytes32 salt = keccak256(abi.encode(_rawSalt, _trustedForwarder, arguments));
@@ -232,7 +234,8 @@ contract tokenTest is Test {
             exampleCurrency,
             exampleToken,
             exampleLastBuyDate,
-            examplePriceOracle
+            examplePriceOracle,
+            address(0)
         );
 
         address expected1 = fundraisingFactory.predictCloneAddress(_rawSalt, _trustedForwarder, arguments);
@@ -294,7 +297,8 @@ contract tokenTest is Test {
             _currency,
             _token,
             exampleLastBuyDate,
-            examplePriceOracle
+            examplePriceOracle,
+            address(0)
         );
 
         // deploy once
@@ -335,7 +339,8 @@ contract tokenTest is Test {
             exampleCurrency,
             exampleToken,
             exampleLastBuyDate,
-            examplePriceOracle
+            examplePriceOracle,
+            address(0)
         );
 
         Crowdinvesting crowdinvesting = Crowdinvesting(
@@ -399,7 +404,8 @@ contract tokenTest is Test {
             _currency,
             _token,
             _lastBuyDate,
-            _priceOracle
+            _priceOracle,
+            address(0)
         );
 
         Crowdinvesting crowdinvesting = Crowdinvesting(
@@ -446,7 +452,8 @@ contract tokenTest is Test {
             IERC20(someCurrency),
             exampleToken,
             exampleLastBuyDate,
-            examplePriceOracle
+            examplePriceOracle,
+            address(0)
         );
 
         vm.expectRevert("currency needs to be on the allowlist with TRUSTED_CURRENCY attribute");
@@ -478,7 +485,8 @@ contract tokenTest is Test {
             exampleCurrency,
             exampleToken,
             exampleLastBuyDate,
-            examplePriceOracle
+            examplePriceOracle,
+            address(0)
         );
 
         Crowdinvesting crowdinvesting = Crowdinvesting(

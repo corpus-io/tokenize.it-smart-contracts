@@ -96,7 +96,8 @@ contract PrivateOfferTimeLockTest is Test {
             price,
             block.timestamp + 1000,
             currency,
-            token
+            token,
+            address(0)
         );
 
         uint256 currencyAmount = (arguments.tokenAmount * price) / 10 ** token.decimals();

@@ -9,6 +9,7 @@ import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
 import "./resources/FakeCrowdinvestingAndToken.sol";
 import "./resources/CloneCreators.sol";
+import "./resources/CrowdinvestingArgumentHelper.sol";
 
 contract CrowdinvestingTest is Test {
     event CurrencyReceiverChanged(address indexed);
@@ -95,6 +96,7 @@ contract CrowdinvestingTest is Test {
             paymentToken,
             token,
             0,
+            address(0),
             address(0)
         );
         crowdinvesting = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
@@ -132,6 +134,7 @@ contract CrowdinvestingTest is Test {
                 paymentToken,
                 token,
                 0,
+                address(0),
                 address(0)
             )
         );
@@ -159,6 +162,7 @@ contract CrowdinvestingTest is Test {
             paymentToken,
             token,
             lastBuyDate,
+            address(0),
             address(0)
         );
         Crowdinvesting _crowdinvesting = Crowdinvesting(
@@ -188,6 +192,7 @@ contract CrowdinvestingTest is Test {
             paymentToken,
             token,
             0,
+            address(0),
             address(0)
         );
         vm.expectRevert("CrowdinvestingCloneFactory: Unexpected trustedForwarder");
@@ -302,6 +307,7 @@ contract CrowdinvestingTest is Test {
             maliciousPaymentToken,
             _token,
             0,
+            address(0),
             address(0)
         );
 
@@ -1223,6 +1229,7 @@ contract CrowdinvestingTest is Test {
             paymentToken,
             token,
             0,
+            address(0),
             address(0)
         );
         vm.prank(owner);
@@ -1290,6 +1297,7 @@ contract CrowdinvestingTest is Test {
             paymentToken,
             token,
             0,
+            address(0),
             address(0)
         );
         vm.prank(owner);
@@ -1384,6 +1392,7 @@ contract CrowdinvestingTest is Test {
             paymentToken,
             token,
             _lastBuyDate,
+            address(0),
             address(0)
         );
         Crowdinvesting _crowdinvesting = Crowdinvesting(
@@ -1419,25 +1428,5 @@ contract CrowdinvestingTest is Test {
             _crowdinvesting.buy(tokenBuyAmount, type(uint256).max, buyer);
             vm.stopPrank();
         }
-    }
-
-    function cloneCrowdinvestingInitializerArguments(
-        CrowdinvestingInitializerArguments memory arguments
-    ) public pure returns (CrowdinvestingInitializerArguments memory) {
-        return
-            CrowdinvestingInitializerArguments(
-                arguments.owner,
-                arguments.currencyReceiver,
-                arguments.minAmountPerBuyer,
-                arguments.maxAmountPerBuyer,
-                arguments.tokenPrice,
-                arguments.priceMin,
-                arguments.priceMax,
-                arguments.maxAmountOfTokenToBeSold,
-                arguments.currency,
-                arguments.token,
-                arguments.lastBuyDate,
-                arguments.priceOracle
-            );
     }
 }

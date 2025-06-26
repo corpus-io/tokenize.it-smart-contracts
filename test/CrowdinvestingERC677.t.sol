@@ -83,16 +83,17 @@ contract CrowdinvestingTest is Test {
 
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             owner,
-            receiver,
+            payable(receiver),
             minAmountPerBuyer,
             maxAmountPerBuyer,
             price,
-            0,
-            0,
+            price,
+            price,
             maxAmountOfTokenToBeSold,
             paymentToken,
             token,
             0,
+            address(0),
             address(0)
         );
 
@@ -152,16 +153,17 @@ contract CrowdinvestingTest is Test {
 
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             owner,
-            receiver,
+            payable(receiver),
             minAmountPerBuyer,
             maxAmountPerBuyer,
             _price,
-            0,
-            0,
+            _price,
+            _price,
             _maxMintAmount,
             maliciousPaymentToken,
             _token,
             0,
+            address(0),
             address(0)
         );
         Crowdinvesting _crowdinvesting = Crowdinvesting(

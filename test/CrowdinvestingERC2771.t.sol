@@ -82,17 +82,18 @@ contract CrowdinvestingTest is Test {
         costInPaymentToken = (tokenBuyAmount * price) / 10 ** 18;
 
         arguments = CrowdinvestingInitializerArguments(
-            address(this),
+            owner,
             payable(receiver),
             minAmountPerBuyer,
             maxAmountPerBuyer,
             price,
-            0,
-            0,
+            price,
+            price,
             maxAmountOfTokenToBeSold,
             paymentToken,
             token,
             0,
+            address(0),
             address(0)
         );
     }

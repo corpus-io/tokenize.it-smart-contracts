@@ -118,7 +118,8 @@ contract TokenERC2771Test is Test {
             currency: paymentToken,
             token: token,
             lastBuyDate: 0,
-            priceOracle: address(0)
+            priceOracle: address(0),
+            tokenHolder: address(0)
         });
         Crowdinvesting crowdinvesting = Crowdinvesting(
             fundraisingFactory.createCrowdinvestingClone(0, address(forwarder), arguments)

@@ -199,7 +199,8 @@ contract CompanySetUpTest is Test {
             maxAmountOfTokenToBeSold,
             paymentToken,
             token,
-            0,
+            deadline,
+            address(0),
             address(0)
         );
 
@@ -401,7 +402,8 @@ contract CompanySetUpTest is Test {
             price,
             deadline,
             paymentToken,
-            token
+            token,
+            address(0)
         );
         privateOfferAddress = privateOfferFactory.predictPrivateOfferAddress(salt, arguments);
 

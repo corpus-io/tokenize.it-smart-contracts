@@ -97,6 +97,7 @@ contract CrowdinvestingTest is Test {
             paymentToken,
             token,
             0,
+            address(0),
             address(0)
         );
 
@@ -209,7 +210,8 @@ contract CrowdinvestingTest is Test {
             paymentToken,
             token,
             0,
-            address(priceLinear)
+            address(priceLinear),
+            address(0)
         );
 
         crowdinvesting = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
@@ -269,7 +271,8 @@ contract CrowdinvestingTest is Test {
             paymentToken,
             token,
             0,
-            address(priceLinear)
+            address(priceLinear),
+            address(0)
         );
 
         crowdinvesting = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
@@ -330,7 +333,8 @@ contract CrowdinvestingTest is Test {
             paymentToken,
             token,
             0,
-            address(priceLinear)
+            address(priceLinear),
+            address(0)
         );
 
         crowdinvesting = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
@@ -430,7 +434,8 @@ contract CrowdinvestingTest is Test {
             paymentToken,
             token,
             0,
-            address(priceLinear)
+            address(priceLinear),
+            address(0)
         );
 
         crowdinvesting = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
