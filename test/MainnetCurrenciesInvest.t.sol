@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
+import "../lib/forge-std/src/console.sol";
 //import "../lib/forge-std/stdlib.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
