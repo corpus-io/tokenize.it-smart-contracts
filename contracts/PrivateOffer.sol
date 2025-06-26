@@ -7,15 +7,14 @@ import "./Token.sol";
 /**
  * @notice Contains all information necessary to execute a PrivateOffer.
  */
-struct PrivateOfferArguments {
-    /// address holding the currency. Must have given sufficient allowance to this contract.
-    address currencyPayer;
-    /// address receiving the tokens. Must have sufficient attributes in AllowList to be able to receive tokens or the TRANSFERER role.
-    address tokenReceiver;
+
+struct PrivateOfferFixedArguments {
     /// address receiving the payment in currency.
     address currencyReceiver;
-    /// amount of tokens to be bought.
-    uint256 tokenAmount;
+    /// minimum amount of tokens to be bought.
+    uint256 minTokenAmount;
+    /// maximum amount of tokens to be bought.
+    uint256 maxTokenAmount;
     /// price company and investor agreed on, see docs/price.md.
     uint256 tokenPrice;
     /// timestamp after which the invitation is no longer valid.
@@ -24,8 +23,15 @@ struct PrivateOfferArguments {
     IERC20 currency;
     /// token to be bought
     Token token;
-    /// token provider. If set, tokens will be transferred from this address. If not set, tokens will be minted from the token contract.
-    address tokenHolder;
+}
+
+struct PrivateOfferVariableArguments {
+    /// address holding the currency. Must have given sufficient allowance to this contract.
+    address currencyPayer;
+    /// address receiving the tokens. Must have sufficient attributes in AllowList to be able to receive tokens or the TRANSFERER role.
+    address tokenReceiver;
+    /// amount of tokens to buy
+    uint256 tokenAmount;
 }
 
 /**
@@ -71,54 +77,74 @@ contract PrivateOffer {
         Token indexed token
     );
 
-    constructor(PrivateOfferArguments memory _arguments) {
-        require(_arguments.currencyPayer != address(0), "_arguments.currencyPayer can not be zero address");
-        require(_arguments.tokenReceiver != address(0), "_arguments.tokenReceiver can not be zero address");
-        require(_arguments.currencyReceiver != address(0), "_arguments.currencyReceiver can not be zero address");
-        require(_arguments.tokenPrice != 0, "_arguments.tokenPrice can not be zero"); // a simple mint from the token contract will do in that case
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(
+        PrivateOfferFixedArguments memory _fixedArguments,
+        PrivateOfferVariableArguments memory _variableArguments
+    ) external initializer {
+        require(_fixedArguments.currencyPayer != address(0), "_arguments.currencyPayer can not be zero address");
+        require(_fixedArguments.tokenReceiver != address(0), "_arguments.tokenReceiver can not be zero address");
+        require(_fixedArguments.currencyReceiver != address(0), "_arguments.currencyReceiver can not be zero address");
+        require(_fixedArguments.tokenPrice != 0, "_arguments.tokenPrice can not be zero"); // a simple mint from the token contract will do in that case
         require(block.timestamp <= _arguments.expiration, "Deal expired");
-        require(_arguments.token != Token(address(0)), "_arguments.token can not be zero address");
-        require(_arguments.currency != IERC20(address(0)), "_arguments.currency can not be zero address");
-        require(_arguments.tokenAmount != 0, "_arguments.tokenAmount can not be zero");
+        require(_fixedArguments.token != Token(address(0)), "_arguments.token can not be zero address");
+        require(_fixedArguments.currency != IERC20(address(0)), "_arguments.currency can not be zero address");
+        require(_variableArguments.tokenAmount != 0, "_arguments.tokenAmount can not be zero");
         require(
-            _arguments.token.allowList().map(address(_arguments.currency)) == TRUSTED_CURRENCY,
+            _fixedArguments.token.allowList().map(address(_fixedArguments.currency)) == TRUSTED_CURRENCY,
             "currency needs to be on the allowlist with TRUSTED_CURRENCY attribute"
+        );
+        require(
+            _variableArguments.tokenAmount >= _fixedArguments.minTokenAmount,
+            "tokenAmount is less than minTokenAmount"
+        );
+        require(
+            _variableArguments.tokenAmount <= _fixedArguments.maxTokenAmount,
+            "tokenAmount is greater than maxTokenAmount"
         );
 
         // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
         uint256 currencyAmount = Math.ceilDiv(
-            _arguments.tokenAmount * _arguments.tokenPrice,
-            10 ** _arguments.token.decimals()
+            _variableArguments.tokenAmount * _fixedArguments.tokenPrice,
+            10 ** _fixedArguments.token.decimals()
         );
 
-        IFeeSettingsV2 feeSettings = _arguments.token.feeSettings();
-        uint256 fee = feeSettings.privateOfferFee(currencyAmount, address(_arguments.token));
+        IFeeSettingsV2 feeSettings = _fixedArguments.token.feeSettings();
+        uint256 fee = feeSettings.privateOfferFee(currencyAmount, address(_fixedArguments.token));
         if (fee != 0) {
-            _arguments.currency.safeTransferFrom(
-                _arguments.currencyPayer,
-                feeSettings.privateOfferFeeCollector(address(_arguments.token)),
+            _fixedArguments.currency.safeTransferFrom(
+                _variableArguments.currencyPayer,
+                feeSettings.privateOfferFeeCollector(address(_fixedArguments.token)),
                 fee
             );
         }
-        _arguments.currency.safeTransferFrom(
-            _arguments.currencyPayer,
-            _arguments.currencyReceiver,
+        _fixedArguments.currency.safeTransferFrom(
+            _variableArguments.currencyPayer,
+            _fixedArguments.currencyReceiver,
             (currencyAmount - fee)
         );
 
-        if (_arguments.tokenHolder != address(0)) {
-            _arguments.token.transferFrom(_arguments.tokenHolder, _arguments.tokenReceiver, _arguments.tokenAmount);
+        if (_fixedArguments.tokenHolder != address(0)) {
+            _fixedArguments.token.transferFrom(
+                _fixedArguments.tokenHolder,
+                _variableArguments.tokenReceiver,
+                _variableArguments.tokenAmount
+            );
         } else {
-            _arguments.token.mint(_arguments.tokenReceiver, _arguments.tokenAmount);
+            _fixedArguments.token.mint(_variableArguments.tokenReceiver, _variableArguments.tokenAmount);
         }
 
         emit Deal(
-            _arguments.currencyPayer,
-            _arguments.tokenReceiver,
-            _arguments.tokenAmount,
-            _arguments.tokenPrice,
-            _arguments.currency,
-            _arguments.token
+            _variableArguments.currencyPayer,
+            _variableArguments.tokenReceiver,
+            _variableArguments.tokenAmount,
+            _fixedArguments.tokenPrice,
+            _fixedArguments.currency,
+            _fixedArguments.token
         );
+        selfdestruct(payable(msg.sender)); // todo: check if this is the correct receiver. It should not be the factory.
     }
 }

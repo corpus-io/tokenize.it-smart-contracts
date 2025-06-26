@@ -71,18 +71,19 @@ The following statements about the smart contracts should always be true
 - The deal can only be paid for in currency.
 - During deployment, the payment after fee deduction is transferred to the receiver.
 - During deployment, the fee is deducted from the payment and sent to the feeCollector.
-- During deployment, tokens are minted to the buyer.
+- During deployment, tokens are minted or transferred to the buyer.
 - During deployment, the payment amount is rounded up by a maximum of 1 currency bit.
 - Funds sent to the contract can not be recovered.
 - The contract does not offer any functions after deployment is complete.
-- Token amount bought is exactly the amount configured.
+- Token amount bought is exactly the amount configured. // todo: update
 - receiver address can never be 0.
 - buyer address can never be 0.
 - tokenPrice can never be 0.
 - tokenPrice can never be negative.
-- No settings can be updated.
-- No settings can be changed before deployment without the contract address changing.
+- No settings can be updated. // todo: update
+- No settings can be changed before deployment without the contract address changing. // todo: update
 - A private offer that uses a currency that does not have the TRUSTED_CURRENCY attribute on the AllowList will revert during deployment.
+- # todo: mention vesting
 
 ## PrivateOfferFactory.sol
 
