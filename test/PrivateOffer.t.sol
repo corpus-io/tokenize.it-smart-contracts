@@ -479,7 +479,7 @@ contract PrivateOfferTest is Test {
         vm.prank(currencyPayer);
         currency.approve(expectedAddress, maxCurrencyAmount);
 
-        vm.expectRevert("Create2: Failed on deploy");
+        vm.expectRevert("panic: arithmetic underflow or overflow (0x11)");
         factory.createPrivateOfferClone(salt, fixedArguments, variableArguments);
     }
 
@@ -537,7 +537,7 @@ contract PrivateOfferTest is Test {
         vm.prank(tokenReceiver);
         currency.approve(expectedAddress, maxCurrencyAmount);
 
-        vm.expectRevert("Create2: Failed on deploy");
+        vm.expectRevert("currency needs to be on the allowlist with TRUSTED_CURRENCY attribute");
         factory.createPrivateOfferClone(salt, fixedArguments, variableArguments);
 
         // restore trusted currency on allowlist and make sure it works again
