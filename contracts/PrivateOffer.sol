@@ -11,6 +11,8 @@ import "./Token.sol";
 struct PrivateOfferFixedArguments {
     /// address receiving the payment in currency.
     address currencyReceiver;
+    /// address holding the tokens. If 0, the token will be minted.
+    address tokenHolder;
     /// minimum amount of tokens to be bought.
     uint256 minTokenAmount;
     /// maximum amount of tokens to be bought.
@@ -55,7 +57,7 @@ struct PrivateOfferVariableArguments {
  *     Because all of the execution logic is in the constructor, the deployment of the PrivateOffer contract is the last step. During the deployment, the newly
  *     minted tokens will be transferred to the buyer and the currency will be transferred to the company's receiver address.
  */
-contract PrivateOffer {
+contract PrivateOffer is Initializable {
     using SafeERC20 for IERC20;
 
     /**
@@ -82,14 +84,14 @@ contract PrivateOffer {
     }
 
     function initialize(
-        PrivateOfferFixedArguments memory _fixedArguments,
+        PrivateOfferFixedArguments calldata _fixedArguments,
         PrivateOfferVariableArguments memory _variableArguments
     ) external initializer {
-        require(_fixedArguments.currencyPayer != address(0), "_arguments.currencyPayer can not be zero address");
-        require(_fixedArguments.tokenReceiver != address(0), "_arguments.tokenReceiver can not be zero address");
+        require(_variableArguments.currencyPayer != address(0), "_arguments.currencyPayer can not be zero address");
+        require(_variableArguments.tokenReceiver != address(0), "_arguments.tokenReceiver can not be zero address");
         require(_fixedArguments.currencyReceiver != address(0), "_arguments.currencyReceiver can not be zero address");
         require(_fixedArguments.tokenPrice != 0, "_arguments.tokenPrice can not be zero"); // a simple mint from the token contract will do in that case
-        require(block.timestamp <= _arguments.expiration, "Deal expired");
+        require(block.timestamp <= _fixedArguments.expiration, "Deal expired");
         require(_fixedArguments.token != Token(address(0)), "_arguments.token can not be zero address");
         require(_fixedArguments.currency != IERC20(address(0)), "_arguments.currency can not be zero address");
         require(_variableArguments.tokenAmount != 0, "_arguments.tokenAmount can not be zero");
@@ -145,6 +147,6 @@ contract PrivateOffer {
             _fixedArguments.currency,
             _fixedArguments.token
         );
-        selfdestruct(payable(msg.sender)); // todo: check if this is the correct receiver. It should not be the factory.
+        //selfdestruct(payable(msg.sender)); // todo: check if this is the correct receiver. It should not be the factory.
     }
 }

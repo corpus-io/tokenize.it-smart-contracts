@@ -5,7 +5,7 @@ import "../lib/forge-std/src/Test.sol";
 import "../lib/forge-std/src/console.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/PrivateOffer.sol";
-import "../contracts/factories/PrivateOfferFactory.sol";
+import "../contracts/factories/PrivateOfferCloneFactory.sol";
 import "./resources/CloneCreators.sol";
 import "./resources/FakePaymentToken.sol";
 
@@ -19,7 +19,7 @@ contract PrivateOfferTest is Test {
         Token indexed token
     );
 
-    PrivateOfferFactory factory;
+    PrivateOfferCloneFactory factory;
 
     AllowList list;
     FeeSettings feeSettings;
@@ -47,7 +47,8 @@ contract PrivateOfferTest is Test {
     function setUp() public {
         Vesting vestingImplementation = new Vesting(trustedForwarder);
         VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
-        factory = new PrivateOfferFactory(vestingCloneFactory);
+        PrivateOffer privateOfferImplementation = new PrivateOffer();
+        factory = new PrivateOfferCloneFactory(address(privateOfferImplementation), vestingCloneFactory);
 
         vm.prank(paymentTokenProvider);
         currency = new FakePaymentToken(0, 18);
@@ -91,19 +92,27 @@ contract PrivateOfferTest is Test {
         uint256 amount = 20000000000000;
         uint256 expiration = block.timestamp + 1000;
 
-        PrivateOfferArguments memory arguments = PrivateOfferArguments(
-            tokenReceiver,
-            tokenReceiver,
+        PrivateOfferFixedArguments memory fixedArguments = PrivateOfferFixedArguments(
             currencyReceiver,
+            address(0),
+            amount,
             amount,
             price,
             expiration,
             currency,
-            token,
-            address(0)
+            token
         );
-        address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
 
+        PrivateOfferVariableArguments memory variableArguments = PrivateOfferVariableArguments(
+            tokenReceiver,
+            tokenReceiver,
+            amount
+        );
+
+        address expectedAddress = factory.predictCloneAddress(salt, fixedArguments);
+        console.log("expectedAddress: %s", expectedAddress);
+
+        // make sure balances are as expected before deployment
         uint256 tokenDecimals = token.decimals();
 
         vm.startPrank(paymentTokenProvider);
@@ -133,14 +142,13 @@ contract PrivateOfferTest is Test {
             "tokenFeeCollector currency balance is not correct"
         );
 
-        // make sure balances are as expected after deployment
         uint256 feeCollectorCurrencyBalanceBefore = currency.balanceOf(
             FeeSettings(address(token.feeSettings())).feeCollector()
         );
         vm.expectEmit(true, true, true, true, address(expectedAddress));
         emit Deal(tokenReceiver, tokenReceiver, amount, price, currency, token);
 
-        address inviteAddress = factory.deployPrivateOffer(salt, arguments);
+        address inviteAddress = factory.createPrivateOfferClone(salt, fixedArguments, variableArguments);
 
         console.log(
             "feeCollector currency balance after deployment: %s",
@@ -157,6 +165,8 @@ contract PrivateOfferTest is Test {
             len := extcodesize(expectedAddress)
         }
         console.log("Deployed contract size: %s", len);
+
+        // make sure balances are as expected after deployment
         assertEq(currency.balanceOf(tokenReceiver), 0);
 
         assertEq(
@@ -187,18 +197,24 @@ contract PrivateOfferTest is Test {
         uint256 amount = 20000000000000;
         uint256 expiration = block.timestamp + 1000;
 
-        PrivateOfferArguments memory arguments = PrivateOfferArguments(
-            tokenReceiver,
-            tokenReceiver,
+        PrivateOfferFixedArguments memory fixedArguments = PrivateOfferFixedArguments(
             currencyReceiver,
+            tokenHolder,
+            amount,
             amount,
             price,
             expiration,
             currency,
-            token,
-            tokenHolder
+            token
         );
-        address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
+
+        PrivateOfferVariableArguments memory variableArguments = PrivateOfferVariableArguments(
+            tokenReceiver,
+            tokenReceiver,
+            amount
+        );
+
+        address expectedAddress = factory.predictCloneAddress(salt, fixedArguments);
 
         uint256 tokenDecimals = token.decimals();
 
@@ -246,7 +262,7 @@ contract PrivateOfferTest is Test {
         vm.expectEmit(true, true, true, true, address(expectedAddress));
         emit Deal(tokenReceiver, tokenReceiver, amount, price, currency, token);
 
-        address inviteAddress = factory.deployPrivateOffer(salt, arguments);
+        address inviteAddress = factory.createPrivateOfferClone(salt, fixedArguments, variableArguments);
 
         console.log(
             "feeCollector currency balance after deployment: %s",
@@ -299,18 +315,24 @@ contract PrivateOfferTest is Test {
         //bytes memory creationCode = type(PrivateOffer).creationCode;
         uint256 expiration = block.timestamp + 1000;
 
-        PrivateOfferArguments memory arguments = PrivateOfferArguments(
-            currencyPayer,
-            tokenReceiver,
+        PrivateOfferFixedArguments memory fixedArguments = PrivateOfferFixedArguments(
             currencyReceiver,
+            address(0),
+            _tokenBuyAmount,
             _tokenBuyAmount,
             _nominalPrice,
             expiration,
             currency,
-            token,
-            address(0)
+            token
         );
-        address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
+
+        PrivateOfferVariableArguments memory variableArguments = PrivateOfferVariableArguments(
+            currencyPayer,
+            tokenReceiver,
+            _tokenBuyAmount
+        );
+
+        address expectedAddress = factory.predictCloneAddress(salt, fixedArguments);
 
         // set fees to 0, otherwise extra tokens are minted which causes an overflow
         Fees memory fees = Fees(0, 0, 0, 0);
@@ -354,7 +376,7 @@ contract PrivateOfferTest is Test {
         // make sure balances are as expected after deployment
         uint256 currencyReceiverBalanceBefore = currency.balanceOf(currencyReceiver);
 
-        address inviteAddress = factory.deployPrivateOffer(salt, arguments);
+        address inviteAddress = factory.createPrivateOfferClone(salt, fixedArguments, variableArguments);
 
         console.log(
             "feeCollector currency balance after deployment: %s",
@@ -426,18 +448,24 @@ contract PrivateOfferTest is Test {
 
         uint256 expiration = block.timestamp + 1000;
 
-        PrivateOfferArguments memory arguments = PrivateOfferArguments(
-            currencyPayer,
-            tokenReceiver,
+        PrivateOfferFixedArguments memory fixedArguments = PrivateOfferFixedArguments(
             currencyReceiver,
+            address(0),
+            _tokenBuyAmount,
             _tokenBuyAmount,
             _nominalPrice,
             expiration,
             currency,
-            token,
-            address(0)
+            token
         );
-        address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
+
+        PrivateOfferVariableArguments memory variableArguments = PrivateOfferVariableArguments(
+            currencyPayer,
+            tokenReceiver,
+            _tokenBuyAmount
+        );
+
+        address expectedAddress = factory.predictCloneAddress(salt, fixedArguments);
 
         vm.startPrank(admin);
         console.log("expectedAddress: %s", token.mintingAllowance(expectedAddress));
@@ -452,7 +480,7 @@ contract PrivateOfferTest is Test {
         currency.approve(expectedAddress, maxCurrencyAmount);
 
         vm.expectRevert("Create2: Failed on deploy");
-        factory.deployPrivateOffer(salt, arguments);
+        factory.createPrivateOfferClone(salt, fixedArguments, variableArguments);
     }
 
     function testRevertOnOverflow(uint256 _tokenBuyAmount, uint256 _tokenPrice) public {
@@ -475,18 +503,24 @@ contract PrivateOfferTest is Test {
 
         uint256 expiration = block.timestamp + 1000;
 
-        PrivateOfferArguments memory arguments = PrivateOfferArguments(
-            currencyPayer,
-            tokenReceiver,
+        PrivateOfferFixedArguments memory fixedArguments = PrivateOfferFixedArguments(
             currencyReceiver,
+            address(0),
+            _tokenBuyAmount,
             _tokenBuyAmount,
             _nominalPrice,
             expiration,
             currency,
-            token,
-            address(0)
+            token
         );
-        address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
+
+        PrivateOfferVariableArguments memory variableArguments = PrivateOfferVariableArguments(
+            currencyPayer,
+            tokenReceiver,
+            _tokenBuyAmount
+        );
+
+        address expectedAddress = factory.predictCloneAddress(salt, fixedArguments);
 
         vm.startPrank(admin);
         console.log("expectedAddress: %s", token.mintingAllowance(expectedAddress));
@@ -504,11 +538,11 @@ contract PrivateOfferTest is Test {
         currency.approve(expectedAddress, maxCurrencyAmount);
 
         vm.expectRevert("Create2: Failed on deploy");
-        factory.deployPrivateOffer(salt, arguments);
+        factory.createPrivateOfferClone(salt, fixedArguments, variableArguments);
 
         // restore trusted currency on allowlist and make sure it works again
         list.set(address(currency), TRUSTED_CURRENCY);
-        factory.deployPrivateOffer(salt, arguments);
+        factory.createPrivateOfferClone(salt, fixedArguments, variableArguments);
     }
 
     function testAcceptWithDifferentTokenReceiver(uint256 rawSalt) public {
@@ -521,18 +555,24 @@ contract PrivateOfferTest is Test {
         uint256 tokenDecimals = token.decimals();
         uint256 currencyAmount = (tokenAmount * price) / 10 ** tokenDecimals;
 
-        PrivateOfferArguments memory arguments = PrivateOfferArguments(
-            currencyPayer,
-            tokenReceiver,
+        PrivateOfferFixedArguments memory fixedArguments = PrivateOfferFixedArguments(
             currencyReceiver,
+            address(0),
+            tokenAmount,
             tokenAmount,
             price,
             expiration,
             currency,
-            token,
-            address(0)
+            token
         );
-        address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
+
+        PrivateOfferVariableArguments memory variableArguments = PrivateOfferVariableArguments(
+            currencyPayer,
+            tokenReceiver,
+            tokenAmount
+        );
+
+        address expectedAddress = factory.predictCloneAddress(salt, fixedArguments);
 
         vm.prank(admin);
         token.increaseMintingAllowance(expectedAddress, tokenAmount);
@@ -560,7 +600,7 @@ contract PrivateOfferTest is Test {
             "tokenFeeCollector token balance is not correct"
         );
 
-        address inviteAddress = factory.deployPrivateOffer(salt, arguments);
+        address inviteAddress = factory.createPrivateOfferClone(salt, fixedArguments, variableArguments);
 
         assertEq(inviteAddress, expectedAddress, "deployed contract address is not correct");
 

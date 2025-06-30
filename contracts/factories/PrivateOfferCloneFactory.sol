@@ -32,7 +32,8 @@ contract PrivateOfferCloneFactory is CloneFactory {
         PrivateOfferFixedArguments calldata _fixedArguments,
         PrivateOfferVariableArguments calldata _variableArguments
     ) external returns (address) {
-        PrivateOffer privateOffer = PrivateOffer(Clones.cloneDeterministic(implementation, _rawSalt));
+        bytes32 salt = _getSalt(_rawSalt, _fixedArguments);
+        PrivateOffer privateOffer = PrivateOffer(Clones.cloneDeterministic(implementation, salt));
         privateOffer.initialize(_fixedArguments, _variableArguments);
         return address(privateOffer);
     }
@@ -49,7 +50,7 @@ contract PrivateOfferCloneFactory is CloneFactory {
      */
     function createPrivateOfferCloneWithTimeLock(
         bytes32 _rawSalt,
-        PrivateOfferArguments calldata _fixedArguments,
+        PrivateOfferFixedArguments calldata _fixedArguments,
         PrivateOfferVariableArguments calldata _variableArguments,
         uint64 _vestingStart,
         uint64 _vestingCliff,
@@ -77,7 +78,7 @@ contract PrivateOfferCloneFactory is CloneFactory {
         variableArguments.tokenReceiver = address(vesting);
 
         // deploy the private offer
-        address privateOffer = createPrivateOfferClone(_rawSalt, _fixedArguments, variableArguments);
+        address privateOffer = _createPrivateOfferClone(_rawSalt, _fixedArguments, variableArguments);
 
         require(
             _fixedArguments.token.balanceOf(address(vesting)) == _variableArguments.tokenAmount,
@@ -95,18 +96,15 @@ contract PrivateOfferCloneFactory is CloneFactory {
      * @param _vestingCliff Cliff duration.
      * @param _vestingDuration Total vesting duration.
      * @param _vestingContractOwner Address that will own the vesting contract (note: this is not the token receiver or the beneficiary, but rather the company admin)
-     * @param trustedForwarder ERC2771 trusted forwarder address
      * @return privateOfferAddress The address of the PrivateOffer contract that would be deployed.
-     * @return vestingAddress The address of the Vesting contract that would be deployed.
      */
     function predictPrivateOfferCloneWithTimeLockAddress(
         bytes32 _rawSalt,
-        PrivateOfferArguments calldata _fixedArguments,
+        PrivateOfferFixedArguments calldata _fixedArguments,
         uint64 _vestingStart,
         uint64 _vestingCliff,
         uint64 _vestingDuration,
-        address _vestingContractOwner,
-        address trustedForwarder
+        address _vestingContractOwner
     ) public view returns (address) {
         // vesting address can not be predicted, as it depends on the token amount and token receiver. But the private offer address should
         // change if the vesting conditions change.
@@ -134,9 +132,9 @@ contract PrivateOfferCloneFactory is CloneFactory {
      */
     function predictCloneAddress(
         bytes32 _salt,
-        PrivateOfferFixedArguments memory _fixedArguments
+        PrivateOfferFixedArguments calldata _fixedArguments
     ) public view returns (address) {
-        bytes32 salt = _getSalt(_rawSalt, _fixedArguments);
+        bytes32 salt = _getSalt(_salt, _fixedArguments);
         return Clones.predictDeterministicAddress(implementation, salt);
     }
 
@@ -185,7 +183,7 @@ contract PrivateOfferCloneFactory is CloneFactory {
      */
     function _createPrivateOfferClone(
         bytes32 _rawSalt,
-        PrivateOfferFixedArguments memory _fixedArguments,
+        PrivateOfferFixedArguments calldata _fixedArguments,
         PrivateOfferVariableArguments memory _variableArguments
     ) private returns (address) {
         bytes32 salt = _getSalt(_rawSalt, _fixedArguments);
