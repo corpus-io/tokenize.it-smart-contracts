@@ -5,13 +5,17 @@ fuzz-runs = 10_000
 via-ir = true # Enable the IR-based optimizer (yul)
 optimizer = true
 bytecode_hash = "none" # prevents compiler from attaching bytecode hash to contract metadata
+ignored_error_codes = [5159] # selfdestruct in PrivateOffer
+
 
 [profile.fastDev]
 via-ir = false # Enable the IR-based optimizer (yul)
 optimizer = true
 optimizer_runs = 10_000
+ignored_error_codes = [5159] # selfdestruct in PrivateOffer
 
-gas_reports = ["AllowList", "Crowdinvesting", "FeeSettings", "PrivateOffer", "PrivateOfferFactory", "Token"]
+
+gas_reports = ["AllowList", "Crowdinvesting", "FeeSettings", "PrivateOffer", "PrivateOfferCloneFactory", "Token"]
 
 [rpc_endpoints]
 goerli = "${GOERLI_RPC_URL}"
