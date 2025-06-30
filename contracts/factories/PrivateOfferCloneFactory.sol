@@ -47,7 +47,7 @@ contract PrivateOfferCloneFactory is CloneFactory {
      * @param _vestingDuration The duration of the vesting period.
      * @param _vestingContractOwner The owner of the vesting contract.
      */
-    function deployPrivateOfferWithTimeLock(
+    function createPrivateOfferCloneWithTimeLock(
         bytes32 _rawSalt,
         PrivateOfferArguments calldata _fixedArguments,
         PrivateOfferVariableArguments calldata _variableArguments,
@@ -79,7 +79,10 @@ contract PrivateOfferCloneFactory is CloneFactory {
         // deploy the private offer
         address privateOffer = createPrivateOfferClone(_rawSalt, _fixedArguments, variableArguments);
 
-        require(_fixedArguments.token.balanceOf(address(vesting)) == _variableArguments.tokenAmount, "Execution failed");
+        require(
+            _fixedArguments.token.balanceOf(address(vesting)) == _variableArguments.tokenAmount,
+            "Execution failed"
+        );
         emit NewPrivateOfferWithLockup(address(privateOffer), address(vesting));
         return address(vesting);
     }
@@ -96,7 +99,7 @@ contract PrivateOfferCloneFactory is CloneFactory {
      * @return privateOfferAddress The address of the PrivateOffer contract that would be deployed.
      * @return vestingAddress The address of the Vesting contract that would be deployed.
      */
-    function predictPrivateOfferAndTimeLockAddress(
+    function predictPrivateOfferCloneWithTimeLockAddress(
         bytes32 _rawSalt,
         PrivateOfferArguments calldata _fixedArguments,
         uint64 _vestingStart,
@@ -110,7 +113,14 @@ contract PrivateOfferCloneFactory is CloneFactory {
         // # todo: mix vesting conditions into private offer address calculation for security
 
         address privateOfferAddress = predictCloneAddress(
-            _getSalt(_rawSalt, _fixedArguments, _vestingStart, _vestingCliff, _vestingDuration, _vestingContractOwner),
+            _getSaltWithVesting(
+                _rawSalt,
+                _fixedArguments,
+                _vestingStart,
+                _vestingCliff,
+                _vestingDuration,
+                _vestingContractOwner
+            ),
             _fixedArguments
         );
 
@@ -145,7 +155,7 @@ contract PrivateOfferCloneFactory is CloneFactory {
         uint64 _vestingStart,
         uint64 _vestingCliff,
         uint64 _vestingDuration,
-        address _vestingContractOwner,
+        address _vestingContractOwner
     ) private pure returns (bytes32) {
         return
             keccak256(
@@ -155,7 +165,7 @@ contract PrivateOfferCloneFactory is CloneFactory {
                     _vestingStart,
                     _vestingCliff,
                     _vestingDuration,
-                    _vestingContractOwner,
+                    _vestingContractOwner
                 )
             );
     }
