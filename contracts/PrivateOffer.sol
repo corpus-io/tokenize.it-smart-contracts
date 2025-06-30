@@ -147,6 +147,6 @@ contract PrivateOffer is Initializable {
             _fixedArguments.currency,
             _fixedArguments.token
         );
-        //selfdestruct(payable(msg.sender)); // todo: check if this is the correct receiver. It should not be the factory.
+        selfdestruct(payable(msg.sender)); // todo: check if this is the correct receiver. It should not be the factory.
     }
 }
