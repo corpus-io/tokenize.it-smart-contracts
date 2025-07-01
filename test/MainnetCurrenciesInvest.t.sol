@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "../contracts/PrivateOffer.sol";
-import "../contracts/factories/PrivateOfferFactory.sol";
+import "../contracts/factories/PrivateOfferCloneFactory.sol";
 import "./resources/CloneCreators.sol";
 import "./resources/ERC20Helper.sol";
 
@@ -25,7 +25,7 @@ contract MainnetCurrencies is Test {
     FeeSettings feeSettings;
 
     Token token;
-    PrivateOfferFactory inviteFactory;
+    PrivateOfferCloneFactory inviteFactory;
 
     CrowdinvestingCloneFactory fundraisingFactory;
 
@@ -75,7 +75,8 @@ contract MainnetCurrencies is Test {
 
         Vesting vestingImplementation = new Vesting(trustedForwarder);
         VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
-        inviteFactory = new PrivateOfferFactory(vestingCloneFactory);
+        PrivateOffer privateOfferImplementation = new PrivateOffer();
+        inviteFactory = new PrivateOfferCloneFactory(address(privateOfferImplementation), vestingCloneFactory);
         currencyCost = (amountOfTokenToBuy * price) / 10 ** token.decimals();
         currencyAmount = currencyCost * 2;
     }
@@ -202,18 +203,24 @@ contract MainnetCurrencies is Test {
         vm.prank(owner);
         list.set(address(_currency), TRUSTED_CURRENCY);
 
-        PrivateOfferArguments memory arguments = PrivateOfferArguments(
-            buyer,
-            buyer,
+        PrivateOfferFixedArguments memory arguments = PrivateOfferFixedArguments(
             receiver,
+            address(0),
+            amountOfTokenToBuy,
             amountOfTokenToBuy,
             price,
             expiration,
             _currency,
-            token,
-            address(0)
+            token
         );
-        address expectedAddress = inviteFactory.predictPrivateOfferAddress(salt, arguments);
+
+        PrivateOfferVariableArguments memory variableArguments = PrivateOfferVariableArguments(
+            buyer,
+            buyer,
+            amountOfTokenToBuy
+        );
+
+        address expectedAddress = inviteFactory.predictCloneAddress(salt, arguments);
 
         // grant mint allowance to invite
         vm.prank(admin);
@@ -231,7 +238,7 @@ contract MainnetCurrencies is Test {
         assertEq(token.balanceOf(receiver), 0);
 
         // deploy invite
-        address inviteAddress = inviteFactory.deployPrivateOffer(salt, arguments);
+        address inviteAddress = inviteFactory.createPrivateOfferClone(salt, arguments, variableArguments);
 
         // check situation after deployment
         assertEq(inviteAddress, expectedAddress, "deployed contract address is not correct");
