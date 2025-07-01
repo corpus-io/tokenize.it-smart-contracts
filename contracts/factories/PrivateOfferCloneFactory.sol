@@ -78,8 +78,18 @@ contract PrivateOfferCloneFactory is CloneFactory {
         PrivateOfferVariableArguments memory variableArguments = _variableArguments;
         variableArguments.tokenReceiver = address(vesting);
 
+        // get the salt for private offer with time lock
+        bytes32 salt = _getSaltWithVesting(
+            _rawSalt,
+            _fixedArguments,
+            _vestingStart,
+            _vestingCliff,
+            _vestingDuration,
+            _vestingContractOwner
+        );
+
         // deploy the private offer
-        address privateOffer = _createPrivateOfferClone(_rawSalt, _fixedArguments, variableArguments);
+        address privateOffer = _createPrivateOfferClone(salt, _fixedArguments, variableArguments);
 
         require(
             _fixedArguments.token.balanceOf(address(vesting)) == _variableArguments.tokenAmount,

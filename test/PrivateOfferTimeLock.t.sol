@@ -5,12 +5,12 @@ import "../lib/forge-std/src/Test.sol";
 import "../lib/forge-std/src/console.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/PrivateOffer.sol";
-import "../contracts/factories/PrivateOfferFactory.sol";
+import "../contracts/factories/PrivateOfferCloneFactory.sol";
 import "./resources/CloneCreators.sol";
 import "./resources/FakePaymentToken.sol";
 
 contract PrivateOfferTimeLockTest is Test {
-    PrivateOfferFactory privateOfferFactory;
+    PrivateOfferCloneFactory privateOfferFactory;
 
     AllowList list;
     FeeSettings feeSettings;
@@ -35,7 +35,8 @@ contract PrivateOfferTimeLockTest is Test {
     function setUp() public {
         Vesting vestingImplementation = new Vesting(trustedForwarder);
         VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
-        privateOfferFactory = new PrivateOfferFactory(vestingCloneFactory);
+        PrivateOffer privateOfferImplementation = new PrivateOffer();
+        privateOfferFactory = new PrivateOfferCloneFactory(address(privateOfferImplementation), vestingCloneFactory);
 
         vm.prank(paymentTokenProvider);
         currency = new FakePaymentToken(0, 18);
@@ -89,39 +90,44 @@ contract PrivateOfferTimeLockTest is Test {
         releaseStartTime += testStartTime;
         assertTrue(testStartTime < releaseStartTime, "testStartTime >= releaseStartTime");
 
-        PrivateOfferArguments memory arguments = PrivateOfferArguments(
-            currencyPayer,
-            tokenReceiver,
+        PrivateOfferFixedArguments memory arguments = PrivateOfferFixedArguments(
             currencyReceiver,
+            address(0),
+            20000000000000,
             20000000000000,
             price,
             block.timestamp + 1000,
             currency,
-            token,
-            address(0)
+            token
         );
 
-        uint256 currencyAmount = (arguments.tokenAmount * price) / 10 ** token.decimals();
+        PrivateOfferVariableArguments memory variableArguments = PrivateOfferVariableArguments(
+            currencyPayer,
+            tokenReceiver,
+            20000000000000
+        );
+
+        uint256 currencyAmount = (variableArguments.tokenAmount * price) / 10 ** token.decimals();
 
         // predict addresses
-        (address expectedInviteAddress, address expectedTimeLockAddress) = privateOfferFactory
-            .predictPrivateOfferAndTimeLockAddress(
-                salt,
-                arguments,
-                releaseStartTime,
-                0,
-                releaseDuration,
-                admin,
-                trustedForwarder
-            );
+        address expectedInviteAddress = privateOfferFactory.predictPrivateOfferCloneWithTimeLockAddress(
+            salt,
+            arguments,
+            releaseStartTime,
+            0,
+            releaseDuration,
+            admin
+        );
+
+        console.log("expectedInviteAddress", expectedInviteAddress);
 
         // add time lock and token receiver to the allow list
-        list.set(expectedTimeLockAddress, requirements);
+        list.set(expectedInviteAddress, requirements);
         list.set(tokenReceiver, requirements);
 
         // grant minting allowance to the invite address
         vm.prank(admin);
-        token.increaseMintingAllowance(expectedInviteAddress, arguments.tokenAmount);
+        token.increaseMintingAllowance(expectedInviteAddress, variableArguments.tokenAmount);
 
         // mint currency to the payer
         vm.prank(paymentTokenProvider);
@@ -132,11 +138,8 @@ contract PrivateOfferTimeLockTest is Test {
         currency.approve(expectedInviteAddress, currencyAmount);
 
         // make sure balances are as expected before deployment
-
         assertEq(currency.balanceOf(currencyPayer), currencyAmount, "currencyPayer wrong balance before deployment");
         assertEq(currency.balanceOf(currencyReceiver), 0, "currencyReceiver wrong balance before deployment");
-        assertEq(currency.balanceOf(expectedTimeLockAddress), 0, "timeLock wrong currency balance before deployment");
-        assertEq(token.balanceOf(expectedTimeLockAddress), 0, "timeLock wrong token balance before deployment");
 
         console.log(
             "feeCollector currency balance before deployment: %s",
@@ -146,9 +149,10 @@ contract PrivateOfferTimeLockTest is Test {
         uint256 gasBefore = gasleft();
         // deploy private offer
         Vesting timeLock = Vesting(
-            privateOfferFactory.deployPrivateOfferWithTimeLock(
+            privateOfferFactory.createPrivateOfferCloneWithTimeLock(
                 salt,
                 arguments,
+                variableArguments,
                 releaseStartTime,
                 0,
                 releaseDuration,
@@ -158,10 +162,6 @@ contract PrivateOfferTimeLockTest is Test {
         );
         uint256 gasAfter = gasleft();
         console.log("gas used: %s", gasBefore - gasAfter);
-
-        //require(false);
-
-        //assertEq(inviteAddress, expectedInviteAddress, "deployed contract address is not correct");
 
         console.log("payer balance: %s", currency.balanceOf(currencyPayer));
         console.log("receiver balance: %s", currency.balanceOf(currencyReceiver));
@@ -183,13 +183,13 @@ contract PrivateOfferTimeLockTest is Test {
 
         assertEq(
             token.balanceOf(address(timeLock)),
-            arguments.tokenAmount,
+            variableArguments.tokenAmount,
             "timeLock wrong token balance after deployment"
         );
 
         assertEq(
             token.balanceOf(token.feeSettings().privateOfferFeeCollector(address(token))),
-            token.feeSettings().tokenFee(arguments.tokenAmount, address(token)),
+            token.feeSettings().tokenFee(variableArguments.tokenAmount, address(token)),
             "feeCollector token balance is not correct"
         );
 
@@ -214,6 +214,10 @@ contract PrivateOfferTimeLockTest is Test {
         vm.warp(releaseStartTime + releaseDuration + 1);
         vm.prank(tokenReceiver);
         timeLock.release(uint64(1));
-        assertEq(token.balanceOf(tokenReceiver), arguments.tokenAmount, "investor vault should have all tokens");
+        assertEq(
+            token.balanceOf(tokenReceiver),
+            variableArguments.tokenAmount,
+            "investor vault should have all tokens"
+        );
     }
 }

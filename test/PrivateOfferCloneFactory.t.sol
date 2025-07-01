@@ -144,7 +144,14 @@ contract PrivateOfferFactoryTest is Test {
         );
 
         // predict addresses for vesting contract and private offer contract
-        address expectedPrivateOffer = factory.predictCloneAddress(salt, arguments);
+        address expectedPrivateOffer = factory.predictPrivateOfferCloneWithTimeLockAddress(
+            salt,
+            arguments,
+            _vestingStart,
+            _vestingCliff,
+            _vestingDuration,
+            companyAdmin
+        );
 
         console.log("expectedPrivateOffer", expectedPrivateOffer);
 
