@@ -35,6 +35,7 @@ contract PrivateOfferCloneFactory is CloneFactory {
         bytes32 salt = _getSalt(_rawSalt, _fixedArguments);
         PrivateOffer privateOffer = PrivateOffer(Clones.cloneDeterministic(implementation, salt));
         privateOffer.initialize(_fixedArguments, _variableArguments);
+        emit NewClone(address(privateOffer));
         return address(privateOffer);
     }
 

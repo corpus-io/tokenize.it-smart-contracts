@@ -6,14 +6,14 @@ import "../lib/forge-std/src/console.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/PrivateOffer.sol";
-import "../contracts/factories/PrivateOfferFactory.sol";
+import "../contracts/factories/PrivateOfferCloneFactory.sol";
 import "./resources/CloneCreators.sol";
 import "./resources/ERC20MintableByAnyone.sol";
 
 contract PrivateOfferFactoryTest is Test {
-    event Deploy(address indexed privateOffer);
+    event NewClone(address clone);
 
-    PrivateOfferFactory factory;
+    PrivateOfferCloneFactory factory;
 
     AllowList list;
     FeeSettings feeSettings;
@@ -42,7 +42,8 @@ contract PrivateOfferFactoryTest is Test {
     function setUp() public {
         Vesting vestingImplementation = new Vesting(trustedForwarder);
         VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
-        factory = new PrivateOfferFactory(vestingCloneFactory);
+        PrivateOffer privateOfferImplementation = new PrivateOffer();
+        factory = new PrivateOfferCloneFactory(address(privateOfferImplementation), vestingCloneFactory);
         currency = new ERC20MintableByAnyone("currency", "CUR");
 
         list = createAllowList(trustedForwarder, owner);
@@ -64,18 +65,20 @@ contract PrivateOfferFactoryTest is Test {
         uint256 _amount = 20000000000000;
         uint256 _expiration = block.timestamp + 1000;
 
-        PrivateOfferArguments memory arguments = PrivateOfferArguments(
-            buyer,
-            buyer,
+        PrivateOfferFixedArguments memory arguments = PrivateOfferFixedArguments(
             currencyReceiver,
+            address(0),
+            _amount,
             _amount,
             price,
             _expiration,
             IERC20(address(currency)),
-            token,
-            address(0)
+            token
         );
-        address expectedAddress = factory.predictPrivateOfferAddress(_salt, arguments);
+
+        PrivateOfferVariableArguments memory variableArguments = PrivateOfferVariableArguments(buyer, buyer, _amount);
+
+        address expectedAddress = factory.predictCloneAddress(_salt, arguments);
 
         // make sure no contract lives here yet
         uint256 len;
@@ -92,8 +95,8 @@ contract PrivateOfferFactoryTest is Test {
         currency.approve(expectedAddress, _amount * price);
 
         vm.expectEmit(true, true, true, true, address(factory));
-        emit Deploy(expectedAddress);
-        address actualAddress = factory.deployPrivateOffer(_salt, arguments);
+        emit NewClone(expectedAddress);
+        address actualAddress = factory.createPrivateOfferClone(_salt, arguments, variableArguments);
 
         assertTrue(actualAddress == expectedAddress, "Wrong address returned");
 
@@ -123,35 +126,30 @@ contract PrivateOfferFactoryTest is Test {
         // mint currency to buyer
         currency.mint(buyer, currencyAmount);
 
-        PrivateOfferArguments memory arguments = PrivateOfferArguments(
-            buyer,
-            tokenReceiver,
+        PrivateOfferFixedArguments memory arguments = PrivateOfferFixedArguments(
             currencyReceiver,
+            address(0),
+            tokenAmount,
             tokenAmount,
             price,
             expiration,
             IERC20(address(currency)),
-            token,
-            address(0)
+            token
+        );
+
+        PrivateOfferVariableArguments memory variableArguments = PrivateOfferVariableArguments(
+            buyer,
+            tokenReceiver,
+            tokenAmount
         );
 
         // predict addresses for vesting contract and private offer contract
-        (address expectedPrivateOffer, address expectedVesting) = factory.predictPrivateOfferAndTimeLockAddress(
-            salt,
-            arguments,
-            _vestingStart,
-            _vestingCliff,
-            _vestingDuration,
-            companyAdmin,
-            trustedForwarder
-        );
+        address expectedPrivateOffer = factory.predictCloneAddress(salt, arguments);
 
         console.log("expectedPrivateOffer", expectedPrivateOffer);
-        console.log("expectedVesting", expectedVesting);
 
         // make sure no contract lives here yet
         assertFalse(Address.isContract(expectedPrivateOffer), "Private Offer address already contains contract");
-        assertFalse(Address.isContract(expectedVesting), "Vesting address already contains contract");
 
         // give allowances to private offer contract
         vm.prank(buyer);
@@ -169,17 +167,15 @@ contract PrivateOfferFactoryTest is Test {
         );
 
         // deploy contracts
-        assertEq(
-            factory.deployPrivateOfferWithTimeLock(
-                salt,
-                arguments,
-                _vestingStart,
-                _vestingCliff,
-                _vestingDuration,
-                companyAdmin,
-                trustedForwarder
-            ),
-            expectedVesting
+        address expectedVesting = factory.createPrivateOfferCloneWithTimeLock(
+            salt,
+            arguments,
+            variableArguments,
+            _vestingStart,
+            _vestingCliff,
+            _vestingDuration,
+            companyAdmin,
+            trustedForwarder
         );
 
         // make sure contracts live here now
