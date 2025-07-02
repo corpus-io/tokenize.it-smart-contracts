@@ -61,20 +61,7 @@ contract VestingCloneFactory is CloneFactory {
         uint64 _cliff,
         uint64 _duration
     ) external returns (address) {
-        // generate salt from all parameters
-        bytes32 salt = keccak256(
-            abi.encode(
-                _rawSalt,
-                _trustedForwarder,
-                _owner,
-                _token,
-                _allocation,
-                _beneficiary,
-                _start,
-                _cliff,
-                _duration
-            )
-        );
+        bytes32 salt = keccak256(abi.encode(_rawSalt, _trustedForwarder, _owner, _token, _start, _cliff, _duration));
         // deploy the vesting contract
         Vesting vesting = Vesting(createVestingClone(salt, _trustedForwarder, address(this), _token));
 
@@ -117,13 +104,12 @@ contract VestingCloneFactory is CloneFactory {
     }
 
     /**
-     * Calculate the address a clone will have using the given parameters of the contract and the lockup plan
+     * Calculate the address a clone will have using the given parameters of the contract and the lockup plan.
+     * @dev Beneficiary and allocation are not given and do not influence the address.
      * @param _rawSalt value that influences the address of the clone, but not the initialization
      * @param _trustedForwarder the trusted forwarder (ERC2771) can not be changed, but is checked for security
      * @param _owner future owner of the vesting contract. If 0, the contract will not have an owner.
      * @param _token token to vest
-     * @param _allocation amount of tokens to vest
-     * @param _beneficiary address receiving the tokens
      * @param _start start date of the vesting
      * @param _cliff cliff duration
      * @param _duration total duration
@@ -133,8 +119,6 @@ contract VestingCloneFactory is CloneFactory {
         address _trustedForwarder,
         address _owner,
         address _token,
-        uint256 _allocation,
-        address _beneficiary,
         uint64 _start,
         uint64 _cliff,
         uint64 _duration
@@ -143,19 +127,7 @@ contract VestingCloneFactory is CloneFactory {
             Vesting(implementation).isTrustedForwarder(_trustedForwarder),
             "VestingCloneFactory: Unexpected trustedForwarder"
         );
-        bytes32 salt = keccak256(
-            abi.encode(
-                _rawSalt,
-                _trustedForwarder,
-                _owner,
-                _token,
-                _allocation,
-                _beneficiary,
-                _start,
-                _cliff,
-                _duration
-            )
-        );
+        bytes32 salt = keccak256(abi.encode(_rawSalt, _trustedForwarder, _owner, _token, _start, _cliff, _duration));
         salt = keccak256(abi.encode(salt, _trustedForwarder, address(this), _token));
         return Clones.predictDeterministicAddress(implementation, salt);
     }
