@@ -144,9 +144,10 @@ contract PrivateOfferFactoryTest is Test {
         );
 
         // predict addresses for vesting contract and private offer contract
-        address expectedPrivateOffer = factory.predictPrivateOfferCloneWithTimeLockAddress(
+        (address expectedPrivateOffer, address expectedVesting) = factory.predictPrivateOfferCloneWithTimeLockAddress(
             salt,
             arguments,
+            trustedForwarder,
             _vestingStart,
             _vestingCliff,
             _vestingDuration,
@@ -154,6 +155,7 @@ contract PrivateOfferFactoryTest is Test {
         );
 
         console.log("expectedPrivateOffer", expectedPrivateOffer);
+        console.log("expectedVesting", expectedVesting);
 
         // make sure no contract lives here yet
         assertFalse(Address.isContract(expectedPrivateOffer), "Private Offer address already contains contract");
@@ -174,7 +176,7 @@ contract PrivateOfferFactoryTest is Test {
         );
 
         // deploy contracts
-        address expectedVesting = factory.createPrivateOfferCloneWithTimeLock(
+        address actualVesting = factory.createPrivateOfferCloneWithTimeLock(
             salt,
             arguments,
             variableArguments,
@@ -184,6 +186,8 @@ contract PrivateOfferFactoryTest is Test {
             companyAdmin,
             trustedForwarder
         );
+
+        assertEq(actualVesting, expectedVesting, "Vesting address does not match");
 
         // make sure contracts live here now
         assertTrue(Address.isContract(expectedPrivateOffer), "Private Offer address does not contain contract");

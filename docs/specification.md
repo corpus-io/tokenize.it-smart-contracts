@@ -148,3 +148,8 @@ The following statements about the smart contracts should always be true
 - Stopping a vesting plan and revoking a commitment to a vesting plan are equivalent with respect to the token amount the beneficiary can release and the time the beneficiary can release them.
 - A beneficiary can never mint or withdraw more tokens than the allocation of the vesting plan.
 - Third parties can not mint or withdraw tokens from a vesting plan.
+
+## VestingCloneFactory.sol
+
+- The address of a clone that is created with a vesting plan changes when the salt, owner, token, start, cliff, or duration of that vesting planchanges.
+- Beneficiary and allocation do not change the address of a clone that is created with a vesting plan.

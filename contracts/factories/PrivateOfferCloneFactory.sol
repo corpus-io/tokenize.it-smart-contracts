@@ -79,14 +79,7 @@ contract PrivateOfferCloneFactory is CloneFactory {
         variableArguments.tokenReceiver = address(vesting);
 
         // get the salt for private offer with time lock
-        bytes32 salt = _getSaltWithVesting(
-            _rawSalt,
-            _fixedArguments,
-            _vestingStart,
-            _vestingCliff,
-            _vestingDuration,
-            _vestingContractOwner
-        );
+        bytes32 salt = _getSaltWithVesting(_rawSalt, address(vesting));
 
         // deploy the private offer
         address privateOffer = _createPrivateOfferClone(salt, _fixedArguments, variableArguments);
@@ -108,32 +101,35 @@ contract PrivateOfferCloneFactory is CloneFactory {
      * @param _vestingDuration Total vesting duration.
      * @param _vestingContractOwner Address that will own the vesting contract (note: this is not the token receiver or the beneficiary, but rather the company admin)
      * @return privateOfferAddress The address of the PrivateOffer contract that would be deployed.
+     * @return vestingAddress The address of the Vesting contract that would be deployed.
      */
     function predictPrivateOfferCloneWithTimeLockAddress(
         bytes32 _rawSalt,
         PrivateOfferFixedArguments calldata _fixedArguments,
+        address _trustedForwarder,
         uint64 _vestingStart,
         uint64 _vestingCliff,
         uint64 _vestingDuration,
         address _vestingContractOwner
-    ) public view returns (address) {
-        // vesting address can not be predicted, as it depends on the token amount and token receiver. But the private offer address should
-        // change if the vesting conditions change.
-        // # todo: mix vesting conditions into private offer address calculation for security
+    ) public view returns (address, address) {
+        // predict the vesting address
+        address vestingAddress = vestingCloneFactory.predictCloneAddressWithLockupPlan(
+            _rawSalt,
+            _trustedForwarder,
+            _vestingContractOwner,
+            address(_fixedArguments.token),
+            _vestingStart,
+            _vestingCliff,
+            _vestingDuration
+        );
 
+        // predict the private offer address
         address privateOfferAddress = predictCloneAddress(
-            _getSaltWithVesting(
-                _rawSalt,
-                _fixedArguments,
-                _vestingStart,
-                _vestingCliff,
-                _vestingDuration,
-                _vestingContractOwner
-            ),
+            _getSaltWithVesting(_rawSalt, vestingAddress),
             _fixedArguments
         );
 
-        return (privateOfferAddress);
+        return (privateOfferAddress, vestingAddress);
     }
 
     /**
@@ -152,31 +148,11 @@ contract PrivateOfferCloneFactory is CloneFactory {
     /**
      * Calculates a salt from all input parameters.
      * @param _rawSalt Value influencing the addresses of the deployed contract, but nothing else.
-     * @param _fixedArguments Arguments for the PrivateOffer contract.
-     * @param _vestingStart Begin of the vesting period.
-     * @param _vestingCliff Cliff duration.
-     * @param _vestingDuration Total vesting duration.
-     * @param _vestingContractOwner Address that will own the vesting contract (note: this is not the token receiver or the beneficiary, but rather the company admin)
+     * @param _vestingAddress Address of the vesting contract.
+     * @return salt The salt that would be used to deploy a PrivateOffer contract with the given vesting contract.
      */
-    function _getSaltWithVesting(
-        bytes32 _rawSalt,
-        PrivateOfferFixedArguments calldata _fixedArguments,
-        uint64 _vestingStart,
-        uint64 _vestingCliff,
-        uint64 _vestingDuration,
-        address _vestingContractOwner
-    ) private pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encode(
-                    _rawSalt,
-                    _fixedArguments,
-                    _vestingStart,
-                    _vestingCliff,
-                    _vestingDuration,
-                    _vestingContractOwner
-                )
-            );
+    function _getSaltWithVesting(bytes32 _rawSalt, address _vestingAddress) private pure returns (bytes32) {
+        return keccak256(abi.encode(_rawSalt, _vestingAddress));
     }
 
     function _getSalt(
