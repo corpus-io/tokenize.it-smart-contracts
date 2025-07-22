@@ -135,8 +135,6 @@ contract CrowdinvestingTest is Test {
         // bytes32 digest = ECDSA.toTypedDataHash(domainSeparator, keccak256(payload));
         // (uint8 v, bytes32 r, bytes32 s) = vm.sign(privKey, digest);
 
-        // todo: get nonce from forwarder
-
         // build request
         bytes memory payload = abi.encodeWithSelector(
             crowdinvesting.buy.selector,
