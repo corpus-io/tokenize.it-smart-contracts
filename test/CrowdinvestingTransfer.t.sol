@@ -483,4 +483,84 @@ contract CrowdinvestingTransferTest is Test {
             "tokenHolder balance should remain unchanged"
         );
     }
+
+    function testEnsureInsufficientTokenBalanceOrAllowanceReverts() public {
+        uint256 tokenBuyAmount = minAmountPerBuyer;
+        uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * crowdinvesting.priceBase(), 10 ** 18);
+
+        // Test 1: Insufficient allowance
+        // Mint sufficient tokens to tokenHolder
+        vm.prank(mintAllower);
+        token.mint(tokenHolder, tokenBuyAmount);
+
+        uint256 initialTotalSupply = token.totalSupply();
+        uint256 initialBuyerBalance = token.balanceOf(buyer);
+
+        // Set allowance too low
+        vm.prank(tokenHolder);
+        token.approve(address(crowdinvesting), tokenBuyAmount / 2);
+
+        // Try to buy - should revert due to insufficient allowance
+        vm.prank(buyer);
+        vm.expectRevert("ERC20: insufficient allowance");
+        crowdinvesting.buy(tokenBuyAmount, type(uint256).max, buyer);
+
+        // Verify no tokens transferred
+        assertTrue(token.balanceOf(buyer) == initialBuyerBalance, "Buyer balance changed");
+        assertTrue(token.totalSupply() == initialTotalSupply, "Total supply changed");
+        assertTrue(crowdinvesting.tokensSold() == 0, "Tokens sold recorded");
+        assertTrue(crowdinvesting.tokensBought(buyer) == 0, "Tokens bought recorded");
+
+        // Test 2: Insufficient balance
+
+        // move some tokens to make balance insufficient
+        uint256 tokenHolderBalance = token.balanceOf(tokenHolder);
+
+        vm.startPrank(tokenHolder);
+        token.transfer(address(1), tokenHolderBalance - tokenBuyAmount + 1); // move some tokens away
+        vm.stopPrank();
+        tokenHolderBalance = token.balanceOf(tokenHolder);
+        assertTrue(tokenHolderBalance < tokenBuyAmount, "tokenHolder balance too high");
+
+        initialTotalSupply = token.totalSupply();
+
+        // Set sufficient allowance
+        vm.prank(tokenHolder);
+        token.approve(address(crowdinvesting), tokenBuyAmount);
+
+        // Try to buy - should revert due to insufficient balance
+        vm.prank(buyer);
+        vm.expectRevert("ERC20: transfer amount exceeds balance");
+        crowdinvesting.buy(tokenBuyAmount, type(uint256).max, buyer);
+
+        // Verify no tokens transferred
+        assertTrue(token.balanceOf(buyer) == initialBuyerBalance, "Buyer balance changed");
+        assertTrue(token.totalSupply() == initialTotalSupply, "Total supply changed");
+        assertTrue(crowdinvesting.tokensSold() == 0, "Tokens sold recorded");
+        assertTrue(crowdinvesting.tokensBought(buyer) == 0, "Tokens bought recorded");
+
+        // Test 3: Fix allowance and balance
+
+        // Mint sufficient tokens to tokenHolder
+        vm.prank(address(1));
+        token.transfer(tokenHolder, 1);
+        initialTotalSupply = token.totalSupply();
+        initialBuyerBalance = token.balanceOf(buyer);
+
+        // Perform buy - should succeed
+        vm.prank(buyer);
+        vm.expectEmit(true, true, true, true, address(crowdinvesting));
+        emit TokensBought(buyer, tokenBuyAmount, costInPaymentToken);
+        crowdinvesting.buy(tokenBuyAmount, type(uint256).max, buyer);
+
+        // Verify successful transfer
+        assertTrue(token.totalSupply() == initialTotalSupply, "New tokens were minted");
+        assertTrue(
+            token.balanceOf(buyer) == initialBuyerBalance + tokenBuyAmount,
+            "Buyer did not receive correct tokens"
+        );
+        assertTrue(token.balanceOf(tokenHolder) == 0, "Token holder balance not decreased correctly");
+        assertTrue(crowdinvesting.tokensSold() == tokenBuyAmount, "Tokens sold accounting incorrect");
+        assertTrue(crowdinvesting.tokensBought(buyer) == tokenBuyAmount, "Tokens bought accounting incorrect");
+    }
 }
