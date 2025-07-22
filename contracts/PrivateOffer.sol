@@ -99,6 +99,7 @@ contract PrivateOffer is Initializable {
             _fixedArguments.token.allowList().map(address(_fixedArguments.currency)) == TRUSTED_CURRENCY,
             "currency needs to be on the allowlist with TRUSTED_CURRENCY attribute"
         );
+        // the next two checks also implicitly ensure that minTokenAmount <= maxTokenAmount
         require(
             _variableArguments.tokenAmount >= _fixedArguments.minTokenAmount,
             "tokenAmount is less than minTokenAmount"

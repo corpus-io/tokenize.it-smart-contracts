@@ -20,6 +20,7 @@ contract CrowdinvestingTest is Test {
     event TokenPriceAndCurrencyChanged(uint256, IERC20 indexed);
     event MaxAmountOfTokenToBeSoldChanged(uint256);
     event TokensBought(address indexed buyer, uint256 tokenAmount, uint256 currencyAmount);
+    event TokenHolderChanged(address tokenHolder);
 
     CrowdinvestingCloneFactory factory;
     Crowdinvesting crowdinvesting;
@@ -42,6 +43,7 @@ contract CrowdinvestingTest is Test {
     address public constant receiver = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
     address public constant paymentTokenProvider = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
     address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
+    address public constant tokenHolder = 0xa109709ecfA91A80626ff3989D68F67F5b1dD12a;
 
     uint8 public constant paymentTokenDecimals = 6;
     uint256 public constant paymentTokenAmount = 1000 * 10 ** paymentTokenDecimals;
@@ -1342,6 +1344,46 @@ contract CrowdinvestingTest is Test {
         assertTrue(crowdinvesting.owner() == newOwner);
     }
 
+    function testSetTokenHolder(address newTokenHolder) public {
+        // Test updating tokenHolder while not paused
+        vm.prank(owner);
+        vm.expectRevert("Pausable: not paused");
+        crowdinvesting.setTokenHolder(newTokenHolder);
+
+        // Pause the contract
+        vm.prank(owner);
+        crowdinvesting.pause();
+        assertTrue(crowdinvesting.paused(), "Contract should be paused");
+
+        // Test setting tokenHolder to the same address (no change)
+        vm.prank(owner);
+        vm.expectEmit(true, true, true, true, address(crowdinvesting));
+        emit TokenHolderChanged(tokenHolder);
+        crowdinvesting.setTokenHolder(tokenHolder);
+        assertTrue(crowdinvesting.tokenHolder() == tokenHolder, "Token holder should remain unchanged");
+
+        // Test setting a new tokenHolder
+        vm.prank(owner);
+        vm.expectEmit(true, true, true, true, address(crowdinvesting));
+        emit TokenHolderChanged(newTokenHolder);
+        crowdinvesting.setTokenHolder(newTokenHolder);
+        assertTrue(crowdinvesting.tokenHolder() == newTokenHolder, "Token holder should be updated");
+
+        // Verify coolDownStart is updated
+        assertTrue(crowdinvesting.coolDownStart() == block.timestamp, "coolDownStart should be updated");
+
+        // Test unpause too soon after setting tokenHolder
+        vm.prank(owner);
+        vm.expectRevert("There needs to be at minimum one day to change parameters");
+        crowdinvesting.unpause();
+
+        // Warp time to allow unpause
+        vm.warp(block.timestamp + crowdinvesting.delay() + 1);
+        vm.prank(owner);
+        crowdinvesting.unpause();
+        assertTrue(!crowdinvesting.paused(), "Contract should be unpaused");
+    }
+
     function testOfferExpiration(uint256 _lastBuyDate, uint256 testDate) public {
         vm.assume(testDate > 1 days + 1);
         vm.assume(testDate < 100 * 365 days);
@@ -1430,5 +1472,64 @@ contract CrowdinvestingTest is Test {
             _crowdinvesting.buy(tokenBuyAmount, type(uint256).max, buyer);
             vm.stopPrank();
         }
+    }
+
+    function testSwitchToTransferAndBuy() public {
+        // Set up tokenHolder with tokens
+        address newTokenHolder = vm.addr(3);
+        uint256 tokenBuyAmount = minAmountPerBuyer;
+        uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * crowdinvesting.priceBase(), 10 ** 18);
+
+        // Mint tokens to tokenHolder
+        vm.prank(mintAllower);
+        token.mint(newTokenHolder, tokenBuyAmount);
+        uint256 initialTotalSupply = token.totalSupply();
+        uint256 initialTokenHolderBalance = token.balanceOf(newTokenHolder);
+        uint256 initialBuyerBalance = token.balanceOf(buyer);
+
+        // Pause contract to set tokenHolder
+        vm.prank(owner);
+        crowdinvesting.pause();
+
+        // Set tokenHolder
+        vm.prank(owner);
+        vm.expectEmit(true, true, true, true, address(crowdinvesting));
+        emit TokenHolderChanged(newTokenHolder);
+        crowdinvesting.setTokenHolder(newTokenHolder);
+        assertTrue(crowdinvesting.tokenHolder() == newTokenHolder, "Token holder not set correctly");
+
+        // Approve tokens for transfer by crowdinvesting contract
+        vm.prank(newTokenHolder);
+        token.approve(address(crowdinvesting), tokenBuyAmount);
+
+        // Unpause contract
+        vm.warp(block.timestamp + crowdinvesting.delay() + 1);
+        vm.prank(owner);
+        crowdinvesting.unpause();
+
+        // Perform buy
+        vm.prank(buyer);
+        vm.expectEmit(true, true, true, true, address(crowdinvesting));
+        emit TokensBought(buyer, tokenBuyAmount, costInPaymentToken);
+        crowdinvesting.buy(tokenBuyAmount, type(uint256).max, buyer);
+
+        // Verify no new tokens were minted (total supply unchanged)
+        assertTrue(token.totalSupply() == initialTotalSupply, "New tokens were minted");
+
+        // Verify buyer received tokens
+        assertTrue(
+            token.balanceOf(buyer) == initialBuyerBalance + tokenBuyAmount,
+            "Buyer did not receive correct tokens"
+        );
+
+        // Verify tokenHolder balance decreased
+        assertTrue(
+            token.balanceOf(newTokenHolder) == initialTokenHolderBalance - tokenBuyAmount,
+            "Token holder balance not decreased correctly"
+        );
+
+        // Verify tokens sold accounting
+        assertTrue(crowdinvesting.tokensSold() == tokenBuyAmount, "Tokens sold accounting incorrect");
+        assertTrue(crowdinvesting.tokensBought(buyer) == tokenBuyAmount, "Tokens bought accounting incorrect");
     }
 }
