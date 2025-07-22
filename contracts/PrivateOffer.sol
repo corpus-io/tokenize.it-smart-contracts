@@ -8,6 +8,10 @@ import "./Token.sol";
  * @notice Contains all information necessary to execute a PrivateOffer.
  */
 
+/**
+ * @notice Contains information necessary to deploy a PrivateOffer that is selected by the seller.
+ * @dev This struct does influence the address of the PrivateOffer contract.
+ */
 struct PrivateOfferFixedArguments {
     /// address receiving the payment in currency.
     address currencyReceiver;
@@ -27,6 +31,10 @@ struct PrivateOfferFixedArguments {
     Token token;
 }
 
+/**
+ * @notice Contains information necessary to deploy a PrivateOffer that is selected by the buyer.
+ * @dev This struct does not influence the address of the PrivateOffer contract.
+ */
 struct PrivateOfferVariableArguments {
     /// address holding the currency. Must have given sufficient allowance to this contract.
     address currencyPayer;
@@ -44,18 +52,18 @@ struct PrivateOfferVariableArguments {
  *     It is likely a company will create many PrivateOffers for specific investors to buy their one token.
  *     The use of CREATE2 (https://docs.openzeppelin.com/cli/2.8/deploying-with-create2) enables this invitation to be privacy preserving until it is accepted through
  *     granting of an allowance to the PrivateOffer's future address and deployment of the PrivateOffer.
- * @dev This contract is deployed using CREATE2 (https://docs.openzeppelin.com/cli/2.8/deploying-with-create2), using a deploy factory. That makes the future address of this contract
- *     deterministic: it can be computed from the parameters of the invitation. This allows the company and buyer to grant allowances to the future address of this contract
- *     before it is deployed.
+ * @dev This contract is cloned, using a factory. That makes the future address of this contract
+ *     deterministic: it can be computed from the fixed parameters of the invitation and a salt. This allows the company and buyer to grant allowances to the future
+ *     address of this contract before it is deployed.
  *     The process of deploying this contract is as follows:
- *     1. Company and investor agree on the terms of the invitation (currencyPayer, tokenReceiver, currencyReceiver, tokenAmount, tokenPrice, currency, token)
+ *     1. Company and investor agree on the terms of the invitation (fixedArguments)
  *         and a salt (used for deployment only).
  *     2. With the help of a deploy factory, the company computes the future address of the PrivateOffer contract.
- *     3. The company grants a token minting allowance of amount to the future address of the PrivateOffer contract.
+ *     3. The company grants a token minting allowance or an allowance to transfer tokens from the tokenHolder to the future address of the PrivateOffer contract.
  *     4. The investor grants a currency allowance of amount*tokenPrice / 10**tokenDecimals to the future address of the PrivateOffer contract, using their currencyPayer address.
  *     5. Finally, company, buyer or anyone else deploys the PrivateOffer contract using the deploy factory.
- *     Because all of the execution logic is in the constructor, the deployment of the PrivateOffer contract is the last step. During the deployment, the newly
- *     minted tokens will be transferred to the buyer and the currency will be transferred to the company's receiver address.
+ *     Because all of the execution logic is in the initialize function, the deployment of the PrivateOffer contract is the last step. During the deployment, tokens will be
+ *     minted to the buyer or transferred from the tokenHolder to the buyer, and the currency will be transferred to the company's receiver address.
  */
 contract PrivateOffer is Initializable {
     using SafeERC20 for IERC20;
@@ -79,10 +87,18 @@ contract PrivateOffer is Initializable {
         Token indexed token
     );
 
+    /**
+     * @notice Disables the constructor, to make the logic contract safe for cloning.
+     */
     constructor() {
         _disableInitializers();
     }
 
+    /**
+     * @notice Initializes the PrivateOffer contract, executing the deal.
+     * @param _fixedArguments The fixed arguments of the PrivateOffer.
+     * @param _variableArguments The variable arguments of the PrivateOffer.
+     */
     function initialize(
         PrivateOfferFixedArguments calldata _fixedArguments,
         PrivateOfferVariableArguments memory _variableArguments

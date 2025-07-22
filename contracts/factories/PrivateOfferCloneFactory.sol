@@ -9,23 +9,34 @@ import "./VestingCloneFactory.sol";
 /**
  * @title PrivateOfferCloneFactory
  * @author malteish, cjentzsch
- * @notice This contract deploys PrivateOffers using create2. It is used to deploy PrivateOffers with a deterministic address.
+ * @notice This contract deploys PrivateOffer clones to a deterministic address.
  * It also deploys the vesting contracts used for token lockup.
- * @dev One deployment of this contract can be used for deployment of any number of PrivateOffers using create2.
+ * @dev One deployment of this contract can be used for deployment of any number of PrivateOffer clones.
  */
 contract PrivateOfferCloneFactory is CloneFactory {
+    /// Emitted when a PrivateOffer contract is deployed with a vesting contract.
     event NewPrivateOfferWithLockup(address privateOffer, address vesting);
 
+    /// The factory for the Vesting contract.
     VestingCloneFactory public immutable vestingCloneFactory;
 
+    /**
+     * @notice Constructor.
+     * @param _implementation The implementation of the PrivateOffer contract.
+     * @param _vestingCloneFactory The factory for the Vesting contract.
+     */
     constructor(address _implementation, VestingCloneFactory _vestingCloneFactory) CloneFactory(_implementation) {
         require(address(_vestingCloneFactory) != address(0), "VestingCloneFactory must not be 0");
         vestingCloneFactory = _vestingCloneFactory;
     }
 
     /**
-     * @notice Deploys a contract using create2. During the deployment, `_currencyPayer` pays `_currencyReceiver` for the purchase of `_tokenAmount` tokens at `_tokenPrice` per token.
-     *      The tokens are minted to `_tokenReceiver`. The token is deployed at `_token` and the currency is `_currency`.
+     * @notice Deploys a private offer clone. During the deployment, `_currencyPayer` pays `_currencyReceiver` for the purchase of `_tokenAmount` tokens at `_tokenPrice` per token.
+     *      The tokens are minted or transferred to `_tokenReceiver`. The token used is `_token` and the currency is `_currency`.
+     * @param _rawSalt Value influencing the addresses of the deployed contract, but nothing else.
+     * @param _fixedArguments Arguments for the PrivateOffer contract.
+     * @param _variableArguments Arguments for the PrivateOffer contract.
+     * @return privateOfferAddress The address of the PrivateOffer contract that was deployed.
      */
     function createPrivateOfferClone(
         bytes32 _rawSalt,
@@ -40,8 +51,8 @@ contract PrivateOfferCloneFactory is CloneFactory {
     }
 
     /**
-     * @notice Deploys a contract using create2. During the deployment, `_currencyPayer` pays `_currencyReceiver` for the purchase of `_tokenAmount` tokens at `_tokenPrice` per token.
-     *      The tokens are minted to `_tokenReceiver`. The token is deployed at `_token` and the currency is `_currency`.
+     * @notice Deploys a private offer clone with a vesting contract. During the deployment, `_currencyPayer` pays `_currencyReceiver` for the purchase of `_tokenAmount` tokens at `_tokenPrice` per token.
+     *      The tokens are minted or transferred to `_tokenReceiver`. The token used is `_token` and the currency is `_currency`.
      * @param _rawSalt Value influencing the addresses of the deployed contract, but nothing else.
      * @param _fixedArguments Arguments for the PrivateOffer contract.
      * @param _vestingStart The start of the vesting period.
@@ -155,6 +166,12 @@ contract PrivateOfferCloneFactory is CloneFactory {
         return keccak256(abi.encode(_rawSalt, _vestingAddress));
     }
 
+    /**
+     * Calculates a salt from all input parameters.
+     * @param _rawSalt Value influencing the addresses of the deployed contract, but nothing else.
+     * @param _fixedArguments Parameters for the PrivateOffer contract (which also influence the address of the deployed contract)
+     * @return salt The salt that would be used to deploy a PrivateOffer contract with the given parameters.
+     */
     function _getSalt(
         bytes32 _rawSalt,
         PrivateOfferFixedArguments calldata _fixedArguments
