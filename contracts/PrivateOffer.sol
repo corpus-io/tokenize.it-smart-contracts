@@ -47,21 +47,18 @@ struct PrivateOfferVariableArguments {
 /**
  * @title PrivateOffer
  * @author malteish, cjentzsch
- * @notice This contract represents the offer to buy an amount of tokens at a preset price. It is created for a specific buyer and can only be claimed once and only by that buyer.
- *     All parameters of the invitation (currencyPayer, tokenReceiver, currencyReceiver, tokenAmount, tokenPrice, currency, token) are immutable (see description of CREATE2).
+ * @notice This contract represents the offer to buy an amount of tokens at a preset price. It can only be claimed once and only by a buyer who knows the offer details and salt.
+ *     Some parameters of the invitation (currencyReceiver, minTokenAmount, maxTokenAmount, tokenPrice, currency, token) are immutable.
+ *     Other can be changed by the buyer at the time of deployment (tokenAmount, currencyPayer, tokenReceiver).
  *     It is likely a company will create many PrivateOffers for specific investors to buy their one token.
- *     The use of CREATE2 (https://docs.openzeppelin.com/cli/2.8/deploying-with-create2) enables this invitation to be privacy preserving until it is accepted through
- *     granting of an allowance to the PrivateOffer's future address and deployment of the PrivateOffer.
- * @dev This contract is cloned, using a factory. That makes the future address of this contract
- *     deterministic: it can be computed from the fixed parameters of the invitation and a salt. This allows the company and buyer to grant allowances to the future
- *     address of this contract before it is deployed.
+ *     The use of cloning enables this invitation to be privacy preserving until it is accepted through granting of an allowance to the PrivateOffer's future address and deployment of the PrivateOffer.
+ * @dev This contract is cloned, using a factory. That makes the future address of this contract deterministic: it can be computed from the fixed parameters of the invitation and a salt. This allows the company and buyer to grant allowances to the future address of this contract before it is deployed.
  *     The process of deploying this contract is as follows:
- *     1. Company and investor agree on the terms of the invitation (fixedArguments)
- *         and a salt (used for deployment only).
- *     2. With the help of a deploy factory, the company computes the future address of the PrivateOffer contract.
+ *     1. Company and investor agree on the terms of the invitation (fixedArguments) and a salt (used for deployment only).
+ *     2. With the help of a clone factory, the company computes the future address of the PrivateOffer contract.
  *     3. The company grants a token minting allowance or an allowance to transfer tokens from the tokenHolder to the future address of the PrivateOffer contract.
  *     4. The investor grants a currency allowance of amount*tokenPrice / 10**tokenDecimals to the future address of the PrivateOffer contract, using their currencyPayer address.
- *     5. Finally, company, buyer or anyone else deploys the PrivateOffer contract using the deploy factory.
+ *     5. Finally, company, buyer or anyone else deploys the PrivateOffer contract using the clone factory.
  *     Because all of the execution logic is in the initialize function, the deployment of the PrivateOffer contract is the last step. During the deployment, tokens will be
  *     minted to the buyer or transferred from the tokenHolder to the buyer, and the currency will be transferred to the company's receiver address.
  */

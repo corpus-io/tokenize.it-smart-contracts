@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.23;
 
-import "@openzeppelin/contracts/utils/Create2.sol";
 import "../PrivateOffer.sol";
 import "./CloneFactory.sol";
 import "./VestingCloneFactory.sol";
@@ -180,7 +179,7 @@ contract PrivateOfferCloneFactory is CloneFactory {
     }
 
     /**
-     * Creates a PrivateOffer contract using create2.
+     * Creates a PrivateOffer contract clone.
      * @param _rawSalt Value influencing the addresses of the deployed contract, but nothing else.
      * @param _fixedArguments Parameters for the PrivateOffer contract (which also influence the address of the deployed contract)
      * @param _variableArguments Parameters for the PrivateOffer contract (which don't influence the address of the deployed contract)
