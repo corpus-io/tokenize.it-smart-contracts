@@ -28,6 +28,8 @@ contract PrivateOfferTest is Test {
 
     address wrongFeeReceiver = address(5);
 
+    bytes32 salt = bytes32(uint256(123456789));
+
     uint256 MAX_INT = type(uint256).max;
 
     address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
@@ -444,8 +446,6 @@ contract PrivateOfferTest is Test {
     }
 
     function ensureReverts(uint256 _tokenBuyAmount, uint256 _nominalPrice) public {
-        bytes32 salt = bytes32(uint256(8));
-
         uint256 expiration = block.timestamp + 1000;
 
         PrivateOfferFixedArguments memory fixedArguments = PrivateOfferFixedArguments(
@@ -499,7 +499,6 @@ contract PrivateOfferTest is Test {
 
         uint256 _tokenBuyAmount = 200e18;
         uint256 _nominalPrice = 3e6;
-        bytes32 salt = bytes32(uint256(8));
 
         uint256 expiration = block.timestamp + 1000;
 
@@ -545,10 +544,7 @@ contract PrivateOfferTest is Test {
         factory.createPrivateOfferClone(salt, fixedArguments, variableArguments);
     }
 
-    function testAcceptWithDifferentTokenReceiver(uint256 rawSalt) public {
-        //uint rawSalt = 0;
-        bytes32 salt = bytes32(rawSalt);
-
+    function testAcceptWithDifferentTokenReceiver() public {
         //bytes memory creationCode = type(PrivateOffer).creationCode;
         uint256 tokenAmount = 20000000000000;
         uint256 expiration = block.timestamp + 1000;
@@ -633,9 +629,7 @@ contract PrivateOfferTest is Test {
         );
     }
 
-    function testRevertsWithInsufficientAllowances(uint256 rawSalt) public {
-        bytes32 salt = bytes32(rawSalt);
-
+    function testRevertsWithInsufficientAllowances() public {
         uint256 amount = 20000000000000;
         uint256 expiration = block.timestamp + 1000;
 
@@ -712,9 +706,7 @@ contract PrivateOfferTest is Test {
         );
     }
 
-    function testRevertsIfBuyAmountTooHighOrLow(uint256 rawSalt) public {
-        bytes32 salt = bytes32(rawSalt);
-
+    function testRevertsIfBuyAmountTooHighOrLow() public {
         uint256 minAmount = 20000000000000;
         uint256 maxAmount = minAmount * 100;
         uint256 expiration = block.timestamp + 1000;
@@ -795,9 +787,7 @@ contract PrivateOfferTest is Test {
         );
     }
 
-    function testPrivateOfferCanNotBeCalledAgain(uint256 rawSalt) public {
-        bytes32 salt = bytes32(rawSalt);
-
+    function testPrivateOfferCanNotBeCalledAgain() public {
         uint256 amount = 20000000000000;
         uint256 expiration = block.timestamp + 1000;
 
@@ -876,5 +866,63 @@ contract PrivateOfferTest is Test {
         // PrivateOfferFixedArguments calldata fixedArguments2 = fixedArguments;
         vm.expectRevert("Initializable: contract is already initialized");
         inviteAddress.initialize(fixedArguments, variableArguments);
+    }
+
+    function testRevertsWithInsufficientFunds() public {
+        uint256 amount = 20000000000000;
+        uint256 expiration = block.timestamp + 1000;
+
+        PrivateOfferFixedArguments memory fixedArguments = PrivateOfferFixedArguments(
+            currencyReceiver,
+            tokenHolder,
+            amount,
+            amount,
+            price,
+            expiration,
+            currency,
+            token
+        );
+
+        PrivateOfferVariableArguments memory variableArguments = PrivateOfferVariableArguments(
+            tokenReceiver,
+            tokenReceiver,
+            amount
+        );
+
+        address expectedAddress = factory.predictCloneAddress(salt, fixedArguments);
+
+        uint256 tokenDecimals = token.decimals();
+        uint256 currencyAmount = (amount * price) / 10 ** tokenDecimals;
+
+        // Case 1: Insufficient token balance
+        vm.startPrank(paymentTokenProvider);
+        currency.mint(tokenReceiver, currencyAmount);
+        vm.stopPrank();
+
+        vm.startPrank(admin);
+        token.increaseMintingAllowance(admin, amount);
+        token.mint(tokenHolder, amount - 1); // Mint less than required
+        vm.stopPrank();
+
+        vm.startPrank(tokenHolder);
+        token.approve(expectedAddress, amount);
+        vm.stopPrank();
+
+        vm.prank(tokenReceiver);
+        currency.approve(expectedAddress, currencyAmount);
+
+        vm.expectRevert("ERC20: transfer amount exceeds balance");
+        factory.createPrivateOfferClone(salt, fixedArguments, variableArguments);
+
+        // Case 2: Insufficient currency balance
+        vm.startPrank(admin);
+        token.mint(tokenHolder, 1); // Restore sufficient token balance
+        vm.stopPrank();
+
+        vm.prank(tokenReceiver);
+        currency.transfer(address(1), 1); // transfer some currency to address(1), so the remaining balance is less than required
+
+        vm.expectRevert("ERC20: transfer amount exceeds balance");
+        factory.createPrivateOfferClone(salt, fixedArguments, variableArguments);
     }
 }
