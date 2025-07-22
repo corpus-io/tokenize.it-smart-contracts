@@ -794,4 +794,87 @@ contract PrivateOfferTest is Test {
             "tokenFeeCollector token balance is not correct"
         );
     }
+
+    function testPrivateOfferCanNotBeCalledAgain(uint256 rawSalt) public {
+        bytes32 salt = bytes32(rawSalt);
+
+        uint256 amount = 20000000000000;
+        uint256 expiration = block.timestamp + 1000;
+
+        PrivateOfferFixedArguments memory fixedArguments = PrivateOfferFixedArguments(
+            currencyReceiver,
+            tokenHolder,
+            amount,
+            amount,
+            price,
+            expiration,
+            currency,
+            token
+        );
+
+        PrivateOfferVariableArguments memory variableArguments = PrivateOfferVariableArguments(
+            tokenReceiver,
+            tokenReceiver,
+            amount
+        );
+
+        address expectedAddress = factory.predictCloneAddress(salt, fixedArguments);
+
+        uint256 tokenDecimals = token.decimals();
+        uint256 currencyAmount = (amount * price) / 10 ** tokenDecimals;
+
+        vm.startPrank(paymentTokenProvider);
+        currency.mint(tokenReceiver, currencyAmount);
+        vm.stopPrank();
+
+        vm.startPrank(admin);
+        token.increaseMintingAllowance(admin, amount);
+        token.mint(tokenHolder, amount);
+        vm.stopPrank();
+
+        vm.startPrank(tokenHolder);
+        token.approve(expectedAddress, amount);
+        vm.stopPrank();
+
+        vm.prank(tokenReceiver);
+        currency.approve(expectedAddress, currencyAmount);
+
+        // First call to createPrivateOfferClone should succeed
+        PrivateOffer inviteAddress = PrivateOffer(
+            factory.createPrivateOfferClone(salt, fixedArguments, variableArguments)
+        );
+        assertEq(address(inviteAddress), expectedAddress, "deployed contract address is not correct");
+
+        // Verify balances after first call
+        uint256 expectedTotalTokenSupply = amount +
+            FeeSettings(address(token.feeSettings())).tokenFee(amount, address(token));
+        assertEq(currency.balanceOf(tokenReceiver), 0, "tokenReceiver currency balance should be 0");
+        assertEq(
+            currency.balanceOf(currencyReceiver),
+            currencyAmount - FeeSettings(address(token.feeSettings())).privateOfferFee(currencyAmount, address(token)),
+            "currencyReceiver balance is incorrect"
+        );
+        assertEq(token.balanceOf(tokenReceiver), amount, "tokenReceiver token balance is incorrect");
+        assertEq(token.balanceOf(tokenHolder), 0, "tokenHolder should have no tokens");
+        assertEq(token.totalSupply(), expectedTotalTokenSupply, "token supply is not as expected");
+        assertEq(
+            currency.balanceOf(FeeSettings(address(token.feeSettings())).privateOfferFeeCollector(address(token))),
+            FeeSettings(address(token.feeSettings())).privateOfferFee(currencyAmount, address(token)),
+            "privateOfferFeeCollector currency balance is not correct"
+        );
+        assertEq(
+            token.balanceOf(FeeSettings(address(token.feeSettings())).tokenFeeCollector(address(token))),
+            FeeSettings(address(token.feeSettings())).tokenFee(amount, address(token)),
+            "tokenFeeCollector token balance is not correct"
+        );
+
+        // Second creation of the same PrivateOfferClone should revert
+        vm.expectRevert("ERC1167: create2 failed");
+        factory.createPrivateOfferClone(salt, fixedArguments, variableArguments);
+
+        // Calling the same PrivateOfferClone should revert
+        // PrivateOfferFixedArguments calldata fixedArguments2 = fixedArguments;
+        vm.expectRevert("Initializable: contract is already initialized");
+        inviteAddress.initialize(fixedArguments, variableArguments);
+    }
 }
