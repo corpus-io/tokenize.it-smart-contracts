@@ -161,5 +161,6 @@ contract PrivateOffer is Initializable {
             _fixedArguments.currency,
             _fixedArguments.token
         );
+        selfdestruct(payable(msg.sender));
     }
 }
