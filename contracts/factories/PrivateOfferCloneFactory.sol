@@ -32,7 +32,7 @@ contract PrivateOfferCloneFactory is CloneFactory {
     /**
      * @notice Deploys a private offer clone. During the deployment, `_currencyPayer` pays `_currencyReceiver` for the purchase of `_tokenAmount` tokens at `_tokenPrice` per token.
      *      The tokens are minted or transferred to `_tokenReceiver`. The token used is `_token` and the currency is `_currency`.
-     * @param _rawSalt Value influencing the addresses of the deployed contract, but nothing else.
+     * @param _rawSalt Value influencing the addresses of the deployed contract, but nothing else. Keep this value secure, as it could be used for a frontrunning attack by third parties.
      * @param _fixedArguments Arguments for the PrivateOffer contract.
      * @param _variableArguments Arguments for the PrivateOffer contract.
      * @return privateOfferAddress The address of the PrivateOffer contract that was deployed.
@@ -52,7 +52,7 @@ contract PrivateOfferCloneFactory is CloneFactory {
     /**
      * @notice Deploys a private offer clone with a vesting contract. During the deployment, `_currencyPayer` pays `_currencyReceiver` for the purchase of `_tokenAmount` tokens at `_tokenPrice` per token.
      *      The tokens are minted or transferred to `_tokenReceiver`. The token used is `_token` and the currency is `_currency`.
-     * @param _rawSalt Value influencing the addresses of the deployed contract, but nothing else.
+     * @param _rawSalt Value influencing the addresses of the deployed contract, but nothing else. Keep this value secure, as it could be used for a frontrunning attack by third parties.
      * @param _fixedArguments Arguments for the PrivateOffer contract.
      * @param _vestingStart The start of the vesting period.
      * @param _vestingCliff The cliff of the vesting period.
@@ -104,7 +104,7 @@ contract PrivateOfferCloneFactory is CloneFactory {
 
     /**
      * @notice Predicts the addresses of the PrivateOffer and Vesting contracts that would be deployed with the given parameters.
-     * @param _rawSalt Value influencing the addresses of the deployed contracts, but nothing else.
+     * @param _rawSalt Value influencing the addresses of the deployed contract, but nothing else. Keep this value secure, as it could be used for a frontrunning attack by third parties.
      * @param _fixedArguments Arguments for the PrivateOffer contract.
      * @param _vestingStart Begin of the vesting period.
      * @param _vestingCliff Cliff duration.
@@ -157,7 +157,7 @@ contract PrivateOfferCloneFactory is CloneFactory {
 
     /**
      * Calculates a salt from all input parameters.
-     * @param _rawSalt Value influencing the addresses of the deployed contract, but nothing else.
+     * @param _rawSalt Value influencing the addresses of the deployed contract, but nothing else. Keep this value secure, as it could be used for a frontrunning attack by third parties.
      * @param _vestingAddress Address of the vesting contract.
      * @return salt The salt that would be used to deploy a PrivateOffer contract with the given vesting contract.
      */
@@ -167,7 +167,7 @@ contract PrivateOfferCloneFactory is CloneFactory {
 
     /**
      * Calculates a salt from all input parameters.
-     * @param _rawSalt Value influencing the addresses of the deployed contract, but nothing else.
+     * @param _rawSalt Value influencing the addresses of the deployed contract, but nothing else. Keep this value secure, as it could be used for a frontrunning attack by third parties.
      * @param _fixedArguments Parameters for the PrivateOffer contract (which also influence the address of the deployed contract)
      * @return salt The salt that would be used to deploy a PrivateOffer contract with the given parameters.
      */
@@ -180,7 +180,7 @@ contract PrivateOfferCloneFactory is CloneFactory {
 
     /**
      * Creates a PrivateOffer contract clone.
-     * @param _rawSalt Value influencing the addresses of the deployed contract, but nothing else.
+     * @param _rawSalt Value influencing the addresses of the deployed contract, but nothing else. Keep this value secure, as it could be used for a frontrunning attack by third parties.
      * @param _fixedArguments Parameters for the PrivateOffer contract (which also influence the address of the deployed contract)
      * @param _variableArguments Parameters for the PrivateOffer contract (which don't influence the address of the deployed contract)
      */
