@@ -35,13 +35,13 @@ There are 2 investment contracts:
 
 ### 1. Private offer (PrivateOffer.sol)
 
-This is a personal investment invite allowing a particular investor (represented by their ethereum address) to buy newly issued tokens at a fixed price. The contract is deployed using CREATE2, and the investment is executed during deployment. [Read this](./using_the_contracts.md#personal-invites) for more information.
+This is an investment invite allowing to buy newly issued or existing tokens at a fixed price. The contract is deployed as clone, and the investment is executed during deployment. [Read this](./using_the_contracts.md#personal-invites) for more information.
 
 Lockup periods can be realized through the combination of [PrivateOffer.sol](../contracts/PrivateOffer.sol) and [Vesting.sol](../contracts/Vesting.sol) through the [PrivateOfferFactory.sol](../contracts/factories/PrivateOfferFactory.sol).
 
 ### 2. Crowdinvesting (Crowdinvesting.sol)
 
-This contract allows everyone who has the `Transferer`-role on the `token` contract or who is certified by the allow-list to meet the requirements set in the `token` contract to buy newly issued tokens at a fixed price. The number of tokens that can be minted in this way can be limited to `maxAmountOfTokenToBeSold`, which is the maximal amount of token to be sold in this fundraising round.
+This contract allows everyone who has the `Transferer`-role on the `token` contract or who is certified by the allow-list to meet the requirements set in the `token` contract to buy tokens at an offered price. The number of tokens that can be sold in this way can be limited to `maxAmountOfTokenToBeSold`, which is the maximal amount of token to be sold in this fundraising round.
 
 Furthermore, this contract can be paused by the owner to change the parameters. After any parameter change, a delay of 1 hour is enforced before the contract can be unpaused again. This is to prevent frontrunning attacks.
 
@@ -51,7 +51,7 @@ In case there is no vesting, tokens can directly be issued through minting as de
 
 For vesting the [Vesting.sol](../contracts/Vesting.sol) contract is used.
 
-The contract needs to be given a minting allowance of maximum amount of tokens to be vested in the company token contract by calling `increaseMintingAllowance(contractAddress, amount)` from an address which has the MintAllower role.
+To issue new tokens, the contract needs to be given a minting allowance of maximum amount of tokens to be vested in the company token contract by calling `increaseMintingAllowance(contractAddress, amount)` from an address which has the MintAllower role. To distribute existing tokens, those tokens need to be transferred to the vesting contract.
 
 ## Factories
 

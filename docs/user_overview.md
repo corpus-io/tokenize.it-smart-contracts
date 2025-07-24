@@ -52,7 +52,7 @@ Founders and investors can agree on specific terms for an investment, e.g. a spe
 
 Founder and investor have to agree on the deal in 3 ways before the contract can be deployed:
 
-- terms of investment -> needed to calculate the contract's address (will be deployed using CREATE2)
+- terms of investment -> needed to calculate the contract's future address (a clone will be deployed deterministically)
 - founder grants token minting allowance to contract's address
 - investor grants payment allowance to contract's address
 
@@ -75,4 +75,4 @@ Companies will profit from a pool of verified investors provided by the platform
 
 ## Liquidity
 
-Tokens (=shares) being transferable between investors makes shares a liquid asset.
+Tokens (think shares) being transferable between investors makes shares a liquid asset.

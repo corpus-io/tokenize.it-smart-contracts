@@ -223,4 +223,174 @@ contract PrivateOfferTimeLockTest is Test {
             "investor vault should have all tokens"
         );
     }
+
+    function testTransferPrivateOfferWithTimeLock(
+        bytes32 salt,
+        uint64 releaseStartTime,
+        uint64 releaseDuration,
+        uint64 attemptTime
+    ) public {
+        vm.assume(releaseStartTime > attemptTime);
+        vm.assume(releaseDuration < 20 * 365 * 24 * 60 * 60); // 20 years
+        vm.assume(type(uint64).max - releaseDuration - 1 - block.timestamp > releaseStartTime);
+        vm.assume(attemptTime < releaseStartTime + releaseDuration);
+        vm.assume(attemptTime > 1);
+        vm.assume(releaseStartTime > 1);
+
+        // reference all times to current time. Important for when testing with mainnet forks.
+        uint64 testStartTime = uint64(block.timestamp);
+        attemptTime += testStartTime;
+        releaseStartTime += testStartTime;
+        assertTrue(testStartTime < releaseStartTime, "testStartTime >= releaseStartTime");
+
+        address tokenSender = currencyReceiver;
+
+        PrivateOfferFixedArguments memory arguments = PrivateOfferFixedArguments(
+            currencyReceiver,
+            tokenSender,
+            tokenAmount,
+            tokenAmount,
+            price,
+            block.timestamp + 1000,
+            currency,
+            token
+        );
+
+        PrivateOfferVariableArguments memory variableArguments = PrivateOfferVariableArguments(
+            currencyPayer,
+            tokenReceiver,
+            tokenAmount
+        );
+
+        // predict addresses
+        (address expectedInviteAddress, address expectedTimeLockAddress) = privateOfferFactory
+            .predictPrivateOfferCloneWithTimeLockAddress(
+                salt,
+                arguments,
+                trustedForwarder,
+                releaseStartTime,
+                0,
+                releaseDuration,
+                admin
+            );
+
+        console.log("expectedInviteAddress", expectedInviteAddress);
+
+        // add time lock and token receiver to the allow list
+        list.set(expectedTimeLockAddress, requirements);
+        list.set(tokenReceiver, requirements);
+        list.set(tokenSender, requirements);
+
+        // mint tokens to the token sender
+        vm.prank(admin);
+        token.increaseMintingAllowance(tokenSender, tokenAmount);
+
+        vm.prank(tokenSender);
+        token.mint(tokenSender, tokenAmount);
+
+        // approve the invite address to spend the tokens
+        vm.prank(tokenSender);
+        token.approve(expectedInviteAddress, tokenAmount);
+
+        // mint currency to the payer
+        vm.prank(paymentTokenProvider);
+        currency.mint(currencyPayer, currencyAmount);
+
+        // approve the invite address to spend the currency
+        vm.prank(currencyPayer);
+        currency.approve(expectedInviteAddress, currencyAmount);
+
+        // make sure balances are as expected before deployment
+        assertEq(currency.balanceOf(currencyPayer), currencyAmount, "currencyPayer wrong balance before deployment");
+        assertEq(currency.balanceOf(currencyReceiver), 0, "currencyReceiver wrong balance before deployment");
+        assertEq(
+            token.balanceOf(token.feeSettings().tokenFeeCollector(address(token))),
+            token.feeSettings().tokenFee(variableArguments.tokenAmount, address(token)),
+            "fee collector did not receive token fee during mint"
+        );
+
+        console.log(
+            "feeCollector currency balance before deployment: %s",
+            currency.balanceOf(token.feeSettings().privateOfferFeeCollector(address(token)))
+        );
+        console.log(
+            "feeCollector token balance before deployment: %s",
+            token.balanceOf(token.feeSettings().tokenFeeCollector(address(token)))
+        );
+        // deploy private offer
+        Vesting timeLock = Vesting(
+            privateOfferFactory.createPrivateOfferCloneWithTimeLock(
+                salt,
+                arguments,
+                variableArguments,
+                releaseStartTime,
+                0,
+                releaseDuration,
+                admin,
+                trustedForwarder
+            )
+        );
+
+        console.log("payer balance: %s", currency.balanceOf(currencyPayer));
+        console.log("receiver balance: %s", currency.balanceOf(currencyReceiver));
+        console.log("timeLock token balance: %s", token.balanceOf(address(timeLock)));
+
+        assertEq(currency.balanceOf(currencyPayer), 0, "currencyPayer wrong balance after deployment");
+
+        assertEq(
+            currency.balanceOf(currencyReceiver),
+            currencyAmount - token.feeSettings().privateOfferFee(currencyAmount, address(token)),
+            "currencyReceiver wrong balance after deployment"
+        );
+
+        assertEq(
+            currency.balanceOf(token.feeSettings().privateOfferFeeCollector(address(token))),
+            token.feeSettings().privateOfferFee(currencyAmount, address(token)),
+            "feeCollector currency balance is not correct"
+        );
+
+        assertEq(
+            token.balanceOf(address(timeLock)),
+            variableArguments.tokenAmount,
+            "timeLock wrong token balance after deployment"
+        );
+
+        console.log(
+            "tokenFeeCollector token balance after deployment: %s",
+            token.balanceOf(token.feeSettings().tokenFeeCollector(address(token)))
+        );
+
+        assertEq(
+            token.balanceOf(token.feeSettings().tokenFeeCollector(address(token))),
+            token.feeSettings().tokenFee(variableArguments.tokenAmount, address(token)),
+            "feeCollector token balance is not correct"
+        );
+
+        /*
+         * PrivateOffer worked properly, now test the time lock
+         */
+        // immediate release should not work
+        assertEq(token.balanceOf(tokenReceiver), 0, "investor vault should have no tokens");
+        vm.prank(tokenReceiver);
+        timeLock.release(uint64(1));
+        assertEq(token.balanceOf(tokenReceiver), 0, "investor vault should still have no tokens");
+
+        // too early release should not work
+        vm.warp(attemptTime);
+        vm.prank(tokenReceiver);
+        timeLock.release(uint64(1));
+        assertEq(token.balanceOf(tokenReceiver), 0, "investor vault should still be empty");
+
+        // not testing the linear release time here because it's already tested in the vesting wallet tests
+
+        // release all tokens after release duration has passed
+        vm.warp(releaseStartTime + releaseDuration + 1);
+        vm.prank(tokenReceiver);
+        timeLock.release(uint64(1));
+        assertEq(
+            token.balanceOf(tokenReceiver),
+            variableArguments.tokenAmount,
+            "investor vault should have all tokens"
+        );
+    }
 }
