@@ -39,6 +39,53 @@ This is an investment invite allowing to buy newly issued or existing tokens at 
 
 Lockup periods can be realized through the combination of [PrivateOffer.sol](../contracts/PrivateOffer.sol) and [Vesting.sol](../contracts/Vesting.sol) through the [PrivateOfferFactory.sol](../contracts/factories/PrivateOfferFactory.sol).
 
+#### Security considerations on the PrivateOffer contract
+
+The founder sets these parameters, each of which affect the address of the contract:
+
+```
+    /// address receiving the payment in currency.
+    address currencyReceiver;
+    /// address holding the tokens. If 0, the token will be minted.
+    address tokenHolder;
+    /// minimum amount of tokens to be bought.
+    uint256 minTokenAmount;
+    /// maximum amount of tokens to be bought.
+    uint256 maxTokenAmount;
+    /// price company and investor agreed on, see docs/price.md.
+    uint256 tokenPrice;
+    /// timestamp after which the invitation is no longer valid.
+    uint256 expiration;
+    /// currency used for payment
+    IERC20 currency;
+    /// token to be bought
+    Token token;
+```
+
+The founder then grants an allowance or minting allowance to the resulting address. They can be sure the parameters above are not tempered with, because that would change the address of the contract and thus render the allowance useless and execution impossible.
+
+The investor is at liberty to choose these parameters:
+
+```
+    /// address holding the currency. Must have given sufficient allowance to this contract.
+    address currencyPayer;
+    /// address receiving the tokens. Must have sufficient attributes in AllowList to be able to receive tokens or the TRANSFERER role.
+    address tokenReceiver;
+    /// amount of tokens to buy
+    uint256 tokenAmount;
+```
+
+These, however, do not affect the address of the contract. This means that the investor grants an allowance to the contract's address **without having an on-chain assurance that the tokens will be delivered to their address**.
+Imagine this scenario:
+
+1. the founder extends the PrivateOffer and grants the allowance
+2. the investor is happy with the terms and grant their allowance
+3. an attacker observes the allowance on-chain
+4. assuming the attacker has access to the PrivateOffer's parameters, they can deploy the PO providing their own address as tokenReceiver
+5. this way, the attacker gets the tokens while the investor pays the price
+
+To prevent this, it is crucial to keep the parameters private. In addition to the parameters mentioned above, which might be guessable from the context, a random salt is used to make guessing impossible. These values must be communicated to the investor in a secure way and never shared with anyone else.
+
 ### 2. Crowdinvesting (Crowdinvesting.sol)
 
 This contract allows everyone who has the `Transferer`-role on the `token` contract or who is certified by the allow-list to meet the requirements set in the `token` contract to buy tokens at an offered price. The number of tokens that can be sold in this way can be limited to `maxAmountOfTokenToBeSold`, which is the maximal amount of token to be sold in this fundraising round.
