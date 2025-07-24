@@ -334,7 +334,6 @@ contract VestingBlindTest is Test {
         if (newTot == 0) {
             console.log("newTot is 0");
             vm.prank(beneficiary);
-            //vm.expectRevert(); // todo: this path is never used. why?
             vesting.revealAndRelease(
                 hash,
                 _allocation,

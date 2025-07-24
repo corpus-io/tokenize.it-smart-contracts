@@ -69,8 +69,6 @@ contract VestingCloneFactoryTest is Test {
             _trustedForwarder,
             _owner,
             _token,
-            _allocation,
-            _beneficiary,
             _start,
             _cliff,
             _duration
@@ -97,8 +95,6 @@ contract VestingCloneFactoryTest is Test {
             _trustedForwarder,
             _owner,
             _token,
-            _allocation,
-            _beneficiary,
             _start,
             _cliff,
             _duration
@@ -107,17 +103,7 @@ contract VestingCloneFactoryTest is Test {
 
         // ensure changing the trustedForwarder reverts
         vm.expectRevert("VestingCloneFactory: Unexpected trustedForwarder");
-        _factory.predictCloneAddressWithLockupPlan(
-            _rawSalt,
-            address(1),
-            _owner,
-            _token,
-            _allocation,
-            _beneficiary,
-            _start,
-            _cliff,
-            _duration
-        );
+        _factory.predictCloneAddressWithLockupPlan(_rawSalt, address(1), _owner, _token, _start, _cliff, _duration);
 
         // test changing the owner changes the address
         changedAddress = _factory.predictCloneAddressWithLockupPlan(
@@ -125,8 +111,6 @@ contract VestingCloneFactoryTest is Test {
             _trustedForwarder,
             address(1),
             _token,
-            _allocation,
-            _beneficiary,
             _start,
             _cliff,
             _duration
@@ -139,41 +123,11 @@ contract VestingCloneFactoryTest is Test {
             _trustedForwarder,
             _owner,
             address(1),
-            _allocation,
-            _beneficiary,
             _start,
             _cliff,
             _duration
         );
         assertNotEq(actual, changedAddress, "address prediction failed: token");
-
-        // test changing the allocation changes the address
-        changedAddress = _factory.predictCloneAddressWithLockupPlan(
-            _rawSalt,
-            _trustedForwarder,
-            _owner,
-            _token,
-            1,
-            _beneficiary,
-            _start,
-            _cliff,
-            _duration
-        );
-        assertNotEq(actual, changedAddress, "address prediction failed: allocation");
-
-        // test changing the beneficiary changes the address
-        changedAddress = _factory.predictCloneAddressWithLockupPlan(
-            _rawSalt,
-            _trustedForwarder,
-            _owner,
-            _token,
-            _allocation,
-            address(1),
-            _start,
-            _cliff,
-            _duration
-        );
-        assertNotEq(actual, changedAddress, "address prediction failed: beneficiary");
 
         // test changing the start changes the address
         changedAddress = _factory.predictCloneAddressWithLockupPlan(
@@ -181,8 +135,6 @@ contract VestingCloneFactoryTest is Test {
             _trustedForwarder,
             _owner,
             _token,
-            _allocation,
-            _beneficiary,
             1,
             _cliff,
             _duration
@@ -195,8 +147,6 @@ contract VestingCloneFactoryTest is Test {
             _trustedForwarder,
             _owner,
             _token,
-            _allocation,
-            _beneficiary,
             _start,
             1,
             _duration
@@ -209,8 +159,6 @@ contract VestingCloneFactoryTest is Test {
             _trustedForwarder,
             _owner,
             _token,
-            _allocation,
-            _beneficiary,
             _start,
             _cliff,
             1

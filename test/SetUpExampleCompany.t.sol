@@ -6,7 +6,7 @@ import "../lib/forge-std/src/console.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "./resources/CloneCreators.sol";
-import "../contracts/factories/PrivateOfferFactory.sol";
+import "../contracts/factories/PrivateOfferCloneFactory.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/ERC2771Helper.sol";
 import "@opengsn/contracts/src/forwarder/Forwarder.sol"; // chose specific version to avoid import error: yarn add @opengsn/contracts@2.2.5
@@ -23,7 +23,7 @@ contract CompanySetUpTest is Test {
     Crowdinvesting crowdinvesting;
     AllowList list;
     FeeSettings feeSettings;
-    PrivateOfferFactory privateOfferFactory;
+    PrivateOfferCloneFactory privateOfferFactory;
     TokenProxyFactory tokenFactory;
     Token token;
     FakePaymentToken paymentToken;
@@ -128,7 +128,8 @@ contract CompanySetUpTest is Test {
         // set up PrivateOfferFactory. Again, this is done here only because we need the forwarder address.
         Vesting vestingImplementation = new Vesting(address(forwarder));
         VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
-        privateOfferFactory = new PrivateOfferFactory(vestingCloneFactory);
+        PrivateOffer privateOfferImplementation = new PrivateOffer();
+        privateOfferFactory = new PrivateOfferCloneFactory(address(privateOfferImplementation), vestingCloneFactory);
 
         // launch the company token. The platform deploys the contract. There is no need to transfer ownership, because the token is never controlled by the address that deployed it.
         // Instead, it is immediately controlled by the address provided in the constructor, which is the companyAdmin in this case.
@@ -395,18 +396,24 @@ contract CompanySetUpTest is Test {
 
         salt = "random number"; // random number generated and stored by the platform for this Private Offer
 
-        PrivateOfferArguments memory arguments = PrivateOfferArguments(
-            investor,
-            investorColdWallet,
+        PrivateOfferFixedArguments memory arguments = PrivateOfferFixedArguments(
             companyAdmin,
+            address(0),
+            tokenBuyAmount,
             tokenBuyAmount,
             price,
             deadline,
             paymentToken,
-            token,
-            address(0)
+            token
         );
-        privateOfferAddress = privateOfferFactory.predictPrivateOfferAddress(salt, arguments);
+
+        PrivateOfferVariableArguments memory variableArguments = PrivateOfferVariableArguments(
+            investor,
+            investorColdWallet,
+            tokenBuyAmount
+        );
+
+        privateOfferAddress = privateOfferFactory.predictCloneAddress(salt, arguments);
 
         // If the investor wants to invest, they have to sign a meta transaction granting the private offer address an sufficient allowance in paymentToken.
         // Let's prepare this meta transaction using EIP-2612 approval (ERC-20 permit)
@@ -537,7 +544,7 @@ contract CompanySetUpTest is Test {
         assertEq(paymentToken.balanceOf(companyCurrencyReceiver), 0);
 
         vm.prank(platformHotWallet);
-        privateOfferFactory.deployPrivateOffer(salt, arguments);
+        privateOfferFactory.createPrivateOfferClone(salt, arguments, variableArguments);
 
         // investor receives as many tokens as they paid for
         assertTrue(token.balanceOf(investorColdWallet) == tokenBuyAmount, "Investor has no tokens");

@@ -68,28 +68,40 @@ The following statements about the smart contracts should always be true
 ## PrivateOffer.sol
 
 - If the buyer has not granted the invite a sufficient allowance in currency, the deploy operation reverts.
+- If the seller has not granted the invite a sufficient allowance or minting allowance in tokens, the deploy operation reverts.
 - The deal can only be paid for in currency.
 - During deployment, the payment after fee deduction is transferred to the receiver.
 - During deployment, the fee is deducted from the payment and sent to the feeCollector.
-- During deployment, tokens are minted to the buyer.
+- During deployment, tokens are minted or transferred to the buyer.
 - During deployment, the payment amount is rounded up by a maximum of 1 currency bit.
 - Funds sent to the contract can not be recovered.
 - The contract does not offer any functions after deployment is complete.
-- Token amount bought is exactly the amount configured.
+- Token amount bought must be larger than minTokenAmount and smaller than maxTokenAmount, or the deploy operation reverts.
 - receiver address can never be 0.
 - buyer address can never be 0.
 - tokenPrice can never be 0.
 - tokenPrice can never be negative.
-- No settings can be updated.
-- No settings can be changed before deployment without the contract address changing.
+
 - A private offer that uses a currency that does not have the TRUSTED_CURRENCY attribute on the AllowList will revert during deployment.
+- If tokenHolder is 0, the contract mints new tokens to the buyer.
+- If tokenHolder is not 0, the contract transfers tokens to the buyer from the tokenHolder.
 
 ## PrivateOfferFactory.sol
 
 - Contract state cannot be changed.
-- Given equal inputs, getAddress() and deploy() return the same address.
-- Given equal inputs, getAddress() returns the same address regardless of msg.sender.
+- Given equal inputs for salt and fixedArguments, getAddress() and deploy() return the same address.
+- Given equal inputs for salt and fixedArguments, getAddress() returns the same address regardless of msg.sender.
+- Given equal inputs for salt and fixedArguments, getAddress() returns the same address regardless of the time of the call.
 - Deploy() returns the address the PrivateOffer contract was deployed to.
+- A private offer can be combined with a vesting plan. In this case, the vesting contract with the vesting plan is created first, and then the private offer is deployed in the same transaction.
+- If an address has been predicted for a private offer with vesting plan, it is not possible to create the same private offer with the same address without vesting plan.
+- At the time a private offer is deployed, the buyer can decide how many tokens to buy.
+- At the time a private offer is deployed, the buyer can decide which address to pay from.
+- At the time a private offer is deployed, the buyer can decide which address will receive the tokens.
+- The amount of tokens being bought does not change affect the private offer contract address.
+- The address the currency is paid from does not change the private offer contract address.
+- The address the tokens are received at does not change the private offer contract address.
+- The salt, currencyReceiver address, tokenHolder address, minTokenAmount, maxTokenAmount, tokenPrice, offer expiration date, currency address, and token address change the private offer contract address.
 
 ## Crowdinvesting.sol
 
@@ -98,7 +110,7 @@ The following statements about the smart contracts should always be true
 - The buy can only be paid for in currency.
 - During the buy, the fee is deducted from the payment and the remaining payment is immediately transferred to the receiver.
 - During the buy, the fee is immediately transferred to the feeCollector.
-- During the buy, tokens are minted to the buyer.
+- During the buy, tokens are minted or transferred to the buyer.
 - During the buy, the payment amount is rounded up by a maximum of 1 currency bit.
 - After the buy, currency received by the receiver and fee received by feeCollector always exactly corresponds to the currency transferred from the buyer.
 - The contract address never holds funds during the buy or any other use it was designed for.
@@ -116,11 +128,13 @@ The following statements about the smart contracts should always be true
 - The contract can only be unpaused after the cool down period has passed.
 - Only the contract owner can call pause, unpause, or the functions that update settings.
 - The contract will never sell tokens after the lastBuyDate has passed, unless lastBuyDate is 0.
-- In sum, the contract will never mint more tokens to the buyers than maxAmountOfTokenToBeSold at the time of minting. This does not take into account the tokens minted to feeCollector in Token.sol.
+- In sum, the contract will never sell more tokens to the buyers than maxAmountOfTokenToBeSold at the time of sale. This does not take into account the tokens minted to feeCollector in Token.sol.
 - All functions can be called directly or as meta transaction using ERC2771.
-- Calling a function directly or through ERC2771 yield equivalent results given equivalent inputs.
+- Calling a function directly or through ERC2771 yields equivalent results given equivalent inputs.
 - Initialization is only possible with a currency that has the TRUSTED_CURRENCY attribute on the AllowList.
 - Setting a new currency is only possible if the new currency has the TRUSTED_CURRENCY attribute on the AllowList.
+- If tokenHolder is 0, the contract mints new tokens to the buyer.
+- If tokenHolder is not 0, the contract transfers tokens to the buyer from the tokenHolder.
 
 ## Vesting.sol
 
@@ -147,3 +161,8 @@ The following statements about the smart contracts should always be true
 - Stopping a vesting plan and revoking a commitment to a vesting plan are equivalent with respect to the token amount the beneficiary can release and the time the beneficiary can release them.
 - A beneficiary can never mint or withdraw more tokens than the allocation of the vesting plan.
 - Third parties can not mint or withdraw tokens from a vesting plan.
+
+## VestingCloneFactory.sol
+
+- The address of a clone that is created with a vesting plan changes when the salt, owner, token, start, cliff, or duration of that vesting planchanges.
+- Beneficiary and allocation do not change the address of a clone that is created with a vesting plan.

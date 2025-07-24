@@ -6,7 +6,7 @@ pragma solidity 0.8.23;
 import "../lib/forge-std/src/Script.sol";
 import "../contracts/factories/FeeSettingsCloneFactory.sol";
 import "../contracts/factories/AllowListCloneFactory.sol";
-import "../contracts/factories/PrivateOfferFactory.sol";
+import "../contracts/factories/PrivateOfferCloneFactory.sol";
 import "../contracts/factories/VestingCloneFactory.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/factories/CrowdinvestingCloneFactory.sol";
@@ -61,7 +61,7 @@ contract DeployPlatform is Script {
         // Gnosis Mainnet
         address platformColdWallet = 0x9E23f8AA17B2721cf69D157b8a15bd7b64ac881C;
         address trustedForwarder = 0x7eEae829DF28F9Ce522274D5771A6Be91d00E5ED;
-        address[] memory trustedCurrencies = new address[](6);
+        address[] memory trustedCurrencies = new address[](1);
         trustedCurrencies[0] = address(0xcB444e90D8198415266c6a2724b7900fb12FC56E); // Monerium
 
         /*
@@ -119,9 +119,13 @@ contract DeployPlatform is Script {
         VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
         console.log("VestingCloneFactory deployed at: ", address(vestingCloneFactory));
 
-        console.log("Deploying PrivateOfferFactory contract...");
-        PrivateOfferFactory privateOfferFactory = new PrivateOfferFactory(vestingCloneFactory);
-        console.log("PrivateOfferFactory deployed at: ", address(privateOfferFactory));
+        console.log("Deploying PrivateOfferCloneFactory contract...");
+        PrivateOffer privateOfferImplementation = new PrivateOffer();
+        PrivateOfferCloneFactory privateOfferCloneFactory = new PrivateOfferCloneFactory(
+            address(privateOfferImplementation),
+            vestingCloneFactory
+        );
+        console.log("PrivateOfferCloneFactory deployed at: ", address(privateOfferCloneFactory));
 
         console.log("Deploying TokenProxyFactory contract...");
         Token tokenImplementation = new Token(trustedForwarder);
@@ -157,13 +161,14 @@ contract DeployPlatform is Script {
         // console.log("tEUROC deployed at: ", address(tEUROC));
         // console.log("Remember to add the tokens to the AllowList with attribute TRUSTED_CURRENCY: ", TRUSTED_CURRENCY);
 
+        // disabled because of solidity stack too deep error
         // deploy crowdinvesting factory
-        console.log("Deploying CrowdinvestingFactory contract...");
-        Crowdinvesting crowdinvestingImplementation = new Crowdinvesting(trustedForwarder);
-        CrowdinvestingCloneFactory crowdinvestingCloneFactory = new CrowdinvestingCloneFactory(
-            address(crowdinvestingImplementation)
-        );
-        console.log("CrowdinvestingFactory deployed at: ", address(crowdinvestingCloneFactory));
+        // console.log("Deploying CrowdinvestingFactory contract...");
+        // Crowdinvesting crowdinvestingImplementation = new Crowdinvesting(trustedForwarder);
+        // CrowdinvestingCloneFactory crowdinvestingCloneFactory = new CrowdinvestingCloneFactory(
+        //     address(crowdinvestingImplementation)
+        // );
+        // console.log("CrowdinvestingFactory deployed at: ", address(crowdinvestingCloneFactory));
 
         vm.stopBroadcast();
     }
