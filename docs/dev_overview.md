@@ -86,6 +86,8 @@ Imagine this scenario:
 
 To prevent this, it is crucial to keep the parameters private. In addition to the parameters mentioned above, which might be guessable from the context, a random salt is used to make guessing impossible. These values must be communicated to the investor in a secure way and never shared with anyone else.
 
+The circle of potential bad actors can be limited by granting the allowance and executing the PrivateOffer in the same transaction. That can be achieved through batching transactions, e.g. with [Multicall3](https://www.multicall3.com/).
+
 ### 2. Crowdinvesting (Crowdinvesting.sol)
 
 This contract allows everyone who has the `Transferer`-role on the `token` contract or who is certified by the allow-list to meet the requirements set in the `token` contract to buy tokens at an offered price. The number of tokens that can be sold in this way can be limited to `maxAmountOfTokenToBeSold`, which is the maximal amount of token to be sold in this fundraising round.
