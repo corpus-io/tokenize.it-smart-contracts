@@ -96,8 +96,6 @@ contract PrivateOfferOffchainPaymentTimeLockTest is Test {
             trustedForwarder,
             address(0), // no owner
             address(token),
-            tokenAmount,
-            tokenReceiver,
             releaseStartTime,
             releaseDuration,
             releaseDuration

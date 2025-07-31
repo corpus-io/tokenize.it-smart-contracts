@@ -7,7 +7,7 @@ import "../contracts/Token.sol";
 import "../contracts/factories/FeeSettingsCloneFactory.sol";
 import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
-import "../contracts/factories/PrivateOfferFactory.sol";
+import "../contracts/factories/PrivateOfferCloneFactory.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/CloneCreators.sol";
 
@@ -16,7 +16,7 @@ contract FeeSettingsIntegrationTest is Test {
     Fees customFees;
     Token token;
     FakePaymentToken currency;
-    PrivateOfferFactory privateOfferFactory;
+    PrivateOfferCloneFactory privateOfferFactory;
     CrowdinvestingCloneFactory crowdinvestingCloneFactory;
 
     uint256 MAX_INT = type(uint256).max;
@@ -83,7 +83,11 @@ contract FeeSettingsIntegrationTest is Test {
         crowdinvestingCloneFactory = new CrowdinvestingCloneFactory(address(crowdinvestingLogic));
 
         // using a fake vesting clone factory here because we don't need this functionality for this test
-        privateOfferFactory = new PrivateOfferFactory(VestingCloneFactory(address(294)));
+        PrivateOffer privateOfferImplementation = new PrivateOffer();
+        privateOfferFactory = new PrivateOfferCloneFactory(
+            address(privateOfferImplementation),
+            VestingCloneFactory(address(294))
+        );
     }
 
     function testMintUsesCustomFeeAndCollector(address _customFeeCollector) public {
@@ -128,18 +132,17 @@ contract FeeSettingsIntegrationTest is Test {
         assertEq(currency.balanceOf(_customFeeCollector), 0, "currency.balanceOf(customFeeCollector) != 0 before");
 
         // get private offer address
-        address expectedPrivateOfferAddress = privateOfferFactory.predictPrivateOfferAddress(
+        address expectedPrivateOfferAddress = privateOfferFactory.predictCloneAddress(
             "salt",
-            PrivateOfferArguments(
-                investor,
-                investor,
+            PrivateOfferFixedArguments(
                 companyAdmin,
+                address(0),
+                tokenAmount,
                 tokenAmount,
                 price,
                 block.timestamp + 1000,
                 currency,
-                token,
-                address(0)
+                token
             )
         );
 
@@ -151,19 +154,19 @@ contract FeeSettingsIntegrationTest is Test {
         currency.increaseAllowance(expectedPrivateOfferAddress, currencyAmount);
 
         // create private offer
-        privateOfferFactory.deployPrivateOffer(
+        privateOfferFactory.createPrivateOfferClone(
             "salt",
-            PrivateOfferArguments(
-                investor,
-                investor,
+            PrivateOfferFixedArguments(
                 companyAdmin,
+                address(0),
+                tokenAmount,
                 tokenAmount,
                 price,
                 block.timestamp + 1000,
                 currency,
-                token,
-                address(0)
-            )
+                token
+            ),
+            PrivateOfferVariableArguments(investor, investor, tokenAmount)
         );
 
         // check balances

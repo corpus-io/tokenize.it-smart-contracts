@@ -6,14 +6,14 @@ import "../lib/forge-std/src/console.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/PrivateOffer.sol";
-import "../contracts/factories/PrivateOfferFactory.sol";
+import "../contracts/factories/PrivateOfferCloneFactory.sol";
 import "./resources/CloneCreators.sol";
 import "./resources/ERC20MintableByAnyone.sol";
 
 contract PrivateOfferFactoryTest is Test {
-    event Deploy(address indexed privateOffer);
+    event NewClone(address clone);
 
-    PrivateOfferFactory factory;
+    PrivateOfferCloneFactory factory;
 
     AllowList list;
     FeeSettings feeSettings;
@@ -42,7 +42,8 @@ contract PrivateOfferFactoryTest is Test {
     function setUp() public {
         Vesting vestingImplementation = new Vesting(trustedForwarder);
         VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
-        factory = new PrivateOfferFactory(vestingCloneFactory);
+        PrivateOffer privateOfferImplementation = new PrivateOffer();
+        factory = new PrivateOfferCloneFactory(address(privateOfferImplementation), vestingCloneFactory);
         currency = new ERC20MintableByAnyone("currency", "CUR");
 
         list = createAllowList(trustedForwarder, owner);
@@ -64,18 +65,20 @@ contract PrivateOfferFactoryTest is Test {
         uint256 _amount = 20000000000000;
         uint256 _expiration = block.timestamp + 1000;
 
-        PrivateOfferArguments memory arguments = PrivateOfferArguments(
-            buyer,
-            buyer,
+        PrivateOfferFixedArguments memory arguments = PrivateOfferFixedArguments(
             currencyReceiver,
+            address(0),
+            _amount,
             _amount,
             price,
             _expiration,
             IERC20(address(currency)),
-            token,
-            address(0)
+            token
         );
-        address expectedAddress = factory.predictPrivateOfferAddress(_salt, arguments);
+
+        PrivateOfferVariableArguments memory variableArguments = PrivateOfferVariableArguments(buyer, buyer, _amount);
+
+        address expectedAddress = factory.predictCloneAddress(_salt, arguments);
 
         // make sure no contract lives here yet
         uint256 len;
@@ -92,8 +95,8 @@ contract PrivateOfferFactoryTest is Test {
         currency.approve(expectedAddress, _amount * price);
 
         vm.expectEmit(true, true, true, true, address(factory));
-        emit Deploy(expectedAddress);
-        address actualAddress = factory.deployPrivateOffer(_salt, arguments);
+        emit NewClone(expectedAddress);
+        address actualAddress = factory.createPrivateOfferClone(_salt, arguments, variableArguments);
 
         assertTrue(actualAddress == expectedAddress, "Wrong address returned");
 
@@ -123,27 +126,32 @@ contract PrivateOfferFactoryTest is Test {
         // mint currency to buyer
         currency.mint(buyer, currencyAmount);
 
-        PrivateOfferArguments memory arguments = PrivateOfferArguments(
-            buyer,
-            tokenReceiver,
+        PrivateOfferFixedArguments memory arguments = PrivateOfferFixedArguments(
             currencyReceiver,
+            address(0),
+            tokenAmount,
             tokenAmount,
             price,
             expiration,
             IERC20(address(currency)),
-            token,
-            address(0)
+            token
+        );
+
+        PrivateOfferVariableArguments memory variableArguments = PrivateOfferVariableArguments(
+            buyer,
+            tokenReceiver,
+            tokenAmount
         );
 
         // predict addresses for vesting contract and private offer contract
-        (address expectedPrivateOffer, address expectedVesting) = factory.predictPrivateOfferAndTimeLockAddress(
+        (address expectedPrivateOffer, address expectedVesting) = factory.predictPrivateOfferCloneWithTimeLockAddress(
             salt,
             arguments,
+            trustedForwarder,
             _vestingStart,
             _vestingCliff,
             _vestingDuration,
-            companyAdmin,
-            trustedForwarder
+            companyAdmin
         );
 
         console.log("expectedPrivateOffer", expectedPrivateOffer);
@@ -151,7 +159,6 @@ contract PrivateOfferFactoryTest is Test {
 
         // make sure no contract lives here yet
         assertFalse(Address.isContract(expectedPrivateOffer), "Private Offer address already contains contract");
-        assertFalse(Address.isContract(expectedVesting), "Vesting address already contains contract");
 
         // give allowances to private offer contract
         vm.prank(buyer);
@@ -169,18 +176,18 @@ contract PrivateOfferFactoryTest is Test {
         );
 
         // deploy contracts
-        assertEq(
-            factory.deployPrivateOfferWithTimeLock(
-                salt,
-                arguments,
-                _vestingStart,
-                _vestingCliff,
-                _vestingDuration,
-                companyAdmin,
-                trustedForwarder
-            ),
-            expectedVesting
+        address actualVesting = factory.createPrivateOfferCloneWithTimeLock(
+            salt,
+            arguments,
+            variableArguments,
+            _vestingStart,
+            _vestingCliff,
+            _vestingDuration,
+            companyAdmin,
+            trustedForwarder
         );
+
+        assertEq(actualVesting, expectedVesting, "Vesting address does not match");
 
         // make sure contracts live here now
         assertTrue(Address.isContract(expectedPrivateOffer), "Private Offer address does not contain contract");
@@ -223,5 +230,141 @@ contract PrivateOfferFactoryTest is Test {
             tokenAmount,
             "Token receiver has wrong token balance after second release"
         );
+    }
+
+    function testChangingAnythingInFixedArgumentsChangesAddress() public view {
+        uint256 amount = 20000000000000;
+
+        PrivateOfferFixedArguments memory fixedArguments = PrivateOfferFixedArguments(
+            currencyReceiver,
+            owner,
+            amount,
+            amount,
+            price,
+            expiration,
+            currency,
+            token
+        );
+
+        address originalAddress = factory.predictCloneAddress(salt, fixedArguments);
+
+        // Test 1: Change currencyReceiver
+        PrivateOfferFixedArguments memory modifiedArguments = PrivateOfferFixedArguments(
+            address(0x123), // Different currencyReceiver
+            owner,
+            amount,
+            amount,
+            price,
+            expiration,
+            currency,
+            token
+        );
+        address modifiedAddress = factory.predictCloneAddress(salt, modifiedArguments);
+        assertTrue(originalAddress != modifiedAddress, "Changing currencyReceiver should change address");
+
+        // Test 2: Change owner
+        modifiedArguments = PrivateOfferFixedArguments(
+            currencyReceiver,
+            address(0x456), // Different owner
+            amount,
+            amount,
+            price,
+            expiration,
+            currency,
+            token
+        );
+        modifiedAddress = factory.predictCloneAddress(salt, modifiedArguments);
+        assertTrue(originalAddress != modifiedAddress, "Changing owner should change address");
+
+        // Test 3: Change minTokenAmount
+        modifiedArguments = PrivateOfferFixedArguments(
+            currencyReceiver,
+            owner,
+            amount + 1, // Different minTokenAmount
+            amount,
+            price,
+            expiration,
+            currency,
+            token
+        );
+        modifiedAddress = factory.predictCloneAddress(salt, modifiedArguments);
+        assertTrue(originalAddress != modifiedAddress, "Changing minTokenAmount should change address");
+
+        // Test 4: Change maxTokenAmount
+        modifiedArguments = PrivateOfferFixedArguments(
+            currencyReceiver,
+            owner,
+            amount,
+            amount + 1, // Different maxTokenAmount
+            price,
+            expiration,
+            currency,
+            token
+        );
+        modifiedAddress = factory.predictCloneAddress(salt, modifiedArguments);
+        assertTrue(originalAddress != modifiedAddress, "Changing maxTokenAmount should change address");
+
+        // Test 5: Change tokenPrice
+        modifiedArguments = PrivateOfferFixedArguments(
+            currencyReceiver,
+            owner,
+            amount,
+            amount,
+            price + 1, // Different tokenPrice
+            expiration,
+            currency,
+            token
+        );
+        modifiedAddress = factory.predictCloneAddress(salt, modifiedArguments);
+        assertTrue(originalAddress != modifiedAddress, "Changing tokenPrice should change address");
+
+        // Test 6: Change expiration
+        modifiedArguments = PrivateOfferFixedArguments(
+            currencyReceiver,
+            owner,
+            amount,
+            amount,
+            price,
+            expiration + 1, // Different expiration
+            currency,
+            token
+        );
+        modifiedAddress = factory.predictCloneAddress(salt, modifiedArguments);
+        assertTrue(originalAddress != modifiedAddress, "Changing expiration should change address");
+
+        // Test 7: Change currency
+        modifiedArguments = PrivateOfferFixedArguments(
+            currencyReceiver,
+            owner,
+            amount,
+            amount,
+            price,
+            expiration,
+            IERC20(address(0x789)), // Different currency
+            token
+        );
+        modifiedAddress = factory.predictCloneAddress(salt, modifiedArguments);
+        assertTrue(originalAddress != modifiedAddress, "Changing currency should change address");
+
+        // Test 8: Change token
+        modifiedArguments = PrivateOfferFixedArguments(
+            currencyReceiver,
+            owner,
+            amount,
+            amount,
+            price,
+            expiration,
+            currency,
+            Token(address(0xabc)) // Different token
+        );
+        modifiedAddress = factory.predictCloneAddress(salt, modifiedArguments);
+        assertTrue(originalAddress != modifiedAddress, "Changing token should change address");
+
+        // Test 9: Change salt
+        modifiedAddress = factory.predictCloneAddress(bytes32(uint256(1)), fixedArguments);
+        assertTrue(originalAddress != modifiedAddress, "Changing salt should change address");
+
+        // no explicit test needs to ensure that the predicted address is the actual address, as a bunch of tests
+        // would fail if that were not the case, e.g. testDeployContract
     }
 }

@@ -5,7 +5,7 @@ import "../lib/forge-std/src/Test.sol";
 import "../lib/forge-std/src/console.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/PrivateOffer.sol";
-import "../contracts/factories/PrivateOfferFactory.sol";
+import "../contracts/factories/PrivateOfferCloneFactory.sol";
 import "./resources/CloneCreators.sol";
 import "./resources/FakePaymentToken.sol";
 
@@ -19,7 +19,7 @@ contract PrivateOfferTest is Test {
         Token indexed token
     );
 
-    PrivateOfferFactory factory;
+    PrivateOfferCloneFactory factory;
 
     AllowList list;
     FeeSettings feeSettings;
@@ -27,6 +27,8 @@ contract PrivateOfferTest is Test {
     FakePaymentToken currency;
 
     address wrongFeeReceiver = address(5);
+
+    bytes32 salt = bytes32(uint256(123456789));
 
     uint256 MAX_INT = type(uint256).max;
 
@@ -47,7 +49,8 @@ contract PrivateOfferTest is Test {
     function setUp() public {
         Vesting vestingImplementation = new Vesting(trustedForwarder);
         VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
-        factory = new PrivateOfferFactory(vestingCloneFactory);
+        PrivateOffer privateOfferImplementation = new PrivateOffer();
+        factory = new PrivateOfferCloneFactory(address(privateOfferImplementation), vestingCloneFactory);
 
         vm.prank(paymentTokenProvider);
         currency = new FakePaymentToken(0, 18);
@@ -91,19 +94,27 @@ contract PrivateOfferTest is Test {
         uint256 amount = 20000000000000;
         uint256 expiration = block.timestamp + 1000;
 
-        PrivateOfferArguments memory arguments = PrivateOfferArguments(
-            tokenReceiver,
-            tokenReceiver,
+        PrivateOfferFixedArguments memory fixedArguments = PrivateOfferFixedArguments(
             currencyReceiver,
+            address(0),
+            amount,
             amount,
             price,
             expiration,
             currency,
-            token,
-            address(0)
+            token
         );
-        address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
 
+        PrivateOfferVariableArguments memory variableArguments = PrivateOfferVariableArguments(
+            tokenReceiver,
+            tokenReceiver,
+            amount
+        );
+
+        address expectedAddress = factory.predictCloneAddress(salt, fixedArguments);
+        console.log("expectedAddress: %s", expectedAddress);
+
+        // make sure balances are as expected before deployment
         uint256 tokenDecimals = token.decimals();
 
         vm.startPrank(paymentTokenProvider);
@@ -133,14 +144,13 @@ contract PrivateOfferTest is Test {
             "tokenFeeCollector currency balance is not correct"
         );
 
-        // make sure balances are as expected after deployment
         uint256 feeCollectorCurrencyBalanceBefore = currency.balanceOf(
             FeeSettings(address(token.feeSettings())).feeCollector()
         );
         vm.expectEmit(true, true, true, true, address(expectedAddress));
         emit Deal(tokenReceiver, tokenReceiver, amount, price, currency, token);
 
-        address inviteAddress = factory.deployPrivateOffer(salt, arguments);
+        address inviteAddress = factory.createPrivateOfferClone(salt, fixedArguments, variableArguments);
 
         console.log(
             "feeCollector currency balance after deployment: %s",
@@ -157,6 +167,8 @@ contract PrivateOfferTest is Test {
             len := extcodesize(expectedAddress)
         }
         console.log("Deployed contract size: %s", len);
+
+        // make sure balances are as expected after deployment
         assertEq(currency.balanceOf(tokenReceiver), 0);
 
         assertEq(
@@ -187,18 +199,24 @@ contract PrivateOfferTest is Test {
         uint256 amount = 20000000000000;
         uint256 expiration = block.timestamp + 1000;
 
-        PrivateOfferArguments memory arguments = PrivateOfferArguments(
-            tokenReceiver,
-            tokenReceiver,
+        PrivateOfferFixedArguments memory fixedArguments = PrivateOfferFixedArguments(
             currencyReceiver,
+            tokenHolder,
+            amount,
             amount,
             price,
             expiration,
             currency,
-            token,
-            tokenHolder
+            token
         );
-        address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
+
+        PrivateOfferVariableArguments memory variableArguments = PrivateOfferVariableArguments(
+            tokenReceiver,
+            tokenReceiver,
+            amount
+        );
+
+        address expectedAddress = factory.predictCloneAddress(salt, fixedArguments);
 
         uint256 tokenDecimals = token.decimals();
 
@@ -246,7 +264,7 @@ contract PrivateOfferTest is Test {
         vm.expectEmit(true, true, true, true, address(expectedAddress));
         emit Deal(tokenReceiver, tokenReceiver, amount, price, currency, token);
 
-        address inviteAddress = factory.deployPrivateOffer(salt, arguments);
+        address inviteAddress = factory.createPrivateOfferClone(salt, fixedArguments, variableArguments);
 
         console.log(
             "feeCollector currency balance after deployment: %s",
@@ -299,18 +317,24 @@ contract PrivateOfferTest is Test {
         //bytes memory creationCode = type(PrivateOffer).creationCode;
         uint256 expiration = block.timestamp + 1000;
 
-        PrivateOfferArguments memory arguments = PrivateOfferArguments(
-            currencyPayer,
-            tokenReceiver,
+        PrivateOfferFixedArguments memory fixedArguments = PrivateOfferFixedArguments(
             currencyReceiver,
+            address(0),
+            _tokenBuyAmount,
             _tokenBuyAmount,
             _nominalPrice,
             expiration,
             currency,
-            token,
-            address(0)
+            token
         );
-        address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
+
+        PrivateOfferVariableArguments memory variableArguments = PrivateOfferVariableArguments(
+            currencyPayer,
+            tokenReceiver,
+            _tokenBuyAmount
+        );
+
+        address expectedAddress = factory.predictCloneAddress(salt, fixedArguments);
 
         // set fees to 0, otherwise extra tokens are minted which causes an overflow
         Fees memory fees = Fees(0, 0, 0, 0);
@@ -354,7 +378,7 @@ contract PrivateOfferTest is Test {
         // make sure balances are as expected after deployment
         uint256 currencyReceiverBalanceBefore = currency.balanceOf(currencyReceiver);
 
-        address inviteAddress = factory.deployPrivateOffer(salt, arguments);
+        address inviteAddress = factory.createPrivateOfferClone(salt, fixedArguments, variableArguments);
 
         console.log(
             "feeCollector currency balance after deployment: %s",
@@ -422,22 +446,26 @@ contract PrivateOfferTest is Test {
     }
 
     function ensureReverts(uint256 _tokenBuyAmount, uint256 _nominalPrice) public {
-        bytes32 salt = bytes32(uint256(8));
-
         uint256 expiration = block.timestamp + 1000;
 
-        PrivateOfferArguments memory arguments = PrivateOfferArguments(
-            currencyPayer,
-            tokenReceiver,
+        PrivateOfferFixedArguments memory fixedArguments = PrivateOfferFixedArguments(
             currencyReceiver,
+            address(0),
+            _tokenBuyAmount,
             _tokenBuyAmount,
             _nominalPrice,
             expiration,
             currency,
-            token,
-            address(0)
+            token
         );
-        address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
+
+        PrivateOfferVariableArguments memory variableArguments = PrivateOfferVariableArguments(
+            currencyPayer,
+            tokenReceiver,
+            _tokenBuyAmount
+        );
+
+        address expectedAddress = factory.predictCloneAddress(salt, fixedArguments);
 
         vm.startPrank(admin);
         console.log("expectedAddress: %s", token.mintingAllowance(expectedAddress));
@@ -451,8 +479,8 @@ contract PrivateOfferTest is Test {
         vm.prank(currencyPayer);
         currency.approve(expectedAddress, maxCurrencyAmount);
 
-        vm.expectRevert("Create2: Failed on deploy");
-        factory.deployPrivateOffer(salt, arguments);
+        vm.expectRevert("panic: arithmetic underflow or overflow (0x11)");
+        factory.createPrivateOfferClone(salt, fixedArguments, variableArguments);
     }
 
     function testRevertOnOverflow(uint256 _tokenBuyAmount, uint256 _tokenPrice) public {
@@ -471,22 +499,27 @@ contract PrivateOfferTest is Test {
 
         uint256 _tokenBuyAmount = 200e18;
         uint256 _nominalPrice = 3e6;
-        bytes32 salt = bytes32(uint256(8));
 
         uint256 expiration = block.timestamp + 1000;
 
-        PrivateOfferArguments memory arguments = PrivateOfferArguments(
-            currencyPayer,
-            tokenReceiver,
+        PrivateOfferFixedArguments memory fixedArguments = PrivateOfferFixedArguments(
             currencyReceiver,
+            address(0),
+            _tokenBuyAmount,
             _tokenBuyAmount,
             _nominalPrice,
             expiration,
             currency,
-            token,
-            address(0)
+            token
         );
-        address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
+
+        PrivateOfferVariableArguments memory variableArguments = PrivateOfferVariableArguments(
+            currencyPayer,
+            tokenReceiver,
+            _tokenBuyAmount
+        );
+
+        address expectedAddress = factory.predictCloneAddress(salt, fixedArguments);
 
         vm.startPrank(admin);
         console.log("expectedAddress: %s", token.mintingAllowance(expectedAddress));
@@ -503,36 +536,39 @@ contract PrivateOfferTest is Test {
         vm.prank(tokenReceiver);
         currency.approve(expectedAddress, maxCurrencyAmount);
 
-        vm.expectRevert("Create2: Failed on deploy");
-        factory.deployPrivateOffer(salt, arguments);
+        vm.expectRevert("currency needs to be on the allowlist with TRUSTED_CURRENCY attribute");
+        factory.createPrivateOfferClone(salt, fixedArguments, variableArguments);
 
         // restore trusted currency on allowlist and make sure it works again
         list.set(address(currency), TRUSTED_CURRENCY);
-        factory.deployPrivateOffer(salt, arguments);
+        factory.createPrivateOfferClone(salt, fixedArguments, variableArguments);
     }
 
-    function testAcceptWithDifferentTokenReceiver(uint256 rawSalt) public {
-        //uint rawSalt = 0;
-        bytes32 salt = bytes32(rawSalt);
-
+    function testAcceptWithDifferentTokenReceiver() public {
         //bytes memory creationCode = type(PrivateOffer).creationCode;
         uint256 tokenAmount = 20000000000000;
         uint256 expiration = block.timestamp + 1000;
         uint256 tokenDecimals = token.decimals();
         uint256 currencyAmount = (tokenAmount * price) / 10 ** tokenDecimals;
 
-        PrivateOfferArguments memory arguments = PrivateOfferArguments(
-            currencyPayer,
-            tokenReceiver,
+        PrivateOfferFixedArguments memory fixedArguments = PrivateOfferFixedArguments(
             currencyReceiver,
+            address(0),
+            tokenAmount,
             tokenAmount,
             price,
             expiration,
             currency,
-            token,
-            address(0)
+            token
         );
-        address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
+
+        PrivateOfferVariableArguments memory variableArguments = PrivateOfferVariableArguments(
+            currencyPayer,
+            tokenReceiver,
+            tokenAmount
+        );
+
+        address expectedAddress = factory.predictCloneAddress(salt, fixedArguments);
 
         vm.prank(admin);
         token.increaseMintingAllowance(expectedAddress, tokenAmount);
@@ -560,7 +596,7 @@ contract PrivateOfferTest is Test {
             "tokenFeeCollector token balance is not correct"
         );
 
-        address inviteAddress = factory.deployPrivateOffer(salt, arguments);
+        address inviteAddress = factory.createPrivateOfferClone(salt, fixedArguments, variableArguments);
 
         assertEq(inviteAddress, expectedAddress, "deployed contract address is not correct");
 
@@ -591,5 +627,302 @@ contract PrivateOfferTest is Test {
             token.balanceOf(token.feeSettings().tokenFeeCollector(address(token))),
             token.feeSettings().tokenFee(tokenAmount, address(token))
         );
+    }
+
+    function testRevertsWithInsufficientAllowances() public {
+        uint256 amount = 20000000000000;
+        uint256 expiration = block.timestamp + 1000;
+
+        PrivateOfferFixedArguments memory fixedArguments = PrivateOfferFixedArguments(
+            currencyReceiver,
+            tokenHolder,
+            amount,
+            amount,
+            price,
+            expiration,
+            currency,
+            token
+        );
+
+        PrivateOfferVariableArguments memory variableArguments = PrivateOfferVariableArguments(
+            tokenReceiver,
+            tokenReceiver,
+            amount
+        );
+
+        address expectedAddress = factory.predictCloneAddress(salt, fixedArguments);
+
+        uint256 tokenDecimals = token.decimals();
+
+        vm.startPrank(paymentTokenProvider);
+        currency.mint(tokenReceiver, (amount * price) / 10 ** tokenDecimals);
+        vm.stopPrank();
+
+        vm.startPrank(admin);
+        token.increaseMintingAllowance(admin, amount);
+        token.mint(tokenHolder, amount);
+        vm.stopPrank();
+
+        // Case 1: Token allowance too low
+        vm.startPrank(tokenHolder);
+        token.approve(expectedAddress, amount - 1); // Approve less than required
+        vm.stopPrank();
+
+        vm.prank(tokenReceiver);
+        currency.approve(expectedAddress, (amount * price) / 10 ** tokenDecimals);
+
+        vm.expectRevert("ERC20: insufficient allowance");
+        factory.createPrivateOfferClone(salt, fixedArguments, variableArguments);
+
+        // Case 2: Payment token allowance too low
+        vm.startPrank(tokenHolder);
+        token.approve(expectedAddress, amount); // Reset token allowance to sufficient
+        vm.stopPrank();
+
+        vm.prank(tokenReceiver);
+        currency.approve(expectedAddress, (amount * price) / 10 ** tokenDecimals - 1); // Approve less than required
+
+        vm.expectRevert("ERC20: insufficient allowance");
+        factory.createPrivateOfferClone(salt, fixedArguments, variableArguments);
+
+        // Verify balances remain unchanged after reverts
+        uint currencyAmount = (amount * price) / 10 ** tokenDecimals;
+        assertEq(currency.balanceOf(tokenReceiver), currencyAmount);
+        assertEq(currency.balanceOf(currencyReceiver), 0);
+        assertEq(token.balanceOf(tokenReceiver), 0);
+        assertEq(token.balanceOf(tokenHolder), amount);
+        uint256 expectedTotalTokenSupply = amount +
+            FeeSettings(address(token.feeSettings())).tokenFee(amount, address(token));
+        assertEq(token.totalSupply(), expectedTotalTokenSupply, "token supply is not as expected");
+        assertEq(
+            currency.balanceOf(FeeSettings(address(token.feeSettings())).privateOfferFeeCollector(address(token))),
+            0,
+            "privateOfferFeeCollector currency balance is not correct"
+        );
+        assertEq(
+            token.balanceOf(FeeSettings(address(token.feeSettings())).tokenFeeCollector(address(token))),
+            FeeSettings(address(token.feeSettings())).tokenFee(amount, address(token)),
+            "tokenFeeCollector currency balance is not correct"
+        );
+    }
+
+    function testRevertsIfBuyAmountTooHighOrLow() public {
+        uint256 minAmount = 20000000000000;
+        uint256 maxAmount = minAmount * 100;
+        uint256 expiration = block.timestamp + 1000;
+
+        PrivateOfferFixedArguments memory fixedArguments = PrivateOfferFixedArguments(
+            currencyReceiver,
+            tokenHolder,
+            minAmount,
+            maxAmount,
+            price,
+            expiration,
+            currency,
+            token
+        );
+
+        address expectedAddress = factory.predictCloneAddress(salt, fixedArguments);
+
+        uint256 tokenDecimals = token.decimals();
+        uint256 currencyAmount = (maxAmount * price) / 10 ** tokenDecimals;
+
+        vm.startPrank(paymentTokenProvider);
+        currency.mint(tokenReceiver, currencyAmount);
+        vm.stopPrank();
+
+        vm.startPrank(admin);
+        token.increaseMintingAllowance(admin, maxAmount);
+        token.mint(tokenHolder, maxAmount);
+        vm.stopPrank();
+
+        vm.startPrank(tokenHolder);
+        token.approve(expectedAddress, maxAmount);
+        vm.stopPrank();
+
+        vm.prank(tokenReceiver);
+        currency.approve(expectedAddress, currencyAmount);
+
+        // Case 1: Buy amount too high
+        PrivateOfferVariableArguments memory variableArgumentsTooHigh = PrivateOfferVariableArguments(
+            tokenReceiver,
+            tokenReceiver,
+            maxAmount + 1 // Exceeds maxAmount
+        );
+
+        vm.expectRevert("tokenAmount is greater than maxTokenAmount");
+        factory.createPrivateOfferClone(salt, fixedArguments, variableArgumentsTooHigh);
+
+        // Case 2: Buy amount too low
+        PrivateOfferVariableArguments memory variableArgumentsTooLow = PrivateOfferVariableArguments(
+            tokenReceiver,
+            tokenReceiver,
+            minAmount - 1 // Less than minAmount
+        );
+
+        vm.expectRevert("tokenAmount is less than minTokenAmount");
+        factory.createPrivateOfferClone(salt, fixedArguments, variableArgumentsTooLow);
+
+        // Case 3: successfull execution
+        PrivateOfferVariableArguments memory variableArgumentsSuccess = PrivateOfferVariableArguments(
+            tokenReceiver,
+            tokenReceiver,
+            maxAmount
+        );
+        factory.createPrivateOfferClone(salt, fixedArguments, variableArgumentsSuccess);
+
+        // Verify balances are correct after successful execution
+        assertEq(currency.balanceOf(tokenReceiver), 0, "tokenReceiver currency balance is not correct");
+        assertEq(
+            currency.balanceOf(currencyReceiver),
+            currencyAmount - token.feeSettings().privateOfferFee(currencyAmount, address(token)),
+            "currencyReceiver currency balance is not correct"
+        );
+        assertEq(token.balanceOf(tokenReceiver), maxAmount, "tokenReceiver token balance is not correct");
+        assertEq(token.balanceOf(tokenHolder), 0, "tokenHolder token balance is not correct");
+        assertEq(
+            token.balanceOf(token.feeSettings().tokenFeeCollector(address(token))),
+            token.feeSettings().tokenFee(maxAmount, address(token)),
+            "tokenFeeCollector token balance is not correct"
+        );
+    }
+
+    function testPrivateOfferCanNotBeCalledAgain() public {
+        uint256 amount = 20000000000000;
+        uint256 expiration = block.timestamp + 1000;
+
+        PrivateOfferFixedArguments memory fixedArguments = PrivateOfferFixedArguments(
+            currencyReceiver,
+            tokenHolder,
+            amount,
+            amount,
+            price,
+            expiration,
+            currency,
+            token
+        );
+
+        PrivateOfferVariableArguments memory variableArguments = PrivateOfferVariableArguments(
+            tokenReceiver,
+            tokenReceiver,
+            amount
+        );
+
+        address expectedAddress = factory.predictCloneAddress(salt, fixedArguments);
+
+        uint256 tokenDecimals = token.decimals();
+        uint256 currencyAmount = (amount * price) / 10 ** tokenDecimals;
+
+        vm.startPrank(paymentTokenProvider);
+        currency.mint(tokenReceiver, currencyAmount);
+        vm.stopPrank();
+
+        vm.startPrank(admin);
+        token.increaseMintingAllowance(admin, amount);
+        token.mint(tokenHolder, amount);
+        vm.stopPrank();
+
+        vm.startPrank(tokenHolder);
+        token.approve(expectedAddress, amount);
+        vm.stopPrank();
+
+        vm.prank(tokenReceiver);
+        currency.approve(expectedAddress, currencyAmount);
+
+        // First call to createPrivateOfferClone should succeed
+        PrivateOffer inviteAddress = PrivateOffer(
+            factory.createPrivateOfferClone(salt, fixedArguments, variableArguments)
+        );
+        assertEq(address(inviteAddress), expectedAddress, "deployed contract address is not correct");
+
+        // Verify balances after first call
+        uint256 expectedTotalTokenSupply = amount +
+            FeeSettings(address(token.feeSettings())).tokenFee(amount, address(token));
+        assertEq(currency.balanceOf(tokenReceiver), 0, "tokenReceiver currency balance should be 0");
+        assertEq(
+            currency.balanceOf(currencyReceiver),
+            currencyAmount - FeeSettings(address(token.feeSettings())).privateOfferFee(currencyAmount, address(token)),
+            "currencyReceiver balance is incorrect"
+        );
+        assertEq(token.balanceOf(tokenReceiver), amount, "tokenReceiver token balance is incorrect");
+        assertEq(token.balanceOf(tokenHolder), 0, "tokenHolder should have no tokens");
+        assertEq(token.totalSupply(), expectedTotalTokenSupply, "token supply is not as expected");
+        assertEq(
+            currency.balanceOf(FeeSettings(address(token.feeSettings())).privateOfferFeeCollector(address(token))),
+            FeeSettings(address(token.feeSettings())).privateOfferFee(currencyAmount, address(token)),
+            "privateOfferFeeCollector currency balance is not correct"
+        );
+        assertEq(
+            token.balanceOf(FeeSettings(address(token.feeSettings())).tokenFeeCollector(address(token))),
+            FeeSettings(address(token.feeSettings())).tokenFee(amount, address(token)),
+            "tokenFeeCollector token balance is not correct"
+        );
+
+        // Second creation of the same PrivateOfferClone should revert
+        vm.expectRevert("ERC1167: create2 failed");
+        factory.createPrivateOfferClone(salt, fixedArguments, variableArguments);
+
+        // Calling the same PrivateOfferClone should revert
+        // PrivateOfferFixedArguments calldata fixedArguments2 = fixedArguments;
+        vm.expectRevert("Initializable: contract is already initialized");
+        inviteAddress.initialize(fixedArguments, variableArguments);
+    }
+
+    function testRevertsWithInsufficientFunds() public {
+        uint256 amount = 20000000000000;
+        uint256 expiration = block.timestamp + 1000;
+
+        PrivateOfferFixedArguments memory fixedArguments = PrivateOfferFixedArguments(
+            currencyReceiver,
+            tokenHolder,
+            amount,
+            amount,
+            price,
+            expiration,
+            currency,
+            token
+        );
+
+        PrivateOfferVariableArguments memory variableArguments = PrivateOfferVariableArguments(
+            tokenReceiver,
+            tokenReceiver,
+            amount
+        );
+
+        address expectedAddress = factory.predictCloneAddress(salt, fixedArguments);
+
+        uint256 tokenDecimals = token.decimals();
+        uint256 currencyAmount = (amount * price) / 10 ** tokenDecimals;
+
+        // Case 1: Insufficient token balance
+        vm.startPrank(paymentTokenProvider);
+        currency.mint(tokenReceiver, currencyAmount);
+        vm.stopPrank();
+
+        vm.startPrank(admin);
+        token.increaseMintingAllowance(admin, amount);
+        token.mint(tokenHolder, amount - 1); // Mint less than required
+        vm.stopPrank();
+
+        vm.startPrank(tokenHolder);
+        token.approve(expectedAddress, amount);
+        vm.stopPrank();
+
+        vm.prank(tokenReceiver);
+        currency.approve(expectedAddress, currencyAmount);
+
+        vm.expectRevert("ERC20: transfer amount exceeds balance");
+        factory.createPrivateOfferClone(salt, fixedArguments, variableArguments);
+
+        // Case 2: Insufficient currency balance
+        vm.startPrank(admin);
+        token.mint(tokenHolder, 1); // Restore sufficient token balance
+        vm.stopPrank();
+
+        vm.prank(tokenReceiver);
+        currency.transfer(address(1), 1); // transfer some currency to address(1), so the remaining balance is less than required
+
+        vm.expectRevert("ERC20: transfer amount exceeds balance");
+        factory.createPrivateOfferClone(salt, fixedArguments, variableArguments);
     }
 }

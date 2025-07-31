@@ -19,6 +19,7 @@ contract CrowdinvestingTransferTest is Test {
     event TokenPriceAndCurrencyChanged(uint256, IERC20 indexed);
     event MaxAmountOfTokenToBeSoldChanged(uint256);
     event TokensBought(address indexed buyer, uint256 tokenAmount, uint256 currencyAmount);
+    event TokenHolderChanged(address tokenHolder);
 
     CrowdinvestingCloneFactory factory;
     Crowdinvesting crowdinvesting;
@@ -369,7 +370,7 @@ contract CrowdinvestingTransferTest is Test {
         _crowdinvesting.buy(buyAmount, type(uint256).max, buyer);
     }
 
-    function testBuyHappyCase(uint256 tokenBuyAmount) public {
+    function testBuyTransferHappyCase(uint256 tokenBuyAmount) public {
         vm.assume(tokenBuyAmount >= crowdinvesting.minAmountPerBuyer());
         vm.assume(tokenBuyAmount <= crowdinvesting.maxAmountPerBuyer());
         uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * crowdinvesting.priceBase(), 10 ** 18);
@@ -422,1047 +423,144 @@ contract CrowdinvestingTransferTest is Test {
         assertTrue(crowdinvesting.tokensBought(buyer) == tokenBuyAmount, "crowdinvesting has sold tokens to buyer");
     }
 
-    //     function testBuyWithMaxCurrencyAmount(uint256 tokenBuyAmount, uint256 maxCurrencyAmount) public {
-    //         vm.assume(tokenBuyAmount >= crowdinvesting.minAmountPerBuyer());
-    //         vm.assume(tokenBuyAmount <= crowdinvesting.maxAmountPerBuyer());
-    //         uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * crowdinvesting.priceBase(), 10 ** 18);
-    //         vm.assume(costInPaymentToken <= paymentToken.balanceOf(buyer));
-
-    //         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
-
-    //         FeeSettings localFeeSettings = FeeSettings(address(token.feeSettings()));
-    //         FakeCrowdinvesting fakeCrowdinvesting = new FakeCrowdinvesting(address(token));
-
-    //         if (maxCurrencyAmount >= costInPaymentToken) {
-    //             vm.prank(buyer);
-    //             vm.expectEmit(true, true, true, true, address(crowdinvesting));
-    //             emit TokensBought(buyer, tokenBuyAmount, costInPaymentToken);
-    //             crowdinvesting.buy(tokenBuyAmount, maxCurrencyAmount, buyer);
-    //             assertTrue(
-    //                 paymentTokenBalanceBefore - paymentToken.balanceOf(buyer) <= maxCurrencyAmount,
-    //                 "buyer has paid too much!"
-    //             );
-    //             assertTrue(
-    //                 paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore - costInPaymentToken,
-    //                 "buyer has paid"
-    //             );
-    //             assertTrue(token.balanceOf(buyer) == tokenBuyAmount, "buyer has tokens");
-    //             assertTrue(
-    //                 paymentToken.balanceOf(receiver) == costInPaymentToken - fakeCrowdinvesting.fee(costInPaymentToken),
-    //                 "receiver has payment tokens"
-    //             );
-    //             assertTrue(
-    //                 paymentToken.balanceOf(
-    //                     FeeSettings(address(token.feeSettings())).crowdinvestingFeeCollector(address(token))
-    //                 ) == fakeCrowdinvesting.fee(costInPaymentToken),
-    //                 "fee collector has collected fee in payment tokens"
-    //             );
-    //             assertTrue(
-    //                 token.balanceOf(FeeSettings(address(token.feeSettings())).tokenFeeCollector(address(token))) ==
-    //                     localFeeSettings.tokenFee(tokenBuyAmount),
-    //                 "fee collector has collected fee in tokens"
-    //             );
-    //             assertTrue(crowdinvesting.tokensSold() == tokenBuyAmount, "crowdinvesting has sold tokens");
-    //             assertTrue(crowdinvesting.tokensBought(buyer) == tokenBuyAmount, "crowdinvesting has sold tokens to buyer");
-    //         } else {
-    //             vm.prank(buyer);
-    //             vm.expectRevert("Purchase more expensive than _maxCurrencyAmount");
-    //             crowdinvesting.buy(tokenBuyAmount, maxCurrencyAmount, buyer);
-    //         }
-    //     }
-
-    //     function testBuyTooMuch() public {
-    //         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
-
-    //         vm.prank(buyer);
-    //         vm.expectRevert("Total amount of bought tokens needs to be lower than or equal to maxAmount");
-    //         crowdinvesting.buy(maxAmountPerBuyer + 10 ** 18, type(uint256).max, buyer); //+ 10**token.decimals());
-    //         assertTrue(paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore);
-    //         assertTrue(token.balanceOf(buyer) == 0);
-    //         assertTrue(paymentToken.balanceOf(receiver) == 0);
-    //         assertTrue(crowdinvesting.tokensSold() == 0);
-    //         assertTrue(crowdinvesting.tokensBought(buyer) == 0);
-    //     }
-
-    //     function testBuyAndMintToDifferentAddress() public {
-    //         address addressWithFunds = vm.addr(1);
-    //         address addressForTokens = vm.addr(2);
-
-    //         uint256 availableBalance = paymentToken.balanceOf(buyer);
-
-    //         vm.prank(buyer);
-    //         paymentToken.transfer(addressWithFunds, availableBalance / 2);
-
-    //         vm.prank(addressWithFunds);
-    //         paymentToken.approve(address(crowdinvesting), paymentTokenAmount);
-
-    //         // check state before
-    //         assertTrue(paymentToken.balanceOf(addressWithFunds) == availableBalance / 2, "addressWithFunds has no funds");
-    //         assertTrue(paymentToken.balanceOf(addressForTokens) == 0, "addressForTokens has funds");
-    //         assertTrue(token.balanceOf(addressForTokens) == 0, "addressForTokens has tokens before buy");
-    //         assertTrue(token.balanceOf(addressWithFunds) == 0, "addressWithFunds has tokens before buy");
-
-    //         // execute buy, with addressForTokens as recipient
-    //         vm.prank(addressWithFunds);
-    //         crowdinvesting.buy(maxAmountOfTokenToBeSold / 2, type(uint256).max, addressForTokens);
-
-    //         // check state after
-    //         console.log("addressWithFunds balance: ", paymentToken.balanceOf(addressWithFunds));
-    //         assertTrue(
-    //             paymentToken.balanceOf(addressWithFunds) <=
-    //                 availableBalance / 2 - paymentToken.balanceOf(crowdinvesting.currencyReceiver()),
-    //             "addressWithFunds has funds after buy"
-    //         );
-    //         assertTrue(paymentToken.balanceOf(addressForTokens) == 0, "addressForTokens has funds after buy");
-    //         assertTrue(
-    //             token.balanceOf(addressForTokens) == maxAmountOfTokenToBeSold / 2,
-    //             "addressForTokens has wrong amount of tokens after buy"
-    //         );
-    //         assertTrue(token.balanceOf(addressWithFunds) == 0, "addressWithFunds has tokens after buy");
-    //     }
-
-    //     function testMultiplePeopleBuyTooMuch() public {
-    //         address person1 = vm.addr(1);
-    //         address person2 = vm.addr(2);
-
-    //         uint256 availableBalance = paymentToken.balanceOf(buyer);
-
-    //         vm.prank(buyer);
-    //         paymentToken.transfer(person1, availableBalance / 3);
-    //         vm.prank(buyer);
-    //         paymentToken.transfer(person2, availableBalance / 3);
-
-    //         vm.prank(person1);
-    //         paymentToken.approve(address(crowdinvesting), paymentTokenAmount);
-
-    //         vm.prank(person2);
-    //         paymentToken.approve(address(crowdinvesting), paymentTokenAmount);
-
-    //         vm.prank(buyer);
-    //         crowdinvesting.buy(maxAmountOfTokenToBeSold / 2, type(uint256).max, buyer);
-    //         vm.prank(person1);
-    //         crowdinvesting.buy(maxAmountOfTokenToBeSold / 2, type(uint256).max, person1);
-    //         vm.prank(person2);
-    //         vm.expectRevert("Not enough tokens to sell left");
-    //         crowdinvesting.buy(10 ** 18, type(uint256).max, person2);
-    //     }
-
-    //     function testMultipleAddressesBuyForOneReceiver() public {
-    //         address person1 = vm.addr(1);
-    //         address person2 = vm.addr(2);
-
-    //         uint256 availableBalance = paymentToken.balanceOf(buyer);
-
-    //         vm.prank(buyer);
-    //         paymentToken.transfer(person1, availableBalance / 2);
-    //         vm.prank(buyer);
-    //         paymentToken.transfer(person2, 10 ** 6);
-
-    //         vm.prank(person1);
-    //         paymentToken.approve(address(crowdinvesting), paymentTokenAmount);
-
-    //         vm.prank(person2);
-    //         paymentToken.approve(address(crowdinvesting), paymentTokenAmount);
-
-    //         vm.prank(buyer);
-    //         crowdinvesting.buy(maxAmountOfTokenToBeSold / 2, type(uint256).max, buyer);
-    //         vm.prank(person1);
-    //         vm.expectRevert("Total amount of bought tokens needs to be lower than or equal to maxAmount");
-    //         crowdinvesting.buy(maxAmountOfTokenToBeSold / 2, type(uint256).max, buyer);
-    //     }
-
-    //     function testCorrectAccounting() public {
-    //         address person1 = vm.addr(1);
-    //         address person2 = vm.addr(2);
-
-    //         uint256 availableBalance = paymentToken.balanceOf(buyer);
-
-    //         vm.prank(buyer);
-    //         paymentToken.transfer(person1, availableBalance / 2);
-    //         vm.prank(buyer);
-    //         paymentToken.transfer(person2, 10 ** 6);
-
-    //         vm.prank(person1);
-    //         paymentToken.approve(address(crowdinvesting), paymentTokenAmount);
-
-    //         vm.prank(person2);
-    //         paymentToken.approve(address(crowdinvesting), paymentTokenAmount);
-
-    //         // check all entries are 0 before
-    //         assertTrue(crowdinvesting.tokensSold() == 0);
-    //         assertTrue(crowdinvesting.tokensBought(buyer) == 0);
-    //         assertTrue(crowdinvesting.tokensBought(person1) == 0);
-    //         assertTrue(crowdinvesting.tokensBought(person2) == 0);
-
-    //         vm.prank(buyer);
-    //         crowdinvesting.buy(maxAmountOfTokenToBeSold / 2, type(uint256).max, buyer);
-    //         vm.prank(buyer);
-    //         crowdinvesting.buy(maxAmountOfTokenToBeSold / 4, type(uint256).max, person1);
-    //         vm.prank(buyer);
-    //         crowdinvesting.buy(maxAmountOfTokenToBeSold / 8, type(uint256).max, person2);
-
-    //         // check all entries are correct after
-    //         assertTrue(crowdinvesting.tokensSold() == (maxAmountOfTokenToBeSold * 7) / 8);
-    //         assertTrue(crowdinvesting.tokensBought(buyer) == maxAmountOfTokenToBeSold / 2);
-    //         assertTrue(crowdinvesting.tokensBought(person1) == maxAmountOfTokenToBeSold / 4);
-    //         assertTrue(crowdinvesting.tokensBought(person2) == maxAmountOfTokenToBeSold / 8);
-    //         assertTrue(token.balanceOf(buyer) == maxAmountOfTokenToBeSold / 2);
-    //         assertTrue(token.balanceOf(person1) == maxAmountOfTokenToBeSold / 4);
-    //         assertTrue(token.balanceOf(person2) == maxAmountOfTokenToBeSold / 8);
-    //     }
-
-    //     function testExceedMintingAllowance() public {
-    //         // reduce minting allowance of fundraising contract, so the revert happens in Token
-    //         vm.startPrank(mintAllower);
-    //         token.decreaseMintingAllowance(
-    //             address(crowdinvesting),
-    //             token.mintingAllowance(address(crowdinvesting)) - (maxAmountPerBuyer / 2)
-    //         );
-    //         vm.stopPrank();
-
-    //         vm.prank(buyer);
-    //         vm.expectRevert("MintingAllowance too low");
-    //         crowdinvesting.buy(maxAmountPerBuyer, type(uint256).max, buyer); //+ 10**token.decimals());
-    //         assertTrue(token.balanceOf(buyer) == 0);
-    //         assertTrue(paymentToken.balanceOf(receiver) == 0);
-    //         assertTrue(crowdinvesting.tokensSold() == 0);
-    //         assertTrue(crowdinvesting.tokensBought(buyer) == 0);
-    //     }
-
-    //     function testBuyTooLittle() public {
-    //         uint256 tokenBuyAmount = 5 * 10 ** token.decimals();
-    //         uint256 costInPaymentToken = (tokenBuyAmount * price) / 10 ** 18;
-
-    //         assert(costInPaymentToken == 35 * 10 ** paymentTokenDecimals); // 35 payment tokens, manually calculated
-
-    //         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
-
-    //         vm.prank(buyer);
-    //         vm.expectRevert("Buyer needs to buy at least minAmount");
-    //         crowdinvesting.buy(minAmountPerBuyer / 2, type(uint256).max, buyer);
-    //         assertTrue(paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore);
-    //         assertTrue(token.balanceOf(buyer) == 0);
-    //         assertTrue(paymentToken.balanceOf(receiver) == 0);
-    //         assertTrue(crowdinvesting.tokensSold() == 0);
-    //         assertTrue(crowdinvesting.tokensBought(buyer) == 0);
-    //     }
-
-    //     function testBuySmallAmountAfterInitialInvestment() public {
-    //         uint256 tokenBuyAmount = minAmountPerBuyer;
-    //         uint256 costInPaymentTokenForMinAmount = (tokenBuyAmount * price) / 10 ** 18;
-    //         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
-
-    //         vm.prank(buyer);
-    //         crowdinvesting.buy(minAmountPerBuyer, type(uint256).max, buyer);
-
-    //         // buy less than minAmount -> should be okay because minAmount has already been bought.
-    //         vm.prank(buyer);
-    //         crowdinvesting.buy(minAmountPerBuyer / 2, type(uint256).max, buyer);
-
-    //         uint256 totalBought = (minAmountPerBuyer * 3) / 2;
-    //         uint256 totalPaid = (costInPaymentTokenForMinAmount * 3) / 2;
-
-    //         assertTrue(
-    //             paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore - (costInPaymentTokenForMinAmount * 3) / 2,
-    //             "buyer has payment tokens"
-    //         );
-    //         assertTrue(token.balanceOf(buyer) == totalBought, "buyer has tokens");
-    //         uint256 tokenFee = token.feeSettings().tokenFee(totalBought, address(token));
-    //         uint256 paymentTokenFee = token.feeSettings().crowdinvestingFee(totalPaid, address(token));
-    //         // assertTrue(
-    //         //     paymentToken.balanceOf(receiver) == (costInPaymentTokenForMinAmount * 3) / 2 - paymentTokenFee,
-    //         //     "receiver received payment tokens"
-    //         // );
-    //         assertEq(
-    //             token.balanceOf(FeeSettings(address(token.feeSettings())).tokenFeeCollector(address(token))),
-    //             tokenFee,
-    //             "fee collector has not collected fee in tokens"
-    //         );
-    //         assertEq(
-    //             paymentToken.balanceOf(
-    //                 FeeSettings(address(token.feeSettings())).crowdinvestingFeeCollector(address(token))
-    //             ),
-    //             paymentTokenFee,
-    //             "fee collector has not collected fee in payment tokens"
-    //         );
-    //         assertTrue(crowdinvesting.tokensSold() == (minAmountPerBuyer * 3) / 2, "crowdinvesting has sold tokens");
-    //         assertTrue(
-    //             crowdinvesting.tokensBought(buyer) == crowdinvesting.tokensSold(),
-    //             "crowdinvesting has sold tokens to buyer"
-    //         );
-    //     }
-
-    //     function ensureRealCostIsHigherEqualAdvertisedCost(uint256 tokenBuyAmount) public {
-    //         uint256 _price = 1; // price = 1 currency bit per full token (10**18 token bits)
-
-    //         // set price that is finer than the resolution of the payment token
-    //         vm.startPrank(owner);
-    //         crowdinvesting.pause();
-    //         crowdinvesting.setCurrencyAndTokenPrice(crowdinvesting.currency(), _price);
-    //         crowdinvesting.setMinAmountPerBuyer(1); // min amount = 1 currency bit
-    //         vm.warp(block.timestamp + 1 days + 1 seconds);
-    //         crowdinvesting.unpause();
-    //         vm.stopPrank();
-
-    //         // this is rounded down and resolves to 0 cost in payment token
-    //         uint256 naiveCostInPaymentToken = (tokenBuyAmount * _price) / 10 ** 18;
-    //         console.log("naiveCostInPaymentToken", naiveCostInPaymentToken);
-    //         //assertTrue(naiveCostInPaymentToken == 0, "Naive cost is not 0"); // 35 payment tokens, manually calculated
-
-    //         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
-
-    //         vm.prank(buyer);
-    //         crowdinvesting.buy(tokenBuyAmount, type(uint256).max, buyer);
-
-    //         console.log("paymentTokenBalanceBefore", paymentTokenBalanceBefore);
-    //         console.log("paymentToken.balanceOf(buyer)", paymentToken.balanceOf(buyer));
-
-    //         uint256 realCostInPaymentToken = paymentTokenBalanceBefore - paymentToken.balanceOf(buyer);
-    //         uint256 realPrice = (realCostInPaymentToken * 10 ** 18) / token.balanceOf(buyer);
-    //         console.log("realCostInPaymentToken", realCostInPaymentToken);
-    //         console.log("token.balanceOf(buyer)", token.balanceOf(buyer));
-    //         console.log("advertised price: ", crowdinvesting.priceBase());
-    //         console.log("real price: ", realPrice);
-    //         assertTrue(token.balanceOf(buyer) == tokenBuyAmount, "buyer has not received tokens");
-    //         assertTrue(paymentToken.balanceOf(receiver) >= 1, "receiver has not received any payment");
-    //         assertTrue(realCostInPaymentToken >= 1, "real cost is 0, but should be at least 1");
-    //         assertTrue(realCostInPaymentToken - naiveCostInPaymentToken >= 0, "real cost is less than advertised cost");
-    //         assertTrue(realCostInPaymentToken - naiveCostInPaymentToken <= 1, "more than 1 currency bit was rounded!");
-    //         assertTrue(realPrice >= _price, "real price is less than advertised");
-    //     }
-
-    //     function testBuyAnyAmountRoundsUp(uint tokenBuyAmount) public {
-    //         vm.assume(tokenBuyAmount < crowdinvesting.maxAmountPerBuyer());
-    //         vm.assume(tokenBuyAmount > 0);
-    //         ensureRealCostIsHigherEqualAdvertisedCost(tokenBuyAmount);
-    //     }
-
-    //     function testBuy1BitRoundsUp() public {
-    //         // this will result in the naive cost being 0
-    //         ensureRealCostIsHigherEqualAdvertisedCost(1);
-    //     }
-
-    //     /*
-    //         try to buy more than allowed
-    //     */
-    //     function testBuyMoreThanMaxAmountPerBuyer() public {
-    //         vm.prank(buyer);
-    //         vm.expectRevert("Total amount of bought tokens needs to be lower than or equal to maxAmount");
-    //         crowdinvesting.buy(maxAmountPerBuyer + 1, type(uint256).max, buyer);
-    //     }
-
-    //     /*
-    //         try to buy less than allowed
-    //     */
-    //     function testBuyLessThanMinAmountPerBuyer() public {
-    //         vm.prank(buyer);
-    //         vm.expectRevert("Buyer needs to buy at least minAmount");
-    //         crowdinvesting.buy(minAmountPerBuyer - 1, type(uint256).max, buyer);
-    //     }
-
-    //     /*
-    //         try to buy while paused
-    //     */
-    //     function testBuyWhilePaused() public {
-    //         vm.prank(owner);
-    //         crowdinvesting.pause();
-    //         vm.prank(buyer);
-    //         vm.expectRevert("Pausable: paused");
-    //         crowdinvesting.buy(minAmountPerBuyer, type(uint256).max, buyer);
-    //     }
-
-    //     /*
-    //         try to update currencyReceiver not paused
-    //     */
-    //     function testUpdateCurrencyReceiverNotPaused() public {
-    //         vm.prank(owner);
-    //         vm.expectRevert("Pausable: not paused");
-    //         crowdinvesting.setCurrencyReceiver(payable(address(buyer)));
-    //     }
-
-    //     /*
-    //         try to update currencyReceiver while paused
-    //     */
-    //     function testUpdateCurrencyReceiverPaused() public {
-    //         assertTrue(crowdinvesting.currencyReceiver() == receiver);
-    //         vm.prank(owner);
-    //         crowdinvesting.pause();
-    //         vm.prank(owner);
-    //         vm.expectEmit(true, true, true, true, address(crowdinvesting));
-    //         emit CurrencyReceiverChanged(address(buyer));
-    //         crowdinvesting.setCurrencyReceiver(address(buyer));
-    //         assertTrue(crowdinvesting.currencyReceiver() == address(buyer));
-
-    //         vm.prank(owner);
-    //         vm.expectRevert("receiver can not be zero address");
-    //         crowdinvesting.setCurrencyReceiver(address(0));
-    //     }
-
-    //     /*
-    //         try to update minAmountPerBuyer not paused
-    //     */
-    //     function testUpdateMinAmountPerBuyerNotPaused() public {
-    //         vm.prank(owner);
-    //         vm.expectRevert("Pausable: not paused");
-    //         crowdinvesting.setMinAmountPerBuyer(100);
-    //     }
-
-    //     /*
-    //         try to update minAmountPerBuyer while paused
-    //     */
-    //     function testUpdateMinAmountPerBuyerPaused(uint256 newMinAmountPerBuyer) public {
-    //         vm.assume(newMinAmountPerBuyer <= crowdinvesting.maxAmountPerBuyer());
-    //         vm.assume(newMinAmountPerBuyer > 0);
-    //         assertTrue(crowdinvesting.minAmountPerBuyer() == minAmountPerBuyer);
-    //         vm.prank(owner);
-    //         crowdinvesting.pause();
-    //         vm.prank(owner);
-    //         vm.expectEmit(true, true, true, true, address(crowdinvesting));
-    //         emit MinAmountPerBuyerChanged(newMinAmountPerBuyer);
-    //         crowdinvesting.setMinAmountPerBuyer(newMinAmountPerBuyer);
-    //         assertTrue(crowdinvesting.minAmountPerBuyer() == newMinAmountPerBuyer);
-
-    //         uint256 _maxAmountPerBuyer = crowdinvesting.maxAmountPerBuyer();
-    //         vm.expectRevert("_minAmount needs to be smaller or equal to maxAmount");
-    //         vm.prank(owner);
-    //         crowdinvesting.setMinAmountPerBuyer(_maxAmountPerBuyer + 1); //crowdinvesting.maxAmountPerBuyer() + 1);
-
-    //         vm.expectRevert("_minAmountPerBuyer needs to be larger than zero");
-    //         vm.prank(owner);
-    //         crowdinvesting.setMinAmountPerBuyer(0); //crowdinvesting.maxAmountPerBuyer() + 1);
-
-    //         console.log("minAmount: ", crowdinvesting.minAmountPerBuyer());
-    //         console.log("maxAmount: ", crowdinvesting.maxAmountPerBuyer());
-    //     }
-
-    //     /*
-    //         try to update maxAmountPerBuyer not paused
-    //     */
-    //     function testUpdateMaxAmountPerBuyerNotPaused() public {
-    //         vm.prank(owner);
-    //         vm.expectRevert("Pausable: not paused");
-    //         crowdinvesting.setMaxAmountPerBuyer(100);
-    //     }
-
-    //     /*
-    //         try to update maxAmountPerBuyer while paused
-    //     */
-    //     function testUpdateMaxAmountPerBuyerPaused(uint256 newMaxAmountPerBuyer) public {
-    //         vm.assume(newMaxAmountPerBuyer >= crowdinvesting.minAmountPerBuyer());
-    //         assertTrue(crowdinvesting.maxAmountPerBuyer() == maxAmountPerBuyer);
-    //         vm.prank(owner);
-    //         crowdinvesting.pause();
-    //         vm.prank(owner);
-    //         vm.expectEmit(true, true, true, true, address(crowdinvesting));
-    //         emit MaxAmountPerBuyerChanged(newMaxAmountPerBuyer);
-    //         crowdinvesting.setMaxAmountPerBuyer(newMaxAmountPerBuyer);
-    //         assertTrue(crowdinvesting.maxAmountPerBuyer() == newMaxAmountPerBuyer);
-    //         uint256 _minAmountPerBuyer = crowdinvesting.minAmountPerBuyer();
-    //         vm.expectRevert("_maxAmount needs to be larger or equal to minAmount");
-    //         vm.prank(owner);
-    //         crowdinvesting.setMaxAmountPerBuyer(_minAmountPerBuyer - 1);
-    //     }
-
-    //     /*
-    //         try to update currency and price while not paused
-    //     */
-    //     function testUpdateCurrencyAndPriceNotPaused() public {
-    //         FakePaymentToken newPaymentToken = new FakePaymentToken(700, 3);
-    //         vm.prank(owner);
-    //         vm.expectRevert("Pausable: not paused");
-    //         crowdinvesting.setCurrencyAndTokenPrice(newPaymentToken, 100);
-    //     }
-
-    //     /*
-    //         try to update currency and price while paused
-    //     */
-    //     function testUpdateCurrencyAndPricePaused(uint256 newPrice) public {
-    //         vm.assume(newPrice > 0);
-    //         assertTrue(crowdinvesting.priceBase() == price);
-    //         assertTrue(crowdinvesting.currency() == paymentToken);
-
-    //         FakePaymentToken newPaymentToken = new FakePaymentToken(700, 3);
-    //         vm.startPrank(owner);
-    //         list.set(address(newPaymentToken), TRUSTED_CURRENCY);
-
-    //         crowdinvesting.pause();
-    //         vm.expectEmit(true, true, true, true, address(crowdinvesting));
-    //         emit TokenPriceAndCurrencyChanged(newPrice, newPaymentToken);
-    //         crowdinvesting.setCurrencyAndTokenPrice(newPaymentToken, newPrice);
-    //         vm.stopPrank();
-
-    //         assertTrue(crowdinvesting.priceBase() == newPrice);
-    //         assertTrue(crowdinvesting.currency() == newPaymentToken);
-    //         vm.prank(owner);
-    //         vm.expectRevert("_tokenPrice needs to be a non-zero amount");
-    //         crowdinvesting.setCurrencyAndTokenPrice(paymentToken, 0);
-    //     }
-
-    //     /*
-    //         try to update maxAmountOfTokenToBeSold while not paused
-    //     */
-    //     function testUpdateMaxAmountOfTokenToBeSoldNotPaused() public {
-    //         vm.prank(owner);
-    //         vm.expectRevert("Pausable: not paused");
-    //         crowdinvesting.setMaxAmountOfTokenToBeSold(123 * 10 ** 18);
-    //     }
-
-    //     /*
-    //         try to update maxAmountOfTokenToBeSold while paused
-    //     */
-    //     function testUpdateMaxAmountOfTokenToBeSoldPaused(uint256 newMaxAmountOfTokenToBeSold) public {
-    //         vm.assume(newMaxAmountOfTokenToBeSold > 0);
-    //         assertTrue(crowdinvesting.maxAmountOfTokenToBeSold() == maxAmountOfTokenToBeSold);
-    //         vm.prank(owner);
-    //         crowdinvesting.pause();
-    //         vm.prank(owner);
-    //         vm.expectEmit(true, true, true, true, address(crowdinvesting));
-    //         emit MaxAmountOfTokenToBeSoldChanged(newMaxAmountOfTokenToBeSold);
-    //         crowdinvesting.setMaxAmountOfTokenToBeSold(newMaxAmountOfTokenToBeSold);
-    //         assertTrue(crowdinvesting.maxAmountOfTokenToBeSold() == newMaxAmountOfTokenToBeSold);
-    //         vm.prank(owner);
-    //         vm.expectRevert("_maxAmountOfTokenToBeSold needs to be larger than zero");
-    //         crowdinvesting.setMaxAmountOfTokenToBeSold(0);
-    //     }
-
-    //     /*
-    //         try to unpause immediately after pausing
-    //     */
-    //     function testUnpauseImmediatelyAfterPausing() public {
-    //         vm.prank(owner);
-    //         crowdinvesting.pause();
-    //         assertTrue(crowdinvesting.paused());
-    //         vm.prank(owner);
-    //         vm.expectRevert("There needs to be at minimum one day to change parameters");
-    //         crowdinvesting.unpause();
-    //     }
-
-    //     /*
-    //         try to unpause after delay has passed
-    //     */
-    //     function testUnpauseAfterDelay() public {
-    //         uint256 time = block.timestamp;
-    //         vm.warp(time);
-    //         vm.prank(owner);
-    //         crowdinvesting.pause();
-    //         assertTrue(crowdinvesting.paused());
-    //         vm.warp(time + crowdinvesting.delay());
-    //         vm.prank(owner);
-    //         crowdinvesting.unpause();
-    //     }
-
-    //     /*
-    //         try to unpause after more than 1 day has passed
-    //     */
-    //     function testUnpauseAfterPause() public {
-    //         uint256 time = 200 days;
-    //         uint256 coolDownStart = crowdinvesting.coolDownStart();
-    //         vm.warp(time);
-    //         vm.prank(owner);
-    //         crowdinvesting.pause();
-    //         assertTrue(crowdinvesting.paused());
-    //         assertTrue(crowdinvesting.coolDownStart() == coolDownStart, "coolDownStart should not change with pause");
-    //         vm.warp(time + 1 seconds);
-    //         vm.prank(owner);
-    //         crowdinvesting.unpause();
-    //     }
-
-    //     /*
-    //         try to unpause too soon after setMaxAmountOfTokenToBeSold
-    //     */
-    //     function testUnpauseTooSoonAfterSetMaxAmountOfTokenToBeSold(
-    //         uint128 startTime,
-    //         uint32 changeDelay,
-    //         uint32 attemptUnpauseDelay
-    //     ) public {
-    //         uint256 unpauseDelay = 1 hours;
-    //         vm.assume(startTime < type(uint128).max / 2);
-    //         vm.assume(startTime > 0);
-    //         vm.assume(changeDelay > 0);
-    //         vm.assume(attemptUnpauseDelay > 0);
-    //         vm.assume(attemptUnpauseDelay < unpauseDelay + changeDelay);
-
-    //         vm.warp(startTime);
-    //         vm.prank(owner);
-    //         crowdinvesting.pause();
-    //         assertTrue(crowdinvesting.paused(), "crowdinvesting should be paused");
-    //         vm.warp(startTime + changeDelay);
-    //         vm.prank(owner);
-    //         crowdinvesting.setMaxAmountOfTokenToBeSold(700);
-    //         assertTrue(
-    //             crowdinvesting.coolDownStart() == startTime + changeDelay,
-    //             "coolDownStart should be startTime + changeDelay"
-    //         );
-    //         vm.warp(startTime + attemptUnpauseDelay);
-    //         vm.prank(owner);
-    //         console.log("current time: ", block.timestamp);
-    //         console.log("unpause at: ", startTime + changeDelay + unpauseDelay);
-    //         vm.expectRevert("There needs to be at minimum one day to change parameters");
-    //         crowdinvesting.unpause(); // must fail because of the parameter update
-    //     }
-
-    //     /*
-    //         try to unpause after setMaxAmountOfTokenToBeSold
-    //     */
-    //     function testUnpauseAfterSetMaxAmountOfTokenToBeSold() public {
-    //         uint256 time = block.timestamp;
-    //         vm.warp(time);
-    //         vm.prank(owner);
-    //         crowdinvesting.pause();
-    //         assertTrue(crowdinvesting.paused());
-    //         vm.warp(time + 2 hours);
-    //         vm.prank(owner);
-    //         crowdinvesting.setMaxAmountOfTokenToBeSold(700);
-    //         assertTrue(crowdinvesting.coolDownStart() == time + 2 hours);
-    //         vm.warp(time + crowdinvesting.delay() + 2 hours + 1 seconds);
-    //         vm.prank(owner);
-    //         crowdinvesting.unpause();
-    //     }
-
-    //     /*
-    //         try to unpause too soon after setCurrencyReceiver
-    //     */
-    //     function testUnpauseTooSoonAfterSetCurrencyReceiver(
-    //         uint128 startTime,
-    //         uint32 changeDelay,
-    //         uint32 attemptUnpauseDelay,
-    //         address newCurrencyReceiver
-    //     ) public {
-    //         uint256 unpauseDelay = crowdinvesting.delay();
-    //         vm.assume(startTime < type(uint128).max / 2);
-    //         vm.assume(startTime > 0);
-    //         vm.assume(changeDelay > 0);
-    //         vm.assume(attemptUnpauseDelay > 0);
-    //         vm.assume(attemptUnpauseDelay < unpauseDelay + changeDelay);
-    //         vm.assume(newCurrencyReceiver != address(0));
-
-    //         vm.warp(startTime);
-    //         vm.prank(owner);
-    //         crowdinvesting.pause();
-    //         assertTrue(crowdinvesting.paused(), "crowdinvesting should be paused");
-    //         vm.warp(startTime + changeDelay);
-    //         vm.prank(owner);
-    //         crowdinvesting.setCurrencyReceiver(newCurrencyReceiver);
-    //         assertTrue(
-    //             crowdinvesting.coolDownStart() == startTime + changeDelay,
-    //             "coolDownStart should be startTime + changeDelay"
-    //         );
-    //         vm.warp(startTime + attemptUnpauseDelay);
-    //         vm.prank(owner);
-    //         console.log("current time: ", block.timestamp);
-    //         console.log("unpause at: ", startTime + changeDelay + unpauseDelay);
-    //         vm.expectRevert("There needs to be at minimum one day to change parameters");
-    //         crowdinvesting.unpause(); // must fail because of the parameter update
-    //     }
-
-    //     /*
-    //         try to unpause after setCurrencyReceiver
-    //     */
-    //     function testUnpauseAfterSetCurrencyReceiver() public {
-    //         uint256 time = block.timestamp;
-    //         vm.warp(time);
-    //         vm.prank(owner);
-    //         crowdinvesting.pause();
-    //         assertTrue(crowdinvesting.paused());
-    //         vm.warp(time + 2 hours);
-    //         vm.prank(owner);
-    //         crowdinvesting.setCurrencyReceiver(paymentTokenProvider);
-    //         assertTrue(crowdinvesting.coolDownStart() == time + 2 hours);
-    //         vm.warp(time + crowdinvesting.delay() + 2 hours + 1 seconds);
-    //         vm.prank(owner);
-    //         crowdinvesting.unpause();
-    //     }
-
-    //     /*
-    //         try to unpause too soon after setMinAmountPerBuyer
-    //     */
-    //     function testUnpauseTooSoonAfterSetMinAmountPerBuyer(
-    //         uint128 startTime,
-    //         uint32 changeDelay,
-    //         uint32 attemptUnpauseDelay,
-    //         uint256 newMinAmountPerBuyer
-    //     ) public {
-    //         uint256 unpauseDelay = crowdinvesting.delay();
-    //         vm.assume(startTime < type(uint128).max / 2);
-    //         vm.assume(startTime > 0);
-    //         vm.assume(changeDelay > 0);
-    //         vm.assume(attemptUnpauseDelay > 0);
-    //         vm.assume(attemptUnpauseDelay < unpauseDelay + changeDelay);
-    //         vm.assume(newMinAmountPerBuyer > 0);
-    //         vm.assume(newMinAmountPerBuyer <= crowdinvesting.maxAmountPerBuyer());
-
-    //         vm.warp(startTime);
-    //         vm.prank(owner);
-    //         crowdinvesting.pause();
-    //         assertTrue(crowdinvesting.paused(), "crowdinvesting should be paused");
-    //         vm.warp(startTime + changeDelay);
-    //         vm.prank(owner);
-    //         crowdinvesting.setMinAmountPerBuyer(newMinAmountPerBuyer);
-    //         assertTrue(
-    //             crowdinvesting.coolDownStart() == startTime + changeDelay,
-    //             "coolDownStart should be startTime + changeDelay"
-    //         );
-    //         vm.warp(startTime + attemptUnpauseDelay);
-    //         vm.prank(owner);
-    //         console.log("current time: ", block.timestamp);
-    //         console.log("unpause at: ", startTime + changeDelay + unpauseDelay);
-    //         vm.expectRevert("There needs to be at minimum one day to change parameters");
-    //         crowdinvesting.unpause(); // must fail because of the parameter update
-    //     }
-
-    //     /*
-    //         try to unpause after setMinAmountPerBuyer
-    //     */
-    //     function testUnpauseAfterSetMinAmountPerBuyer() public {
-    //         uint256 time = block.timestamp;
-    //         vm.warp(time);
-    //         vm.prank(owner);
-    //         crowdinvesting.pause();
-    //         assertTrue(crowdinvesting.paused());
-    //         vm.warp(time + 2 hours);
-    //         vm.prank(owner);
-    //         crowdinvesting.setMinAmountPerBuyer(700);
-    //         assertTrue(crowdinvesting.coolDownStart() == time + 2 hours);
-    //         vm.warp(time + crowdinvesting.delay() + 2 hours + 1 seconds);
-    //         vm.prank(owner);
-    //         crowdinvesting.unpause();
-    //     }
-
-    //     /*
-    //         try to unpause too soon after setMaxAmountPerBuyer
-    //     */
-    //     function testUnpauseTooSoonAfterSetMaxAmountPerBuyer(
-    //         uint128 startTime,
-    //         uint32 changeDelay,
-    //         uint32 attemptUnpauseDelay,
-    //         uint256 newMaxAmountPerBuyer
-    //     ) public {
-    //         uint256 unpauseDelay = crowdinvesting.delay();
-    //         vm.assume(startTime < type(uint128).max / 2);
-    //         vm.assume(startTime > 0);
-    //         vm.assume(changeDelay > 0);
-    //         vm.assume(attemptUnpauseDelay > 0);
-    //         vm.assume(attemptUnpauseDelay < unpauseDelay + changeDelay);
-    //         vm.assume(newMaxAmountPerBuyer >= crowdinvesting.minAmountPerBuyer());
-
-    //         vm.warp(startTime);
-    //         vm.prank(owner);
-    //         crowdinvesting.pause();
-    //         assertTrue(crowdinvesting.paused(), "crowdinvesting should be paused");
-    //         vm.warp(startTime + changeDelay);
-    //         vm.prank(owner);
-    //         crowdinvesting.setMaxAmountPerBuyer(newMaxAmountPerBuyer);
-    //         assertTrue(
-    //             crowdinvesting.coolDownStart() == startTime + changeDelay,
-    //             "coolDownStart should be startTime + changeDelay"
-    //         );
-    //         vm.warp(startTime + attemptUnpauseDelay);
-    //         vm.prank(owner);
-    //         console.log("current time: ", block.timestamp);
-    //         console.log("unpause at: ", startTime + changeDelay + unpauseDelay);
-    //         vm.expectRevert("There needs to be at minimum one day to change parameters");
-    //         crowdinvesting.unpause(); // must fail because of the parameter update
-    //     }
-
-    //     /*
-    //         try to unpause after setMaxAmountPerBuyer
-    //     */
-    //     function testUnpauseAfterSetMaxAmountPerBuyer() public {
-    //         uint256 time = block.timestamp;
-    //         vm.warp(time);
-    //         vm.prank(owner);
-    //         crowdinvesting.pause();
-    //         assertTrue(crowdinvesting.paused());
-    //         vm.warp(time + 2 hours);
-    //         vm.prank(owner);
-    //         crowdinvesting.setMaxAmountPerBuyer(2 * minAmountPerBuyer);
-    //         assertTrue(crowdinvesting.coolDownStart() == time + 2 hours);
-    //         vm.warp(time + crowdinvesting.delay() + 2 hours + 1 seconds);
-    //         vm.prank(owner);
-    //         crowdinvesting.unpause();
-    //     }
-
-    //     /*
-    //         try to unpause too soon after setCurrencyAndTokenPrice
-    //     */
-    //     function testUnpauseTooSoonAfterSetCurrencyAndTokenPrice(
-    //         uint128 startTime,
-    //         uint32 changeDelay,
-    //         uint32 attemptUnpauseDelay,
-    //         uint256 newTokenPrice
-    //     ) public {
-    //         uint256 unpauseDelay = crowdinvesting.delay();
-    //         vm.assume(startTime < type(uint128).max / 2);
-    //         vm.assume(startTime > 0);
-    //         vm.assume(changeDelay > 0);
-    //         vm.assume(attemptUnpauseDelay > 0);
-    //         vm.assume(attemptUnpauseDelay < unpauseDelay + changeDelay);
-    //         vm.assume(newTokenPrice > 0);
-
-    //         vm.warp(startTime);
-    //         vm.prank(owner);
-    //         crowdinvesting.pause();
-    //         assertTrue(crowdinvesting.paused(), "crowdinvesting should be paused");
-    //         vm.warp(startTime + changeDelay);
-    //         vm.prank(owner);
-    //         crowdinvesting.setCurrencyAndTokenPrice(paymentToken, newTokenPrice);
-    //         assertTrue(
-    //             crowdinvesting.coolDownStart() == startTime + changeDelay,
-    //             "coolDownStart should be startTime + changeDelay"
-    //         );
-    //         vm.warp(startTime + attemptUnpauseDelay);
-    //         vm.prank(owner);
-    //         console.log("current time: ", block.timestamp);
-    //         console.log("unpause at: ", startTime + changeDelay + unpauseDelay);
-    //         vm.expectRevert("There needs to be at minimum one day to change parameters");
-    //         crowdinvesting.unpause(); // must fail because of the parameter update
-    //     }
-
-    //     /*
-    //         try to unpause after setCurrencyAndTokenPrice
-    //     */
-    //     function testUnpauseAfterSetCurrencyAndTokenPrice() public {
-    //         uint256 time = block.timestamp;
-    //         vm.warp(time);
-    //         vm.prank(owner);
-    //         crowdinvesting.pause();
-    //         assertTrue(crowdinvesting.paused());
-    //         vm.warp(time + 2 hours);
-    //         vm.prank(owner);
-    //         crowdinvesting.setCurrencyAndTokenPrice(paymentToken, 700);
-    //         assertTrue(crowdinvesting.coolDownStart() == time + 2 hours);
-    //         vm.warp(time + crowdinvesting.delay() + 2 hours + 1 seconds);
-    //         vm.prank(owner);
-    //         crowdinvesting.unpause();
-    //     }
-
-    //     function testRevertsOnOverflow(uint256 _tokenBuyAmount, uint256 _price) public {
-    //         vm.assume(_tokenBuyAmount > 0);
-    //         vm.assume(_price > 0);
-    //         vm.assume(UINT256_MAX / _price < _tokenBuyAmount); // this will cause an overflow on multiplication
-
-    //         // new currency
-    //         // set up currency
-    //         vm.prank(paymentTokenProvider);
-    //         paymentToken = new FakePaymentToken(UINT256_MAX, paymentTokenDecimals); // 1000 tokens with 6 decimals
-    //         // transfer currency to buyer
-    //         vm.prank(paymentTokenProvider);
-    //         paymentToken.transfer(buyer, UINT256_MAX);
-
-    //         vm.prank(owner);
-    //         list.set(address(paymentToken), TRUSTED_CURRENCY);
-
-    //         // create the crowdinvesting contract
-    //         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
-    //             address(this),
-    //             payable(receiver),
-    //             1,
-    //             UINT256_MAX,
-    //             _price,
-    //             _price,
-    //             _price,
-    //             UINT256_MAX,
-    //             paymentToken,
-    //             token,
-    //             0,
-    //             address(0),
-    //             address(0)
-    //         );
-    //         vm.prank(owner);
-    //         crowdinvesting = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
-
-    //         // grant allowances
-    //         vm.prank(mintAllower);
-    //         token.increaseMintingAllowance(address(crowdinvesting), UINT256_MAX);
-    //         vm.prank(buyer);
-    //         paymentToken.increaseAllowance(address(crowdinvesting), UINT256_MAX);
-
-    //         vm.expectRevert(); //("Arithmetic over/underflow"); //("Division or modulo by 0");
-    //         vm.prank(buyer);
-    //         crowdinvesting.buy(_tokenBuyAmount, type(uint256).max, buyer);
-    //     }
-
-    //     function testSettingInvalidCurrencyReverts(address someCurrency, uint256 currencyAttributes) public {
-    //         vm.assume(someCurrency != address(0));
-    //         vm.assume(currencyAttributes != TRUSTED_CURRENCY);
-    //         vm.prank(owner);
-    //         list.set(someCurrency, currencyAttributes);
-
-    //         vm.startPrank(owner);
-    //         crowdinvesting.pause();
-    //         vm.expectRevert("currency needs to be on the allowlist with TRUSTED_CURRENCY attribute");
-    //         crowdinvesting.setCurrencyAndTokenPrice(IERC20(someCurrency), 1);
-
-    //         // check the settings works when the currency is on the allowlist with TRUSTED_CURRENCY attribute
-    //         list.set(someCurrency, TRUSTED_CURRENCY);
-    //         crowdinvesting.setCurrencyAndTokenPrice(IERC20(someCurrency), 1);
-    //     }
-
-    //     function testRoundsUp(uint256 _tokenBuyAmount, uint256 _price) public {
-    //         vm.assume(_tokenBuyAmount > 0);
-    //         vm.assume(_price > 0);
-    //         vm.assume(UINT256_MAX / _price > _tokenBuyAmount); // this will cause an overflow on multiplication
-
-    //         uint256 tokenDecimals = token.decimals();
-    //         uint minCurrencyAmount = (_tokenBuyAmount * _price) / 10 ** tokenDecimals;
-    //         console.log("minCurrencyAmount: %s", minCurrencyAmount);
-    //         uint maxCurrencyAmount = minCurrencyAmount + 1;
-    //         console.log("maxCurrencyAmount: %s", maxCurrencyAmount);
-
-    //         // new currency
-    //         // set up currency
-    //         vm.prank(paymentTokenProvider);
-    //         paymentToken = new FakePaymentToken(maxCurrencyAmount, paymentTokenDecimals); // 1000 tokens with 6 decimals
-    //         // transfer currency to buyer
-    //         vm.prank(paymentTokenProvider);
-    //         paymentToken.transfer(buyer, maxCurrencyAmount);
-
-    //         vm.prank(owner);
-    //         list.set(address(paymentToken), TRUSTED_CURRENCY);
-
-    //         // create the crowdinvesting contract
-    //         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
-    //             address(this),
-    //             payable(receiver),
-    //             _tokenBuyAmount,
-    //             _tokenBuyAmount,
-    //             _price,
-    //             _price,
-    //             _price,
-    //             _tokenBuyAmount,
-    //             paymentToken,
-    //             token,
-    //             0,
-    //             address(0),
-    //             address(0)
-    //         );
-    //         vm.prank(owner);
-    //         crowdinvesting = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
-
-    //         // set fees to 0, otherwise extra currency is minted which causes an overflow
-    //         Fees memory fees = Fees(0, 0, 0, 0);
-    //         FeeSettings(address(token.feeSettings())).planFeeChange(fees);
-    //         FeeSettings(address(token.feeSettings())).executeFeeChange();
-
-    //         // grant allowances
-    //         vm.prank(mintAllower);
-    //         token.increaseMintingAllowance(address(crowdinvesting), _tokenBuyAmount);
-    //         vm.prank(buyer);
-    //         paymentToken.increaseAllowance(address(crowdinvesting), maxCurrencyAmount);
-
-    //         vm.prank(buyer);
-    //         crowdinvesting.buy(_tokenBuyAmount, type(uint256).max, buyer);
-
-    //         // check that the buyer got the correct amount of tokens
-    //         assertTrue(token.balanceOf(buyer) == _tokenBuyAmount, "buyer got wrong amount of tokens");
-    //         // check that the crowdinvesting got the correct amount of currency
-    //         assertTrue(
-    //             paymentToken.balanceOf(receiver) <= maxCurrencyAmount,
-    //             "crowdinvesting got wrong amount of currency"
-    //         );
-    //         assertTrue(
-    //             paymentToken.balanceOf(receiver) >= minCurrencyAmount,
-    //             "crowdinvesting got wrong amount of currency"
-    //         );
-    //     }
-
-    //     function testTransferOwnership(address newOwner) public {
-    //         vm.prank(owner);
-    //         crowdinvesting.transferOwnership(newOwner);
-    //         assertTrue(crowdinvesting.owner() == owner);
-
-    //         vm.prank(newOwner);
-    //         crowdinvesting.acceptOwnership();
-    //         assertTrue(crowdinvesting.owner() == newOwner);
-    //     }
-
-    //     function testOfferExpiration(uint256 _lastBuyDate, uint256 testDate) public {
-    //         vm.assume(testDate > 1 days + 1);
-    //         vm.assume(testDate < 100 * 365 days);
-    //         vm.assume(_lastBuyDate > 1);
-    //         vm.assume(_lastBuyDate < 100 * 365 days);
-
-    //         // because of limitations in the test suite, we have to decide on a fixed date to base our warping on
-    //         uint256 startDate = 100 * 365 days;
-    //         vm.warp(startDate);
-
-    //         uint256 tokenBuyAmount = 5 * 10 ** token.decimals();
-    //         uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * crowdinvesting.priceBase(), 10 ** 18);
-
-    //         vm.startPrank(owner);
-    //         crowdinvesting.pause();
-    //         crowdinvesting.setLastBuyDate(startDate + _lastBuyDate);
-    //         vm.warp(startDate + 1 days + 1);
-    //         crowdinvesting.unpause();
-    //         vm.stopPrank();
-
-    //         vm.warp(startDate + testDate);
-
-    //         // log block.timestamp and lastBuyDate
-    //         console.log("block.timestamp: ", block.timestamp);
-    //         console.log("lastBuyDate: ", _lastBuyDate);
-
-    //         if (testDate > _lastBuyDate) {
-    //             vm.expectRevert("Last buy date has passed: not selling tokens anymore.");
-    //             vm.prank(buyer);
-    //             crowdinvesting.buy(tokenBuyAmount, type(uint256).max, buyer);
-    //         } else {
-    //             vm.prank(buyer);
-    //             vm.expectEmit(true, true, true, true, address(crowdinvesting));
-    //             emit TokensBought(buyer, tokenBuyAmount, costInPaymentToken);
-    //             crowdinvesting.buy(tokenBuyAmount, type(uint256).max, buyer);
-    //         }
-    //     }
-
-    //     function testLastBuyDateInConstructor(uint256 _lastBuyDate, uint256 testDate) public {
-    //         vm.assume(_lastBuyDate > block.timestamp || _lastBuyDate == 0);
-    //         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
-    //             address(this),
-    //             payable(receiver),
-    //             minAmountPerBuyer,
-    //             maxAmountPerBuyer,
-    //             price,
-    //             price,
-    //             price,
-    //             maxAmountOfTokenToBeSold,
-    //             paymentToken,
-    //             token,
-    //             _lastBuyDate,
-    //             address(0),
-    //             address(0)
-    //         );
-    //         Crowdinvesting _crowdinvesting = Crowdinvesting(
-    //             factory.createCrowdinvestingClone(0, trustedForwarder, arguments)
-    //         );
-
-    //         vm.warp(testDate);
-
-    //         uint256 tokenBuyAmount = 5 * 10 ** token.decimals();
-    //         uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * crowdinvesting.priceBase(), 10 ** 18);
-
-    //         // log test date, auto pause date and block.timestamp
-    //         console.log("testDate: ", testDate);
-    //         console.log("lastBuyDate: ", _lastBuyDate);
-    //         console.log("block.timestamp: ", block.timestamp);
-
-    //         if (_lastBuyDate != 0 && testDate > _lastBuyDate) {
-    //             // auto-pause should trigger
-    //             vm.startPrank(buyer);
-    //             paymentToken.approve(address(_crowdinvesting), type(uint256).max);
-    //             vm.expectRevert("Last buy date has passed: not selling tokens anymore.");
-    //             _crowdinvesting.buy(tokenBuyAmount, type(uint256).max, buyer);
-    //             vm.stopPrank();
-    //         } else {
-    //             // auto-pause should not trigger
-    //             vm.prank(admin);
-    //             token.increaseMintingAllowance(address(_crowdinvesting), maxAmountOfTokenToBeSold);
-
-    //             vm.startPrank(buyer);
-    //             paymentToken.approve(address(_crowdinvesting), type(uint256).max);
-    //             vm.expectEmit(true, true, true, true, address(_crowdinvesting));
-    //             emit TokensBought(buyer, tokenBuyAmount, costInPaymentToken);
-    //             _crowdinvesting.buy(tokenBuyAmount, type(uint256).max, buyer);
-    //             vm.stopPrank();
-    //         }
-    //     }
+    function testSwitchToMintAndBuy(uint256 tokenBuyAmount) public {
+        vm.assume(tokenBuyAmount >= crowdinvesting.minAmountPerBuyer());
+        vm.assume(tokenBuyAmount <= crowdinvesting.maxAmountPerBuyer());
+        uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * crowdinvesting.priceBase(), 10 ** 18);
+        vm.assume(costInPaymentToken <= paymentToken.balanceOf(buyer));
+
+        // Step 1: Set tokenHolder to 0
+        vm.prank(owner);
+        crowdinvesting.pause();
+        vm.prank(owner);
+        vm.expectEmit(true, true, true, true, address(crowdinvesting));
+        emit TokenHolderChanged(address(0));
+        crowdinvesting.setTokenHolder(address(0));
+        assertTrue(crowdinvesting.tokenHolder() == address(0), "tokenHolder should be set to 0");
+        vm.warp(block.timestamp + crowdinvesting.delay() + 1);
+        vm.prank(owner);
+        crowdinvesting.unpause();
+
+        // Ensure minting allowance for crowdinvesting contract
+        vm.prank(mintAllower);
+        token.increaseMintingAllowance(address(crowdinvesting), tokenBuyAmount);
+
+        // Store initial state
+        uint256 initialTotalSupply = token.totalSupply();
+        uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
+        uint256 initialReceiverBalance = paymentToken.balanceOf(receiver);
+        uint256 initialTokensSold = crowdinvesting.tokensSold();
+        uint256 initialTokensBoughtByBuyer = crowdinvesting.tokensBought(buyer);
+
+        // Step 2: Buy tokens
+        vm.prank(buyer);
+        vm.expectEmit(true, true, true, true, address(crowdinvesting));
+        emit TokensBought(buyer, tokenBuyAmount, costInPaymentToken);
+        crowdinvesting.buy(tokenBuyAmount, type(uint256).max, buyer);
+
+        // Step 3: Check that new tokens have been minted
+        assertTrue(token.balanceOf(buyer) == tokenBuyAmount, "buyer should have received tokens");
+        assertTrue(
+            token.totalSupply() ==
+                initialTotalSupply + tokenBuyAmount + token.feeSettings().tokenFee(tokenBuyAmount, address(token)),
+            "correct number of new tokens should have been minted"
+        );
+        assertTrue(
+            paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore - costInPaymentToken,
+            "buyer should have paid"
+        );
+        assertTrue(
+            paymentToken.balanceOf(receiver) >= initialReceiverBalance,
+            "receiver should have received payment tokens"
+        );
+        assertTrue(crowdinvesting.tokensSold() == initialTokensSold + tokenBuyAmount, "tokensSold should be updated");
+        assertTrue(
+            crowdinvesting.tokensBought(buyer) == initialTokensBoughtByBuyer + tokenBuyAmount,
+            "tokensBought for buyer should be updated"
+        );
+        assertTrue(
+            token.balanceOf(tokenHolder) == maxAmountOfTokenToBeSold,
+            "tokenHolder balance should remain unchanged"
+        );
+    }
+
+    function testEnsureInsufficientTokenBalanceOrAllowanceReverts() public {
+        uint256 tokenBuyAmount = minAmountPerBuyer;
+        uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * crowdinvesting.priceBase(), 10 ** 18);
+
+        // Test 1: Insufficient allowance
+        // Mint sufficient tokens to tokenHolder
+        vm.prank(mintAllower);
+        token.mint(tokenHolder, tokenBuyAmount);
+
+        uint256 initialTotalSupply = token.totalSupply();
+        uint256 initialBuyerBalance = token.balanceOf(buyer);
+
+        // Set allowance too low
+        vm.prank(tokenHolder);
+        token.approve(address(crowdinvesting), tokenBuyAmount / 2);
+
+        // Try to buy - should revert due to insufficient allowance
+        vm.prank(buyer);
+        vm.expectRevert("ERC20: insufficient allowance");
+        crowdinvesting.buy(tokenBuyAmount, type(uint256).max, buyer);
+
+        // Verify no tokens transferred
+        assertTrue(token.balanceOf(buyer) == initialBuyerBalance, "Buyer balance changed");
+        assertTrue(token.totalSupply() == initialTotalSupply, "Total supply changed");
+        assertTrue(crowdinvesting.tokensSold() == 0, "Tokens sold recorded");
+        assertTrue(crowdinvesting.tokensBought(buyer) == 0, "Tokens bought recorded");
+
+        // Test 2: Insufficient balance
+
+        // move some tokens to make balance insufficient
+        uint256 tokenHolderBalance = token.balanceOf(tokenHolder);
+
+        vm.startPrank(tokenHolder);
+        token.transfer(address(1), tokenHolderBalance - tokenBuyAmount + 1); // move some tokens away
+        vm.stopPrank();
+        tokenHolderBalance = token.balanceOf(tokenHolder);
+        assertTrue(tokenHolderBalance < tokenBuyAmount, "tokenHolder balance too high");
+
+        initialTotalSupply = token.totalSupply();
+
+        // Set sufficient allowance
+        vm.prank(tokenHolder);
+        token.approve(address(crowdinvesting), tokenBuyAmount);
+
+        // Try to buy - should revert due to insufficient balance
+        vm.prank(buyer);
+        vm.expectRevert("ERC20: transfer amount exceeds balance");
+        crowdinvesting.buy(tokenBuyAmount, type(uint256).max, buyer);
+
+        // Verify no tokens transferred
+        assertTrue(token.balanceOf(buyer) == initialBuyerBalance, "Buyer balance changed");
+        assertTrue(token.totalSupply() == initialTotalSupply, "Total supply changed");
+        assertTrue(crowdinvesting.tokensSold() == 0, "Tokens sold recorded");
+        assertTrue(crowdinvesting.tokensBought(buyer) == 0, "Tokens bought recorded");
+
+        // Test 3: Fix allowance and balance
+
+        // Mint sufficient tokens to tokenHolder
+        vm.prank(address(1));
+        token.transfer(tokenHolder, 1);
+        initialTotalSupply = token.totalSupply();
+        initialBuyerBalance = token.balanceOf(buyer);
+
+        // Perform buy - should succeed
+        vm.prank(buyer);
+        vm.expectEmit(true, true, true, true, address(crowdinvesting));
+        emit TokensBought(buyer, tokenBuyAmount, costInPaymentToken);
+        crowdinvesting.buy(tokenBuyAmount, type(uint256).max, buyer);
+
+        // Verify successful transfer
+        assertTrue(token.totalSupply() == initialTotalSupply, "New tokens were minted");
+        assertTrue(
+            token.balanceOf(buyer) == initialBuyerBalance + tokenBuyAmount,
+            "Buyer did not receive correct tokens"
+        );
+        assertTrue(token.balanceOf(tokenHolder) == 0, "Token holder balance not decreased correctly");
+        assertTrue(crowdinvesting.tokensSold() == tokenBuyAmount, "Tokens sold accounting incorrect");
+        assertTrue(crowdinvesting.tokensBought(buyer) == tokenBuyAmount, "Tokens bought accounting incorrect");
+    }
 }
