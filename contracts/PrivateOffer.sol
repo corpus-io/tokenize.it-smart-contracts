@@ -86,10 +86,27 @@ contract PrivateOffer {
         );
 
         // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
-        uint256 currencyAmount = Math.ceilDiv(
+        uint256 maxCurrencyAmount = Math.ceilDiv(
             _arguments.tokenAmount * _arguments.tokenPrice,
             10 ** _arguments.token.decimals()
         );
+
+        // check the allowance of the currencyPayer
+        uint256 allowance = _arguments.currency.allowance(_arguments.currencyPayer, address(this));
+
+        // calculate the token amount and currency amount that can be bought
+        uint256 tokenAmount;
+        uint256 currencyAmount;
+        if(allowance < maxCurrencyAmount) {
+            // the buyer wants to buy less than the offered amount. Calculate the token amount that can be bought with the allowance
+            // mulDiv is used to avoid overflow. It ensures result is rounded down.
+            tokenAmount = Math.mulDiv(allowance, 10 ** _arguments.token.decimals(), _arguments.tokenPrice);
+            currencyAmount = allowance;
+        } else {
+            // the buyer wants to buy the offered amount
+            tokenAmount = _arguments.tokenAmount;
+            currencyAmount = maxCurrencyAmount;
+        }
 
         IFeeSettingsV2 feeSettings = _arguments.token.feeSettings();
         uint256 fee = feeSettings.privateOfferFee(currencyAmount, address(_arguments.token));
@@ -115,7 +132,7 @@ contract PrivateOffer {
         emit Deal(
             _arguments.currencyPayer,
             _arguments.tokenReceiver,
-            _arguments.tokenAmount,
+            tokenAmount,
             _arguments.tokenPrice,
             _arguments.currency,
             _arguments.token
