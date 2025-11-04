@@ -17,15 +17,15 @@ struct CrowdinvestingInitializerArguments {
     address owner;
     /// address that receives the payment (in currency/tokens) when tokens are bought/sold
     address receiver;
-    /// smallest amount of tokens a buyer is allowed to buy when buying for the first time
+    /// smallest amount of tokens per transaction
     uint256 minAmountPerBuyer;
     /// price of a token, expressed as amount of bits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2*10^6 ).
     uint256 tokenPrice;
-    /// currency used to pay for the token mint. Must be ERC20, so ether can only be used as wrapped ether (WETH)
+    /// currency used to pay for the token purchase. Must be ERC20, so ether can only be used as wrapped ether (WETH)
     IERC20 currency;
-    /// token to be minted
+    /// token to be transferred
     Token token;
-    /// holder. If set, tokens/currency will be transferred from this address. If not set, tokens will be minted from the token contract and a minting allowance need to be granted beforehand.
+    /// holder. Tokens/currency will be transferred from this address.
     address holder;
 }
 
@@ -50,18 +50,18 @@ contract Crowdinvesting is
 
     /// address that receives the currency/tokens when tokens are bought/sold
     address public receiver;
-    /// smallest amount of tokens that can be minted, in bits (bit = smallest subunit of token)
+    /// smallest amount of tokens per transaction, in bits (bit = smallest subunit of token)
     uint256 public minAmountPerBuyer;
 
     /// The price of a token, expressed as amount of bits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2*10^6 ).
     /// @dev units: [tokenPrice] = [currency_bits]/[token], so for above example: [tokenPrice] = [USDC_bits]/[TOK]
     uint256 public tokenPrice;
 
-    /// currency used to pay for the token mint. Must be ERC20, so ether can only be used as wrapped ether (WETH)
+    /// currency used to pay for the token purchase. Must be ERC20, so ether can only be used as wrapped ether (WETH)
     IERC20 public currency;
-    /// token to be minted
+    /// token to be transferred
     Token public token;
-    /// holder. If set, tokens/currency will be transferred from this address. If set to address(0), tokens will be minted from the token contract.
+    /// holder. Tokens/currency will be transferred from this address.
     address public holder;
 
     /// @notice receiver has been changed to `newReceiver`
@@ -95,7 +95,7 @@ contract Crowdinvesting is
     }
 
     /**
-     * @notice Sets up the Crowdinvesting. The contract is usable immediately after being initialized, but does need a minting allowance for the token.
+     * @notice Sets up the Crowdinvesting. The contract is usable immediately after being initialized.
      * @param _arguments Struct containing all arguments for the initializer
      */
     function initialize(CrowdinvestingInitializerArguments memory _arguments) external initializer {
@@ -106,6 +106,7 @@ contract Crowdinvesting is
         require(_arguments.receiver != address(0), "receiver can not be zero address");
         require(address(_arguments.currency) != address(0), "currency can not be zero address");
         require(address(_arguments.token) != address(0), "token can not be zero address");
+        require(_arguments.holder != address(0), "holder can not be zero address");
         require(_arguments.minAmountPerBuyer != 0, "_minAmountPerBuyer needs to be larger than zero");
         require(_arguments.tokenPrice != 0, "_tokenPrice needs to be a non-zero amount");
         require(
@@ -129,19 +130,14 @@ contract Crowdinvesting is
     }
 
     /**
-     * Checks if the buy/sell is valid, and if so, mints/transfers the tokens to the buyer/seller.
+     * Checks if the buy/sell is valid, and if so, transfers the tokens to the buyer/seller.
      * @param _from address that will send the tokens
      * @param _to address that will receive the tokens
-     * @param _amount how many tokens to mint/transfer, in bits (bit = smallest subunit of token)
+     * @param _amount how many tokens to transfer, in bits (bit = smallest subunit of token)
      */
     function _checkAndDeliver(address _from, address _to, uint256 _amount) internal {
         require(_amount >= minAmountPerBuyer, "Buyer needs to buy at least minAmount");
-
-        if (_from != address(0)) {
-            token.transferFrom(_from, _to, _amount);
-        } else {
-            token.mint(_to, _amount);
-        }
+        token.transferFrom(_from, _to, _amount);
     }
 
     function _getFeeAndFeeReceiver(uint256 _currencyAmount) internal view returns (uint256, address) {
@@ -253,6 +249,7 @@ contract Crowdinvesting is
     }
 
     function setHolder(address _holder) external onlyOwner whenPaused {
+        require(_holder != address(0), "holder can not be zero address");
         holder = _holder;
         emit HolderChanged(_holder);
     }
