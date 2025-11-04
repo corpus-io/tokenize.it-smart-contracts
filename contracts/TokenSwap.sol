@@ -12,7 +12,7 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./Token.sol";
 
 /// this struct is used to circumvent the stack too deep error that occurs when passing too many arguments to a function
-struct CrowdinvestingInitializerArguments {
+struct TokenSwapInitializerArguments {
     /// Owner of the contract
     address owner;
     /// address that receives the payment (in currency/tokens) when tokens are bought/sold
@@ -30,17 +30,21 @@ struct CrowdinvestingInitializerArguments {
 }
 
 /**
- * @title Crowdinvesting
+ * @title TokenSwap
  * @author malteish, cjentzsch
- * @notice This contract represents the offer to buy an amount of tokens at a preset price. It can be used by anyone and there is no limit to the number of times it can be used.
- *      The buyer can decide how many tokens to buy, but has to buy at least minAmount.
+ * @notice This contract represents the offer to buy or sell an amount of tokens at a preset price.
+ *      It can be used by anyone and there is no limit to the number of times it can be used.
+ *      The buyer or seller can decide how many tokens to buy or sell, but has to buy or sell at least minAmountPerTransaction.
  *      The currency the offer is denominated in is set at creation time and can be updated later.
  *      The contract can be paused at any time by the owner, which will prevent any new deals from being made. Then, changes to the contract can be made, like changing the currency, price or requirements.
  *      The contract can be unpaused, which will allow new deals to be made again.
- *      A company will create only one Crowdinvesting contract for their token.
+ *      Contract as sell order: A token holder wanting to sell their tokens can create a TokenSwap contract with the desired price and give it an allowance to transfer their tokens.
+ *          Then any party wanting to buy tokens can do so through the buy function.
+ *      Contract as buy order: A party wanting to buy tokens can create a TokenSwap contract with the desired price and grant it an allowance in currency to the contract.
+ *          Then any party wanting to sell tokens can do so through the sell function.
  * @dev The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support
  */
-contract Crowdinvesting is
+contract TokenSwap is
     ERC2771ContextUpgradeable,
     Ownable2StepUpgradeable,
     PausableUpgradeable,
@@ -82,6 +86,14 @@ contract Crowdinvesting is
      */
     event TokensBought(address indexed buyer, uint256 tokenAmount, uint256 currencyAmount);
 
+    /**
+     * @notice `seller` sold `tokenAmount` tokens for `currencyAmount` currency.
+     * @param seller Address that sold the tokens
+     * @param tokenAmount Amount of tokens sold
+     * @param currencyAmount Amount of currency received
+     */
+    event TokensSold(address indexed seller, uint256 tokenAmount, uint256 currencyAmount);
+
     /// @notice holder has been changed to `holder`
     event HolderChanged(address holder);
 
@@ -95,10 +107,10 @@ contract Crowdinvesting is
     }
 
     /**
-     * @notice Sets up the Crowdinvesting. The contract is usable immediately after being initialized.
+     * @notice Sets up the TokenSwap. The contract is usable immediately after being initialized.
      * @param _arguments Struct containing all arguments for the initializer
      */
-    function initialize(CrowdinvestingInitializerArguments memory _arguments) external initializer {
+    function initialize(TokenSwapInitializerArguments memory _arguments) external initializer {
         require(_arguments.owner != address(0), "owner can not be zero address");
         __Ownable2Step_init(); // sets msgSender() as owner
         _transferOwnership(_arguments.owner); // sets owner as owner
@@ -141,10 +153,10 @@ contract Crowdinvesting is
     }
 
     /**
-     * @notice Buy `amount` tokens and mint them to `_tokenReceiver`.
+     * @notice Buy `amount` tokens and transfer them to `_tokenReceiver`.
      * @param _tokenAmount amount of tokens to buy, in bits (smallest subunit of token)
      * @param _maxCurrencyAmount maximum amount of currency to spend, in bits (smallest subunit of currency)
-     * @param _tokenReceiver address the tokens should be minted to
+     * @param _tokenReceiver address the tokens should be transferred to
      */
     function buy(
         uint256 _tokenAmount,
@@ -180,8 +192,8 @@ contract Crowdinvesting is
         uint256 _minCurrencyAmount,
         address _currencyReceiver
     ) public whenNotPaused nonReentrant {
-        // rounding up to the next whole number. Buyer is charged up to one currency bit more in case of a fractional currency bit.
-        uint256 currencyAmount = Math.ceilDiv(_tokenAmount * tokenPrice, 10 ** token.decimals());
+        // rounding down. Seller receives at most the exact price, protecting the holder.
+        uint256 currencyAmount = (_tokenAmount * tokenPrice) / (10 ** token.decimals());
 
         IERC20 _currency = currency;
 
@@ -199,7 +211,7 @@ contract Crowdinvesting is
         // get the tokens the caller just sold to us
         _checkAndDeliver(_msgSender(), receiver, _tokenAmount);
 
-        emit TokensBought(_msgSender(), _tokenAmount, currencyAmount);
+        emit TokensSold(_msgSender(), _tokenAmount, currencyAmount);
     }
 
     /**
