@@ -10,7 +10,6 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
 import "./Token.sol";
-import "./interfaces/IPriceDynamic.sol";
 
 /// this struct is used to circumvent the stack too deep error that occurs when passing too many arguments to a function
 struct CrowdinvestingInitializerArguments {
@@ -22,18 +21,12 @@ struct CrowdinvestingInitializerArguments {
     uint256 minAmountPerBuyer;
     /// price of a token, expressed as amount of bits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2*10^6 ).
     uint256 tokenPrice;
-    /// smallest price the contract will accept from a dynamic pricing oracle
-    uint256 priceMin;
-    /// largest price the contract will accept from a dynamic pricing oracle
-    uint256 priceMax;
     /// currency used to pay for the token mint. Must be ERC20, so ether can only be used as wrapped ether (WETH)
     IERC20 currency;
     /// token to be minted
     Token token;
     /// last date when the contract will sell tokens. If set to 0, the contract will not auto-pause
     uint256 lastBuyDate;
-    /// dynamic pricing oracle, which can implement various pricing strategies
-    address priceOracle;
     /// holder. If set, tokens/currency will be transferred from this address. If not set, tokens will be minted from the token contract and a minting allowance need to be granted beforehand.
     address holder;
 }
@@ -68,14 +61,7 @@ contract Crowdinvesting is
 
     /// The price of a token, expressed as amount of bits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2*10^6 ).
     /// @dev units: [tokenPrice] = [currency_bits]/[token], so for above example: [tokenPrice] = [USDC_bits]/[TOK]
-    /// @dev priceBase is the base price, which is used if no dynamic pricing is active
-    uint256 public priceBase;
-    /// minimum price of a token. Limits how far the price can drop when dynamic pricing is active. Unused if no dynamic pricing is active.
-    uint256 public priceMin;
-    /// maximum price of a token. Limits how far the price can rise when dynamic pricing is active. Unused if no dynamic pricing is active.
-    uint256 public priceMax;
-    /// dynamic pricing oracle, which can implement various pricing strategies. If set to address(0), dynamic pricing is disabled.
-    IPriceDynamic public priceOracle;
+    uint256 public tokenPrice;
 
     /// currency used to pay for the token mint. Must be ERC20, so ether can only be used as wrapped ether (WETH)
     IERC20 public currency;
@@ -108,15 +94,6 @@ contract Crowdinvesting is
      * @param currencyAmount Amount of currency paid
      */
     event TokensBought(address indexed buyer, uint256 tokenAmount, uint256 currencyAmount);
-    /**
-     * @notice Dynamic pricing got activiated using `priceOracle` with `priceMin`as the minimum price, and `priceMax` as the maximum price.
-     * @param priceOracle Oracle providing the current price through the `getPrice` function.
-     * @param priceMin minimal price
-     * @param priceMax maximal price
-     */
-    event DynamicPricingActivated(address priceOracle, uint256 priceMin, uint256 priceMax);
-    /// @notice Dynamic pricing has been deactivated and priceBase is used
-    event DynamicPricingDeactivated();
 
     /// LastBuyDate has been changed to `lastBuyDate`
     event SetLastBuyDate(uint256 lastBuyDate);
@@ -152,79 +129,19 @@ contract Crowdinvesting is
         );
         receiver = _arguments.receiver;
         minAmountPerBuyer = _arguments.minAmountPerBuyer;
-        priceBase = _arguments.tokenPrice;
+        tokenPrice = _arguments.tokenPrice;
         token = _arguments.token;
         holder = _arguments.holder;
         currency = _arguments.currency;
         _setLastBuyDate(_arguments.lastBuyDate);
-
-        // price oracle activation is optional
-        if (_arguments.priceOracle != address(0)) {
-            _activateDynamicPricing(IPriceDynamic(_arguments.priceOracle), _arguments.priceMin, _arguments.priceMax);
-        }
-    }
-
-    /**
-     * Enables a price oracle to influence the price of the token.
-     * @param _priceOracle address of the oracle to use
-     * @param _priceMin smallest price the contract will ever sell a token for
-     * @param _priceMax highest price the contract will ever sell a token for
-     */
-    function activateDynamicPricing(
-        IPriceDynamic _priceOracle,
-        uint256 _priceMin,
-        uint256 _priceMax
-    ) external onlyOwner whenPaused {
-        _activateDynamicPricing(_priceOracle, _priceMin, _priceMax);
-        coolDownStart = block.timestamp;
-    }
-
-    /**
-     * Activates dynamic pricing and sets the price oracle, as well as the minimum and maximum price.
-     * @param _priceOracle this address is queried for the current price of a token
-     * @param _priceMin price will never be less that this
-     * @param _priceMax price will never be more than this
-     */
-    function _activateDynamicPricing(IPriceDynamic _priceOracle, uint256 _priceMin, uint256 _priceMax) internal {
-        require(address(_priceOracle) != address(0), "_priceOracle can not be zero address");
-        priceOracle = _priceOracle;
-        require(_priceMin <= priceBase, "priceMin needs to be smaller or equal to priceBase");
-        priceMin = _priceMin;
-        require(priceBase <= _priceMax, "priceMax needs to be larger or equal to priceBase");
-        priceMax = _priceMax;
-        coolDownStart = block.timestamp;
-
-        emit DynamicPricingActivated(address(_priceOracle), _priceMin, _priceMax);
-    }
-
-    /**
-     * @notice Deactivates dynamic pricing and uses priceBase instead.
-     */
-    function deactivateDynamicPricing() external onlyOwner whenPaused {
-        priceOracle = IPriceDynamic(address(0));
-        coolDownStart = block.timestamp;
-
-        emit DynamicPricingDeactivated();
     }
 
     /**
      * @notice Returns the current price of a token, in currency bits per token main unit.
-     * @dev If a dynamic pricing oracle is active, the price is calculated by the oracle. Otherwise, the priceBase is returned.
      * @return price of a token, in currency bits per token main unit.
      */
     function getPrice() public view returns (uint256) {
-        if (address(priceOracle) != address(0)) {
-            uint256 price = priceOracle.getPrice(priceBase);
-            if (price > priceMax) {
-                return priceMax;
-            }
-            if (price < priceMin) {
-                return priceMin;
-            }
-            return price;
-        }
-
-        return priceBase;
+        return tokenPrice;
     }
 
     /**
@@ -386,7 +303,6 @@ contract Crowdinvesting is
 
     /**
      * @notice change currency to `_currency` and tokenPrice to `_tokenPrice`
-     * @dev If price dynamic is active, it will be deactivated.
      * @param _currency new currency
      * @param _tokenPrice new tokenPrice
      */
@@ -398,8 +314,7 @@ contract Crowdinvesting is
             "currency needs to be on the allowlist with TRUSTED_CURRENCY attribute"
         );
 
-        priceOracle = IPriceDynamic(address(0)); // deactivate dynamic pricing because price changed, so min and max need to be updated
-        priceBase = _tokenPrice;
+        tokenPrice = _tokenPrice;
         currency = _currency;
         emit TokenPriceAndCurrencyChanged(_tokenPrice, _currency);
         coolDownStart = block.timestamp;
