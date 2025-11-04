@@ -16,8 +16,8 @@ import "./interfaces/IPriceDynamic.sol";
 struct CrowdinvestingInitializerArguments {
     /// Owner of the contract
     address owner;
-    /// address that receives the payment (in currency) when tokens are bought
-    address currencyReceiver;
+    /// address that receives the payment (in currency/tokens) when tokens are bought/sold
+    address receiver;
     /// smallest amount of tokens a buyer is allowed to buy when buying for the first time
     uint256 minAmountPerBuyer;
     /// largest amount of tokens a buyer can buy from this contract
@@ -38,6 +38,8 @@ struct CrowdinvestingInitializerArguments {
     uint256 lastBuyDate;
     /// dynamic pricing oracle, which can implement various pricing strategies
     address priceOracle;
+    /// holder. If set, tokens/currency will be transferred from this address. If not set, tokens will be minted from the token contract and a minting allowance need to be granted beforehand.
+    address holder;
 }
 
 /**
@@ -63,8 +65,8 @@ contract Crowdinvesting is
     /// @dev delay is calculated from parameter change to unpause.
     uint256 public constant delay = 1 hours;
 
-    /// address that receives the currency when tokens are bought
-    address public currencyReceiver;
+    /// address that receives the currency/tokens when tokens are bought/sold
+    address public receiver;
     /// smallest amount of tokens that can be minted, in bits (bit = smallest subunit of token)
     uint256 public minAmountPerBuyer;
     /// largest amount of tokens that can be minted, in bits (bit = smallest subunit of token)
@@ -89,6 +91,8 @@ contract Crowdinvesting is
     IERC20 public currency;
     /// token to be minted
     Token public token;
+    /// holder. If set, tokens/currency will be transferred from this address. If set to address(0), tokens will be minted from the token contract.
+    address public holder;
 
     /// timestamp of the last time the contract was paused or a parameter was changed
     uint256 public coolDownStart;
@@ -100,9 +104,9 @@ contract Crowdinvesting is
     /// @dev setting this to 0 disables this feature.
     uint256 public lastBuyDate;
 
-    /// @notice CurrencyReceiver has been changed to `newCurrencyReceiver`
-    /// @param newCurrencyReceiver address that receives the payment (in currency) when tokens are bought
-    event CurrencyReceiverChanged(address indexed newCurrencyReceiver);
+    /// @notice receiver has been changed to `newReceiver`
+    /// @param newReceiver address that receives the payment (in currency/tokens) when tokens are bought/sold
+    event ReceiverChanged(address indexed newReceiver);
     /// @notice A buyer must at least own `newMinAmountPerBuyer` tokens after buying. If they already own more, they can buy smaller amounts than this, too.
     /// @param newMinAmountPerBuyer smallest amount of tokens a buyer can buy is allowed to own after buying.
     event MinAmountPerBuyerChanged(uint256 newMinAmountPerBuyer);
@@ -134,6 +138,8 @@ contract Crowdinvesting is
 
     /// LastBuyDate has been changed to `lastBuyDate`
     event SetLastBuyDate(uint256 lastBuyDate);
+    /// @notice holder has been changed to `holder`
+    event HolderChanged(address holder);
 
     /**
      * This constructor creates a logic contract that is used to clone new fundraising contracts.
@@ -153,7 +159,7 @@ contract Crowdinvesting is
         __Ownable2Step_init(); // sets msgSender() as owner
         _transferOwnership(_arguments.owner); // sets owner as owner
 
-        require(_arguments.currencyReceiver != address(0), "currencyReceiver can not be zero address");
+        require(_arguments.receiver != address(0), "receiver can not be zero address");
         require(address(_arguments.currency) != address(0), "currency can not be zero address");
         require(address(_arguments.token) != address(0), "token can not be zero address");
         require(
@@ -167,12 +173,13 @@ contract Crowdinvesting is
             _arguments.token.allowList().map(address(_arguments.currency)) == TRUSTED_CURRENCY,
             "currency needs to be on the allowlist with TRUSTED_CURRENCY attribute"
         );
-        currencyReceiver = _arguments.currencyReceiver;
+        receiver = _arguments.receiver;
         minAmountPerBuyer = _arguments.minAmountPerBuyer;
         maxAmountPerBuyer = _arguments.maxAmountPerBuyer;
         priceBase = _arguments.tokenPrice;
         maxAmountOfTokenToBeSold = _arguments.maxAmountOfTokenToBeSold;
         token = _arguments.token;
+        holder = _arguments.holder;
         currency = _arguments.currency;
         _setLastBuyDate(_arguments.lastBuyDate);
 
@@ -246,15 +253,16 @@ contract Crowdinvesting is
     }
 
     /**
-     * Checks if the buy is valid, and if so, mints the tokens to the buyer.
-     * @param _amount how many tokens to buy, in bits (bit = smallest subunit of token)
-     * @param _tokenReceiver address that will receive the tokens
+     * Checks if the buy/sell is valid, and if so, mints/transfers the tokens to the buyer/seller.
+     * @param _from address that will send the tokens
+     * @param _to address that will receive the tokens
+     * @param _amount how many tokens to mint/transfer, in bits (bit = smallest subunit of token)
      */
-    function _checkAndDeliver(uint256 _amount, address _tokenReceiver) internal {
+    function _checkAndDeliver(address _from, address _to, uint256 _amount) internal {
         require(tokensSold + _amount <= maxAmountOfTokenToBeSold, "Not enough tokens to sell left");
-        require(tokensBought[_tokenReceiver] + _amount >= minAmountPerBuyer, "Buyer needs to buy at least minAmount");
+        require(tokensBought[_to] + _amount >= minAmountPerBuyer, "Buyer needs to buy at least minAmount");
         require(
-            tokensBought[_tokenReceiver] + _amount <= maxAmountPerBuyer,
+            tokensBought[_to] + _amount <= maxAmountPerBuyer,
             "Total amount of bought tokens needs to be lower than or equal to maxAmount"
         );
 
@@ -263,9 +271,13 @@ contract Crowdinvesting is
         }
 
         tokensSold += _amount;
-        tokensBought[_tokenReceiver] += _amount;
+        tokensBought[_to] += _amount;
 
-        token.mint(_tokenReceiver, _amount);
+        if (_from != address(0)) {
+            token.transferFrom(_from, _to, _amount);
+        } else {
+            token.mint(_to, _amount);
+        }
     }
 
     function _getFeeAndFeeReceiver(uint256 _currencyAmount) internal view returns (uint256, address) {
@@ -299,8 +311,38 @@ contract Crowdinvesting is
             _currency.safeTransferFrom(_msgSender(), feeCollector, fee);
         }
 
-        _currency.safeTransferFrom(_msgSender(), currencyReceiver, currencyAmount - fee);
-        _checkAndDeliver(_tokenAmount, _tokenReceiver);
+        _currency.safeTransferFrom(_msgSender(), receiver, currencyAmount - fee);
+        _checkAndDeliver(holder, _tokenReceiver, _tokenAmount);
+
+        emit TokensBought(_msgSender(), _tokenAmount, currencyAmount);
+    }
+
+    /**
+     * @notice Sell `amount` tokens and transfer them to `_tokenReceiver`.
+     * @param _tokenAmount amount of tokens to sell, in bits (smallest subunit of token)
+     * @param _minCurrencyAmount minimum amount of currency to received, in bits (smallest subunit of currency)
+     * @param _currencyReceiver address the currency should be transferred to
+     */
+    function sell(
+        uint256 _tokenAmount,
+        uint256 _minCurrencyAmount,
+        address _currencyReceiver
+    ) public whenNotPaused nonReentrant {
+        // rounding up to the next whole number. Buyer is charged up to one currency bit more in case of a fractional currency bit.
+        uint256 currencyAmount = Math.ceilDiv(_tokenAmount * getPrice(), 10 ** token.decimals());
+
+        require(currencyAmount >= _minCurrencyAmount, "Payout too low");
+
+        IERC20 _currency = currency;
+
+        (uint256 fee, address feeCollector) = _getFeeAndFeeReceiver(currencyAmount);
+        if (fee != 0) {
+            _currency.safeTransferFrom(holder, feeCollector, fee);
+        }
+
+        _currency.safeTransferFrom(holder, _currencyReceiver, currencyAmount - fee);
+
+        _checkAndDeliver(_msgSender(), receiver, _tokenAmount);
 
         emit TokensBought(_msgSender(), _tokenAmount, currencyAmount);
     }
@@ -337,12 +379,12 @@ contract Crowdinvesting is
             require(amount >= abi.decode(_data[32:64], (uint256)), "Purchase yields less tokens than demanded.");
         }
 
-        // move payment to currencyReceiver and feeCollector
+        // move payment to receiver and feeCollector
         (uint256 fee, address feeCollector) = _getFeeAndFeeReceiver(_currencyAmount);
         currency.safeTransfer(feeCollector, fee);
-        currency.safeTransfer(currencyReceiver, _currencyAmount - fee);
+        currency.safeTransfer(receiver, _currencyAmount - fee);
 
-        _checkAndDeliver(amount, tokenReceiver);
+        _checkAndDeliver(holder, tokenReceiver, amount);
 
         emit TokensBought(_from, amount, _currencyAmount);
 
@@ -351,13 +393,13 @@ contract Crowdinvesting is
     }
 
     /**
-     * @notice change the currencyReceiver to `_currencyReceiver`
-     * @param _currencyReceiver new currencyReceiver
+     * @notice change the receiver to `_receiver`
+     * @param _receiver new receiver
      */
-    function setCurrencyReceiver(address _currencyReceiver) external onlyOwner whenPaused {
-        require(_currencyReceiver != address(0), "receiver can not be zero address");
-        currencyReceiver = _currencyReceiver;
-        emit CurrencyReceiverChanged(_currencyReceiver);
+    function setReceiver(address _receiver) external onlyOwner whenPaused {
+        require(_receiver != address(0), "receiver can not be zero address");
+        receiver = _receiver;
+        emit ReceiverChanged(_receiver);
         coolDownStart = block.timestamp;
     }
 
@@ -429,6 +471,12 @@ contract Crowdinvesting is
         }
         lastBuyDate = _lastBuyDate;
         emit SetLastBuyDate(_lastBuyDate);
+    }
+
+    function setHolder(address _holder) external onlyOwner whenPaused {
+        holder = _holder;
+        emit HolderChanged(_holder);
+        coolDownStart = block.timestamp;
     }
 
     /**
