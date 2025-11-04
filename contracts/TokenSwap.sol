@@ -152,7 +152,7 @@ contract Crowdinvesting is
         address _tokenReceiver
     ) public whenNotPaused nonReentrant {
         // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
-        uint256 currencyAmount = Math.ceilDiv(_tokenAmount * getPrice(), 10 ** token.decimals());
+        uint256 currencyAmount = Math.ceilDiv(_tokenAmount * tokenPrice, 10 ** token.decimals());
 
         require(currencyAmount <= _maxCurrencyAmount, "Purchase more expensive than _maxCurrencyAmount");
 
@@ -181,7 +181,7 @@ contract Crowdinvesting is
         address _currencyReceiver
     ) public whenNotPaused nonReentrant {
         // rounding up to the next whole number. Buyer is charged up to one currency bit more in case of a fractional currency bit.
-        uint256 currencyAmount = Math.ceilDiv(_tokenAmount * getPrice(), 10 ** token.decimals());
+        uint256 currencyAmount = Math.ceilDiv(_tokenAmount * tokenPrice, 10 ** token.decimals());
 
         IERC20 _currency = currency;
 
