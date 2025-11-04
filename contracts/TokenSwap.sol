@@ -20,16 +20,12 @@ struct CrowdinvestingInitializerArguments {
     address receiver;
     /// smallest amount of tokens a buyer is allowed to buy when buying for the first time
     uint256 minAmountPerBuyer;
-    /// largest amount of tokens a buyer can buy from this contract
-    uint256 maxAmountPerBuyer;
     /// price of a token, expressed as amount of bits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2*10^6 ).
     uint256 tokenPrice;
     /// smallest price the contract will accept from a dynamic pricing oracle
     uint256 priceMin;
     /// largest price the contract will accept from a dynamic pricing oracle
     uint256 priceMax;
-    /// total amount of tokens that can be minted through this contract
-    uint256 maxAmountOfTokenToBeSold;
     /// currency used to pay for the token mint. Must be ERC20, so ether can only be used as wrapped ether (WETH)
     IERC20 currency;
     /// token to be minted
@@ -69,8 +65,6 @@ contract Crowdinvesting is
     address public receiver;
     /// smallest amount of tokens that can be minted, in bits (bit = smallest subunit of token)
     uint256 public minAmountPerBuyer;
-    /// largest amount of tokens that can be minted, in bits (bit = smallest subunit of token)
-    uint256 public maxAmountPerBuyer;
 
     /// The price of a token, expressed as amount of bits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2*10^6 ).
     /// @dev units: [tokenPrice] = [currency_bits]/[token], so for above example: [tokenPrice] = [USDC_bits]/[TOK]
@@ -83,10 +77,6 @@ contract Crowdinvesting is
     /// dynamic pricing oracle, which can implement various pricing strategies. If set to address(0), dynamic pricing is disabled.
     IPriceDynamic public priceOracle;
 
-    /// total amount of tokens that CAN BE minted through this contract, in bits (bit = smallest subunit of token)
-    uint256 public maxAmountOfTokenToBeSold;
-    /// total amount of tokens that HAVE BEEN minted through this contract, in bits (bit = smallest subunit of token)
-    uint256 public tokensSold;
     /// currency used to pay for the token mint. Must be ERC20, so ether can only be used as wrapped ether (WETH)
     IERC20 public currency;
     /// token to be minted
@@ -96,9 +86,6 @@ contract Crowdinvesting is
 
     /// timestamp of the last time the contract was paused or a parameter was changed
     uint256 public coolDownStart;
-
-    /// This mapping keeps track of how much each buyer has bought, in order to enforce maxAmountPerBuyer
-    mapping(address => uint256) public tokensBought;
 
     /// During every buy, the lastBuyDate is checked. If it is in the past, the buy is rejected.
     /// @dev setting this to 0 disables this feature.
@@ -110,15 +97,10 @@ contract Crowdinvesting is
     /// @notice A buyer must at least own `newMinAmountPerBuyer` tokens after buying. If they already own more, they can buy smaller amounts than this, too.
     /// @param newMinAmountPerBuyer smallest amount of tokens a buyer can buy is allowed to own after buying.
     event MinAmountPerBuyerChanged(uint256 newMinAmountPerBuyer);
-    /// @notice A buyer can buy at most `newMaxAmountPerBuyer` tokens, from this contract, even if they split the buys into multiple transactions.
-    /// @param newMaxAmountPerBuyer largest amount of tokens a buyer can buy from this contract
-    event MaxAmountPerBuyerChanged(uint256 newMaxAmountPerBuyer);
     /// @notice Price and currency changed.
     /// @param newTokenPrice new price of a token, expressed as amount of bits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2*10^6 ).
     /// @param newCurrency new currency used to pay for the token purchase
     event TokenPriceAndCurrencyChanged(uint256 newTokenPrice, IERC20 indexed newCurrency);
-    /// @param newMaxAmountOfTokenToBeSold new total amount of tokens that can be minted through this contract, in bits (bit = smallest subunit of token)´
-    event MaxAmountOfTokenToBeSoldChanged(uint256 newMaxAmountOfTokenToBeSold);
     /**
      * @notice `buyer` bought `tokenAmount` tokens for `currencyAmount` currency.
      * @param buyer Address that bought the tokens
@@ -162,22 +144,15 @@ contract Crowdinvesting is
         require(_arguments.receiver != address(0), "receiver can not be zero address");
         require(address(_arguments.currency) != address(0), "currency can not be zero address");
         require(address(_arguments.token) != address(0), "token can not be zero address");
-        require(
-            _arguments.minAmountPerBuyer <= _arguments.maxAmountPerBuyer,
-            "_minAmountPerBuyer needs to be smaller or equal to _maxAmountPerBuyer"
-        );
         require(_arguments.minAmountPerBuyer != 0, "_minAmountPerBuyer needs to be larger than zero");
         require(_arguments.tokenPrice != 0, "_tokenPrice needs to be a non-zero amount");
-        require(_arguments.maxAmountOfTokenToBeSold != 0, "_maxAmountOfTokenToBeSold needs to be larger than zero");
         require(
             _arguments.token.allowList().map(address(_arguments.currency)) == TRUSTED_CURRENCY,
             "currency needs to be on the allowlist with TRUSTED_CURRENCY attribute"
         );
         receiver = _arguments.receiver;
         minAmountPerBuyer = _arguments.minAmountPerBuyer;
-        maxAmountPerBuyer = _arguments.maxAmountPerBuyer;
         priceBase = _arguments.tokenPrice;
-        maxAmountOfTokenToBeSold = _arguments.maxAmountOfTokenToBeSold;
         token = _arguments.token;
         holder = _arguments.holder;
         currency = _arguments.currency;
@@ -259,19 +234,11 @@ contract Crowdinvesting is
      * @param _amount how many tokens to mint/transfer, in bits (bit = smallest subunit of token)
      */
     function _checkAndDeliver(address _from, address _to, uint256 _amount) internal {
-        require(tokensSold + _amount <= maxAmountOfTokenToBeSold, "Not enough tokens to sell left");
-        require(tokensBought[_to] + _amount >= minAmountPerBuyer, "Buyer needs to buy at least minAmount");
-        require(
-            tokensBought[_to] + _amount <= maxAmountPerBuyer,
-            "Total amount of bought tokens needs to be lower than or equal to maxAmount"
-        );
+        require(_amount >= minAmountPerBuyer, "Buyer needs to buy at least minAmount");
 
         if (lastBuyDate != 0 && block.timestamp > lastBuyDate) {
             revert("Last buy date has passed: not selling tokens anymore.");
         }
-
-        tokensSold += _amount;
-        tokensBought[_to] += _amount;
 
         if (_from != address(0)) {
             token.transferFrom(_from, _to, _amount);
@@ -411,21 +378,9 @@ contract Crowdinvesting is
      * @param _minAmountPerBuyer new minAmountPerBuyer
      */
     function setMinAmountPerBuyer(uint256 _minAmountPerBuyer) external onlyOwner whenPaused {
-        require(_minAmountPerBuyer <= maxAmountPerBuyer, "_minAmount needs to be smaller or equal to maxAmount");
         require(_minAmountPerBuyer != 0, "_minAmountPerBuyer needs to be larger than zero");
         minAmountPerBuyer = _minAmountPerBuyer;
         emit MinAmountPerBuyerChanged(_minAmountPerBuyer);
-        coolDownStart = block.timestamp;
-    }
-
-    /**
-     * @notice change the maxAmountPerBuyer to `_maxAmountPerBuyer`
-     * @param _maxAmountPerBuyer new maxAmountPerBuyer
-     */
-    function setMaxAmountPerBuyer(uint256 _maxAmountPerBuyer) external onlyOwner whenPaused {
-        require(minAmountPerBuyer <= _maxAmountPerBuyer, "_maxAmount needs to be larger or equal to minAmount");
-        maxAmountPerBuyer = _maxAmountPerBuyer;
-        emit MaxAmountPerBuyerChanged(_maxAmountPerBuyer);
         coolDownStart = block.timestamp;
     }
 
@@ -447,17 +402,6 @@ contract Crowdinvesting is
         priceBase = _tokenPrice;
         currency = _currency;
         emit TokenPriceAndCurrencyChanged(_tokenPrice, _currency);
-        coolDownStart = block.timestamp;
-    }
-
-    /**
-     * @notice change the maxAmountOfTokenToBeSold to `_maxAmountOfTokenToBeSold`
-     * @param _maxAmountOfTokenToBeSold new maxAmountOfTokenToBeSold
-     */
-    function setMaxAmountOfTokenToBeSold(uint256 _maxAmountOfTokenToBeSold) external onlyOwner whenPaused {
-        require(_maxAmountOfTokenToBeSold != 0, "_maxAmountOfTokenToBeSold needs to be larger than zero");
-        maxAmountOfTokenToBeSold = _maxAmountOfTokenToBeSold;
-        emit MaxAmountOfTokenToBeSoldChanged(_maxAmountOfTokenToBeSold);
         coolDownStart = block.timestamp;
     }
 
