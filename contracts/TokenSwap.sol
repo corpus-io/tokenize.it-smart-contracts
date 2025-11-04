@@ -18,7 +18,7 @@ struct CrowdinvestingInitializerArguments {
     /// address that receives the payment (in currency/tokens) when tokens are bought/sold
     address receiver;
     /// smallest amount of tokens per transaction
-    uint256 minAmountPerBuyer;
+    uint256 minAmountPerTransaction;
     /// price of a token, expressed as amount of bits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2*10^6 ).
     uint256 tokenPrice;
     /// currency used to pay for the token purchase. Must be ERC20, so ether can only be used as wrapped ether (WETH)
@@ -51,7 +51,7 @@ contract Crowdinvesting is
     /// address that receives the currency/tokens when tokens are bought/sold
     address public receiver;
     /// smallest amount of tokens per transaction, in bits (bit = smallest subunit of token)
-    uint256 public minAmountPerBuyer;
+    uint256 public minAmountPerTransaction;
 
     /// The price of a token, expressed as amount of bits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2*10^6 ).
     /// @dev units: [tokenPrice] = [currency_bits]/[token], so for above example: [tokenPrice] = [USDC_bits]/[TOK]
@@ -67,9 +67,9 @@ contract Crowdinvesting is
     /// @notice receiver has been changed to `newReceiver`
     /// @param newReceiver address that receives the payment (in currency/tokens) when tokens are bought/sold
     event ReceiverChanged(address indexed newReceiver);
-    /// @notice A buyer must at least own `newMinAmountPerBuyer` tokens after buying. If they already own more, they can buy smaller amounts than this, too.
-    /// @param newMinAmountPerBuyer smallest amount of tokens a buyer can buy is allowed to own after buying.
-    event MinAmountPerBuyerChanged(uint256 newMinAmountPerBuyer);
+    /// @notice The minimum amount per transaction has been changed to `newMinAmountPerTransaction`.
+    /// @param newMinAmountPerTransaction smallest amount of tokens per transaction.
+    event MinAmountPerTransactionChanged(uint256 newMinAmountPerTransaction);
     /// @notice Price and currency changed.
     /// @param newTokenPrice new price of a token, expressed as amount of bits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2*10^6 ).
     /// @param newCurrency new currency used to pay for the token purchase
@@ -107,14 +107,14 @@ contract Crowdinvesting is
         require(address(_arguments.currency) != address(0), "currency can not be zero address");
         require(address(_arguments.token) != address(0), "token can not be zero address");
         require(_arguments.holder != address(0), "holder can not be zero address");
-        require(_arguments.minAmountPerBuyer != 0, "_minAmountPerBuyer needs to be larger than zero");
+        require(_arguments.minAmountPerTransaction != 0, "_minAmountPerTransaction needs to be larger than zero");
         require(_arguments.tokenPrice != 0, "_tokenPrice needs to be a non-zero amount");
         require(
             _arguments.token.allowList().map(address(_arguments.currency)) == TRUSTED_CURRENCY,
             "currency needs to be on the allowlist with TRUSTED_CURRENCY attribute"
         );
         receiver = _arguments.receiver;
-        minAmountPerBuyer = _arguments.minAmountPerBuyer;
+        minAmountPerTransaction = _arguments.minAmountPerTransaction;
         tokenPrice = _arguments.tokenPrice;
         token = _arguments.token;
         holder = _arguments.holder;
@@ -128,7 +128,7 @@ contract Crowdinvesting is
      * @param _amount how many tokens to transfer, in bits (bit = smallest subunit of token)
      */
     function _checkAndDeliver(address _from, address _to, uint256 _amount) internal {
-        require(_amount >= minAmountPerBuyer, "Buyer needs to buy at least minAmount");
+        require(_amount >= minAmountPerTransaction, "Transaction amount needs to be at least minAmount");
         token.transferFrom(_from, _to, _amount);
     }
 
@@ -213,13 +213,13 @@ contract Crowdinvesting is
     }
 
     /**
-     * @notice change the minAmountPerBuyer to `_minAmountPerBuyer`
-     * @param _minAmountPerBuyer new minAmountPerBuyer
+     * @notice change the minAmountPerTransaction to `_minAmountPerTransaction`
+     * @param _minAmountPerTransaction new minAmountPerTransaction
      */
-    function setMinAmountPerBuyer(uint256 _minAmountPerBuyer) external onlyOwner whenPaused {
-        require(_minAmountPerBuyer != 0, "_minAmountPerBuyer needs to be larger than zero");
-        minAmountPerBuyer = _minAmountPerBuyer;
-        emit MinAmountPerBuyerChanged(_minAmountPerBuyer);
+    function setMinAmountPerTransaction(uint256 _minAmountPerTransaction) external onlyOwner whenPaused {
+        require(_minAmountPerTransaction != 0, "_minAmountPerTransaction needs to be larger than zero");
+        minAmountPerTransaction = _minAmountPerTransaction;
+        emit MinAmountPerTransactionChanged(_minAmountPerTransaction);
     }
 
     /**
