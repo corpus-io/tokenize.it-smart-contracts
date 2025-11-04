@@ -25,8 +25,6 @@ struct CrowdinvestingInitializerArguments {
     IERC20 currency;
     /// token to be minted
     Token token;
-    /// last date when the contract will sell tokens. If set to 0, the contract will not auto-pause
-    uint256 lastBuyDate;
     /// holder. If set, tokens/currency will be transferred from this address. If not set, tokens will be minted from the token contract and a minting allowance need to be granted beforehand.
     address holder;
 }
@@ -66,10 +64,6 @@ contract Crowdinvesting is
     /// holder. If set, tokens/currency will be transferred from this address. If set to address(0), tokens will be minted from the token contract.
     address public holder;
 
-    /// During every buy, the lastBuyDate is checked. If it is in the past, the buy is rejected.
-    /// @dev setting this to 0 disables this feature.
-    uint256 public lastBuyDate;
-
     /// @notice receiver has been changed to `newReceiver`
     /// @param newReceiver address that receives the payment (in currency/tokens) when tokens are bought/sold
     event ReceiverChanged(address indexed newReceiver);
@@ -88,8 +82,6 @@ contract Crowdinvesting is
      */
     event TokensBought(address indexed buyer, uint256 tokenAmount, uint256 currencyAmount);
 
-    /// LastBuyDate has been changed to `lastBuyDate`
-    event SetLastBuyDate(uint256 lastBuyDate);
     /// @notice holder has been changed to `holder`
     event HolderChanged(address holder);
 
@@ -126,7 +118,6 @@ contract Crowdinvesting is
         token = _arguments.token;
         holder = _arguments.holder;
         currency = _arguments.currency;
-        _setLastBuyDate(_arguments.lastBuyDate);
     }
 
     /**
@@ -145,10 +136,6 @@ contract Crowdinvesting is
      */
     function _checkAndDeliver(address _from, address _to, uint256 _amount) internal {
         require(_amount >= minAmountPerBuyer, "Buyer needs to buy at least minAmount");
-
-        if (lastBuyDate != 0 && block.timestamp > lastBuyDate) {
-            revert("Last buy date has passed: not selling tokens anymore.");
-        }
 
         if (_from != address(0)) {
             token.transferFrom(_from, _to, _amount);
@@ -263,20 +250,6 @@ contract Crowdinvesting is
         tokenPrice = _tokenPrice;
         currency = _currency;
         emit TokenPriceAndCurrencyChanged(_tokenPrice, _currency);
-    }
-
-    /// set auto pause date
-    function setLastBuyDate(uint256 _lastBuyDate) external onlyOwner whenPaused {
-        _setLastBuyDate(_lastBuyDate);
-    }
-
-    /// set auto pause date
-    function _setLastBuyDate(uint256 _lastBuyDate) internal {
-        if (_lastBuyDate != 0) {
-            require(_lastBuyDate > block.timestamp, "lastBuyDate needs to be 0 or in the future");
-        }
-        lastBuyDate = _lastBuyDate;
-        emit SetLastBuyDate(_lastBuyDate);
     }
 
     function setHolder(address _holder) external onlyOwner whenPaused {
