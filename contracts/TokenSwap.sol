@@ -331,8 +331,6 @@ contract Crowdinvesting is
         // rounding up to the next whole number. Buyer is charged up to one currency bit more in case of a fractional currency bit.
         uint256 currencyAmount = Math.ceilDiv(_tokenAmount * getPrice(), 10 ** token.decimals());
 
-        require(currencyAmount >= _minCurrencyAmount, "Payout too low");
-
         IERC20 _currency = currency;
 
         (uint256 fee, address feeCollector) = _getFeeAndFeeReceiver(currencyAmount);
@@ -340,8 +338,13 @@ contract Crowdinvesting is
             _currency.safeTransferFrom(holder, feeCollector, fee);
         }
 
+        // the payout after fees needs to be at least as high as the minimum currency amount
+        require(currencyAmount - fee >= _minCurrencyAmount, "Payout too low");
+
+        // pay out the currency after fees to the token seller's _currencyReceiver address
         _currency.safeTransferFrom(holder, _currencyReceiver, currencyAmount - fee);
 
+        // get the tokens the caller just sold to us
         _checkAndDeliver(_msgSender(), receiver, _tokenAmount);
 
         emit TokensBought(_msgSender(), _tokenAmount, currencyAmount);
