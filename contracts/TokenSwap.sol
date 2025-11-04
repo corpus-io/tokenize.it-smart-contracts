@@ -35,10 +35,10 @@ struct CrowdinvestingInitializerArguments {
  * @title Crowdinvesting
  * @author malteish, cjentzsch
  * @notice This contract represents the offer to buy an amount of tokens at a preset price. It can be used by anyone and there is no limit to the number of times it can be used.
- *      The buyer can decide how many tokens to buy, but has to buy at least minAmount and can buy at most maxAmount.
+ *      The buyer can decide how many tokens to buy, but has to buy at least minAmount.
  *      The currency the offer is denominated in is set at creation time and can be updated later.
  *      The contract can be paused at any time by the owner, which will prevent any new deals from being made. Then, changes to the contract can be made, like changing the currency, price or requirements.
- *      The contract can be unpaused after "delay", which will allow new deals to be made again.
+ *      The contract can be unpaused, which will allow new deals to be made again.
  *      A company will create only one Crowdinvesting contract for their token.
  * @dev The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support
  */
@@ -49,10 +49,6 @@ contract Crowdinvesting is
     ReentrancyGuardUpgradeable
 {
     using SafeERC20 for IERC20;
-
-    /// @notice Minimum waiting time between pause or parameter change and unpause.
-    /// @dev delay is calculated from parameter change to unpause.
-    uint256 public constant delay = 1 hours;
 
     /// address that receives the currency/tokens when tokens are bought/sold
     address public receiver;
@@ -69,9 +65,6 @@ contract Crowdinvesting is
     Token public token;
     /// holder. If set, tokens/currency will be transferred from this address. If set to address(0), tokens will be minted from the token contract.
     address public holder;
-
-    /// timestamp of the last time the contract was paused or a parameter was changed
-    uint256 public coolDownStart;
 
     /// During every buy, the lastBuyDate is checked. If it is in the past, the buy is rejected.
     /// @dev setting this to 0 disables this feature.
@@ -242,7 +235,6 @@ contract Crowdinvesting is
         require(_receiver != address(0), "receiver can not be zero address");
         receiver = _receiver;
         emit ReceiverChanged(_receiver);
-        coolDownStart = block.timestamp;
     }
 
     /**
@@ -253,7 +245,6 @@ contract Crowdinvesting is
         require(_minAmountPerBuyer != 0, "_minAmountPerBuyer needs to be larger than zero");
         minAmountPerBuyer = _minAmountPerBuyer;
         emit MinAmountPerBuyerChanged(_minAmountPerBuyer);
-        coolDownStart = block.timestamp;
     }
 
     /**
@@ -272,13 +263,11 @@ contract Crowdinvesting is
         tokenPrice = _tokenPrice;
         currency = _currency;
         emit TokenPriceAndCurrencyChanged(_tokenPrice, _currency);
-        coolDownStart = block.timestamp;
     }
 
     /// set auto pause date
     function setLastBuyDate(uint256 _lastBuyDate) external onlyOwner whenPaused {
         _setLastBuyDate(_lastBuyDate);
-        coolDownStart = block.timestamp;
     }
 
     /// set auto pause date
@@ -293,7 +282,6 @@ contract Crowdinvesting is
     function setHolder(address _holder) external onlyOwner whenPaused {
         holder = _holder;
         emit HolderChanged(_holder);
-        coolDownStart = block.timestamp;
     }
 
     /**
@@ -307,7 +295,6 @@ contract Crowdinvesting is
      * @notice unpause the contract
      */
     function unpause() external onlyOwner {
-        require(block.timestamp > coolDownStart + delay, "There needs to be at minimum one day to change parameters");
         _unpause();
     }
 
