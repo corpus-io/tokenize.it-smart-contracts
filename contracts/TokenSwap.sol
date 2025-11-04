@@ -122,14 +122,6 @@ contract Crowdinvesting is
     }
 
     /**
-     * @notice Returns the current price of a token, in currency bits per token main unit.
-     * @return price of a token, in currency bits per token main unit.
-     */
-    function getPrice() public view returns (uint256) {
-        return tokenPrice;
-    }
-
-    /**
      * Checks if the buy/sell is valid, and if so, transfers the tokens to the buyer/seller.
      * @param _from address that will send the tokens
      * @param _to address that will receive the tokens
