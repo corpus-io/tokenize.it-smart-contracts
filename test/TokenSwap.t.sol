@@ -119,15 +119,16 @@ contract TokenSwapTest is Test {
     function cloneTokenSwapInitializerArguments(
         TokenSwapInitializerArguments memory original
     ) internal pure returns (TokenSwapInitializerArguments memory) {
-        return TokenSwapInitializerArguments(
-            original.owner,
-            original.receiver,
-            original.minAmountPerTransaction,
-            original.tokenPrice,
-            original.currency,
-            original.token,
-            original.holder
-        );
+        return
+            TokenSwapInitializerArguments(
+                original.owner,
+                original.receiver,
+                original.minAmountPerTransaction,
+                original.tokenPrice,
+                original.currency,
+                original.token,
+                original.holder
+            );
     }
 
     function testLogicContractCreation() public {

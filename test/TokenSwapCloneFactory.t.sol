@@ -88,10 +88,7 @@ contract TokenSwapCloneFactoryTest is Test {
         tokenSwapFactory = new TokenSwapCloneFactory(address(tokenSwapImplementation));
     }
 
-    function testAddressPrediction1(
-        uint256 _tokenPrice,
-        IERC20 _currency
-    ) public {
+    function testAddressPrediction1(uint256 _tokenPrice, IERC20 _currency) public {
         vm.assume(address(_currency) != address(0));
         vm.assume(_tokenPrice > 0);
 
@@ -133,11 +130,7 @@ contract TokenSwapCloneFactoryTest is Test {
 
         assertEq(expected1, expected2, "address prediction with salt and params not equal");
 
-        address actual = tokenSwapFactory.createTokenSwapClone(
-            exampleRawSalt,
-            exampleTrustedForwarder,
-            arguments
-        );
+        address actual = tokenSwapFactory.createTokenSwapClone(exampleRawSalt, exampleTrustedForwarder, arguments);
         assertEq(expected1, actual, "address prediction failed");
     }
 
@@ -291,9 +284,7 @@ contract TokenSwapCloneFactoryTest is Test {
             _holder
         );
 
-        TokenSwap tokenSwap = TokenSwap(
-            tokenSwapFactory.createTokenSwapClone(_rawSalt, _trustedForwarder, arguments)
-        );
+        TokenSwap tokenSwap = TokenSwap(tokenSwapFactory.createTokenSwapClone(_rawSalt, _trustedForwarder, arguments));
 
         assertTrue(tokenSwap.isTrustedForwarder(_trustedForwarder), "trustedForwarder not set");
         assertEq(tokenSwap.owner(), _owner, "owner not set");
@@ -302,10 +293,7 @@ contract TokenSwapCloneFactoryTest is Test {
         assertEq(tokenSwap.holder(), _holder, "holder not set");
     }
 
-    function testInitialization2(
-        uint256 _tokenPrice,
-        IERC20 _currency
-    ) public {
+    function testInitialization2(uint256 _tokenPrice, IERC20 _currency) public {
         vm.assume(address(_currency) != address(0));
         vm.assume(_tokenPrice > 0);
 
@@ -391,9 +379,7 @@ contract TokenSwapCloneFactoryTest is Test {
             exampleHolder
         );
 
-        TokenSwap tokenSwap = TokenSwap(
-            tokenSwapFactory.createTokenSwapClone(0, trustedForwarder, arguments)
-        );
+        TokenSwap tokenSwap = TokenSwap(tokenSwapFactory.createTokenSwapClone(0, trustedForwarder, arguments));
 
         vm.prank(rando);
         vm.expectRevert("Ownable: caller is not the owner");

@@ -27,10 +27,7 @@ contract TokenSwapCloneFactory is CloneFactory {
     ) external returns (address) {
         bytes32 salt = _getSalt(_rawSalt, _trustedForwarder, _arguments);
         TokenSwap tokenSwap = TokenSwap(Clones.cloneDeterministic(implementation, salt));
-        require(
-            tokenSwap.isTrustedForwarder(_trustedForwarder),
-            "TokenSwapCloneFactory: Unexpected trustedForwarder"
-        );
+        require(tokenSwap.isTrustedForwarder(_trustedForwarder), "TokenSwapCloneFactory: Unexpected trustedForwarder");
         tokenSwap.initialize(_arguments);
         emit NewClone(address(tokenSwap));
         return address(tokenSwap);
