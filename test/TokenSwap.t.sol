@@ -687,6 +687,61 @@ contract TokenSwapTest is Test {
         tokenSwap.sell(tokenSellAmount, 0, buyer);
     }
 
+    function testBuy() public {
+        vm.prank(buyer);
+        tokenSwap.buy(minAmountPerTransaction, type(uint256).max, buyer);
+    }
+
+    function testBuyFailsAfterHolderRemovesAllowance() public {
+        // Holder removes their token allowance to tokenSwap
+        vm.prank(holder);
+        token.approve(address(tokenSwap), 0);
+
+        // Attempt to buy should fail due to insufficient allowance
+        vm.prank(buyer);
+        vm.expectRevert("ERC20: insufficient allowance");
+        tokenSwap.buy(minAmountPerTransaction, type(uint256).max, buyer);
+    }
+
+    function testSell() public {
+        // Mint tokens to buyer so they have tokens to sell
+        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
+        vm.prank(admin);
+        token.grantRole(roleMintAllower, admin);
+        vm.prank(admin);
+        token.mint(buyer, minAmountPerTransaction);
+
+        // Buyer approves tokenSwap to transfer their tokens
+        vm.prank(buyer);
+        token.approve(address(tokenSwap), minAmountPerTransaction);
+
+        // Buyer sells tokens
+        vm.prank(buyer);
+        tokenSwap.sell(minAmountPerTransaction, 0, buyer);
+    }
+
+    function testSellFailsAfterHolderRemovesAllowance() public {
+        // Mint tokens to buyer so they have tokens to sell
+        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
+        vm.prank(admin);
+        token.grantRole(roleMintAllower, admin);
+        vm.prank(admin);
+        token.mint(buyer, minAmountPerTransaction);
+
+        // Holder removes their payment token allowance to tokenSwap
+        vm.prank(holder);
+        paymentToken.approve(address(tokenSwap), 0);
+
+        // Buyer approves tokenSwap to transfer their tokens
+        vm.prank(buyer);
+        token.approve(address(tokenSwap), minAmountPerTransaction);
+
+        // Attempt to sell should fail due to holder's insufficient payment token allowance
+        vm.prank(buyer);
+        vm.expectRevert("ERC20: insufficient allowance");
+        tokenSwap.sell(minAmountPerTransaction, 0, buyer);
+    }
+
     function testBuyWhilePaused() public {
         vm.prank(owner);
         tokenSwap.pause();
