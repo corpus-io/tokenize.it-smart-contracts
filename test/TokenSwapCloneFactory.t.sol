@@ -115,11 +115,11 @@ contract TokenSwapCloneFactoryTest is Test {
         TokenSwapInitializerArguments memory arguments = TokenSwapInitializerArguments(
             exampleOwner,
             exampleReceiver,
+            exampleHolder,
             exampleMinAmountPerTransaction,
             _tokenPrice,
             _currency,
-            _token,
-            exampleHolder
+            _token
         );
 
         address expected1 = tokenSwapFactory.predictCloneAddress(
@@ -153,11 +153,11 @@ contract TokenSwapCloneFactoryTest is Test {
         TokenSwapInitializerArguments memory arguments = TokenSwapInitializerArguments(
             _owner,
             _receiver,
+            exampleHolder,
             _minAmountPerTransaction,
             exampleTokenPrice,
             exampleCurrency,
-            exampleToken,
-            exampleHolder
+            exampleToken
         );
 
         bytes32 salt = keccak256(abi.encode(_rawSalt, _trustedForwarder, arguments));
@@ -190,11 +190,11 @@ contract TokenSwapCloneFactoryTest is Test {
         TokenSwapInitializerArguments memory arguments = TokenSwapInitializerArguments(
             _owner,
             _receiver,
+            exampleHolder,
             _minAmountPerTransaction,
             exampleTokenPrice,
             exampleCurrency,
-            exampleToken,
-            exampleHolder
+            exampleToken
         );
 
         address expected1 = tokenSwapFactory.predictCloneAddress(_rawSalt, _trustedForwarder, arguments);
@@ -241,11 +241,11 @@ contract TokenSwapCloneFactoryTest is Test {
         TokenSwapInitializerArguments memory arguments = TokenSwapInitializerArguments(
             _owner,
             _receiver,
+            _holder,
             _minAmountPerTransaction,
             _tokenPrice,
             _currency,
-            _token,
-            _holder
+            _token
         );
 
         // deploy once
@@ -277,11 +277,11 @@ contract TokenSwapCloneFactoryTest is Test {
         TokenSwapInitializerArguments memory arguments = TokenSwapInitializerArguments(
             _owner,
             _receiver,
+            _holder,
             _minAmountPerTransaction,
             exampleTokenPrice,
             exampleCurrency,
-            exampleToken,
-            _holder
+            exampleToken
         );
 
         TokenSwap tokenSwap = TokenSwap(tokenSwapFactory.createTokenSwapClone(_rawSalt, _trustedForwarder, arguments));
@@ -320,11 +320,11 @@ contract TokenSwapCloneFactoryTest is Test {
         TokenSwapInitializerArguments memory arguments = TokenSwapInitializerArguments(
             exampleOwner,
             exampleReceiver,
+            exampleHolder,
             exampleMinAmountPerTransaction,
             _tokenPrice,
             _currency,
-            _token,
-            exampleHolder
+            _token
         );
 
         TokenSwap tokenSwap = TokenSwap(
@@ -345,11 +345,11 @@ contract TokenSwapCloneFactoryTest is Test {
         TokenSwapInitializerArguments memory arguments = TokenSwapInitializerArguments(
             exampleOwner,
             exampleReceiver,
+            exampleHolder,
             exampleMinAmountPerTransaction,
             exampleTokenPrice,
             IERC20(someCurrency),
-            exampleToken,
-            exampleHolder
+            exampleToken
         );
 
         vm.expectRevert("currency needs to be on the allowlist with TRUSTED_CURRENCY attribute");
@@ -372,11 +372,11 @@ contract TokenSwapCloneFactoryTest is Test {
         TokenSwapInitializerArguments memory arguments = TokenSwapInitializerArguments(
             _admin,
             _admin,
+            exampleHolder,
             exampleMinAmountPerTransaction,
             exampleTokenPrice,
             exampleCurrency,
-            exampleToken,
-            exampleHolder
+            exampleToken
         );
 
         TokenSwap tokenSwap = TokenSwap(tokenSwapFactory.createTokenSwapClone(0, trustedForwarder, arguments));

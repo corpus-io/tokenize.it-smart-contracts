@@ -93,11 +93,11 @@ contract TokenSwapTest is Test {
         TokenSwapInitializerArguments memory arguments = TokenSwapInitializerArguments(
             owner,
             payable(receiver),
+            holder,
             minAmountPerTransaction,
             price,
             paymentToken,
-            token,
-            holder
+            token
         );
         tokenSwap = TokenSwap(factory.createTokenSwapClone(0, trustedForwarder, arguments));
 
@@ -122,11 +122,11 @@ contract TokenSwapTest is Test {
             TokenSwapInitializerArguments(
                 original.owner,
                 original.receiver,
+                original.holder,
                 original.minAmountPerTransaction,
                 original.tokenPrice,
                 original.currency,
-                original.token,
-                original.holder
+                original.token
             );
     }
 
@@ -141,11 +141,11 @@ contract TokenSwapTest is Test {
             TokenSwapInitializerArguments(
                 address(this),
                 payable(receiver),
+                holder,
                 minAmountPerTransaction,
                 price,
                 paymentToken,
-                token,
-                holder
+                token
             )
         );
 
@@ -163,11 +163,11 @@ contract TokenSwapTest is Test {
         TokenSwapInitializerArguments memory arguments = TokenSwapInitializerArguments(
             address(this),
             payable(receiver),
+            holder,
             minAmountPerTransaction,
             price,
             paymentToken,
-            token,
-            holder
+            token
         );
         TokenSwap _tokenSwap = TokenSwap(factory.createTokenSwapClone(0, trustedForwarder, arguments));
         assertTrue(_tokenSwap.owner() == address(this));
@@ -187,11 +187,11 @@ contract TokenSwapTest is Test {
         TokenSwapInitializerArguments memory arguments = TokenSwapInitializerArguments(
             address(this),
             payable(receiver),
+            holder,
             minAmountPerTransaction,
             price,
             paymentToken,
-            token,
-            holder
+            token
         );
 
         vm.expectRevert("TokenSwapCloneFactory: Unexpected trustedForwarder");
@@ -278,11 +278,11 @@ contract TokenSwapTest is Test {
         TokenSwapInitializerArguments memory arguments = TokenSwapInitializerArguments(
             address(this),
             payable(receiver),
+            holder,
             1,
             _price,
             maliciousPaymentToken,
-            _token,
-            holder
+            _token
         );
 
         TokenSwap _tokenSwap = TokenSwap(factory.createTokenSwapClone(0, trustedForwarder, arguments));
@@ -350,11 +350,11 @@ contract TokenSwapTest is Test {
         TokenSwapInitializerArguments memory arguments = TokenSwapInitializerArguments(
             address(this),
             payable(receiver),
+            holder,
             1,
             _price,
             maliciousPaymentToken,
-            _token,
-            holder
+            _token
         );
 
         TokenSwap _tokenSwap = TokenSwap(factory.createTokenSwapClone(0, trustedForwarder, arguments));

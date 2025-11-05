@@ -17,6 +17,8 @@ struct TokenSwapInitializerArguments {
     address owner;
     /// address that receives the payment (in currency/tokens) when tokens are bought/sold
     address receiver;
+    /// holder. Tokens/currency will be transferred from this address.
+    address holder;
     /// smallest amount of tokens per transaction
     uint256 minAmountPerTransaction;
     /// price of a token, expressed as amount of bits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2*10^6 ).
@@ -25,8 +27,6 @@ struct TokenSwapInitializerArguments {
     IERC20 currency;
     /// token to be transferred
     Token token;
-    /// holder. Tokens/currency will be transferred from this address.
-    address holder;
 }
 
 /**
