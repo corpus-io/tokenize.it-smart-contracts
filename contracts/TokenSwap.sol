@@ -19,8 +19,6 @@ struct TokenSwapInitializerArguments {
     address receiver;
     /// holder. Tokens/currency will be transferred from this address.
     address holder;
-    /// smallest amount of tokens per transaction
-    uint256 minAmountPerTransaction;
     /// price of a token, expressed as amount of bits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2*10^6 ).
     uint256 tokenPrice;
     /// currency used to pay for the token purchase. Must be ERC20, so ether can only be used as wrapped ether (WETH)
@@ -34,7 +32,7 @@ struct TokenSwapInitializerArguments {
  * @author malteish, cjentzsch
  * @notice This contract represents the offer to buy or sell an amount of tokens at a preset price.
  *      It can be used by anyone and there is no limit to the number of times it can be used.
- *      The buyer or seller can decide how many tokens to buy or sell, but has to buy or sell at least minAmountPerTransaction.
+ *      The buyer or seller can decide how many tokens to buy or sell.
  *      The currency the offer is denominated in is set at creation time and can be updated later.
  *      The contract can be paused at any time by the owner, which will prevent any new deals from being made. Then, changes to the contract can be made, like changing the currency, price or requirements.
  *      The contract can be unpaused, which will allow new deals to be made again.
@@ -54,8 +52,6 @@ contract TokenSwap is
 
     /// address that receives the currency/tokens when tokens are bought/sold
     address public receiver;
-    /// smallest amount of tokens per transaction, in bits (bit = smallest subunit of token)
-    uint256 public minAmountPerTransaction;
 
     /// The price of a token, expressed as amount of bits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2*10^6 ).
     /// @dev units: [tokenPrice] = [currency_bits]/[token], so for above example: [tokenPrice] = [USDC_bits]/[TOK]
@@ -71,9 +67,6 @@ contract TokenSwap is
     /// @notice receiver has been changed to `newReceiver`
     /// @param newReceiver address that receives the payment (in currency/tokens) when tokens are bought/sold
     event ReceiverChanged(address indexed newReceiver);
-    /// @notice The minimum amount per transaction has been changed to `newMinAmountPerTransaction`.
-    /// @param newMinAmountPerTransaction smallest amount of tokens per transaction.
-    event MinAmountPerTransactionChanged(uint256 newMinAmountPerTransaction);
     /// @notice Price and currency changed.
     /// @param newTokenPrice new price of a token, expressed as amount of bits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2*10^6 ).
     /// @param newCurrency new currency used to pay for the token purchase
@@ -119,14 +112,12 @@ contract TokenSwap is
         require(address(_arguments.currency) != address(0), "currency can not be zero address");
         require(address(_arguments.token) != address(0), "token can not be zero address");
         require(_arguments.holder != address(0), "holder can not be zero address");
-        require(_arguments.minAmountPerTransaction != 0, "_minAmountPerTransaction needs to be larger than zero");
         require(_arguments.tokenPrice != 0, "_tokenPrice needs to be a non-zero amount");
         require(
             _arguments.token.allowList().map(address(_arguments.currency)) == TRUSTED_CURRENCY,
             "currency needs to be on the allowlist with TRUSTED_CURRENCY attribute"
         );
         receiver = _arguments.receiver;
-        minAmountPerTransaction = _arguments.minAmountPerTransaction;
         tokenPrice = _arguments.tokenPrice;
         token = _arguments.token;
         holder = _arguments.holder;
@@ -134,13 +125,12 @@ contract TokenSwap is
     }
 
     /**
-     * Checks if the buy/sell is valid, and if so, transfers the tokens to the buyer/seller.
+     * Transfers the tokens to the buyer/seller.
      * @param _from address that will send the tokens
      * @param _to address that will receive the tokens
      * @param _amount how many tokens to transfer, in bits (bit = smallest subunit of token)
      */
     function _checkAndDeliver(address _from, address _to, uint256 _amount) internal {
-        require(_amount >= minAmountPerTransaction, "Transaction amount needs to be at least minAmount");
         token.transferFrom(_from, _to, _amount);
     }
 
@@ -222,16 +212,6 @@ contract TokenSwap is
         require(_receiver != address(0), "receiver can not be zero address");
         receiver = _receiver;
         emit ReceiverChanged(_receiver);
-    }
-
-    /**
-     * @notice change the minAmountPerTransaction to `_minAmountPerTransaction`
-     * @param _minAmountPerTransaction new minAmountPerTransaction
-     */
-    function setMinAmountPerTransaction(uint256 _minAmountPerTransaction) external onlyOwner whenPaused {
-        require(_minAmountPerTransaction != 0, "_minAmountPerTransaction needs to be larger than zero");
-        minAmountPerTransaction = _minAmountPerTransaction;
-        emit MinAmountPerTransactionChanged(_minAmountPerTransaction);
     }
 
     /**

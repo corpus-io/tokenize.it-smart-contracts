@@ -47,8 +47,6 @@ contract TokenSwapTest is Test {
 
     uint256 public constant price = 7 * 10 ** paymentTokenDecimals; // 7 payment tokens per token
 
-    uint256 public constant minAmountPerTransaction = 10 ** 18; // 1 token minimum
-
     function setUp() public {
         vm.startPrank(paymentTokenProvider);
         // set up currency
@@ -94,7 +92,6 @@ contract TokenSwapTest is Test {
             owner,
             payable(receiver),
             holder,
-            minAmountPerTransaction,
             price,
             paymentToken,
             token
@@ -123,7 +120,6 @@ contract TokenSwapTest is Test {
                 original.owner,
                 original.receiver,
                 original.holder,
-                original.minAmountPerTransaction,
                 original.tokenPrice,
                 original.currency,
                 original.token
@@ -142,7 +138,6 @@ contract TokenSwapTest is Test {
                 address(this),
                 payable(receiver),
                 holder,
-                minAmountPerTransaction,
                 price,
                 paymentToken,
                 token
@@ -152,7 +147,6 @@ contract TokenSwapTest is Test {
         // owner and all settings are 0
         assertTrue(_logic.owner() == address(0), "owner is not 0");
         assertTrue(_logic.receiver() == address(0));
-        assertTrue(_logic.minAmountPerTransaction() == 0);
         assertTrue(_logic.tokenPrice() == 0);
         assertTrue(address(_logic.currency()) == address(0));
         assertTrue(address(_logic.token()) == address(0));
@@ -164,7 +158,6 @@ contract TokenSwapTest is Test {
             address(this),
             payable(receiver),
             holder,
-            minAmountPerTransaction,
             price,
             paymentToken,
             token
@@ -172,7 +165,6 @@ contract TokenSwapTest is Test {
         TokenSwap _tokenSwap = TokenSwap(factory.createTokenSwapClone(0, trustedForwarder, arguments));
         assertTrue(_tokenSwap.owner() == address(this));
         assertTrue(_tokenSwap.receiver() == receiver);
-        assertTrue(_tokenSwap.minAmountPerTransaction() == minAmountPerTransaction);
         assertTrue(_tokenSwap.tokenPrice() == price);
         assertTrue(_tokenSwap.currency() == paymentToken);
         assertTrue(_tokenSwap.token() == token);
@@ -188,7 +180,6 @@ contract TokenSwapTest is Test {
             address(this),
             payable(receiver),
             holder,
-            minAmountPerTransaction,
             price,
             paymentToken,
             token
@@ -213,12 +204,6 @@ contract TokenSwapTest is Test {
         tempArgs = cloneTokenSwapInitializerArguments(arguments);
         tempArgs.holder = address(0);
         vm.expectRevert("holder can not be zero address");
-        factory.createTokenSwapClone(0, trustedForwarder, tempArgs);
-
-        // minAmountPerTransaction 0
-        tempArgs = cloneTokenSwapInitializerArguments(arguments);
-        tempArgs.minAmountPerTransaction = 0;
-        vm.expectRevert("_minAmountPerTransaction needs to be larger than zero");
         factory.createTokenSwapClone(0, trustedForwarder, tempArgs);
 
         // price 0
@@ -279,7 +264,6 @@ contract TokenSwapTest is Test {
             address(this),
             payable(receiver),
             holder,
-            1,
             _price,
             maliciousPaymentToken,
             _token
@@ -351,7 +335,6 @@ contract TokenSwapTest is Test {
             address(this),
             payable(receiver),
             holder,
-            1,
             _price,
             maliciousPaymentToken,
             _token
@@ -378,7 +361,7 @@ contract TokenSwapTest is Test {
     }
 
     function testBuyHappyCase(uint256 tokenBuyAmount) public {
-        vm.assume(tokenBuyAmount >= tokenSwap.minAmountPerTransaction());
+        vm.assume(tokenBuyAmount >= 10 ** 18);
         vm.assume(tokenBuyAmount <= tokenAmount);
         uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * tokenSwap.tokenPrice(), 10 ** 18);
         vm.assume(costInPaymentToken <= paymentToken.balanceOf(buyer));
@@ -413,9 +396,9 @@ contract TokenSwapTest is Test {
     }
 
     function testBuyAndSellHappyCase(uint256 tokenSellAmount, uint256 tokenBuyAmount) public {
-        vm.assume(tokenSellAmount >= tokenSwap.minAmountPerTransaction());
+        vm.assume(tokenSellAmount >= 10 ** 18);
         vm.assume(tokenSellAmount <= UINT256_MAX / 10 ** 20); // to avoid overflow during calculations
-        vm.assume(tokenBuyAmount >= tokenSwap.minAmountPerTransaction());
+        vm.assume(tokenBuyAmount >= 10 ** 18);
         vm.assume(tokenBuyAmount <= tokenSellAmount);
 
         // Mint tokens to seller for the sell transaction
@@ -521,7 +504,7 @@ contract TokenSwapTest is Test {
     }
 
     function testBuyWithMaxCurrencyAmount(uint256 tokenBuyAmount, uint256 maxCurrencyAmount) public {
-        vm.assume(tokenBuyAmount >= tokenSwap.minAmountPerTransaction());
+        vm.assume(tokenBuyAmount >= 10 ** 18);
         vm.assume(tokenBuyAmount <= tokenAmount);
         uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * tokenSwap.tokenPrice(), 10 ** 18);
         vm.assume(costInPaymentToken <= paymentToken.balanceOf(buyer));
@@ -560,7 +543,7 @@ contract TokenSwapTest is Test {
         vm.prank(buyer);
         tokenSwap.buy(tokenAmount / 2, type(uint256).max, buyer);
 
-        vm.assume(tokenSellAmount >= tokenSwap.minAmountPerTransaction());
+        vm.assume(tokenSellAmount >= 10 ** 18);
         vm.assume(tokenSellAmount <= token.balanceOf(buyer));
         uint256 payoutInPaymentToken = (tokenSellAmount * tokenSwap.tokenPrice()) / (10 ** 18);
 
@@ -664,32 +647,9 @@ contract TokenSwapTest is Test {
         );
     }
 
-    function testBuyTooLittle() public {
-        uint256 tokenBuyAmount = minAmountPerTransaction / 2;
-
-        vm.prank(buyer);
-        vm.expectRevert("Transaction amount needs to be at least minAmount");
-        tokenSwap.buy(tokenBuyAmount, type(uint256).max, buyer);
-    }
-
-    function testSellTooLittle() public {
-        // First buy some tokens
-        vm.prank(buyer);
-        tokenSwap.buy(tokenAmount / 2, type(uint256).max, buyer);
-
-        uint256 tokenSellAmount = minAmountPerTransaction / 2;
-
-        vm.prank(buyer);
-        token.approve(address(tokenSwap), tokenSellAmount);
-
-        vm.prank(buyer);
-        vm.expectRevert("Transaction amount needs to be at least minAmount");
-        tokenSwap.sell(tokenSellAmount, 0, buyer);
-    }
-
     function testBuy() public {
         vm.prank(buyer);
-        tokenSwap.buy(minAmountPerTransaction, type(uint256).max, buyer);
+        tokenSwap.buy(10 ** 18, type(uint256).max, buyer);
     }
 
     function testBuyFailsAfterHolderRemovesAllowance() public {
@@ -700,7 +660,7 @@ contract TokenSwapTest is Test {
         // Attempt to buy should fail due to insufficient allowance
         vm.prank(buyer);
         vm.expectRevert("ERC20: insufficient allowance");
-        tokenSwap.buy(minAmountPerTransaction, type(uint256).max, buyer);
+        tokenSwap.buy(10 ** 18, type(uint256).max, buyer);
     }
 
     function testSell() public {
@@ -709,15 +669,15 @@ contract TokenSwapTest is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, admin);
         vm.prank(admin);
-        token.mint(buyer, minAmountPerTransaction);
+        token.mint(buyer, 10 ** 18);
 
         // Buyer approves tokenSwap to transfer their tokens
         vm.prank(buyer);
-        token.approve(address(tokenSwap), minAmountPerTransaction);
+        token.approve(address(tokenSwap), 10 ** 18);
 
         // Buyer sells tokens
         vm.prank(buyer);
-        tokenSwap.sell(minAmountPerTransaction, 0, buyer);
+        tokenSwap.sell(10 ** 18, 0, buyer);
     }
 
     function testSellFailsAfterHolderRemovesAllowance() public {
@@ -726,7 +686,7 @@ contract TokenSwapTest is Test {
         vm.prank(admin);
         token.grantRole(roleMintAllower, admin);
         vm.prank(admin);
-        token.mint(buyer, minAmountPerTransaction);
+        token.mint(buyer, 10 ** 18);
 
         // Holder removes their payment token allowance to tokenSwap
         vm.prank(holder);
@@ -734,12 +694,12 @@ contract TokenSwapTest is Test {
 
         // Buyer approves tokenSwap to transfer their tokens
         vm.prank(buyer);
-        token.approve(address(tokenSwap), minAmountPerTransaction);
+        token.approve(address(tokenSwap), 10 ** 18);
 
         // Attempt to sell should fail due to holder's insufficient payment token allowance
         vm.prank(buyer);
         vm.expectRevert("ERC20: insufficient allowance");
-        tokenSwap.sell(minAmountPerTransaction, 0, buyer);
+        tokenSwap.sell(10 ** 18, 0, buyer);
     }
 
     function testBuyWhilePaused() public {
@@ -747,7 +707,7 @@ contract TokenSwapTest is Test {
         tokenSwap.pause();
         vm.prank(buyer);
         vm.expectRevert("Pausable: paused");
-        tokenSwap.buy(minAmountPerTransaction, type(uint256).max, buyer);
+        tokenSwap.buy(10 ** 18, type(uint256).max, buyer);
     }
 
     function testSellWhilePaused() public {
@@ -759,11 +719,11 @@ contract TokenSwapTest is Test {
         tokenSwap.pause();
 
         vm.prank(buyer);
-        token.approve(address(tokenSwap), minAmountPerTransaction);
+        token.approve(address(tokenSwap), 10 ** 18);
 
         vm.prank(buyer);
         vm.expectRevert("Pausable: paused");
-        tokenSwap.sell(minAmountPerTransaction, 0, buyer);
+        tokenSwap.sell(10 ** 18, 0, buyer);
     }
 
     function testUpdateReceiverNotPaused() public {
@@ -785,28 +745,6 @@ contract TokenSwapTest is Test {
         vm.prank(owner);
         vm.expectRevert("receiver can not be zero address");
         tokenSwap.setReceiver(address(0));
-    }
-
-    function testUpdateMinAmountPerTransactionNotPaused() public {
-        vm.prank(owner);
-        vm.expectRevert("Pausable: not paused");
-        tokenSwap.setMinAmountPerTransaction(100);
-    }
-
-    function testUpdateMinAmountPerTransactionPaused(uint256 newMinAmountPerTransaction) public {
-        vm.assume(newMinAmountPerTransaction > 0);
-        assertTrue(tokenSwap.minAmountPerTransaction() == minAmountPerTransaction);
-        vm.prank(owner);
-        tokenSwap.pause();
-        vm.prank(owner);
-        vm.expectEmit(true, true, true, true, address(tokenSwap));
-        emit MinAmountPerTransactionChanged(newMinAmountPerTransaction);
-        tokenSwap.setMinAmountPerTransaction(newMinAmountPerTransaction);
-        assertTrue(tokenSwap.minAmountPerTransaction() == newMinAmountPerTransaction);
-
-        vm.expectRevert("_minAmountPerTransaction needs to be larger than zero");
-        vm.prank(owner);
-        tokenSwap.setMinAmountPerTransaction(0);
     }
 
     function testUpdateCurrencyAndPriceNotPaused() public {
@@ -928,8 +866,6 @@ contract TokenSwapTest is Test {
         vm.prank(owner);
         tokenSwap.setCurrencyAndTokenPrice(newPaymentToken, _price);
         vm.prank(owner);
-        tokenSwap.setMinAmountPerTransaction(1);
-        vm.prank(owner);
         tokenSwap.unpause();
 
         // set fees to 0
@@ -985,8 +921,6 @@ contract TokenSwapTest is Test {
         tokenSwap.pause();
         vm.prank(owner);
         tokenSwap.setCurrencyAndTokenPrice(newPaymentToken, _price);
-        vm.prank(owner);
-        tokenSwap.setMinAmountPerTransaction(1);
         vm.prank(owner);
         tokenSwap.unpause();
 
@@ -1060,11 +994,11 @@ contract TokenSwapTest is Test {
 
         // Try to sell tokens back
         vm.prank(buyer);
-        token.approve(address(tokenSwap), minAmountPerTransaction);
+        token.approve(address(tokenSwap), 10 ** 18);
 
         vm.prank(buyer);
         vm.expectRevert("ERC20: transfer amount exceeds balance");
-        tokenSwap.sell(minAmountPerTransaction, 0, buyer);
+        tokenSwap.sell(10 ** 18, 0, buyer);
     }
 
     function testBuyWithoutApproval() public {
@@ -1077,7 +1011,7 @@ contract TokenSwapTest is Test {
         // Try to buy without approval
         vm.prank(newBuyer);
         vm.expectRevert("ERC20: insufficient allowance");
-        tokenSwap.buy(minAmountPerTransaction, type(uint256).max, newBuyer);
+        tokenSwap.buy(10 ** 18, type(uint256).max, newBuyer);
     }
 
     function testSellWithoutApproval() public {
@@ -1085,12 +1019,12 @@ contract TokenSwapTest is Test {
 
         // First, buy tokens for new seller
         vm.prank(buyer);
-        tokenSwap.buy(minAmountPerTransaction, type(uint256).max, newSeller);
+        tokenSwap.buy(10 ** 18, type(uint256).max, newSeller);
 
         // Try to sell without approval
         vm.prank(newSeller);
         vm.expectRevert("ERC20: insufficient allowance");
-        tokenSwap.sell(minAmountPerTransaction, 0, newSeller);
+        tokenSwap.sell(10 ** 18, 0, newSeller);
     }
 
     function testComplexBuyAndSellScenario() public {

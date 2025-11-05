@@ -35,7 +35,6 @@ contract TokenSwapCloneFactoryTest is Test {
     address public constant exampleTrustedForwarder = address(52);
     address public constant exampleOwner = address(53);
     address public constant exampleReceiver = address(54);
-    uint256 public constant exampleMinAmountPerTransaction = 1;
     uint256 public constant exampleTokenPrice = 2;
     IERC20 public constant exampleCurrency = IERC20(address(1));
     Token exampleToken;
@@ -116,7 +115,6 @@ contract TokenSwapCloneFactoryTest is Test {
             exampleOwner,
             exampleReceiver,
             exampleHolder,
-            exampleMinAmountPerTransaction,
             _tokenPrice,
             _currency,
             _token
@@ -138,13 +136,11 @@ contract TokenSwapCloneFactoryTest is Test {
         bytes32 _rawSalt,
         address _trustedForwarder,
         address _owner,
-        address _receiver,
-        uint256 _minAmountPerTransaction
+        address _receiver
     ) public {
         vm.assume(_trustedForwarder != address(0));
         vm.assume(_owner != address(0));
         vm.assume(_receiver != address(0));
-        vm.assume(_minAmountPerTransaction > 0);
 
         // create new clone factory so we can use the local forwarder
         tokenSwapImplementation = new TokenSwap(_trustedForwarder);
@@ -154,7 +150,6 @@ contract TokenSwapCloneFactoryTest is Test {
             _owner,
             _receiver,
             exampleHolder,
-            _minAmountPerTransaction,
             exampleTokenPrice,
             exampleCurrency,
             exampleToken
@@ -176,12 +171,12 @@ contract TokenSwapCloneFactoryTest is Test {
         address _trustedForwarder,
         address _owner,
         address _receiver,
-        uint256 _minAmountPerTransaction
+        uint256 _tokenPrice
     ) public {
         vm.assume(_trustedForwarder != address(0));
         vm.assume(_owner != address(0));
         vm.assume(_receiver != address(0));
-        vm.assume(_minAmountPerTransaction > 1);
+        vm.assume(_tokenPrice > 1);
 
         // create new clone factory so we can use the local forwarder
         tokenSwapImplementation = new TokenSwap(_trustedForwarder);
@@ -191,15 +186,14 @@ contract TokenSwapCloneFactoryTest is Test {
             _owner,
             _receiver,
             exampleHolder,
-            _minAmountPerTransaction,
-            exampleTokenPrice,
+            _tokenPrice,
             exampleCurrency,
             exampleToken
         );
 
         address expected1 = tokenSwapFactory.predictCloneAddress(_rawSalt, _trustedForwarder, arguments);
 
-        arguments.minAmountPerTransaction = _minAmountPerTransaction - 1;
+        arguments.tokenPrice = _tokenPrice - 1;
 
         address expected2 = tokenSwapFactory.predictCloneAddress(_rawSalt, _trustedForwarder, arguments);
 
@@ -210,7 +204,6 @@ contract TokenSwapCloneFactoryTest is Test {
         bytes32 _rawSalt,
         address _owner,
         address _receiver,
-        uint256 _minAmountPerTransaction,
         uint256 _tokenPrice,
         IERC20 _currency,
         address _holder
@@ -218,7 +211,6 @@ contract TokenSwapCloneFactoryTest is Test {
         vm.assume(_owner != address(0));
         vm.assume(address(_currency) != address(0));
         vm.assume(_receiver != address(0));
-        vm.assume(_minAmountPerTransaction > 0);
         vm.assume(_tokenPrice > 0);
         vm.assume(_holder != address(0));
 
@@ -242,7 +234,6 @@ contract TokenSwapCloneFactoryTest is Test {
             _owner,
             _receiver,
             _holder,
-            _minAmountPerTransaction,
             _tokenPrice,
             _currency,
             _token
@@ -261,13 +252,11 @@ contract TokenSwapCloneFactoryTest is Test {
         address _trustedForwarder,
         address _owner,
         address _receiver,
-        uint256 _minAmountPerTransaction,
         address _holder
     ) public {
         vm.assume(_trustedForwarder != address(0));
         vm.assume(_owner != address(0));
         vm.assume(_receiver != address(0));
-        vm.assume(_minAmountPerTransaction > 0);
         vm.assume(_holder != address(0));
 
         // create new clone factory so we can use the local forwarder
@@ -278,7 +267,6 @@ contract TokenSwapCloneFactoryTest is Test {
             _owner,
             _receiver,
             _holder,
-            _minAmountPerTransaction,
             exampleTokenPrice,
             exampleCurrency,
             exampleToken
@@ -289,7 +277,6 @@ contract TokenSwapCloneFactoryTest is Test {
         assertTrue(tokenSwap.isTrustedForwarder(_trustedForwarder), "trustedForwarder not set");
         assertEq(tokenSwap.owner(), _owner, "owner not set");
         assertEq(tokenSwap.receiver(), _receiver, "receiver not set");
-        assertEq(tokenSwap.minAmountPerTransaction(), _minAmountPerTransaction, "minAmountPerTransaction not set");
         assertEq(tokenSwap.holder(), _holder, "holder not set");
     }
 
@@ -321,7 +308,6 @@ contract TokenSwapCloneFactoryTest is Test {
             exampleOwner,
             exampleReceiver,
             exampleHolder,
-            exampleMinAmountPerTransaction,
             _tokenPrice,
             _currency,
             _token
@@ -346,7 +332,6 @@ contract TokenSwapCloneFactoryTest is Test {
             exampleOwner,
             exampleReceiver,
             exampleHolder,
-            exampleMinAmountPerTransaction,
             exampleTokenPrice,
             IERC20(someCurrency),
             exampleToken
@@ -373,7 +358,6 @@ contract TokenSwapCloneFactoryTest is Test {
             _admin,
             _admin,
             exampleHolder,
-            exampleMinAmountPerTransaction,
             exampleTokenPrice,
             exampleCurrency,
             exampleToken
