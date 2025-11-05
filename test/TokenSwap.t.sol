@@ -412,56 +412,113 @@ contract TokenSwapTest is Test {
         );
     }
 
-    // function testBuyAndSellHappyCase(uint256 tokenSellAmount, uint256 tokenBuyAmount) public {
-    //     vm.assume(tokenSellAmount <= UINT256_MAX / 10);
-    //     vm.assume(tokenSellAmount >= tokenSwap.minAmountPerTransaction());
-    //     vm.assume(tokenBuyAmount >= tokenSwap.minAmountPerTransaction());
-    //     vm.assume(tokenBuyAmount <= tokenSellAmount);
+    function testBuyAndSellHappyCase(uint256 tokenSellAmount, uint256 tokenBuyAmount) public {
+        vm.assume(tokenSellAmount >= tokenSwap.minAmountPerTransaction());
+        vm.assume(tokenSellAmount <= UINT256_MAX / 10 ** 20); // to avoid overflow during calculations
+        vm.assume(tokenBuyAmount >= tokenSwap.minAmountPerTransaction());
+        vm.assume(tokenBuyAmount <= tokenSellAmount);
 
-    //     // mint tokens to holder
-    //     bytes32 roleMintAllower = _token.MINTALLOWER_ROLE();
-    //     vm.prank(admin);
-    //     _token.grantRole(roleMintAllower, admin);
-    //     vm.prank(admin);
-    //     _token.mint(holder, _tokenAmount);
+        // Mint tokens to seller for the sell transaction
+        address seller2 = vm.addr(20);
+        console.log("seller2 :", seller2);
+        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
+        vm.prank(admin);
+        token.grantRole(roleMintAllower, admin);
+        vm.prank(admin);
+        token.mint(seller2, tokenSellAmount);
 
-    //     uint256 payoutInPaymentToken = (tokenSellAmount * tokenSwap.tokenPrice()) / (10 ** 18);
+        // Change receiver to holder so holder receives tokens when someone sells
+        vm.prank(owner);
+        tokenSwap.pause();
+        vm.prank(owner);
+        tokenSwap.setReceiver(holder);
+        vm.prank(owner);
+        tokenSwap.unpause();
 
-    //     uint256 holderPaymentTokenBalanceBefore = paymentToken.balanceOf(holder);
-    //     uint256 buyerTokenBalanceBefore = token.balanceOf(buyer);
-    //     uint256 receiverTokenBalanceBefore = token.balanceOf(receiver);
+        // Step 1: Seller sells tokens to holder
+        // Seller gives tokens, holder (as receiver) receives tokens, holder (as currency provider) pays currency
+        uint256 sellPayoutInPaymentToken = (tokenSellAmount * tokenSwap.tokenPrice()) / (10 ** 18);
+        uint256 sellExpectedFee = token.feeSettings().crowdinvestingFee(sellPayoutInPaymentToken, address(token));
+        uint256 sellExpectedPayout = sellPayoutInPaymentToken - sellExpectedFee;
 
-    //     uint256 expectedFee = token.feeSettings().crowdinvestingFee(payoutInPaymentToken, address(token));
-    //     uint256 expectedPayout = payoutInPaymentToken - expectedFee;
+        // Give holder enough payment tokens to pay the seller
+        vm.prank(paymentTokenProvider);
+        paymentToken.mint(holder, sellPayoutInPaymentToken);
 
-    //     // seller needs to approve tokenSwap to transfer their tokens
-    //     vm.prank(buyer);
-    //     token.approve(address(tokenSwap), tokenSellAmount);
+        uint256 holderPaymentTokenBalanceBefore = paymentToken.balanceOf(holder);
+        uint256 holderTokenBalanceBefore = token.balanceOf(holder);
 
-    //     uint256 buyerCurrencyAmountBefore = paymentToken.balanceOf(buyer);
+        // Grant unlimited allowances
+        // Seller2 approves tokenSwap to transfer their tokens
+        vm.prank(seller2);
+        token.approve(address(tokenSwap), type(uint256).max);
 
-    //     vm.prank(buyer);
-    //     vm.expectEmit(true, true, true, true, address(tokenSwap));
-    //     emit TokensSold(buyer, tokenSellAmount, payoutInPaymentToken);
-    //     tokenSwap.sell(tokenSellAmount, 0, buyer);
+        // Holder approves tokenSwap to spend their payment tokens (for sell transactions)
+        vm.prank(holder);
+        paymentToken.approve(address(tokenSwap), type(uint256).max);
 
-    //     assertTrue(
-    //         token.balanceOf(buyer) == buyerTokenBalanceBefore - tokenSellAmount,
-    //         "buyer token balance should decrease by tokenSellAmount"
-    //     );
-    //     assertTrue(
-    //         paymentToken.balanceOf(buyer) == buyerCurrencyAmountBefore + expectedPayout,
-    //         "buyer payment token balance should increase by expectedPayout"
-    //     );
-    //     assertTrue(
-    //         token.balanceOf(receiver) == receiverTokenBalanceBefore + tokenSellAmount,
-    //         "receiver token balance should increase by tokenSellAmount"
-    //     );
-    //     assertTrue(
-    //         paymentToken.balanceOf(holder) == holderPaymentTokenBalanceBefore - payoutInPaymentToken,
-    //         "holder payment token balance should decrease by payoutInPaymentToken"
-    //     );
-    // }
+        console.log("selling now");
+
+        vm.prank(seller2);
+        tokenSwap.sell(tokenSellAmount, 0, seller2);
+
+        console.log("sold");
+
+        // Verify sell: holder now has tokens, seller has currency
+        assertTrue(
+            token.balanceOf(holder) == holderTokenBalanceBefore + tokenSellAmount,
+            "holder token balance should increase by tokenSellAmount after sell"
+        );
+        assertTrue(
+            paymentToken.balanceOf(holder) == holderPaymentTokenBalanceBefore - sellPayoutInPaymentToken,
+            "holder payment token balance should decrease by sellPayoutInPaymentToken after sell"
+        );
+        assertTrue(
+            paymentToken.balanceOf(seller2) == sellExpectedPayout,
+            "seller should receive expectedPayout in payment tokens"
+        );
+
+        // Step 2: Different buyer buys tokens from holder
+        address buyer2 = vm.addr(21);
+
+        // Give buyer2 payment tokens
+        uint256 buyCostInPaymentToken = Math.ceilDiv(tokenBuyAmount * tokenSwap.tokenPrice(), 10 ** 18);
+        vm.prank(paymentTokenProvider);
+        paymentToken.mint(buyer2, buyCostInPaymentToken);
+
+        // Buyer2 grants unlimited payment token allowance
+        vm.prank(buyer2);
+        paymentToken.approve(address(tokenSwap), type(uint256).max);
+
+        // Holder grants unlimited token allowance
+        vm.prank(holder);
+        token.approve(address(tokenSwap), type(uint256).max);
+
+        uint256 buyExpectedFee = token.feeSettings().crowdinvestingFee(buyCostInPaymentToken, address(token));
+
+        uint256 holderTokenBalanceBeforeBuy = token.balanceOf(holder);
+        uint256 holderPaymentTokenBalanceBeforeBuy = paymentToken.balanceOf(holder);
+
+        console.log("buying now");
+        vm.prank(buyer2);
+        tokenSwap.buy(tokenBuyAmount, type(uint256).max, buyer2);
+        console.log("bought");
+
+        // Verify buy: buyer2 has tokens, holder has less tokens and more currency
+        assertTrue(
+            token.balanceOf(buyer2) == tokenBuyAmount,
+            "buyer2 token balance should equal tokenBuyAmount after buy"
+        );
+        assertTrue(
+            token.balanceOf(holder) == holderTokenBalanceBeforeBuy - tokenBuyAmount,
+            "holder token balance should decrease by tokenBuyAmount after buy"
+        );
+        assertTrue(
+            paymentToken.balanceOf(holder) ==
+                holderPaymentTokenBalanceBeforeBuy + buyCostInPaymentToken - buyExpectedFee,
+            "holder payment token balance should increase by cost minus fee after buy"
+        );
+    }
 
     function testBuyWithMaxCurrencyAmount(uint256 tokenBuyAmount, uint256 maxCurrencyAmount) public {
         vm.assume(tokenBuyAmount >= tokenSwap.minAmountPerTransaction());
