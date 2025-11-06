@@ -15,6 +15,7 @@ Let's assume that there will be one (1) platform, many (**X**) companies and man
 | Vesting | X | company | allows company to vest tokens over a period of time |
 | Crowdinvesting | X | company | most companies will want crowdinvesting funds from all eligible investors |
 | PrivateOffer | >X | --- | most companies will extend special investment offers to specific investors, or receive these from investors |
+| TokenSwap | >X | investor | enables secondary market trading where investors can buy or sell existing tokens from each other at a preset price |
 
 # Example work flow: creating company and raising funds
 
@@ -57,6 +58,25 @@ Founder and investor have to agree on the deal in 3 ways before the contract can
 - investor grants payment allowance to contract's address
 
 Once these steps have been completed, the platform executes the deal by deploying the contract. Again, all ethereum transaction fees are paid by the platform.
+
+### Secondary market trading
+
+After tokens have been issued through primary market offerings (Crowdinvesting or PrivateOffer), investors may want to trade these tokens between each other. The TokenSwap contract enables this secondary market functionality.
+
+**Key differences from primary market contracts:**
+
+- **Primary market** (Crowdinvesting, PrivateOffer): Mints new tokens directly from the company to investors
+- **Secondary market** (TokenSwap): Transfers existing tokens between investors
+
+**Use cases:**
+
+1. **Investor as seller**: An investor who owns tokens can create a TokenSwap contract offering to sell their tokens at a specific price. They grant the contract an allowance to transfer their tokens. Any eligible buyer can then purchase tokens through the contract.
+
+2. **Investor as buyer**: An investor wanting to buy tokens can create a TokenSwap contract offering to buy at a specific price. They grant the contract an allowance in payment currency. Any token holder can then sell their tokens through the contract.
+
+The contract can be used repeatedly - it acts as a standing buy or sell order that can be filled multiple times until the holder revokes their allowance or the contract is paused by its owner.
+
+Unlike PrivateOffer and Crowdinvesting contracts, TokenSwap does not mint new tokens. Instead, it facilitates peer-to-peer transfers of already-issued tokens, creating liquidity in the secondary market.
 
 # Services
 

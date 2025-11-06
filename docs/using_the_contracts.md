@@ -9,10 +9,11 @@ Tokenize.it has already deployed these contracts:
 3. [TokenFactory](../contracts/TokenProxyFactory.sol)
 4. [PrivateOfferFactory](../contracts/PrivateOfferFactory.sol)
 5. [CrowdinvestingFactory](../contracts/CrowdinvestingCloneFactory.sol)
-6. [VestingFactory](../contracts/VestingCloneFactory.sol)
-7. [PriceLinearFactory](../contracts/PriceLinearCloneFactory.sol) or other dynamic pricing factories
-8. [allowList](../contracts/AllowList.sol)
-9. [feeSettings](../contracts/FeeSettings.sol)
+6. [TokenSwapFactory](../contracts/factories/TokenSwapCloneFactory.sol)
+7. [VestingFactory](../contracts/VestingCloneFactory.sol)
+8. [PriceLinearFactory](../contracts/PriceLinearCloneFactory.sol) or other dynamic pricing factories
+9. [allowList](../contracts/AllowList.sol)
+10. [feeSettings](../contracts/FeeSettings.sol)
 
 These will be used for the next steps. The factories will not be explained in detail here, but can be found in the [contracts](../contracts) folder. They provide functions to calculate the future address of a contract, and deploy it using [CREATE2](https://docs.openzeppelin.com/cli/2.8/deploying-with-create2).
 
@@ -135,6 +136,59 @@ An investor can buy tokens by calling the `buy(uint256 _tokenAmount, uint256 _ma
 The investor needs to give a sufficient allowance in the currency contract to the Crowdinvesting contract for the deal to be successful.
 
 The owner of the Crowdinvesting contract can pause the contract by calling `pause()`, which stops further buys. When paused, parameters of the fundraising can be changed. Each parameter change (re-)starts a cool down period of 24 hours. Only after this cool down period has passed can the fundraising be unpaused by calling `unpause()`. This is to ensure an investor can know the conditions that currently apply before investing (e.g. frontrunning a buy with a price increase is not possible).
+
+## Secondary Market Trading
+
+### TokenSwap
+
+The [TokenSwap contract](../contracts/TokenSwap.sol) enables peer-to-peer trading of existing tokens on the secondary market. Unlike PrivateOffer and Crowdinvesting which mint new tokens from the company, TokenSwap facilitates the transfer of already-issued tokens between investors.
+
+Deploy the contract using the factory:
+
+```solidity
+factory.createTokenSwapClone(
+    bytes32 _rawSalt,
+    address _trustedForwarder,
+    TokenSwapInitializerArguments memory _arguments
+)
+```
+
+Where `TokenSwapInitializerArguments` contains:
+- `owner`: Address that can pause/unpause and update contract parameters
+- `receiver`: Address that receives currency (sell orders) or tokens (buy orders)
+- `holder`: Address holding tokens (sell orders) or currency (buy orders)
+- `tokenPrice`: Price per token in currency, denominated in [bits](https://docs.openzeppelin.com/contracts/2.x/crowdsales#crowdsale-rate). See [price explanation](price.md)
+- `currency`: ERC20 token used for payment (must be on allowlist with TRUSTED_CURRENCY attribute)
+- `token`: The company token being traded
+
+**Using TokenSwap as a sell order:**
+
+1. Token holder deploys the contract with themselves as `holder` and their desired `receiver` for payments
+2. Token holder grants the contract an allowance to transfer their tokens: `token.approve(tokenSwapAddress, amount)`
+3. Any eligible buyer can purchase tokens by calling `buy(tokenAmount, maxCurrencyAmount, tokenReceiver)`
+4. The buyer must first grant sufficient allowance in the payment currency
+5. The contract can be used repeatedly until the holder revokes their token allowance
+
+**Using TokenSwap as a buy order:**
+
+1. Prospective buyer deploys the contract with themselves as `holder` and their desired `receiver` for tokens
+2. Buyer grants the contract an allowance in payment currency: `currency.approve(tokenSwapAddress, amount)`
+3. Any token holder can sell tokens by calling `sell(tokenAmount, minCurrencyAmount, currencyReceiver)`
+4. The seller must first grant sufficient token allowance to the contract
+5. The contract can be used repeatedly until the buyer revokes their currency allowance
+
+**Updating parameters:**
+
+The owner can pause the contract and update:
+- Currency and price: `setCurrencyAndTokenPrice(newCurrency, newPrice)`
+- Receiver: `setReceiver(newReceiver)`
+- Holder: `setHolder(newHolder)`
+
+After making changes, the owner must unpause the contract by calling `unpause()`.
+
+**Fees:**
+
+TokenSwap charges crowdinvesting fees according to the FeeSettings contract, similar to primary market offerings.
 
 # Employee participation with or without vesting
 
