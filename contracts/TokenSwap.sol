@@ -147,14 +147,12 @@ contract TokenSwap is
 
         require(currencyAmount <= _maxCurrencyAmount, "Purchase more expensive than _maxCurrencyAmount");
 
-        IERC20 _currency = currency;
-
         (uint256 fee, address feeCollector) = _getFeeAndFeeReceiver(currencyAmount);
         if (fee != 0) {
-            _currency.safeTransferFrom(_msgSender(), feeCollector, fee);
+            currency.safeTransferFrom(_msgSender(), feeCollector, fee);
         }
 
-        _currency.safeTransferFrom(_msgSender(), receiver, currencyAmount - fee);
+        currency.safeTransferFrom(_msgSender(), receiver, currencyAmount - fee);
         token.transferFrom(holder, _tokenReceiver, _tokenAmount);
 
         emit TokensBought(_msgSender(), _tokenAmount, currencyAmount);
@@ -163,7 +161,7 @@ contract TokenSwap is
     /**
      * @notice Sell `amount` tokens and transfer them to `_tokenReceiver`.
      * @param _tokenAmount amount of tokens to sell, in bits (smallest subunit of token)
-     * @param _minCurrencyAmount minimum amount of currency to received, in bits (smallest subunit of currency)
+     * @param _minCurrencyAmount minimum amount of currency to receive, in bits (smallest subunit of currency)
      * @param _currencyReceiver address the currency should be transferred to
      */
     function sell(
@@ -174,18 +172,16 @@ contract TokenSwap is
         // rounding down. Seller receives at most the exact price, protecting the holder.
         uint256 currencyAmount = (_tokenAmount * tokenPrice) / (10 ** token.decimals());
 
-        IERC20 _currency = currency;
-
         (uint256 fee, address feeCollector) = _getFeeAndFeeReceiver(currencyAmount);
         if (fee != 0) {
-            _currency.safeTransferFrom(holder, feeCollector, fee);
+            currency.safeTransferFrom(holder, feeCollector, fee);
         }
 
         // the payout after fees needs to be at least as high as the minimum currency amount
         require(currencyAmount - fee >= _minCurrencyAmount, "Payout too low");
 
         // pay out the currency after fees to the token seller's _currencyReceiver address
-        _currency.safeTransferFrom(holder, _currencyReceiver, currencyAmount - fee);
+        currency.safeTransferFrom(holder, _currencyReceiver, currencyAmount - fee);
 
         // get the tokens the caller just sold to us
         token.transferFrom(_msgSender(), receiver, _tokenAmount);
