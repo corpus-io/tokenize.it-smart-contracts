@@ -834,6 +834,14 @@ contract TokenSwapTest is Test {
         tokenSwap.setCurrencyAndTokenPrice(IERC20(someCurrency), 1);
     }
 
+    function testSetCurrencyAndTokenPriceRevertsWithZeroAddress() public {
+        vm.startPrank(owner);
+        tokenSwap.pause();
+        vm.expectRevert("currency can not be zero address");
+        tokenSwap.setCurrencyAndTokenPrice(IERC20(address(0)), 241929);
+        vm.stopPrank();
+    }
+
     function testBuyRoundsUp(uint256 _tokenBuyAmount, uint256 _price) public {
         vm.assume(_tokenBuyAmount > 0);
         vm.assume(_price > 0);
