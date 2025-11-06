@@ -123,16 +123,6 @@ contract TokenSwap is
         currency = _arguments.currency;
     }
 
-    /**
-     * Transfers the tokens to the buyer/seller.
-     * @param _from address that will send the tokens
-     * @param _to address that will receive the tokens
-     * @param _amount how many tokens to transfer, in bits (bit = smallest subunit of token)
-     */
-    function _checkAndDeliver(address _from, address _to, uint256 _amount) internal {
-        token.transferFrom(_from, _to, _amount);
-    }
-
     function _getFeeAndFeeReceiver(uint256 _currencyAmount) internal view returns (uint256, address) {
         IFeeSettingsV2 feeSettings = token.feeSettings();
         return (
@@ -165,7 +155,7 @@ contract TokenSwap is
         }
 
         _currency.safeTransferFrom(_msgSender(), receiver, currencyAmount - fee);
-        _checkAndDeliver(holder, _tokenReceiver, _tokenAmount);
+        token.transferFrom(holder, _tokenReceiver, _tokenAmount);
 
         emit TokensBought(_msgSender(), _tokenAmount, currencyAmount);
     }
@@ -198,7 +188,7 @@ contract TokenSwap is
         _currency.safeTransferFrom(holder, _currencyReceiver, currencyAmount - fee);
 
         // get the tokens the caller just sold to us
-        _checkAndDeliver(_msgSender(), receiver, _tokenAmount);
+        token.transferFrom(_msgSender(), receiver, _tokenAmount);
 
         emit TokensSold(_msgSender(), _tokenAmount, currencyAmount);
     }
