@@ -166,16 +166,16 @@ contract DeployPlatform is Script {
         );
         console.log("CrowdinvestingFactory deployed at: ", address(crowdinvestingCloneFactory));
 
-        deploy TokenSwap logic
+        // deploy TokenSwap logic
         console.log("Deploying TokenSwap contracts...");
         TokenSwap tokenSwapLogicImplementation = new TokenSwap(trustedForwarder);
         console.log("TokenSwap logic deployed at: ", address(tokenSwapLogicImplementation));
 
-        deploy TokenSwapFactory based on logic
+        // deploy TokenSwapFactory based on logic
         TokenSwapCloneFactory tokenSwapCloneFactory =  TokenSwapCloneFactory(address(0x314d4AD6a2C3310d45cE432f5119AF2e4f274852));
         console.log("TokenSwap factory deployed at: ", address(tokenSwapCloneFactory));
 
-        deploy TokenSwap (use correct StableCoin address and Token address based on chain), just to verify the contract
+        // deploy TokenSwap (use correct StableCoin address and Token address based on chain), just to verify the contract
         TokenSwapInitializerArguments memory arguments = TokenSwapInitializerArguments(
             vm.addr(3),
             vm.addr(2),
