@@ -1,6 +1,3 @@
-[profile.ci]
-fuzz-runs = 10_000
-
 [profile.default]
 via-ir = true # Enable the IR-based optimizer (yul)
 optimizer = true
