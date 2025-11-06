@@ -51,7 +51,10 @@ Furthermore, this contract can be paused by the owner to change the parameters. 
 
 The TokenSwap contract enables secondary market trading where investors can buy or sell existing tokens between each other. Unlike the primary market contracts (PrivateOffer and Crowdinvesting) which mint new tokens, TokenSwap facilitates peer-to-peer transfers of already-issued tokens.
 
+**Note:** This contract has been developed by simplifying Crowdinvesting and IS NOT AUDITED YET (2025-11-06). It is intended to be used for limited liquidity and limited time, thus limited risk. The idea is to decide whether to audit it or switch to Uniswap soon.
+
 **Key features:**
+
 - **No minting**: Transfers existing tokens rather than minting new ones
 - **Reusable**: Can be used multiple times as a standing buy or sell order
 - **Dual functionality**: Can act as either a buy order or sell order depending on who grants allowances
@@ -59,17 +62,20 @@ The TokenSwap contract enables secondary market trading where investors can buy 
 - **Fee collection**: Charges crowdinvesting fees according to FeeSettings, similar to primary market contracts
 
 **Setup:**
+
 - `holder`: The address holding tokens (for sell orders) or currency (for buy orders)
 - `receiver`: The address receiving payments (for sell orders) or tokens (for buy orders)
 - `tokenPrice`: Fixed price per token
 - `currency`: Payment token (must be on allowlist with TRUSTED_CURRENCY attribute)
 
 **As a sell order:**
+
 1. Token holder creates contract and grants it allowance to transfer their tokens
 2. Any eligible buyer can call `buy()` to purchase tokens at the preset price
 3. Tokens flow from holder to buyer, currency flows from buyer to receiver
 
 **As a buy order:**
+
 1. Prospective buyer creates contract and grants it allowance in payment currency
 2. Any token holder can call `sell()` to sell tokens at the preset price
 3. Tokens flow from seller to receiver, currency flows from holder to seller
