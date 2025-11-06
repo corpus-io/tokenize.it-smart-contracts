@@ -10,6 +10,7 @@ import "../contracts/factories/PrivateOfferFactory.sol";
 import "../contracts/factories/VestingCloneFactory.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/factories/CrowdinvestingCloneFactory.sol";
+import "../contracts/factories/TokenSwapCloneFactory.sol";
 import "@opengsn/contracts/src/forwarder/Forwarder.sol";
 
 contract DeployPlatform is Script {
@@ -164,6 +165,28 @@ contract DeployPlatform is Script {
             address(crowdinvestingImplementation)
         );
         console.log("CrowdinvestingFactory deployed at: ", address(crowdinvestingCloneFactory));
+
+        deploy TokenSwap logic
+        console.log("Deploying TokenSwap contracts...");
+        TokenSwap tokenSwapLogicImplementation = new TokenSwap(trustedForwarder);
+        console.log("TokenSwap logic deployed at: ", address(tokenSwapLogicImplementation));
+
+        deploy TokenSwapFactory based on logic
+        TokenSwapCloneFactory tokenSwapCloneFactory =  TokenSwapCloneFactory(address(0x314d4AD6a2C3310d45cE432f5119AF2e4f274852));
+        console.log("TokenSwap factory deployed at: ", address(tokenSwapCloneFactory));
+
+        deploy TokenSwap (use correct StableCoin address and Token address based on chain), just to verify the contract
+        TokenSwapInitializerArguments memory arguments = TokenSwapInitializerArguments(
+            vm.addr(3),
+            vm.addr(2),
+            vm.addr(1),
+            1,
+            IERC20(0x08210F9170F89Ab7658F0B5E3fF39b0E03C594D4), // StableCoin in Allowlist
+            Token(0xaCB976B126d3bD67454b7418E0EF24099D2EBAa0) // A Token
+        );
+
+        address tokenSwap = tokenSwapCloneFactory.createTokenSwapClone(bytes32("0x1"), trustedForwarder, arguments);
+        console.log("TokenSwap deployed at: ", tokenSwap);
 
         vm.stopBroadcast();
     }
