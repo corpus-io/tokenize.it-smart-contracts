@@ -134,14 +134,7 @@ contract TokenSwapTest is Test {
         // try to initialize
         vm.expectRevert("Initializable: contract is already initialized");
         _logic.initialize(
-            TokenSwapInitializerArguments(
-                address(this),
-                payable(receiver),
-                holder,
-                price,
-                paymentToken,
-                token
-            )
+            TokenSwapInitializerArguments(address(this), payable(receiver), holder, price, paymentToken, token)
         );
 
         // owner and all settings are 0
