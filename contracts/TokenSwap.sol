@@ -52,21 +52,23 @@ contract TokenSwap is
 
     /// address that receives the currency/tokens when tokens are bought/sold
     address public receiver;
+    /// holder. Tokens/currency will be transferred from this address.
+    address public holder;
 
     /// The price of a token, expressed as amount of bits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2*10^6 ).
     /// @dev units: [tokenPrice] = [currency_bits]/[token], so for above example: [tokenPrice] = [USDC_bits]/[TOK]
     uint256 public tokenPrice;
-
     /// currency used to pay for the token purchase. Must be ERC20, so ether can only be used as wrapped ether (WETH)
     IERC20 public currency;
     /// token to be transferred
     Token public token;
-    /// holder. Tokens/currency will be transferred from this address.
-    address public holder;
 
     /// @notice receiver has been changed to `newReceiver`
     /// @param newReceiver address that receives the payment (in currency/tokens) when tokens are bought/sold
     event ReceiverChanged(address indexed newReceiver);
+    /// @notice holder has been changed to `holder`
+    event HolderChanged(address holder);
+
     /// @notice Price and currency changed.
     /// @param newTokenPrice new price of a token, expressed as amount of bits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2*10^6 ).
     /// @param newCurrency new currency used to pay for the token purchase
@@ -86,9 +88,6 @@ contract TokenSwap is
      * @param currencyAmount Amount of currency received
      */
     event TokensSold(address indexed seller, uint256 tokenAmount, uint256 currencyAmount);
-
-    /// @notice holder has been changed to `holder`
-    event HolderChanged(address holder);
 
     /**
      * This constructor creates a logic contract that is used to clone new fundraising contracts.
