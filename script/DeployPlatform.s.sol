@@ -68,66 +68,66 @@ contract DeployPlatform is Script {
         /*
          * execution
          */
-        console.log("Deployer address: ", deployerAddress);
-        vm.startBroadcast(deployerPrivateKey);
+        // console.log("Deployer address: ", deployerAddress);
+        // vm.startBroadcast(deployerPrivateKey);
 
-        console.log("Deploying FeeSettingsCloneFactory contract...");
-        FeeSettings feeSettingsLogicContract = new FeeSettings(trustedForwarder);
-        FeeSettingsCloneFactory feeSettingsCloneFactory = new FeeSettingsCloneFactory(
-            address(feeSettingsLogicContract)
-        );
-        console.log("FeeSettingsCloneFactory deployed at: ", address(feeSettingsCloneFactory));
+        // console.log("Deploying FeeSettingsCloneFactory contract...");
+        // FeeSettings feeSettingsLogicContract = new FeeSettings(trustedForwarder);
+        // FeeSettingsCloneFactory feeSettingsCloneFactory = new FeeSettingsCloneFactory(
+        //     address(feeSettingsLogicContract)
+        // );
+        // console.log("FeeSettingsCloneFactory deployed at: ", address(feeSettingsCloneFactory));
 
-        console.log("Deploying FeeSettings contract...");
-        Fees memory fees = Fees(200, 600, 200, 0);
-        FeeSettings feeSettings = FeeSettings(
-            feeSettingsCloneFactory.createFeeSettingsClone(
-                bytes32(0),
-                trustedForwarder,
-                platformColdWallet,
-                fees,
-                platformColdWallet,
-                platformColdWallet,
-                platformColdWallet
-            )
-        );
-        console.log("FeeSettings deployed at: ", address(feeSettings));
+        // console.log("Deploying FeeSettings contract...");
+        // Fees memory fees = Fees(200, 600, 200, 0);
+        // FeeSettings feeSettings = FeeSettings(
+        //     feeSettingsCloneFactory.createFeeSettingsClone(
+        //         bytes32(0),
+        //         trustedForwarder,
+        //         platformColdWallet,
+        //         fees,
+        //         platformColdWallet,
+        //         platformColdWallet,
+        //         platformColdWallet
+        //     )
+        // );
+        // console.log("FeeSettings deployed at: ", address(feeSettings));
 
-        console.log("Deploying AllowListCloneFactory contract...");
-        AllowList allowListLogicContract = new AllowList(trustedForwarder);
-        AllowListCloneFactory allowListCloneFactory = new AllowListCloneFactory(address(allowListLogicContract));
-        console.log("AllowListCloneFactory deployed at: ", address(allowListCloneFactory));
+        // console.log("Deploying AllowListCloneFactory contract...");
+        // AllowList allowListLogicContract = new AllowList(trustedForwarder);
+        // AllowListCloneFactory allowListCloneFactory = new AllowListCloneFactory(address(allowListLogicContract));
+        // console.log("AllowListCloneFactory deployed at: ", address(allowListCloneFactory));
 
-        console.log("Deploying AllowList contract...");
+        // console.log("Deploying AllowList contract...");
 
-        uint256[] memory attributes = new uint256[](trustedCurrencies.length);
-        for (uint256 i = 0; i < trustedCurrencies.length; i++) {
-            attributes[i] = TRUSTED_CURRENCY;
-        }
-        AllowList allowList = AllowList(
-            allowListCloneFactory.createAllowListClone(
-                bytes32(0),
-                trustedForwarder,
-                platformColdWallet,
-                trustedCurrencies,
-                attributes
-            )
-        );
-        console.log("Allowlist deployed at: ", address(allowList));
+        // uint256[] memory attributes = new uint256[](trustedCurrencies.length);
+        // for (uint256 i = 0; i < trustedCurrencies.length; i++) {
+        //     attributes[i] = TRUSTED_CURRENCY;
+        // }
+        // AllowList allowList = AllowList(
+        //     allowListCloneFactory.createAllowListClone(
+        //         bytes32(0),
+        //         trustedForwarder,
+        //         platformColdWallet,
+        //         trustedCurrencies,
+        //         attributes
+        //     )
+        // );
+        // console.log("Allowlist deployed at: ", address(allowList));
 
-        console.log("Deploying VestingCloneFactory contract...");
-        Vesting vestingImplementation = Vesting(0xa740Dd991655b2887321C71D8Ac0c171a0C9E969);
-        VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
-        console.log("VestingCloneFactory deployed at: ", address(vestingCloneFactory));
+        // console.log("Deploying VestingCloneFactory contract...");
+        // Vesting vestingImplementation = Vesting(0xa740Dd991655b2887321C71D8Ac0c171a0C9E969);
+        // VestingCloneFactory vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
+        // console.log("VestingCloneFactory deployed at: ", address(vestingCloneFactory));
 
-        console.log("Deploying PrivateOfferFactory contract...");
-        PrivateOfferFactory privateOfferFactory = new PrivateOfferFactory(vestingCloneFactory);
-        console.log("PrivateOfferFactory deployed at: ", address(privateOfferFactory));
+        // console.log("Deploying PrivateOfferFactory contract...");
+        // PrivateOfferFactory privateOfferFactory = new PrivateOfferFactory(vestingCloneFactory);
+        // console.log("PrivateOfferFactory deployed at: ", address(privateOfferFactory));
 
-        console.log("Deploying TokenProxyFactory contract...");
-        Token tokenImplementation = new Token(trustedForwarder);
-        TokenProxyFactory tokenProxyFactory = new TokenProxyFactory(address(tokenImplementation));
-        console.log("TokenProxyFactory deployed at: ", address(tokenProxyFactory));
+        // console.log("Deploying TokenProxyFactory contract...");
+        // Token tokenImplementation = new Token(trustedForwarder);
+        // TokenProxyFactory tokenProxyFactory = new TokenProxyFactory(address(tokenImplementation));
+        // console.log("TokenProxyFactory deployed at: ", address(tokenProxyFactory));
 
         // console.log("Deploying Tokens to use as currrency on testnet...");
         // Token tUSDC = Token(
@@ -158,13 +158,13 @@ contract DeployPlatform is Script {
         // console.log("tEUROC deployed at: ", address(tEUROC));
         // console.log("Remember to add the tokens to the AllowList with attribute TRUSTED_CURRENCY: ", TRUSTED_CURRENCY);
 
-        // deploy crowdinvesting factory
-        console.log("Deploying CrowdinvestingFactory contract...");
-        Crowdinvesting crowdinvestingImplementation = new Crowdinvesting(trustedForwarder);
-        CrowdinvestingCloneFactory crowdinvestingCloneFactory = new CrowdinvestingCloneFactory(
-            address(crowdinvestingImplementation)
-        );
-        console.log("CrowdinvestingFactory deployed at: ", address(crowdinvestingCloneFactory));
+        // // deploy crowdinvesting factory
+        // console.log("Deploying CrowdinvestingFactory contract...");
+        // Crowdinvesting crowdinvestingImplementation = new Crowdinvesting(trustedForwarder);
+        // CrowdinvestingCloneFactory crowdinvestingCloneFactory = new CrowdinvestingCloneFactory(
+        //     address(crowdinvestingImplementation)
+        // );
+        // console.log("CrowdinvestingFactory deployed at: ", address(crowdinvestingCloneFactory));
 
         // deploy TokenSwap logic
         console.log("Deploying TokenSwap contracts...");
