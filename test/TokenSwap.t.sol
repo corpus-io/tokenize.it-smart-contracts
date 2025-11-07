@@ -719,16 +719,8 @@ contract TokenSwapTest is Test {
         tokenSwap.sell(10 ** 18, 0, buyer);
     }
 
-    function testUpdateReceiverNotPaused() public {
-        vm.prank(owner);
-        vm.expectRevert("Pausable: not paused");
-        tokenSwap.setReceiver(payable(address(buyer)));
-    }
-
-    function testUpdateReceiverPaused() public {
+    function testUpdateReceiver() public {
         assertTrue(tokenSwap.receiver() == receiver);
-        vm.prank(owner);
-        tokenSwap.pause();
         vm.prank(owner);
         vm.expectEmit(true, true, true, true, address(tokenSwap));
         emit ReceiverChanged(address(buyer));
@@ -740,40 +732,25 @@ contract TokenSwapTest is Test {
         tokenSwap.setReceiver(address(0));
     }
 
-    function testUpdatePriceNotPaused() public {
-        vm.prank(owner);
-        vm.expectRevert("Pausable: not paused");
-        tokenSwap.setTokenPrice(100);
-    }
-
-    function testUpdatePricePaused(uint256 newPrice) public {
+    function testUpdatePrice(uint256 newPrice) public {
         vm.assume(newPrice > 0);
         assertTrue(tokenSwap.tokenPrice() == price);
 
         vm.prank(owner);
-        tokenSwap.pause();
-        vm.prank(owner);
         vm.expectEmit(true, true, true, true, address(tokenSwap));
         emit TokenPriceChanged(newPrice);
         tokenSwap.setTokenPrice(newPrice);
+
+        assertTrue(tokenSwap.tokenPrice() == newPrice);
+
         vm.prank(owner);
         vm.expectRevert("_tokenPrice needs to be a non-zero amount");
         tokenSwap.setTokenPrice(0);
-
-        assertTrue(tokenSwap.tokenPrice() == newPrice);
     }
 
-    function testUpdateHolderNotPaused() public {
-        vm.prank(owner);
-        vm.expectRevert("Pausable: not paused");
-        tokenSwap.setHolder(address(buyer));
-    }
-
-    function testUpdateHolderPaused(address newHolder) public {
+    function testUpdateHolder(address newHolder) public {
         vm.assume(newHolder != address(0));
         assertTrue(tokenSwap.holder() == holder);
-        vm.prank(owner);
-        tokenSwap.pause();
         vm.prank(owner);
         vm.expectEmit(true, true, true, true, address(tokenSwap));
         emit HolderChanged(newHolder);
@@ -826,11 +803,8 @@ contract TokenSwapTest is Test {
         console.log("wallet funded");
 
         // update price
-        vm.startPrank(owner);
-        tokenSwap.pause();
+        vm.prank(owner);
         tokenSwap.setTokenPrice(_price);
-        tokenSwap.unpause();
-        vm.stopPrank();
 
         // set fees to 0
         Fees memory fees = Fees(0, 0, 0, 0);
@@ -881,11 +855,7 @@ contract TokenSwapTest is Test {
 
         // update tokenSwap price only
         vm.prank(owner);
-        tokenSwap.pause();
-        vm.prank(owner);
         tokenSwap.setTokenPrice(_price);
-        vm.prank(owner);
-        tokenSwap.unpause();
 
         // set fees to 0
         Fees memory fees = Fees(0, 0, 0, 0);
@@ -1068,11 +1038,7 @@ contract TokenSwapTest is Test {
 
         // Update token price
         vm.prank(owner);
-        tokenSwap.pause();
-        vm.prank(owner);
         tokenSwap.setTokenPrice(pricePerToken);
-        vm.prank(owner);
-        tokenSwap.unpause();
 
         // Fund buyer with enough payment tokens (100)
         vm.prank(paymentTokenProvider);
@@ -1141,11 +1107,7 @@ contract TokenSwapTest is Test {
 
         // Update token price
         vm.prank(owner);
-        tokenSwap.pause();
-        vm.prank(owner);
         tokenSwap.setTokenPrice(pricePerToken);
-        vm.prank(owner);
-        tokenSwap.unpause();
 
         // Fund seller (buyer) with 1 token
         vm.prank(paymentTokenProvider);

@@ -187,7 +187,7 @@ contract TokenSwap is ERC2771ContextUpgradeable, OwnableUpgradeable, PausableUpg
      * @notice change the receiver to `_receiver`
      * @param _receiver new receiver
      */
-    function setReceiver(address _receiver) external onlyOwner whenPaused {
+    function setReceiver(address _receiver) external onlyOwner {
         require(_receiver != address(0), "receiver can not be zero address");
         receiver = _receiver;
         emit ReceiverChanged(_receiver);
@@ -197,13 +197,13 @@ contract TokenSwap is ERC2771ContextUpgradeable, OwnableUpgradeable, PausableUpg
      * @notice change tokenPrice to `_tokenPrice`
      * @param _tokenPrice new tokenPrice
      */
-    function setTokenPrice(uint256 _tokenPrice) external onlyOwner whenPaused {
+    function setTokenPrice(uint256 _tokenPrice) external onlyOwner {
         require(_tokenPrice != 0, "_tokenPrice needs to be a non-zero amount");
         tokenPrice = _tokenPrice;
         emit TokenPriceChanged(_tokenPrice);
     }
 
-    function setHolder(address _holder) external onlyOwner whenPaused {
+    function setHolder(address _holder) external onlyOwner {
         require(_holder != address(0), "holder can not be zero address");
         holder = _holder;
         emit HolderChanged(_holder);
