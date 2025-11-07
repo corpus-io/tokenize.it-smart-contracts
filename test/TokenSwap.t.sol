@@ -1047,4 +1047,75 @@ contract TokenSwapTest is Test {
             "trader2 payment token balance should be greater than 0 after sell"
         );
     }
+
+    function testPriceAndFeeCalculationsAreCorrectDuringBuy() public {
+        // Set up: 1 token costs 100 payment tokens, 1% fee
+        uint256 buyAmount = 1 * 10 ** 18; // 1 token (18 decimals)
+        uint256 pricePerToken = 100 * 10 ** paymentTokenDecimals; // 100 payment tokens per token
+        uint256 totalCost = pricePerToken;
+        uint256 totalFee = 1 * 10 ** paymentTokenDecimals; // 1 payment token
+        uint256 earningAfterFee = 99 * 10 ** paymentTokenDecimals; // 99 payment token
+        uint32 feePercentage = 100; // 1% = 100 basis points (fee is in basis points, 1000000 = 100%)
+
+        // Update fee settings to 1% crowdinvesting fee
+        uint64 feeActivationTime = 13 weeks;
+        FeeSettings _feeSettings = FeeSettings(address(token.feeSettings()));
+        Fees memory newFees = Fees(0, feePercentage, 0, feeActivationTime);
+        _feeSettings.planFeeChange(newFees);
+        vm.warp(feeActivationTime + 1);
+        _feeSettings.executeFeeChange();
+        assertTrue(_feeSettings.crowdinvestingFee(100 * 10 ** 10, address(token)) == 10 ** 10);
+
+        // Update token price
+        vm.prank(owner);
+        tokenSwap.pause();
+        vm.prank(owner);
+        tokenSwap.setTokenPrice(pricePerToken);
+        vm.prank(owner);
+        tokenSwap.unpause();
+
+        // Fund buyer with enough payment tokens (100)
+        vm.prank(paymentTokenProvider);
+        paymentToken.mint(buyer, totalCost);
+
+        // Approve tokenSwap to spend buyer's payment tokens
+        vm.prank(buyer);
+        paymentToken.approve(address(tokenSwap), totalCost);
+
+        // Get fee collector address
+        address feeCollector = token.feeSettings().crowdinvestingFeeCollector(address(token));
+
+        // Record balances before buy
+        uint256 buyerBalanceBefore = paymentToken.balanceOf(buyer);
+        uint256 receiverBalanceBefore = paymentToken.balanceOf(receiver);
+        uint256 feeCollectorBalanceBefore = paymentToken.balanceOf(feeCollector);
+        uint256 buyerTokenBalanceBefore = token.balanceOf(buyer);
+
+        // Execute buy with event assertion
+        vm.prank(buyer);
+        vm.expectEmit(true, true, true, true, address(tokenSwap));
+        emit TokensBought(buyer, buyAmount, totalCost);
+        tokenSwap.buy(buyAmount, totalCost, buyer);
+
+        // Assert: 1 token is transferred to buyer
+        assertTrue(token.balanceOf(buyer) == buyerTokenBalanceBefore + buyAmount, "buyer should receive 1 token");
+
+        // Assert: buyer has 100 payment tokens less
+        assertTrue(
+            paymentToken.balanceOf(buyer) == buyerBalanceBefore - totalCost,
+            "buyer should spend 100 payment tokens"
+        );
+
+        // Assert: receiver gets 99 payment tokens (100 - 1 fee)
+        assertTrue(
+            paymentToken.balanceOf(receiver) == receiverBalanceBefore + earningAfterFee,
+            "receiver should get 99 payment tokens"
+        );
+
+        // Assert: fee collector gets 1 payment token
+        assertTrue(
+            paymentToken.balanceOf(feeCollector) == feeCollectorBalanceBefore + totalFee,
+            "fee collector should get 1 payment token"
+        );
+    }
 }
