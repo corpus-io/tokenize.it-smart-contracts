@@ -14,7 +14,7 @@ import "./resources/CloneCreators.sol";
 contract TokenSwapTest is Test {
     event ReceiverChanged(address indexed);
     event MinAmountPerTransactionChanged(uint256);
-    event TokenPriceAndCurrencyChanged(uint256, IERC20 indexed);
+    event TokenPriceChanged(uint256);
     event TokensBought(address indexed buyer, uint256 tokenAmount, uint256 currencyAmount);
     event TokensSold(address indexed seller, uint256 tokenAmount, uint256 currencyAmount);
     event HolderChanged(address);
@@ -740,34 +740,27 @@ contract TokenSwapTest is Test {
         tokenSwap.setReceiver(address(0));
     }
 
-    function testUpdateCurrencyAndPriceNotPaused() public {
-        FakePaymentToken newPaymentToken = new FakePaymentToken(700, 3);
+    function testUpdatePriceNotPaused() public {
         vm.prank(owner);
         vm.expectRevert("Pausable: not paused");
-        tokenSwap.setCurrencyAndTokenPrice(newPaymentToken, 100);
+        tokenSwap.setTokenPrice(100);
     }
 
-    function testUpdateCurrencyAndPricePaused(uint256 newPrice) public {
+    function testUpdatePricePaused(uint256 newPrice) public {
         vm.assume(newPrice > 0);
         assertTrue(tokenSwap.tokenPrice() == price);
-        assertTrue(tokenSwap.currency() == paymentToken);
-
-        FakePaymentToken newPaymentToken = new FakePaymentToken(700, 3);
-        vm.startPrank(owner);
-        list.set(address(newPaymentToken), TRUSTED_CURRENCY);
-
-        tokenSwap.pause();
-        vm.expectEmit(true, true, true, true, address(tokenSwap));
-        emit TokenPriceAndCurrencyChanged(newPrice, newPaymentToken);
-        tokenSwap.setCurrencyAndTokenPrice(newPaymentToken, newPrice);
-        vm.stopPrank();
-
-        assertTrue(tokenSwap.tokenPrice() == newPrice);
-        assertTrue(tokenSwap.currency() == newPaymentToken);
 
         vm.prank(owner);
+        tokenSwap.pause();
+        vm.prank(owner);
+        vm.expectEmit(true, true, true, true, address(tokenSwap));
+        emit TokenPriceChanged(newPrice);
+        tokenSwap.setTokenPrice(newPrice);
+        vm.prank(owner);
         vm.expectRevert("_tokenPrice needs to be a non-zero amount");
-        tokenSwap.setCurrencyAndTokenPrice(paymentToken, 0);
+        tokenSwap.setTokenPrice(0);
+
+        assertTrue(tokenSwap.tokenPrice() == newPrice);
     }
 
     function testUpdateHolderNotPaused() public {
@@ -818,56 +811,26 @@ contract TokenSwapTest is Test {
         tokenSwap.unpause();
     }
 
-    function testSettingInvalidCurrencyReverts(address someCurrency, uint256 currencyAttributes) public {
-        vm.assume(someCurrency != address(0));
-        vm.assume(currencyAttributes != TRUSTED_CURRENCY);
-        vm.prank(owner);
-        list.set(someCurrency, currencyAttributes);
-
-        vm.startPrank(owner);
-        tokenSwap.pause();
-        vm.expectRevert("currency needs to be on the allowlist with TRUSTED_CURRENCY attribute");
-        tokenSwap.setCurrencyAndTokenPrice(IERC20(someCurrency), 1);
-
-        // check the setting works when the currency is on the allowlist with TRUSTED_CURRENCY attribute
-        list.set(someCurrency, TRUSTED_CURRENCY);
-        tokenSwap.setCurrencyAndTokenPrice(IERC20(someCurrency), 1);
-    }
-
-    function testSetCurrencyAndTokenPriceRevertsWithZeroAddress() public {
-        vm.startPrank(owner);
-        tokenSwap.pause();
-        vm.expectRevert("currency can not be zero address");
-        tokenSwap.setCurrencyAndTokenPrice(IERC20(address(0)), 241929);
-        vm.stopPrank();
-    }
-
     function testBuyRoundsUp(uint256 _tokenBuyAmount, uint256 _price) public {
         vm.assume(_tokenBuyAmount > 0);
         vm.assume(_price > 0);
-        vm.assume(UINT256_MAX / _price > _tokenBuyAmount);
+        vm.assume((UINT256_MAX - paymentToken.totalSupply()) / _price > _tokenBuyAmount);
         vm.assume(_tokenBuyAmount <= tokenAmount);
 
         uint256 tokenDecimals = token.decimals();
         uint minCurrencyAmount = (_tokenBuyAmount * _price) / 10 ** tokenDecimals;
         uint maxCurrencyAmount = minCurrencyAmount + 1;
-
-        // set up new payment token
+        console.log("funding wallet");
         vm.prank(paymentTokenProvider);
-        FakePaymentToken newPaymentToken = new FakePaymentToken(maxCurrencyAmount * 10, paymentTokenDecimals);
-        vm.prank(paymentTokenProvider);
-        newPaymentToken.transfer(buyer, maxCurrencyAmount * 2);
+        paymentToken.mint(buyer, maxCurrencyAmount);
+        console.log("wallet funded");
 
-        vm.prank(owner);
-        list.set(address(newPaymentToken), TRUSTED_CURRENCY);
-
-        // update tokenSwap
-        vm.prank(owner);
+        // update price
+        vm.startPrank(owner);
         tokenSwap.pause();
-        vm.prank(owner);
-        tokenSwap.setCurrencyAndTokenPrice(newPaymentToken, _price);
-        vm.prank(owner);
+        tokenSwap.setTokenPrice(_price);
         tokenSwap.unpause();
+        vm.stopPrank();
 
         // set fees to 0
         Fees memory fees = Fees(0, 0, 0, 0);
@@ -876,9 +839,9 @@ contract TokenSwapTest is Test {
 
         // approve
         vm.prank(buyer);
-        newPaymentToken.approve(address(tokenSwap), maxCurrencyAmount * 2);
+        paymentToken.approve(address(tokenSwap), type(uint256).max);
 
-        uint256 paymentTokenBalanceBefore = newPaymentToken.balanceOf(buyer);
+        uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
 
         vm.prank(buyer);
         tokenSwap.buy(_tokenBuyAmount, type(uint256).max, buyer);
@@ -886,8 +849,8 @@ contract TokenSwapTest is Test {
         // check that the buyer got the correct amount of tokens
         assertTrue(token.balanceOf(buyer) == _tokenBuyAmount, "buyer token balance should equal _tokenBuyAmount");
         // check rounding
-        uint256 realCostInPaymentToken = paymentTokenBalanceBefore - newPaymentToken.balanceOf(buyer);
-        assertTrue(realCostInPaymentToken <= maxCurrencyAmount, "cost should not exceed maxCurrencyAmount");
+        uint256 realCostInPaymentToken = paymentTokenBalanceBefore - paymentToken.balanceOf(buyer);
+        assertTrue(realCostInPaymentToken <= type(uint256).max, "cost should be valid");
         assertTrue(realCostInPaymentToken >= minCurrencyAmount, "cost should be at least minCurrencyAmount");
         assertTrue(
             realCostInPaymentToken - minCurrencyAmount <= 1,
@@ -898,30 +861,29 @@ contract TokenSwapTest is Test {
     function testSellRoundsDown(uint256 _tokenSellAmount, uint256 _price) public {
         vm.assume(_tokenSellAmount > 0);
         vm.assume(_price > 0);
-        vm.assume(UINT256_MAX / _price > _tokenSellAmount);
+        vm.assume((UINT256_MAX - paymentToken.totalSupply()) / _price > _tokenSellAmount);
         vm.assume(_tokenSellAmount <= tokenAmount / 2);
 
-        // First buy tokens
-        vm.prank(buyer);
-        tokenSwap.buy(tokenAmount / 2, type(uint256).max, buyer);
+        // mint tokens to seller
+        bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
+        vm.prank(admin);
+        token.grantRole(roleMintAllower, admin);
+        vm.prank(admin);
+        token.mint(buyer, tokenAmount);
 
         uint256 tokenDecimals = token.decimals();
-        uint expectedPayout = (_tokenSellAmount * _price) / 10 ** tokenDecimals;
+        uint256 expectedPayout = (_tokenSellAmount * _price) / 10 ** tokenDecimals;
 
-        // set up new payment token for holder
+        console.log("funding wallet");
         vm.prank(paymentTokenProvider);
-        FakePaymentToken newPaymentToken = new FakePaymentToken(expectedPayout * 10, paymentTokenDecimals);
-        vm.prank(paymentTokenProvider);
-        newPaymentToken.transfer(holder, expectedPayout * 5);
+        paymentToken.mint(holder, expectedPayout);
+        console.log("wallet funded");
 
-        vm.prank(owner);
-        list.set(address(newPaymentToken), TRUSTED_CURRENCY);
-
-        // update tokenSwap
+        // update tokenSwap price only
         vm.prank(owner);
         tokenSwap.pause();
         vm.prank(owner);
-        tokenSwap.setCurrencyAndTokenPrice(newPaymentToken, _price);
+        tokenSwap.setTokenPrice(_price);
         vm.prank(owner);
         tokenSwap.unpause();
 
@@ -930,30 +892,32 @@ contract TokenSwapTest is Test {
         FeeSettings(address(token.feeSettings())).planFeeChange(fees);
         FeeSettings(address(token.feeSettings())).executeFeeChange();
 
-        // approve holder to spend new payment token
+        // approve holder to spend payment token
         vm.prank(holder);
-        newPaymentToken.approve(address(tokenSwap), expectedPayout * 5);
+        paymentToken.approve(address(tokenSwap), type(uint256).max);
 
         // approve tokenSwap to transfer seller's tokens
         vm.prank(buyer);
         token.approve(address(tokenSwap), _tokenSellAmount);
 
-        uint256 holderPaymentTokenBalanceBefore = newPaymentToken.balanceOf(holder);
-        uint256 buyerPaymentTokenBalanceBefore = newPaymentToken.balanceOf(buyer);
+        uint256 holderPaymentTokenBalanceBefore = paymentToken.balanceOf(holder);
+        uint256 buyerPaymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
 
         vm.prank(buyer);
         tokenSwap.sell(_tokenSellAmount, 0, buyer);
 
         // check that the seller received payment (rounded down)
-        uint256 actualPayout = newPaymentToken.balanceOf(buyer) - buyerPaymentTokenBalanceBefore;
+        uint256 actualPayout = paymentToken.balanceOf(buyer) - buyerPaymentTokenBalanceBefore;
         assertTrue(actualPayout == expectedPayout, "seller should receive exactly expectedPayout");
         assertTrue(
-            holderPaymentTokenBalanceBefore - newPaymentToken.balanceOf(holder) == expectedPayout,
+            holderPaymentTokenBalanceBefore - paymentToken.balanceOf(holder) == expectedPayout,
             "holder payment token balance should decrease by exactly expectedPayout"
         );
     }
 
     function testTransferOwnership(address newOwner) public {
+        vm.assume(newOwner != address(0));
+
         assertTrue(tokenSwap.owner() == owner, "wrong owner");
 
         vm.prank(owner);

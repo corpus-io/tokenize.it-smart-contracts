@@ -33,8 +33,8 @@ struct TokenSwapInitializerArguments {
  * @notice This contract represents the offer to buy or sell an amount of tokens at a preset price.
  *      It can be used by anyone and there is no limit to the number of times it can be used.
  *      The buyer or seller can decide how many tokens to buy or sell.
- *      The currency the offer is denominated in is set at creation time and can be updated later.
- *      The contract can be paused at any time by the owner, which will prevent any new deals from being made. Then, changes to the contract can be made, like changing the currency, price or requirements.
+ *      The currency the offer is denominated in is set at creation time and cannot be changed.
+ *      The contract can be paused at any time by the owner, which will prevent any new deals from being made. Then, changes to the contract can be made, like changing the price, holder and receiver.
  *      The contract can be unpaused, which will allow new deals to be made again.
  *      Contract as sell order: A token holder wanting to sell their tokens can create a TokenSwap contract with the desired price and give it an allowance to transfer their tokens.
  *          Then any party wanting to buy tokens can do so through the buy function.
@@ -64,10 +64,9 @@ contract TokenSwap is ERC2771ContextUpgradeable, OwnableUpgradeable, PausableUpg
     /// @notice holder has been changed to `holder`
     event HolderChanged(address holder);
 
-    /// @notice Price and currency changed.
+    /// @notice Price changed.
     /// @param newTokenPrice new price of a token, expressed as amount of bits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2*10^6 ).
-    /// @param newCurrency new currency used to pay for the token purchase
-    event TokenPriceAndCurrencyChanged(uint256 newTokenPrice, IERC20 indexed newCurrency);
+    event TokenPriceChanged(uint256 newTokenPrice);
     /**
      * @notice `buyer` bought `tokenAmount` tokens for `currencyAmount` currency.
      * @param buyer Address that bought the tokens
@@ -195,21 +194,13 @@ contract TokenSwap is ERC2771ContextUpgradeable, OwnableUpgradeable, PausableUpg
     }
 
     /**
-     * @notice change currency to `_currency` and tokenPrice to `_tokenPrice`
-     * @param _currency new currency
+     * @notice change tokenPrice to `_tokenPrice`
      * @param _tokenPrice new tokenPrice
      */
-    function setCurrencyAndTokenPrice(IERC20 _currency, uint256 _tokenPrice) external onlyOwner whenPaused {
-        require(address(_currency) != address(0), "currency can not be zero address");
+    function setTokenPrice(uint256 _tokenPrice) external onlyOwner whenPaused {
         require(_tokenPrice != 0, "_tokenPrice needs to be a non-zero amount");
-        require(
-            token.allowList().map(address(_currency)) == TRUSTED_CURRENCY,
-            "currency needs to be on the allowlist with TRUSTED_CURRENCY attribute"
-        );
-
         tokenPrice = _tokenPrice;
-        currency = _currency;
-        emit TokenPriceAndCurrencyChanged(_tokenPrice, _currency);
+        emit TokenPriceChanged(_tokenPrice);
     }
 
     function setHolder(address _holder) external onlyOwner whenPaused {
