@@ -154,6 +154,7 @@ factory.createTokenSwapClone(
 ```
 
 Where `TokenSwapInitializerArguments` contains:
+
 - `owner`: Address that can pause/unpause and update contract parameters
 - `receiver`: Address that receives currency (sell orders) or tokens (buy orders)
 - `holder`: Address holding tokens (sell orders) or currency (buy orders)
@@ -180,6 +181,7 @@ Where `TokenSwapInitializerArguments` contains:
 **Updating parameters:**
 
 The owner can pause the contract and update:
+
 - Currency and price: `setCurrencyAndTokenPrice(newCurrency, newPrice)`
 - Receiver: `setReceiver(newReceiver)`
 - Holder: `setHolder(newHolder)`

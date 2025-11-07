@@ -172,7 +172,9 @@ contract DeployPlatform is Script {
         console.log("TokenSwap logic deployed at: ", address(tokenSwapLogicImplementation));
 
         // deploy TokenSwapFactory based on logic
-        TokenSwapCloneFactory tokenSwapCloneFactory =  TokenSwapCloneFactory(address(0x314d4AD6a2C3310d45cE432f5119AF2e4f274852));
+        TokenSwapCloneFactory tokenSwapCloneFactory = TokenSwapCloneFactory(
+            address(0x314d4AD6a2C3310d45cE432f5119AF2e4f274852)
+        );
         console.log("TokenSwap factory deployed at: ", address(tokenSwapCloneFactory));
 
         // deploy TokenSwap (use correct StableCoin address and Token address based on chain), just to verify the contract
