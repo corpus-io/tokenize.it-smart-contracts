@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
+import "../lib/forge-std/src/console.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "../contracts/factories/PriceLinearCloneFactory.sol";
@@ -97,6 +98,7 @@ contract CrowdinvestingTest is Test {
             paymentToken,
             token,
             0,
+            address(0),
             address(0)
         );
 
@@ -209,7 +211,8 @@ contract CrowdinvestingTest is Test {
             paymentToken,
             token,
             0,
-            address(priceLinear)
+            address(priceLinear),
+            address(0)
         );
 
         crowdinvesting = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
@@ -269,7 +272,8 @@ contract CrowdinvestingTest is Test {
             paymentToken,
             token,
             0,
-            address(priceLinear)
+            address(priceLinear),
+            address(0)
         );
 
         crowdinvesting = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
@@ -330,7 +334,8 @@ contract CrowdinvestingTest is Test {
             paymentToken,
             token,
             0,
-            address(priceLinear)
+            address(priceLinear),
+            address(0)
         );
 
         crowdinvesting = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
@@ -430,7 +435,8 @@ contract CrowdinvestingTest is Test {
             paymentToken,
             token,
             0,
-            address(priceLinear)
+            address(priceLinear),
+            address(0)
         );
 
         crowdinvesting = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));

@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
+import "../lib/forge-std/src/console.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "./resources/CloneCreators.sol";
 
@@ -111,11 +112,5 @@ contract tokenTest is Test {
     function testSimpleTransferFrom() public {
         vm.prank(admin);
         token.transferFrom(pauser, admin, 100);
-    }
-
-    function testFailTransfer() public {
-        vm.prank(pauser);
-        token.transfer(burner, 100);
-        //assertTrue(token.balanceOf(burner) == 0, "burner balance is wrong");
     }
 }

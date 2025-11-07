@@ -12,14 +12,20 @@ Currently, no automated publishing is set up. Publishing is done manually. To pu
 
    The version number must be a valid semver version. The version number must be higher than the current version number.
 
-2. Test without publishing:
+2. Build the contracts:
+
+   ```bash
+   yarn build
+   ```
+
+3. Test without publishing:
 
    ```bash
    npm publish [--tag <alpha/beta>] --dry-run
    ```
 
-3. Check if all necessary files are contained and no secrets are leaked.
-4. If everything is fine, publish:
+4. Check if all necessary files are contained and no secrets are leaked.
+5. If everything is fine, publish:
    ```bash
    npm publish [--tag <alpha/beta>]
    ```

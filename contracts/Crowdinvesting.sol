@@ -38,6 +38,8 @@ struct CrowdinvestingInitializerArguments {
     uint256 lastBuyDate;
     /// dynamic pricing oracle, which can implement various pricing strategies
     address priceOracle;
+    /// token holder. If set, tokens will be transferred from this address. If not set, tokens will be minted from the token contract.
+    address tokenHolder;
 }
 
 /**
@@ -89,6 +91,8 @@ contract Crowdinvesting is
     IERC20 public currency;
     /// token to be minted
     Token public token;
+    /// token holder. If set, tokens will be transferred from this address. If set to address(0), tokens will be minted from the token contract.
+    address public tokenHolder;
 
     /// timestamp of the last time the contract was paused or a parameter was changed
     uint256 public coolDownStart;
@@ -134,6 +138,8 @@ contract Crowdinvesting is
 
     /// LastBuyDate has been changed to `lastBuyDate`
     event SetLastBuyDate(uint256 lastBuyDate);
+    /// @notice TokenHolder has been changed to `tokenHolder`
+    event TokenHolderChanged(address tokenHolder);
 
     /**
      * This constructor creates a logic contract that is used to clone new fundraising contracts.
@@ -173,6 +179,7 @@ contract Crowdinvesting is
         priceBase = _arguments.tokenPrice;
         maxAmountOfTokenToBeSold = _arguments.maxAmountOfTokenToBeSold;
         token = _arguments.token;
+        tokenHolder = _arguments.tokenHolder;
         currency = _arguments.currency;
         _setLastBuyDate(_arguments.lastBuyDate);
 
@@ -265,7 +272,11 @@ contract Crowdinvesting is
         tokensSold += _amount;
         tokensBought[_tokenReceiver] += _amount;
 
-        token.mint(_tokenReceiver, _amount);
+        if (tokenHolder != address(0)) {
+            token.transferFrom(tokenHolder, _tokenReceiver, _amount);
+        } else {
+            token.mint(_tokenReceiver, _amount);
+        }
     }
 
     function _getFeeAndFeeReceiver(uint256 _currencyAmount) internal view returns (uint256, address) {
@@ -429,6 +440,12 @@ contract Crowdinvesting is
         }
         lastBuyDate = _lastBuyDate;
         emit SetLastBuyDate(_lastBuyDate);
+    }
+
+    function setTokenHolder(address _tokenHolder) external onlyOwner whenPaused {
+        tokenHolder = _tokenHolder;
+        emit TokenHolderChanged(_tokenHolder);
+        coolDownStart = block.timestamp;
     }
 
     /**

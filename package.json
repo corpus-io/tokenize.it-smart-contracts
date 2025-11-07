@@ -90,17 +90,22 @@
     "build": "yarn clean && yarn hardhat compile && yarn tsc --declaration",
     "test": "forge test --no-match-test Mainnet",
     "coverage": "forge coverage --report lcov && genhtml lcov.info --branch-coverage --output-directory=./coverage",
-    "clean": "yarn hardhat clean && forge clean && rm -rf ./dist ./coverage ./cache"
+    "clean": "yarn hardhat clean && forge clean && rm -rf ./dist ./coverage ./cache",
+    "prettier": "prettier --write 'contracts/**/*.sol' 'test/**/*.sol'"
   },
   "prettier": {
     "singleQuote": true,
     "trailingComma": "all",
+    "plugins": [
+      "prettier-plugin-solidity"
+    ],
     "overrides": [
       {
         "files": "*.sol",
         "options": {
           "singleQuote": false,
-          "printWidth": 120
+          "printWidth": 120,
+          "parser": "solidity-parse"
         }
       }
     ]

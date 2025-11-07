@@ -2,6 +2,8 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
+import "../lib/forge-std/src/console.sol";
+
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/FeeSettings.sol";
 import "../contracts/factories/CrowdinvestingCloneFactory.sol";
@@ -9,6 +11,7 @@ import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
 import "./resources/FakeCrowdinvestingAndToken.sol";
 import "./resources/CloneCreators.sol";
+import "./resources/CrowdinvestingArgumentHelper.sol";
 
 contract CrowdinvestingTest is Test {
     event CurrencyReceiverChanged(address indexed);
@@ -95,6 +98,7 @@ contract CrowdinvestingTest is Test {
             paymentToken,
             token,
             0,
+            address(0),
             address(0)
         );
         crowdinvesting = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
@@ -132,6 +136,7 @@ contract CrowdinvestingTest is Test {
                 paymentToken,
                 token,
                 0,
+                address(0),
                 address(0)
             )
         );
@@ -159,6 +164,7 @@ contract CrowdinvestingTest is Test {
             paymentToken,
             token,
             lastBuyDate,
+            address(0),
             address(0)
         );
         Crowdinvesting _crowdinvesting = Crowdinvesting(
@@ -188,6 +194,7 @@ contract CrowdinvestingTest is Test {
             paymentToken,
             token,
             0,
+            address(0),
             address(0)
         );
         vm.expectRevert("CrowdinvestingCloneFactory: Unexpected trustedForwarder");
@@ -302,6 +309,7 @@ contract CrowdinvestingTest is Test {
             maliciousPaymentToken,
             _token,
             0,
+            address(0),
             address(0)
         );
 
@@ -703,34 +711,38 @@ contract CrowdinvestingTest is Test {
     /*
         try to buy more than allowed
     */
-    function testFailOverflow() public {
+    function testBuyMoreThanMaxAmountPerBuyer() public {
         vm.prank(buyer);
+        vm.expectRevert("Total amount of bought tokens needs to be lower than or equal to maxAmount");
         crowdinvesting.buy(maxAmountPerBuyer + 1, type(uint256).max, buyer);
     }
 
     /*
         try to buy less than allowed
     */
-    function testFailUnderflow() public {
+    function testBuyLessThanMinAmountPerBuyer() public {
         vm.prank(buyer);
+        vm.expectRevert("Buyer needs to buy at least minAmount");
         crowdinvesting.buy(minAmountPerBuyer - 1, type(uint256).max, buyer);
     }
 
     /*
         try to buy while paused
     */
-    function testFailPaused() public {
+    function testBuyWhilePaused() public {
         vm.prank(owner);
         crowdinvesting.pause();
         vm.prank(buyer);
+        vm.expectRevert("Pausable: paused");
         crowdinvesting.buy(minAmountPerBuyer, type(uint256).max, buyer);
     }
 
     /*
         try to update currencyReceiver not paused
     */
-    function testFailUpdateCurrencyReceiverNotPaused() public {
+    function testUpdateCurrencyReceiverNotPaused() public {
         vm.prank(owner);
+        vm.expectRevert("Pausable: not paused");
         crowdinvesting.setCurrencyReceiver(payable(address(buyer)));
     }
 
@@ -755,8 +767,9 @@ contract CrowdinvestingTest is Test {
     /* 
         try to update minAmountPerBuyer not paused
     */
-    function testFailUpdateMinAmountPerBuyerNotPaused() public {
+    function testUpdateMinAmountPerBuyerNotPaused() public {
         vm.prank(owner);
+        vm.expectRevert("Pausable: not paused");
         crowdinvesting.setMinAmountPerBuyer(100);
     }
 
@@ -791,8 +804,9 @@ contract CrowdinvestingTest is Test {
     /* 
         try to update maxAmountPerBuyer not paused
     */
-    function testFailUpdateMaxAmountPerBuyerNotPaused() public {
+    function testUpdateMaxAmountPerBuyerNotPaused() public {
         vm.prank(owner);
+        vm.expectRevert("Pausable: not paused");
         crowdinvesting.setMaxAmountPerBuyer(100);
     }
 
@@ -818,9 +832,10 @@ contract CrowdinvestingTest is Test {
     /*
         try to update currency and price while not paused
     */
-    function testFailUpdateCurrencyAndPriceNotPaused() public {
+    function testUpdateCurrencyAndPriceNotPaused() public {
         FakePaymentToken newPaymentToken = new FakePaymentToken(700, 3);
         vm.prank(owner);
+        vm.expectRevert("Pausable: not paused");
         crowdinvesting.setCurrencyAndTokenPrice(newPaymentToken, 100);
     }
 
@@ -852,8 +867,9 @@ contract CrowdinvestingTest is Test {
     /*
         try to update maxAmountOfTokenToBeSold while not paused
     */
-    function testFailUpdateMaxAmountOfTokenToBeSoldNotPaused() public {
+    function testUpdateMaxAmountOfTokenToBeSoldNotPaused() public {
         vm.prank(owner);
+        vm.expectRevert("Pausable: not paused");
         crowdinvesting.setMaxAmountOfTokenToBeSold(123 * 10 ** 18);
     }
 
@@ -878,12 +894,12 @@ contract CrowdinvestingTest is Test {
     /*
         try to unpause immediately after pausing
     */
-    function testFailUnpauseImmediatelyAfterPausing() public {
+    function testUnpauseImmediatelyAfterPausing() public {
         vm.prank(owner);
         crowdinvesting.pause();
         assertTrue(crowdinvesting.paused());
-        assertTrue(crowdinvesting.coolDownStart() > 0);
         vm.prank(owner);
+        vm.expectRevert("There needs to be at minimum one day to change parameters");
         crowdinvesting.unpause();
     }
 
@@ -1215,6 +1231,7 @@ contract CrowdinvestingTest is Test {
             paymentToken,
             token,
             0,
+            address(0),
             address(0)
         );
         vm.prank(owner);
@@ -1282,6 +1299,7 @@ contract CrowdinvestingTest is Test {
             paymentToken,
             token,
             0,
+            address(0),
             address(0)
         );
         vm.prank(owner);
@@ -1376,6 +1394,7 @@ contract CrowdinvestingTest is Test {
             paymentToken,
             token,
             _lastBuyDate,
+            address(0),
             address(0)
         );
         Crowdinvesting _crowdinvesting = Crowdinvesting(
@@ -1411,25 +1430,5 @@ contract CrowdinvestingTest is Test {
             _crowdinvesting.buy(tokenBuyAmount, type(uint256).max, buyer);
             vm.stopPrank();
         }
-    }
-
-    function cloneCrowdinvestingInitializerArguments(
-        CrowdinvestingInitializerArguments memory arguments
-    ) public pure returns (CrowdinvestingInitializerArguments memory) {
-        return
-            CrowdinvestingInitializerArguments(
-                arguments.owner,
-                arguments.currencyReceiver,
-                arguments.minAmountPerBuyer,
-                arguments.maxAmountPerBuyer,
-                arguments.tokenPrice,
-                arguments.priceMin,
-                arguments.priceMax,
-                arguments.maxAmountOfTokenToBeSold,
-                arguments.currency,
-                arguments.token,
-                arguments.lastBuyDate,
-                arguments.priceOracle
-            );
     }
 }

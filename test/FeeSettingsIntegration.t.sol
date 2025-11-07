@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
+import "../lib/forge-std/src/console.sol";
 import "../contracts/Token.sol";
 import "../contracts/factories/FeeSettingsCloneFactory.sol";
 import "../contracts/factories/CrowdinvestingCloneFactory.sol";
@@ -89,6 +90,7 @@ contract FeeSettingsIntegrationTest is Test {
         vm.assume(_customFeeCollector != address(0));
         vm.assume(_customFeeCollector != platformAdmin);
         vm.assume(_customFeeCollector != investor);
+        vm.assume(_customFeeCollector != companyAdmin);
 
         vm.warp(100 * 365 days);
 
@@ -114,7 +116,7 @@ contract FeeSettingsIntegrationTest is Test {
         vm.assume(_customFeeCollector != address(0));
         vm.assume(_customFeeCollector != investor);
         vm.assume(_customFeeCollector != platformAdmin);
-
+        vm.assume(_customFeeCollector != companyAdmin);
         vm.warp(100 * 365 days);
 
         vm.startPrank(platformAdmin);
@@ -136,7 +138,8 @@ contract FeeSettingsIntegrationTest is Test {
                 price,
                 block.timestamp + 1000,
                 currency,
-                token
+                token,
+                address(0)
             )
         );
 
@@ -158,7 +161,8 @@ contract FeeSettingsIntegrationTest is Test {
                 price,
                 block.timestamp + 1000,
                 currency,
-                token
+                token,
+                address(0)
             )
         );
 
@@ -186,6 +190,8 @@ contract FeeSettingsIntegrationTest is Test {
     function testCrowdinvestingUsesCustomFeeAndCollector(address _customFeeCollector) public {
         vm.assume(_customFeeCollector != address(0));
         vm.assume(_customFeeCollector != platformAdmin);
+        vm.assume(_customFeeCollector != companyAdmin);
+        vm.assume(_customFeeCollector != investor);
 
         vm.warp(100 * 365 days);
 
@@ -211,6 +217,7 @@ contract FeeSettingsIntegrationTest is Test {
             IERC20(address(currency)),
             token,
             101 * 365 days,
+            address(0),
             address(0)
         );
 

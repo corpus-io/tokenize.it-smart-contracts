@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
+import "../lib/forge-std/src/console.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
@@ -82,17 +83,18 @@ contract CrowdinvestingTest is Test {
         costInPaymentToken = (tokenBuyAmount * price) / 10 ** 18;
 
         arguments = CrowdinvestingInitializerArguments(
-            address(this),
+            owner,
             payable(receiver),
             minAmountPerBuyer,
             maxAmountPerBuyer,
             price,
-            0,
-            0,
+            price,
+            price,
             maxAmountOfTokenToBeSold,
             paymentToken,
             token,
             0,
+            address(0),
             address(0)
         );
     }

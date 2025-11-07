@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
+import "../lib/forge-std/src/console.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/PrivateOffer.sol";
 import "../contracts/factories/PrivateOfferFactory.sol";
@@ -96,7 +97,8 @@ contract PrivateOfferTimeLockTest is Test {
             price,
             block.timestamp + 1000,
             currency,
-            token
+            token,
+            address(0)
         );
 
         uint256 currencyAmount = (arguments.tokenAmount * price) / 10 ** token.decimals();

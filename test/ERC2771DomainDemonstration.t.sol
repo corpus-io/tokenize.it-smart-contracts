@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
+import "../lib/forge-std/src/console.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "./resources/CloneCreators.sol";
 import "./resources/FakePaymentToken.sol";
@@ -118,7 +119,8 @@ contract TokenERC2771Test is Test {
             currency: paymentToken,
             token: token,
             lastBuyDate: 0,
-            priceOracle: address(0)
+            priceOracle: address(0),
+            tokenHolder: address(0)
         });
         Crowdinvesting crowdinvesting = Crowdinvesting(
             fundraisingFactory.createCrowdinvestingClone(0, address(forwarder), arguments)

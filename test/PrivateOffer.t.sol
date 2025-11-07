@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
+import "../lib/forge-std/src/console.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/PrivateOffer.sol";
 import "../contracts/factories/PrivateOfferFactory.sol";
@@ -37,6 +38,7 @@ contract PrivateOfferTest is Test {
     address public constant currencyReceiver = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
     address public constant paymentTokenProvider = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
     address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
+    address public constant tokenHolder = 0xa109709ecfA91A80626ff3989D68F67F5b1dD12a;
 
     uint256 public constant price = 10000000;
 
@@ -52,6 +54,7 @@ contract PrivateOfferTest is Test {
 
         list = createAllowList(trustedForwarder, address(this));
         list.set(tokenReceiver, requirements);
+        list.set(tokenHolder, requirements);
         list.set(address(currency), TRUSTED_CURRENCY);
 
         Fees memory fees = Fees(100, 100, 100, 0);
@@ -80,7 +83,7 @@ contract PrivateOfferTest is Test {
         );
     }
 
-    function testAcceptDeal(uint256 rawSalt) public {
+    function testAcceptDealAndMintTokens(uint256 rawSalt) public {
         //uint rawSalt = 0;
         bytes32 salt = bytes32(rawSalt);
 
@@ -96,7 +99,8 @@ contract PrivateOfferTest is Test {
             price,
             expiration,
             currency,
-            token
+            token,
+            address(0)
         );
         address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
 
@@ -175,6 +179,114 @@ contract PrivateOfferTest is Test {
         );
     }
 
+    function testAcceptDealAndTransferTokens(uint256 rawSalt) public {
+        //uint rawSalt = 0;
+        bytes32 salt = bytes32(rawSalt);
+
+        //bytes memory creationCode = type(PrivateOffer).creationCode;
+        uint256 amount = 20000000000000;
+        uint256 expiration = block.timestamp + 1000;
+
+        PrivateOfferArguments memory arguments = PrivateOfferArguments(
+            tokenReceiver,
+            tokenReceiver,
+            currencyReceiver,
+            amount,
+            price,
+            expiration,
+            currency,
+            token,
+            tokenHolder
+        );
+        address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
+
+        uint256 tokenDecimals = token.decimals();
+
+        vm.startPrank(paymentTokenProvider);
+        currency.mint(tokenReceiver, (amount * price) / 10 ** tokenDecimals);
+        vm.stopPrank();
+
+        vm.startPrank(admin);
+        token.increaseMintingAllowance(admin, amount);
+        token.mint(tokenHolder, amount);
+        vm.stopPrank();
+
+        vm.startPrank(tokenHolder);
+        token.approve(expectedAddress, amount);
+        vm.stopPrank();
+
+        vm.prank(tokenReceiver);
+        currency.approve(expectedAddress, (amount * price) / 10 ** tokenDecimals);
+
+        // make sure balances are as expected before deployment
+
+        uint currencyAmount = (amount * price) / 10 ** tokenDecimals;
+        assertEq(currency.balanceOf(tokenReceiver), currencyAmount);
+        assertEq(currency.balanceOf(currencyReceiver), 0);
+        assertEq(token.balanceOf(tokenReceiver), 0);
+        assertEq(token.balanceOf(tokenHolder), amount);
+        uint256 expectedTotalTokenSupply = amount +
+            FeeSettings(address(token.feeSettings())).tokenFee(amount, address(token));
+        assertEq(token.totalSupply(), expectedTotalTokenSupply, "token supply is not as expected before deployment");
+        assertEq(
+            currency.balanceOf(FeeSettings(address(token.feeSettings())).privateOfferFeeCollector(address(token))),
+            0,
+            "privateOfferFeeCollector currency balance is not correct"
+        );
+        assertEq(
+            token.balanceOf(FeeSettings(address(token.feeSettings())).tokenFeeCollector(address(token))),
+            FeeSettings(address(token.feeSettings())).tokenFee(amount, address(token)),
+            "tokenFeeCollector currency balance is not correct"
+        );
+
+        // make sure balances are as expected after deployment
+        uint256 feeCollectorCurrencyBalanceBefore = currency.balanceOf(
+            FeeSettings(address(token.feeSettings())).feeCollector()
+        );
+        vm.expectEmit(true, true, true, true, address(expectedAddress));
+        emit Deal(tokenReceiver, tokenReceiver, amount, price, currency, token);
+
+        address inviteAddress = factory.deployPrivateOffer(salt, arguments);
+
+        console.log(
+            "feeCollector currency balance after deployment: %s",
+            currency.balanceOf(FeeSettings(address(token.feeSettings())).feeCollector())
+        );
+
+        assertEq(inviteAddress, expectedAddress, "deployed contract address is not correct");
+
+        console.log("buyer balance: %s", currency.balanceOf(tokenReceiver));
+        console.log("receiver balance: %s", currency.balanceOf(currencyReceiver));
+        console.log("buyer token balance: %s", token.balanceOf(tokenReceiver));
+        uint256 len;
+        assembly {
+            len := extcodesize(expectedAddress)
+        }
+        console.log("Deployed contract size: %s", len);
+        assertEq(currency.balanceOf(tokenReceiver), 0);
+
+        assertEq(
+            currency.balanceOf(currencyReceiver),
+            currencyAmount - FeeSettings(address(token.feeSettings())).privateOfferFee(currencyAmount, address(token))
+        );
+
+        assertEq(
+            currency.balanceOf(FeeSettings(address(token.feeSettings())).privateOfferFeeCollector(address(token))),
+            feeCollectorCurrencyBalanceBefore +
+                FeeSettings(address(token.feeSettings())).privateOfferFee(currencyAmount, address(token)),
+            "feeCollector currency balance is not correct"
+        );
+
+        assertEq(token.balanceOf(tokenReceiver), amount, "tokenReceiver received wrong amount of tokens");
+        assertEq(token.balanceOf(tokenHolder), 0, "tokenHolder still has tokens");
+        assertEq(token.totalSupply(), expectedTotalTokenSupply, "token supply changed during deployment");
+
+        assertEq(
+            token.balanceOf(FeeSettings(address(token.feeSettings())).tokenFeeCollector(address(token))),
+            FeeSettings(address(token.feeSettings())).tokenFee(amount, address(token))
+        );
+    }
+
     function ensureCostIsRoundedUp(uint256 _tokenBuyAmount, uint256 _nominalPrice) public {
         console.log(
             "feeCollector currency balance: %s",
@@ -195,7 +307,8 @@ contract PrivateOfferTest is Test {
             _nominalPrice,
             expiration,
             currency,
-            token
+            token,
+            address(0)
         );
         address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
 
@@ -321,7 +434,8 @@ contract PrivateOfferTest is Test {
             _nominalPrice,
             expiration,
             currency,
-            token
+            token,
+            address(0)
         );
         address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
 
@@ -369,7 +483,8 @@ contract PrivateOfferTest is Test {
             _nominalPrice,
             expiration,
             currency,
-            token
+            token,
+            address(0)
         );
         address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
 
@@ -414,7 +529,8 @@ contract PrivateOfferTest is Test {
             price,
             expiration,
             currency,
-            token
+            token,
+            address(0)
         );
         address expectedAddress = factory.predictPrivateOfferAddress(salt, arguments);
 

@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
+import "../lib/forge-std/src/console.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "./resources/CloneCreators.sol";
@@ -199,7 +200,8 @@ contract CompanySetUpTest is Test {
             maxAmountOfTokenToBeSold,
             paymentToken,
             token,
-            0,
+            deadline,
+            address(0),
             address(0)
         );
 
@@ -401,7 +403,8 @@ contract CompanySetUpTest is Test {
             price,
             deadline,
             paymentToken,
-            token
+            token,
+            address(0)
         );
         privateOfferAddress = privateOfferFactory.predictPrivateOfferAddress(salt, arguments);
 

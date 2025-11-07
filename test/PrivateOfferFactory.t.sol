@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
+import "../lib/forge-std/src/console.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/PrivateOffer.sol";
@@ -71,7 +72,8 @@ contract PrivateOfferFactoryTest is Test {
             price,
             _expiration,
             IERC20(address(currency)),
-            token
+            token,
+            address(0)
         );
         address expectedAddress = factory.predictPrivateOfferAddress(_salt, arguments);
 
@@ -129,7 +131,8 @@ contract PrivateOfferFactoryTest is Test {
             price,
             expiration,
             IERC20(address(currency)),
-            token
+            token,
+            address(0)
         );
 
         // predict addresses for vesting contract and private offer contract

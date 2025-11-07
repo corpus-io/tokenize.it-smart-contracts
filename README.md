@@ -52,6 +52,9 @@ More dev information can be found here:
 3. Employee participation is easy:
    - direct distribution of tokens (does not need another smart contract)
    - vesting can be realized using the [Vesting.sol](./contracts/Vesting.sol) contract
+4. Secondary market trading between investors:
+   - investors can trade existing tokens between each other using the [TokenSwap.sol](contracts/TokenSwap.sol) contract
+   - unlike PrivateOffer and Crowdinvesting which mint new tokens, TokenSwap facilitates the exchange of already-issued tokens between parties at a preset price
 
 The requirements for an address to send or receive tokens are checked against the [AllowList.sol](contracts/AllowList.sol) contract. Fees are collected according to the settings in [FeeSettings.sol](./contracts/FeeSettings.sol). Tokenize.it will deploy and manage at least one AllowList and one FeeSettings contract.
 

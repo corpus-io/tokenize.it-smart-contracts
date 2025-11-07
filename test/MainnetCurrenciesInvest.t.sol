@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
+import "../lib/forge-std/src/console.sol";
 //import "../lib/forge-std/stdlib.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
@@ -120,6 +121,7 @@ contract MainnetCurrencies is Test {
             _currency,
             token,
             type(uint256).max,
+            address(0),
             address(0)
         );
         Crowdinvesting _crowdinvesting = Crowdinvesting(
@@ -208,7 +210,8 @@ contract MainnetCurrencies is Test {
             price,
             expiration,
             _currency,
-            token
+            token,
+            address(0)
         );
         address expectedAddress = inviteFactory.predictPrivateOfferAddress(salt, arguments);
 

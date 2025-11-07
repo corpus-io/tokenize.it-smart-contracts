@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
+import "../lib/forge-std/src/console.sol";
 import "../contracts/factories/VestingCloneFactory.sol";
 import "./resources/ERC20MintableByAnyone.sol";
 
@@ -307,7 +308,7 @@ contract VestingTest is Test {
         assertEq(token.balanceOf(_beneficiary), amount, "balance is wrong");
     }
 
-    function testNoWrongManagers(address rando) public {
+    function testNoWrongManagers(address rando) public view {
         vm.assume(rando != address(owner));
 
         assertFalse(vesting.managers(rando), "rando is a manager");

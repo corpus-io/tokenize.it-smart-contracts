@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import "../lib/forge-std/src/Test.sol";
+import "../lib/forge-std/src/console.sol";
 import "../contracts/factories/FeeSettingsCloneFactory.sol";
 
 contract tokenTest is Test {
@@ -76,7 +77,7 @@ contract tokenTest is Test {
         assertEq(expected1, actual, "address prediction failed");
     }
 
-    function testChangingParametersChangesAddress() public {
+    function testChangingParametersChangesAddress() public view {
         address someAddress = address(42);
 
         address base = factory.predictCloneAddress(
