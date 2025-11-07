@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.23;
 
-import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
@@ -42,12 +42,7 @@ struct TokenSwapInitializerArguments {
  *          Then any party wanting to sell tokens can do so through the sell function.
  * @dev The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support
  */
-contract TokenSwap is
-    ERC2771ContextUpgradeable,
-    Ownable2StepUpgradeable,
-    PausableUpgradeable,
-    ReentrancyGuardUpgradeable
-{
+contract TokenSwap is ERC2771ContextUpgradeable, OwnableUpgradeable, PausableUpgradeable, ReentrancyGuardUpgradeable {
     using SafeERC20 for IERC20;
 
     /// address that receives the currency/tokens when tokens are bought/sold
@@ -104,7 +99,7 @@ contract TokenSwap is
      */
     function initialize(TokenSwapInitializerArguments memory _arguments) external initializer {
         require(_arguments.owner != address(0), "owner can not be zero address");
-        __Ownable2Step_init(); // sets msgSender() as owner
+        __Ownable_init(); // sets msgSender() as owner
         _transferOwnership(_arguments.owner); // sets owner as owner
 
         require(_arguments.receiver != address(0), "receiver can not be zero address");

@@ -954,12 +954,11 @@ contract TokenSwapTest is Test {
     }
 
     function testTransferOwnership(address newOwner) public {
+        assertTrue(tokenSwap.owner() == owner, "wrong owner");
+
         vm.prank(owner);
         tokenSwap.transferOwnership(newOwner);
-        assertTrue(tokenSwap.owner() == owner, "owner should still be current owner before acceptance");
 
-        vm.prank(newOwner);
-        tokenSwap.acceptOwnership();
         assertTrue(tokenSwap.owner() == newOwner, "owner should be newOwner after acceptance");
     }
 
