@@ -31,14 +31,16 @@ struct TokenSwapInitializerArguments {
  * @title TokenSwap
  * @author malteish, cjentzsch
  * @notice This contract represents the offer to buy or sell an amount of tokens at a preset price.
- *      It can be used by anyone and there is no limit to the number of times it can be used.
- *      The buyer or seller can decide how many tokens to buy or sell.
+ *      It can be used by anyone as long as not all tokens have been bought or sold.
+ *      Note that the total size of the order is determined by the allowance granted or funds available in the holder address (e.g. a buy oder
+ *      will buy tokens until it can not pay the seller anymore because it ran out of allowance or holder runs out of currency).
+ *      The buyer or seller can decide how many tokens to buy or sell, capped by the amount still available.
  *      The currency the offer is denominated in is set at creation time and cannot be changed.
- *      The contract can be paused at any time by the owner, which will prevent any new deals from being made. Then, changes to the contract can be made, like changing the price, holder and receiver.
+ *      The contract can be paused at any time by the owner, which will prevent any new deals from being made.
  *      The contract can be unpaused, which will allow new deals to be made again.
  *      Contract as sell order: A token holder wanting to sell their tokens can create a TokenSwap contract with the desired price and give it an allowance to transfer their tokens.
  *          Then any party wanting to buy tokens can do so through the buy function.
- *      Contract as buy order: A party wanting to buy tokens can create a TokenSwap contract with the desired price and grant it an allowance in currency to the contract.
+ *      Contract as buy order: A party wanting to buy tokens can create a TokenSwap contract with the desired price and grant it an allowance in currency.
  *          Then any party wanting to sell tokens can do so through the sell function.
  * @dev The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support
  */
@@ -117,6 +119,16 @@ contract TokenSwap is ERC2771ContextUpgradeable, OwnableUpgradeable, PausableUpg
         currency = _arguments.currency;
     }
 
+    /**
+     * @notice Retrieves the fee amount and the fee receiver for a token swap transaction.
+     * @dev This internal function queries the token's fee settings to determine:
+     *      1. The fee amount to be deducted from the transaction
+     *      2. The address that should receive the collected fees
+     *      The fee is calculated based on the currency amount and the specific token.
+     * @param _currencyAmount The total currency amount involved in the swap transaction, in bits (smallest subunit of currency)
+     * @return fee The fee amount to be collected, in bits (smallest subunit of currency)
+     * @return feeCollector The address that will receive the collected fees
+     */
     function _getFeeAndFeeReceiver(uint256 _currencyAmount) internal view returns (uint256, address) {
         IFeeSettingsV2 feeSettings = token.feeSettings();
         return (
@@ -203,6 +215,10 @@ contract TokenSwap is ERC2771ContextUpgradeable, OwnableUpgradeable, PausableUpg
         emit TokenPriceChanged(_tokenPrice);
     }
 
+    /**
+     * @notice change the holder to '_holder`
+     * @param _holder new holder
+     */
     function setHolder(address _holder) external onlyOwner {
         require(_holder != address(0), "holder can not be zero address");
         holder = _holder;

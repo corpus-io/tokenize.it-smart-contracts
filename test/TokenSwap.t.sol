@@ -388,6 +388,9 @@ contract TokenSwapTest is Test {
         );
     }
 
+    /**
+     * @Note this is not an expected use case, but it should still work with the proper setup
+     */
     function testBuyAndSellHappyCase(uint256 tokenSellAmount, uint256 tokenBuyAmount) public {
         vm.assume(tokenSellAmount >= 10 ** 18);
         vm.assume(tokenSellAmount <= UINT256_MAX / 10 ** 20); // to avoid overflow during calculations

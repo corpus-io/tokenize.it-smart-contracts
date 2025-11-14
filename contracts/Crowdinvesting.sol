@@ -279,6 +279,18 @@ contract Crowdinvesting is
         }
     }
 
+    /**
+     * @notice Retrieves the fee amount and the fee receiver for a crowdinvesting transaction.
+     * @dev This internal function queries the token's fee settings to determine:
+     *      1. The fee amount to be deducted from the transaction
+     *      2. The address that should receive the collected fees
+     *      The fee is calculated based on the currency amount and the specific token.
+     *      This function is called during token purchases to ensure fees are properly collected
+     *      and directed to the designated fee collector.
+     * @param _currencyAmount The total currency amount involved in the crowdinvesting transaction, in bits (smallest subunit of currency)
+     * @return fee The fee amount to be collected, in bits (smallest subunit of currency)
+     * @return feeCollector The address that will receive the collected fees
+     */
     function _getFeeAndFeeReceiver(uint256 _currencyAmount) internal view returns (uint256, address) {
         IFeeSettingsV2 feeSettings = token.feeSettings();
         return (
