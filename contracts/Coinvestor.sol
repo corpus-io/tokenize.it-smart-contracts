@@ -7,7 +7,7 @@ import "./Token.sol";
 
 
 
-contract Coinvestor is Ownable2StepUpgradeable {
+contract/Coinvestor is Ownable2StepUpgradeable {
     address[] public beneficiaries; // [0] is the conivestor, the others are the crry receivers
     uint64[] public percentage; // divided by uint64max
     uint public baseprice; // currency: EUR
