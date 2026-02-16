@@ -1,4 +1,4 @@
-name: prettier
+name: prettier.yml
 
 on:
   pull_request:
@@ -7,7 +7,7 @@ on:
       - main
 
 jobs:
-  prettier:
+  prettier:yml
     runs-on: ubuntu-latest
 
     steps:
