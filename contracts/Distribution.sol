@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./Token.sol";
+import "./Vesting.sol";
 import "./interfaces/IFeeSettings.sol";
 
 struct DistributionInitializerArguments {
@@ -43,6 +44,8 @@ contract Distribution is ERC2771ContextUpgradeable, Ownable2StepUpgradeable {
     mapping(address => uint256) public paidOut;
     /// @notice Extra currency credit assigned to an address via reassign(), analogous to token reissuance after key loss
     mapping(address => uint256) public extraCredit;
+    /// @notice Tracks per-plan payouts for Vesting contracts, keyed by (vestingContract, planId)
+    mapping(address => mapping(uint64 => uint256)) public vestingPlanPaidOut;
     uint64 public reassignAfter;
 
     event Reassigned(address indexed from, address indexed to, uint256 amount);
@@ -126,6 +129,35 @@ contract Distribution is ERC2771ContextUpgradeable, Ownable2StepUpgradeable {
         _claim(address(_holder), _recipient);
     }
 
+    /**
+     * @notice Claims the distribution share for a single vesting plan.
+     * Uses Vesting.unreleasedAt to determine the plan's token balance at the snapshot, ensuring
+     * each beneficiary receives exactly their proportional share — no more, no less.
+     * Also increments paidOut[vestingContract] to prevent the owner from reassigning the same
+     * funds via the address-level path.
+     * @param _holder the Vesting contract holding the tokens
+     * @param _planId the vesting plan ID whose beneficiary is claiming
+     * @param _recipient address to receive the currency payout
+     */
+    function claim(Vesting _holder, uint64 _planId, address _recipient) external {
+        require(_msgSender() == _holder.beneficiary(_planId), "caller is not the plan beneficiary");
+        uint256 amount = eligibleForPlan(_holder, _planId);
+        vestingPlanPaidOut[address(_holder)][_planId] += amount;
+        paidOut[address(_holder)] += amount;
+        currency.safeTransfer(_recipient, amount);
+    }
+
+    /**
+     * @notice Returns the claimable currency amount for a single vesting plan.
+     * @param _holder the Vesting contract holding the tokens
+     * @param _planId the vesting plan ID to query
+     */
+    function eligibleForPlan(Vesting _holder, uint64 _planId) public view returns (uint256) {
+        return
+            (totalCurrencyAmount * _holder.unreleasedAt(_planId, snapshotId)) /
+            totalTokenAmount -
+            vestingPlanPaidOut[address(_holder)][_planId];
+    }
 
     function _claim(address _holder, address _recipient) internal {
         uint256 amount = eligible(_holder);
