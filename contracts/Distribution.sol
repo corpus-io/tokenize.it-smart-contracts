@@ -140,8 +140,10 @@ contract Distribution is ERC2771ContextUpgradeable, Ownable2StepUpgradeable {
      * @param _recipient address to receive the currency payout
      */
     function claim(Vesting _holder, uint64 _planId, address _recipient) external {
+        require(!_holder.isMintable(_planId), "mintable vesting plans are not eligible: tokens are not held by the contract at snapshot time");
         require(_msgSender() == _holder.beneficiary(_planId), "caller is not the plan beneficiary");
         uint256 amount = eligibleForPlan(_holder, _planId);
+        require(amount <= eligible(address(_holder)), "plan allocation exceeds vesting contract's snapshot balance");
         vestingPlanPaidOut[address(_holder)][_planId] += amount;
         paidOut[address(_holder)] += amount;
         currency.safeTransfer(_recipient, amount);
