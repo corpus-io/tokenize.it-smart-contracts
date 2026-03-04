@@ -9,12 +9,26 @@ import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ArraysUpgradeable.sol";
 
 /**
  * @dev a token must implement this interface to be used with the Vesting contract and mintable vestings
  */
 interface ERC20Mintable {
     function mint(address, uint256) external;
+}
+
+/**
+ * @dev minimal interface for probing whether a token snapshot ID exists
+ */
+interface IERC20Snapshot {
+    function totalSupplyAt(uint256 snapshotId) external view returns (uint256);
+}
+
+/// Stores (snapshotId, value) pairs for a single plan field, mirroring ERC20Snapshot's Snapshots struct.
+struct PlanSnapshots {
+    uint256[] ids;
+    uint256[] values;
 }
 
 /// Struct that holds all information about a single vesting plan.
@@ -46,6 +60,8 @@ struct VestingPlan {
  * must happen before the tokens can be released.
  */
 contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
+    using ArraysUpgradeable for uint256[];
+
     event Commit(bytes32 hash);
     event ERC20Released(uint64 id, uint256 amount);
     event Revoke(bytes32 hash, uint64 endVestingTime);
@@ -66,6 +82,12 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     mapping(bytes32 => uint64) public commitments;
     /// total amount of vesting plans created
     uint64 public ids;
+    /// per-plan checkpoint history of allocation values, recorded before each change
+    mapping(uint64 => PlanSnapshots) private _allocationSnapshots;
+    /// per-plan checkpoint history of released values, recorded before each change
+    mapping(uint64 => PlanSnapshots) private _releasedSnapshots;
+    /// the highest token snapshot ID that Vesting has observed so far
+    uint256 private _lastKnownTokenSnapshotId;
 
     /**
      * This contract will be used through clones, so the constructor only initializes
@@ -306,6 +328,9 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         _duration = _duration > _cliff ? _duration : _cliff;
 
         id = ++ids;
+        // record allocation=0 for this new plan under the current snapshot, so queries
+        // for snapshots taken before this plan was created correctly return zero.
+        _updateAllocationSnapshot(id);
         vestings[id] = VestingPlan({
             allocation: _allocation,
             released: 0,
@@ -329,6 +354,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         _endTime = _endTime < uint64(block.timestamp) ? uint64(block.timestamp) : _endTime;
         require(_endTime < start(_id) + duration(_id), "endTime must be before vesting end");
 
+        _updateAllocationSnapshot(_id);
         if (start(_id) + cliff(_id) > _endTime) {
             delete vestings[_id];
         } else {
@@ -390,6 +416,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     function release(uint64 _id, uint256 _amount) public nonReentrant {
         require(_msgSender() == beneficiary(_id), "Only beneficiary can release tokens");
         _amount = releasable(_id) < _amount ? releasable(_id) : _amount;
+        _updateReleasedSnapshot(_id);
         vestings[_id].released += _amount;
         if (isMintable(_id)) {
             ERC20Mintable(token).mint(beneficiary(_id), _amount);
@@ -475,6 +502,86 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
      */
     function _msgData() internal view override(ContextUpgradeable, ERC2771ContextUpgradeable) returns (bytes calldata) {
         return ERC2771ContextUpgradeable._msgData();
+    }
+
+    /**
+     * @dev Returns the allocation of a vesting plan at a given token snapshot.
+     * Mirrors ERC20Snapshot.balanceOfAt: returns the recorded value before the first modification
+     * after the snapshot, or the current value if no modifications occurred since then.
+     */
+    function allocationAt(uint64 _id, uint256 _snapshotId) public view returns (uint256) {
+        (bool snapshotted, uint256 value) = _valueAt(_snapshotId, _allocationSnapshots[_id]);
+        return snapshotted ? value : allocation(_id);
+    }
+
+    /**
+     * @dev Returns the released amount of a vesting plan at a given token snapshot.
+     */
+    function releasedAt(uint64 _id, uint256 _snapshotId) public view returns (uint256) {
+        (bool snapshotted, uint256 value) = _valueAt(_snapshotId, _releasedSnapshots[_id]);
+        return snapshotted ? value : released(_id);
+    }
+
+    /**
+     * @dev Returns the unreleased (locked) token amount for a vesting plan at a given snapshot.
+     * This is the value Distribution should use to attribute each beneficiary's share.
+     */
+    function unreleasedAt(uint64 _id, uint256 _snapshotId) public view returns (uint256) {
+        return allocationAt(_id, _snapshotId) - releasedAt(_id, _snapshotId);
+    }
+
+    /// Records the current allocation for plan _id under the current token snapshot ID,
+    /// if the snapshot has advanced since the last recorded entry. Must be called before
+    /// any change to vestings[_id].allocation.
+    function _updateAllocationSnapshot(uint64 _id) private {
+        _updatePlanSnapshot(_allocationSnapshots[_id], vestings[_id].allocation);
+    }
+
+    /// Records the current released amount for plan _id under the current token snapshot ID.
+    /// Must be called before any change to vestings[_id].released.
+    function _updateReleasedSnapshot(uint64 _id) private {
+        _updatePlanSnapshot(_releasedSnapshots[_id], vestings[_id].released);
+    }
+
+    function _updatePlanSnapshot(PlanSnapshots storage _snapshots, uint256 _currentValue) private {
+        _advanceTokenSnapshotId();
+        uint256 currentId = _lastKnownTokenSnapshotId;
+        // only record if at least one snapshot exists and the snapshot has advanced
+        if (currentId > 0 && _lastPlanSnapshotId(_snapshots.ids) < currentId) {
+            _snapshots.ids.push(currentId);
+            _snapshots.values.push(_currentValue);
+        }
+    }
+
+    /// Advances _lastKnownTokenSnapshotId by probing whether the next snapshot ID is populated.
+    /// Uses try/catch on totalSupplyAt so no changes to Token.sol are required.
+    function _advanceTokenSnapshotId() private {
+        while (true) {
+            try IERC20Snapshot(token).totalSupplyAt(_lastKnownTokenSnapshotId + 1) returns (uint256) {
+                _lastKnownTokenSnapshotId++;
+            } catch {
+                break;
+            }
+        }
+    }
+
+    /// Mirrors ERC20Snapshot._valueAt: binary-search for the value at or before _snapshotId.
+    function _valueAt(uint256 _snapshotId, PlanSnapshots storage _snapshots) private view returns (bool, uint256) {
+        require(_snapshotId > 0, "snapshotId must be positive");
+        // validates the snapshot exists — totalSupplyAt reverts on nonexistent IDs
+        IERC20Snapshot(token).totalSupplyAt(_snapshotId);
+
+        uint256 index = _snapshots.ids.findUpperBound(_snapshotId);
+        if (index == _snapshots.ids.length) {
+            // no entry at or after _snapshotId: value unchanged since snapshot
+            return (false, 0);
+        } else {
+            return (true, _snapshots.values[index]);
+        }
+    }
+
+    function _lastPlanSnapshotId(uint256[] storage ids) private view returns (uint256) {
+        return ids.length == 0 ? 0 : ids[ids.length - 1];
     }
 
     /**
