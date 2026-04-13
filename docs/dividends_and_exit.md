@@ -44,7 +44,7 @@ When a company is acquired or wound down, it can set up an automated exit contra
    - `claimStart` / `drainStart`: the exit window
    - `referenceCurrencies` / `referenceToExitRates` (optional): exchange rates from reference currencies to the exit currency, used by CoinvestedPosition to convert carry when the position currency differs from the exit currency
 
-   The full `_totalCurrencyAmount` is transferred from the funder to the Exit contract at initialization (no fee is taken here).
+   The full `_initialFundingAmount` is transferred from the funder to the Exit contract at initialization (no fee is taken here).
 
 2. **Holders claim**: From `claimStart` onwards, any holder calls `claim(tokenAmount, recipient, minPayout)`. The contract:
 
@@ -57,7 +57,7 @@ When a company is acquired or wound down, it can set up an automated exit contra
 
 ### Security considerations
 
-There is no on-chain enforcement that `totalCurrencyAmount` equals `totalTokenSupply × pricePerToken`. The exit can therefore be partially funded by design (e.g. if not all holders are expected to claim), but it also means a rogue admin could mint additional tokens after the exit is deployed, and use those to drain the exit contract. The price per token remains fixed — but the currency balance may run out, causing the last claims to revert.
+There is no on-chain enforcement that `initialFundingAmount` equals `totalTokenSupply × pricePerToken`. The exit can therefore be partially funded by design (e.g. if not all holders are expected to claim), but it also means a rogue admin could mint additional tokens after the exit is deployed, and use those to drain the exit contract. The price per token remains fixed — but the currency balance may run out, causing the last claims to revert.
 
 ### CoinvestedPosition integration
 

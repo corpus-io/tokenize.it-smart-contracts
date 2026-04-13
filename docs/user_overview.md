@@ -108,7 +108,7 @@ After a company earns revenue or undergoes a liquidation event, it can distribut
 
 1. The token admin takes a snapshot of current token balances by calling `snapshot()` on the Token contract. The snapshot captures every holder's balance at that moment.
 2. The company (or platform on its behalf) clones a Distribution contract, funding it with the total payout amount in currency. A platform fee (using `privateOfferFee`) is deducted from the funded amount at initialization.
-3. Token holders call `claim()` to receive their proportional share: `totalCurrencyAmount * balanceAtSnapshot / totalSupplyAtSnapshot`.
+3. Token holders call `claim()` to receive their proportional share: `initialFundingAmount * balanceAtSnapshot / totalSupplyAtSnapshot`.
 4. If a holder cannot claim (e.g. lost key, or a smart contract), the contract owner can call `reassign()` after the configured `reassignAfter` timestamp to redirect that share to another address. All reassignments are recorded on-chain for auditability.
 
 ### Exit proceeds

@@ -103,8 +103,8 @@ Distributes a fixed pot of currency to token holders proportional to a prior sna
 
 **Key details:**
 
-- At initialization, the contract pulls `totalCurrencyAmount` from `_currencyProvider` and deducts a platform fee using `privateOfferFee`. Only the net amount after fees is actually available for claims.
-- `eligible(address)` returns a holder's unclaimed amount: `totalCurrencyAmount * balanceOfAt(snapshotId) / totalSupplyAt(snapshotId) + extraCredit - paidOut`.
+- At initialization, the contract pulls `initialFundingAmount` from `_currencyProvider` and deducts a platform fee using `privateOfferFee`. Only the net amount after fees is actually available for claims.
+- `eligible(address)` returns a holder's unclaimed amount: `initialFundingAmount * balanceOfAt(snapshotId) / totalSupplyAt(snapshotId) + extraCredit - paidOut`.
 - `claim(address recipient)` transfers the caller's eligible amount, marked via `paidOut`.
 - `reassign(from, to, amount)` lets the owner redirect unclaimed funds (e.g. for a holder who lost their key, or a non-mintable vesting contract or similar), available only after `reassignAfter`. Emits `Reassigned` for on-chain auditability.
 - Currency must have `TRUSTED_CURRENCY` attribute on the token's AllowList.

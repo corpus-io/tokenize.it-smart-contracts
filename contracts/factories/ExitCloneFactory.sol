@@ -20,25 +20,25 @@ contract ExitCloneFactory is CloneFactory {
 
     /**
      * @notice Create a new Exit clone, fund it with currency from `_currencyProvider`, and initialize it.
-     *  `_currencyProvider` must have approved the clone address (use predictCloneAddress()) for `_totalCurrencyAmount`.
-     *  Neither `_currencyProvider` nor `_totalCurrencyAmount` affects the clone's address.
+     *  `_currencyProvider` must have approved the clone address (use predictCloneAddress()) for `_initialFundingAmount`.
+     *  Neither `_currencyProvider` nor `_initialFundingAmount` affects the clone's address.
      * @param _rawSalt influences the address of the clone, but not the initialization
      * @param _trustedForwarder can not be changed, but is checked for security
-     * @param _currencyProvider address from which the currency is pulled; must have approved the clone address for _totalCurrencyAmount; does not affect clone address
+     * @param _currencyProvider address from which the currency is pulled; must have approved the clone address for _initialFundingAmount; does not affect clone address
      * @param _arguments struct with all initialization parameters
-     * @param _totalCurrencyAmount amount of currency to transfer from _currencyProvider at initialization; does not affect clone address
+     * @param _initialFundingAmount amount of currency to transfer from _currencyProvider at initialization; does not affect clone address
      */
     function createExitClone(
         bytes32 _rawSalt,
         address _trustedForwarder,
         address _currencyProvider,
         ExitInitializerArguments memory _arguments,
-        uint256 _totalCurrencyAmount
+        uint256 _initialFundingAmount
     ) external returns (address) {
         bytes32 salt = _getSalt(_rawSalt, _trustedForwarder, _arguments);
         Exit clone = Exit(Clones.cloneDeterministic(implementation, salt));
         require(clone.isTrustedForwarder(_trustedForwarder), "ExitCloneFactory: Unexpected trustedForwarder");
-        clone.initialize(_arguments, _currencyProvider, _totalCurrencyAmount);
+        clone.initialize(_arguments, _currencyProvider, _initialFundingAmount);
         emit NewClone(address(clone));
         return address(clone);
     }

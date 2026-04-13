@@ -197,12 +197,12 @@ contract CoinvestedPositionExitTest is Test {
         return Exit(exitFactory.createExitClone(salt, trustedForwarder, currencyProvider, args, totalCurrency));
     }
 
-    /// @dev Deploy Exit with explicit totalCurrency (may differ from price * amount)
+    /// @dev Deploy Exit with explicit initialFundingAmount (may differ from price * amount)
     function _deployExitWithFunding(
         bytes32 salt,
         FakePaymentToken exitCurrency,
         uint256 pricePerToken,
-        uint256 totalCurrencyAmount
+        uint256 initialFundingAmount
     ) internal returns (Exit) {
         ExitInitializerArguments memory args = ExitInitializerArguments({
             owner: owner,
@@ -215,10 +215,10 @@ contract CoinvestedPositionExitTest is Test {
             referenceToExitRates: new uint256[](0)
         });
         address cloneAddr = exitFactory.predictCloneAddress(salt, trustedForwarder, args);
-        exitCurrency.mint(currencyProvider, totalCurrencyAmount);
+        exitCurrency.mint(currencyProvider, initialFundingAmount);
         vm.prank(currencyProvider);
-        exitCurrency.approve(cloneAddr, totalCurrencyAmount);
-        return Exit(exitFactory.createExitClone(salt, trustedForwarder, currencyProvider, args, totalCurrencyAmount));
+        exitCurrency.approve(cloneAddr, initialFundingAmount);
+        return Exit(exitFactory.createExitClone(salt, trustedForwarder, currencyProvider, args, initialFundingAmount));
     }
 
     /// @dev Invariant helper: assert sum of payouts equals received and token balance is 0

@@ -68,13 +68,13 @@ contract ExitCloneFactoryTest is Test {
         bytes32 salt,
         address _trustedForwarder,
         ExitInitializerArguments memory args,
-        uint256 _totalCurrencyAmount
+        uint256 _initialFundingAmount
     ) internal returns (address) {
         address cloneAddr = factory.predictCloneAddress(salt, _trustedForwarder, args);
-        currency.mint(currencyProvider, _totalCurrencyAmount);
+        currency.mint(currencyProvider, _initialFundingAmount);
         vm.prank(currencyProvider);
-        currency.approve(cloneAddr, _totalCurrencyAmount);
-        return factory.createExitClone(salt, _trustedForwarder, currencyProvider, args, _totalCurrencyAmount);
+        currency.approve(cloneAddr, _initialFundingAmount);
+        return factory.createExitClone(salt, _trustedForwarder, currencyProvider, args, _initialFundingAmount);
     }
 
     // ========== F1-E. Address Prediction ==========
@@ -177,7 +177,7 @@ contract ExitCloneFactoryTest is Test {
     function testTotalCurrencyAmountDoesNotAffectAddress() public {
         ExitInitializerArguments memory args = _baseArgs();
         address addr1 = factory.predictCloneAddress(EXAMPLE_SALT, trustedForwarder, args);
-        // totalCurrencyAmount is no longer part of the salt — same address regardless of funding amount
+        // initialFundingAmount is no longer part of the salt — same address regardless of funding amount
         address addr2 = factory.predictCloneAddress(EXAMPLE_SALT, trustedForwarder, args);
         assertEq(addr1, addr2);
     }

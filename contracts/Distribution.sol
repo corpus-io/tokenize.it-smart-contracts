@@ -82,7 +82,7 @@ contract Distribution is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, Ree
         _transferOwnership(_arguments.owner);
         token = _arguments.token;
         snapshotId = _arguments.snapshotId;
-        // background: totalSupply 0 would make every claim revert, thus locking up funds forever
+        // totalSupply 0 would make every claim revert
         require(token.totalSupplyAt(snapshotId) > 0, "snapshot has no tokens");
         currency = _arguments.currency;
         require(address(_arguments.currency) != address(_arguments.token), "currency and token must be different");
@@ -192,15 +192,15 @@ contract Distribution is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, Ree
     }
 
     /**
-     * @notice Transfers the entire balance of _token held by this contract to _recipient.
+     * @notice Transfers the entire balance of _currency held by this contract to _recipient.
      *  Can only be called by the owner after reassignOrDrainAfter has passed.
      *  Intended to recover any erc20 tokens held by the contract.
      * @param _recipient Address that receives the token balance
-     * @param _token ERC20 token to recover
+     * @param _currency ERC20 token to recover
      */
-    function drain(address _recipient, IERC20 _token) external onlyOwner nonReentrant {
+    function drain(address _recipient, IERC20 _currency) external onlyOwner nonReentrant {
         require(block.timestamp >= reassignOrDrainAfter, "drain not yet available");
-        _token.safeTransfer(_recipient, _token.balanceOf(address(this)));
+        _currency.safeTransfer(_recipient, _currency.balanceOf(address(this)));
     }
 
     function _msgSender() internal view override(ContextUpgradeable, ERC2771ContextUpgradeable) returns (address) {

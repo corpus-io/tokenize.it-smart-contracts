@@ -80,12 +80,12 @@ contract Exit is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, ReentrancyG
      * @notice Initializes the exit contract with the given parameters and funds it with currency.
      * @param _arguments Struct containing all initialization parameters
      * @param _currencyProvider Address from which the initial currency amount is transferred
-     * @param _totalCurrencyAmount Amount of currency to transfer from _currencyProvider to this contract
+     * @param _initialFundingAmount Amount of currency to transfer from _currencyProvider to this contract
      */
     function initialize(
         ExitInitializerArguments memory _arguments,
         address _currencyProvider,
-        uint256 _totalCurrencyAmount
+        uint256 _initialFundingAmount
     ) external initializer {
         require(_arguments.pricePerToken > 0, "price must be positive");
         require(_arguments.claimStart > 0, "claimStart must be set");
@@ -119,7 +119,7 @@ contract Exit is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, ReentrancyG
             require(_arguments.referenceToExitRates[i] > 0, "referenceToExitRate must be positive");
             referenceToExitRate[_arguments.referenceCurrencies[i]] = _arguments.referenceToExitRates[i];
         }
-        _arguments.currency.safeTransferFrom(_currencyProvider, address(this), _totalCurrencyAmount);
+        _arguments.currency.safeTransferFrom(_currencyProvider, address(this), _initialFundingAmount);
     }
 
     /**
