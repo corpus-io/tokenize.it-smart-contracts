@@ -185,6 +185,7 @@ contract FeeSettings is
      * @param _feeType          bytes32 identifier (e.g. keccak256("MY_FEE"))
      * @param _maxNumerator     Hard cap enforced on all numerators for this type
      * @param _defaultNumerator Initial default numerator; must be <= _maxNumerator
+     * @param _collector        Default fee collector address for this type
      */
     function registerFeeType(
         bytes32 _feeType,
@@ -271,6 +272,7 @@ contract FeeSettings is
     ) external onlyManager {
         require(feeTypeConfigs[_feeType].maxNumerator > 0, "unknown fee type");
         require(_token != address(0), "token cannot be 0x0");
+        require(_numerator <= feeTypeConfigs[_feeType].maxNumerator, "numerator exceeds max");
         require(_validityDate > block.timestamp, "validity date must be in the future");
         customFees[_feeType][_token] = CustomFee({numerator: _numerator, validityDate: _validityDate});
         emit CustomFeeSet(_feeType, _token, _numerator, _validityDate);
@@ -412,12 +414,12 @@ contract FeeSettings is
     }
 
     // -------------------------------------------------------------------------
-    // IFeeSettingsV1 named accessors (backwards-compat, no token address needed)
+    // IFeeSettingsV1 named accessors (backwards-compatible wrappers, no token address needed)
     // -------------------------------------------------------------------------
 
     /**
      * @notice Returns the default token fee collector.
-     * @dev V1 compat — V1 has no concept of per-token collectors, so we return the type default.
+     * @dev V1 wrapper — V1 has no concept of per-token collectors, so we return the type default.
      */
     function feeCollector() external view override(IFeeSettingsV1) returns (address) {
         return collectors[FeeTypes.TOKEN][address(0)];
@@ -425,22 +427,22 @@ contract FeeSettings is
 
     /**
      * @notice Returns the fee for a given token amount.
-     * @dev V1 compat — caller is assumed to be the token contract.
+     * @dev V1 wrapper — caller is assumed to be the token contract.
      */
     function tokenFee(uint256 _tokenAmount) external view override(IFeeSettingsV1) returns (uint256) {
-        return tokenFee(_tokenAmount, _msgSender());
+        return fee(FeeTypes.TOKEN, _tokenAmount, _msgSender());
     }
 
-    /// @dev V1 compat
+    /// @dev V1 wrapper
     function continuousFundraisingFee(
         uint256 _currencyAmount
     ) external view override(IFeeSettingsV1) returns (uint256) {
-        return crowdinvestingFee(_currencyAmount, address(0));
+        return fee(FeeTypes.CROWDINVESTING, _currencyAmount, address(0));
     }
 
-    /// @dev V1 compat
+    /// @dev V1 wrapper
     function personalInviteFee(uint256 _currencyAmount) external view override(IFeeSettingsV1) returns (uint256) {
-        return privateOfferFee(_currencyAmount, address(0));
+        return fee(FeeTypes.PRIVATE_OFFER, _currencyAmount, address(0));
     }
 
     // -------------------------------------------------------------------------
@@ -493,9 +495,7 @@ contract FeeSettings is
         if (customValidityDate < uint64(block.timestamp)) {
             return _fee(amount, defaultNumerator);
         }
-        uint256 defaultFee = _fee(amount, defaultNumerator);
-        uint256 customFee = _fee(amount, customNumerator);
-        return customFee < defaultFee ? customFee : defaultFee;
+        return _fee(amount, customNumerator < defaultNumerator ? customNumerator : defaultNumerator);
     }
 
     /**
