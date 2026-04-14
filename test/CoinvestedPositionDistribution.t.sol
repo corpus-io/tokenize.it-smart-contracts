@@ -265,7 +265,7 @@ contract CoinvestedPositionDistributionTest is Test {
         uint256 beforeR = usdc.balanceOf(receiver);
 
         vm.prank(owner);
-        coinvestedPosition.claimDistribution(IDistribution(address(distribution)), 0);
+        coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
 
         uint256 aGot = usdc.balanceOf(leadA) - beforeA;
         uint256 bGot = usdc.balanceOf(leadB) - beforeB;
@@ -328,7 +328,7 @@ contract CoinvestedPositionDistributionTest is Test {
         uint256 beforeB = usdc.balanceOf(leadB);
 
         vm.prank(owner);
-        coinvestedPosition.claimDistribution(IDistribution(address(distribution)), 0);
+        coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
 
         uint256 aGot = usdc.balanceOf(leadA) - beforeA;
         uint256 bGot = usdc.balanceOf(leadB) - beforeB;
@@ -415,7 +415,7 @@ contract CoinvestedPositionDistributionTest is Test {
         uint256 beforeR = usdc.balanceOf(receiver);
 
         vm.prank(owner);
-        coinvestedPosition3.claimDistribution(IDistribution(address(distribution)), 0);
+        coinvestedPosition3.claimDistribution(Distribution(address(distribution)), 0);
 
         assertEq(usdc.balanceOf(leadA) - beforeA, expectedA, "DI-III-A: wrong leadA payout");
         assertEq(usdc.balanceOf(leadB) - beforeB, expectedB, "DI-III-A: wrong leadB payout");
@@ -503,7 +503,7 @@ contract CoinvestedPositionDistributionTest is Test {
         uint256 beforeR = eure.balanceOf(receiver);
 
         vm.prank(owner);
-        coinvestedPosition3.claimDistribution(IDistribution(address(distribution)), 0);
+        coinvestedPosition3.claimDistribution(Distribution(address(distribution)), 0);
 
         assertEq(eure.balanceOf(leadA) - beforeA, expectedA, "DI-III-B: wrong leadA EURe payout");
         assertEq(eure.balanceOf(leadB) - beforeB, expectedB, "DI-III-B: wrong leadB EURe payout");
@@ -537,7 +537,7 @@ contract CoinvestedPositionDistributionTest is Test {
 
         // Must not revert
         vm.prank(owner);
-        coinvestedPosition.claimDistribution(IDistribution(address(distribution)), 0);
+        coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
 
         uint256 aGot = usdc.balanceOf(leadA) - beforeA;
         uint256 bGot = usdc.balanceOf(leadB) - beforeB;
@@ -566,7 +566,7 @@ contract CoinvestedPositionDistributionTest is Test {
 
         vm.expectRevert("dividend currency must be a trusted currency");
         vm.prank(owner);
-        coinvestedPosition.claimDistribution(IDistribution(address(stub)), 0);
+        coinvestedPosition.claimDistribution(Distribution(address(stub)), 0);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -586,7 +586,7 @@ contract CoinvestedPositionDistributionTest is Test {
         uint256 beforeR = usdc.balanceOf(receiver);
 
         vm.prank(owner);
-        coinvestedPosition.claimDistribution(IDistribution(address(distribution)), 0);
+        coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
 
         uint256 aGot = usdc.balanceOf(leadA) - beforeA;
         uint256 bGot = usdc.balanceOf(leadB) - beforeB;
@@ -631,7 +631,7 @@ contract CoinvestedPositionDistributionTest is Test {
         // claimDistribution must revert because eligible = 0
         vm.expectRevert("nothing to claim");
         vm.prank(owner);
-        coinvestedPositionZero.claimDistribution(IDistribution(address(distribution)), 0);
+        coinvestedPositionZero.claimDistribution(Distribution(address(distribution)), 0);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -683,7 +683,7 @@ contract CoinvestedPositionDistributionTest is Test {
         uint256 beforeR = usdc.balanceOf(receiver);
 
         vm.prank(owner);
-        coinvestedPosition.claimDistribution(IDistribution(address(distribution)), 0);
+        coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
 
         uint256 aGot = usdc.balanceOf(leadA) - beforeA;
         uint256 bGot = usdc.balanceOf(leadB) - beforeB;
@@ -740,7 +740,7 @@ contract CoinvestedPositionDistributionTest is Test {
             uint256 beforeR = usdc.balanceOf(receiver);
 
             vm.prank(owner);
-            coinvestedPosition.claimDistribution(IDistribution(address(usdcDistribution)), 0);
+            coinvestedPosition.claimDistribution(Distribution(address(usdcDistribution)), 0);
 
             uint256 aGot = usdc.balanceOf(leadA) - beforeA;
             uint256 bGot = usdc.balanceOf(leadB) - beforeB;
@@ -778,7 +778,7 @@ contract CoinvestedPositionDistributionTest is Test {
             uint256 beforeR = eure.balanceOf(receiver);
 
             vm.prank(owner);
-            coinvestedPosition.claimDistribution(IDistribution(address(eureDistribution)), 0);
+            coinvestedPosition.claimDistribution(Distribution(address(eureDistribution)), 0);
 
             uint256 aGot = eure.balanceOf(leadA) - beforeA;
             uint256 bGot = eure.balanceOf(leadB) - beforeB;
@@ -818,7 +818,7 @@ contract CoinvestedPositionDistributionTest is Test {
         uint256 beforeR = usdc.balanceOf(receiver);
 
         vm.prank(owner);
-        coinvestedPosition.claimDistribution(IDistribution(address(distribution)), 0);
+        coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
 
         uint256 aGot = usdc.balanceOf(leadA) - beforeA;
         uint256 bGot = usdc.balanceOf(leadB) - beforeB;
@@ -891,7 +891,7 @@ contract CoinvestedPositionDistributionTest is Test {
         uint256 beforeR = usdc.balanceOf(receiver);
 
         vm.prank(owner);
-        coinvestedPosition.claimDistribution(IDistribution(address(distribution)), 0);
+        coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
 
         uint256 aGot = usdc.balanceOf(leadA) - beforeA;
         uint256 bGot = usdc.balanceOf(leadB) - beforeB;
@@ -967,7 +967,7 @@ contract CoinvestedPositionDistributionTest is Test {
 
         vm.expectRevert("currency cannot be the held token");
         vm.prank(owner);
-        coinvestedPosition.claimDistribution(IDistribution(address(stub)), 0);
+        coinvestedPosition.claimDistribution(Distribution(address(stub)), 0);
     }
 
     /**
@@ -1113,7 +1113,7 @@ contract CoinvestedPositionDistributionTest is Test {
         if (coinvestedPositionEligible == 0) {
             vm.expectRevert("didn't receive expected currency from distribution");
             vm.prank(owner);
-            coinvestedPositionFuzz.claimDistribution(IDistribution(address(distributionFuzz)), 0);
+            coinvestedPositionFuzz.claimDistribution(Distribution(address(distributionFuzz)), 0);
             return;
         }
 
@@ -1126,7 +1126,7 @@ contract CoinvestedPositionDistributionTest is Test {
         snaps[3] = usdc.balanceOf(receiver);
 
         vm.prank(owner);
-        coinvestedPositionFuzz.claimDistribution(IDistribution(address(distributionFuzz)), 0);
+        coinvestedPositionFuzz.claimDistribution(Distribution(address(distributionFuzz)), 0);
 
         uint256 totalGot = 0;
         {
@@ -1164,7 +1164,7 @@ contract CoinvestedPositionDistributionTest is Test {
         IERC20(address(usdc)).transfer(address(stub), minPayout);
 
         vm.prank(owner);
-        coinvestedPosition.claimDistribution(IDistribution(address(stub)), minPayout);
+        coinvestedPosition.claimDistribution(Distribution(address(stub)), minPayout);
         assertEq(usdc.balanceOf(address(coinvestedPosition)), 0, "cp should hold no usdc after settle");
     }
 }

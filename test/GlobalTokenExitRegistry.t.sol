@@ -5,15 +5,11 @@ import "../lib/forge-std/src/Test.sol";
 
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/GlobalTokenExitRegistry.sol";
-import "../contracts/common/IExit.sol";
+import "../contracts/Exit.sol";
 import "../contracts/Token.sol";
 import "./resources/CloneCreators.sol";
 import "./resources/FakePaymentToken.sol";
 
-/// @dev Minimal IExit stub used for setExit() tests
-contract FakeExit {
-    function claim(uint256, address) external {}
-}
 
 /// @dev Minimal Ownable token stub — has owner() but no AccessControl
 contract FakeOwnableToken {
@@ -85,52 +81,52 @@ contract GlobalTokenExitRegistryTest is Test {
     // ─────────────────────────────────────────────────────────────────────────
 
     function testSetExitHappyPath() public {
-        FakeExit fakeExit = new FakeExit();
+        address fakeExit = makeAddr("fakeExit");
 
         vm.prank(admin);
         vm.expectEmit(true, true, false, false, address(registry));
-        emit GlobalTokenExitRegistry.ExitSet(token, IExit(address(fakeExit)));
-        registry.setExit(token, IExit(address(fakeExit)));
+        emit GlobalTokenExitRegistry.ExitSet(token, Exit(address(fakeExit)));
+        registry.setExit(token, Exit(address(fakeExit)));
 
         assertEq(address(registry.exits(token)), address(fakeExit), "exit not set correctly");
     }
 
     function testSetExitRevertsIfCallerIsNotTokenAdmin() public {
-        FakeExit fakeExit = new FakeExit();
+        address fakeExit = makeAddr("fakeExit");
 
         vm.prank(nonAdmin);
         vm.expectRevert("caller is not token admin or owner");
-        registry.setExit(token, IExit(address(fakeExit)));
+        registry.setExit(token, Exit(address(fakeExit)));
     }
 
     function testSetExitRevertsIfTokenIsZeroAddress() public {
-        FakeExit fakeExit = new FakeExit();
+        address fakeExit = makeAddr("fakeExit");
 
         vm.prank(admin);
         vm.expectRevert("token can not be zero address");
-        registry.setExit(Token(address(0)), IExit(address(fakeExit)));
+        registry.setExit(Token(address(0)), Exit(address(fakeExit)));
     }
 
     function testSetExitRevertsIfExitIsZeroAddress() public {
         vm.prank(admin);
         vm.expectRevert("exit can not be zero address");
-        registry.setExit(token, IExit(address(0)));
+        registry.setExit(token, Exit(address(0)));
     }
 
     function testSetExitRevertsIfAlreadySet() public {
-        FakeExit fakeExit1 = new FakeExit();
-        FakeExit fakeExit2 = new FakeExit();
+        address fakeExit1 = makeAddr("fakeExit1");
+        address fakeExit2 = makeAddr("fakeExit2");
 
         vm.prank(admin);
-        registry.setExit(token, IExit(address(fakeExit1)));
+        registry.setExit(token, Exit(address(fakeExit1)));
 
         vm.prank(admin);
         vm.expectRevert("exit has already been set");
-        registry.setExit(token, IExit(address(fakeExit2)));
+        registry.setExit(token, Exit(address(fakeExit2)));
     }
 
     function testSetExitOnlyCallableByRoleHolder() public {
-        FakeExit fakeExit = new FakeExit();
+        address fakeExit = makeAddr("fakeExit");
 
         // Grant DEFAULT_ADMIN_ROLE to nonAdmin
         bytes32 defaultAdminRole = token.DEFAULT_ADMIN_ROLE();
@@ -139,29 +135,29 @@ contract GlobalTokenExitRegistryTest is Test {
 
         // Now nonAdmin can set exit
         vm.prank(nonAdmin);
-        registry.setExit(token, IExit(address(fakeExit)));
+        registry.setExit(token, Exit(address(fakeExit)));
 
         assertEq(address(registry.exits(token)), address(fakeExit), "exit not set by new admin");
     }
 
     function testSetExitViaTokenOwner() public {
         FakeOwnableToken ownableToken = new FakeOwnableToken(admin);
-        FakeExit fakeExit = new FakeExit();
+        address fakeExit = makeAddr("fakeExit");
 
         // admin is the owner() of ownableToken — should be allowed
         vm.prank(admin);
-        registry.setExit(Token(address(ownableToken)), IExit(address(fakeExit)));
+        registry.setExit(Token(address(ownableToken)), Exit(address(fakeExit)));
 
         assertEq(address(registry.exits(Token(address(ownableToken)))), address(fakeExit), "exit not set via owner()");
     }
 
     function testSetExitRevertsForNonOwnerOfOwnableToken() public {
         FakeOwnableToken ownableToken = new FakeOwnableToken(admin);
-        FakeExit fakeExit = new FakeExit();
+        address fakeExit = makeAddr("fakeExit");
 
         vm.prank(nonAdmin);
         vm.expectRevert("caller is not token admin or owner");
-        registry.setExit(Token(address(ownableToken)), IExit(address(fakeExit)));
+        registry.setExit(Token(address(ownableToken)), Exit(address(fakeExit)));
     }
 
     function testSetExitIndependentPerToken() public {
@@ -177,14 +173,14 @@ contract GlobalTokenExitRegistryTest is Test {
                 "TT2"
             )
         );
-        FakeExit fakeExit1 = new FakeExit();
-        FakeExit fakeExit2 = new FakeExit();
+        address fakeExit1 = makeAddr("fakeExit1");
+        address fakeExit2 = makeAddr("fakeExit2");
 
         vm.prank(admin);
-        registry.setExit(token, IExit(address(fakeExit1)));
+        registry.setExit(token, Exit(address(fakeExit1)));
 
         vm.prank(admin);
-        registry.setExit(token2, IExit(address(fakeExit2)));
+        registry.setExit(token2, Exit(address(fakeExit2)));
 
         assertEq(address(registry.exits(token)), address(fakeExit1), "token1 exit wrong");
         assertEq(address(registry.exits(token2)), address(fakeExit2), "token2 exit wrong");
@@ -197,10 +193,10 @@ contract GlobalTokenExitRegistryTest is Test {
     /// Any address that does not hold DEFAULT_ADMIN_ROLE on the token must be rejected.
     function testFuzz_SetExitRevertsForNonAdmin(address caller) public {
         vm.assume(!token.hasRole(token.DEFAULT_ADMIN_ROLE(), caller));
-        FakeExit fakeExit = new FakeExit();
+        address fakeExit = makeAddr("fakeExit");
         vm.prank(caller);
         vm.expectRevert("caller is not token admin or owner");
-        registry.setExit(token, IExit(address(fakeExit)));
+        registry.setExit(token, Exit(address(fakeExit)));
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -210,9 +206,9 @@ contract GlobalTokenExitRegistryTest is Test {
     /// Admin calling setExit through the trusted forwarder (admin address appended to calldata)
     /// must succeed: _msgSender() resolves to admin, not the forwarder.
     function testSetExitViaERC2771TrustedForwarder() public {
-        FakeExit fakeExit = new FakeExit();
+        address fakeExit = makeAddr("fakeExit");
         bytes memory callData = abi.encodePacked(
-            abi.encodeWithSelector(GlobalTokenExitRegistry.setExit.selector, token, IExit(address(fakeExit))),
+            abi.encodeWithSelector(GlobalTokenExitRegistry.setExit.selector, token, Exit(address(fakeExit))),
             admin
         );
         vm.prank(trustedForwarder);
@@ -224,10 +220,10 @@ contract GlobalTokenExitRegistryTest is Test {
     /// An untrusted forwarder appending admin's address must NOT be treated as admin:
     /// _msgSender() returns msg.sender (the untrusted address), so the call reverts.
     function testSetExitUntrustedForwarderCannotSpoofAdmin() public {
-        FakeExit fakeExit = new FakeExit();
+        address fakeExit = makeAddr("fakeExit");
         address untrusted = address(0xDEAD);
         bytes memory callData = abi.encodePacked(
-            abi.encodeWithSelector(GlobalTokenExitRegistry.setExit.selector, token, IExit(address(fakeExit))),
+            abi.encodeWithSelector(GlobalTokenExitRegistry.setExit.selector, token, Exit(address(fakeExit))),
             admin
         );
         vm.prank(untrusted);

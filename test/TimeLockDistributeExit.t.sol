@@ -10,7 +10,7 @@ import "../contracts/TimeLock.sol";
 import "../contracts/GlobalTokenExitRegistry.sol";
 import "../contracts/Exit.sol";
 import "../contracts/Token.sol";
-import "../contracts/common/IDistribution.sol";
+import "../contracts/Distribution.sol";
 import "./resources/CloneCreators.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/FixedPayoutExit.sol";
@@ -135,7 +135,7 @@ contract TimeLockDistributeExitTest is Test {
         Exit exitContract = _deployExit(200e6);
 
         vm.prank(admin);
-        tokenExitRegistry.setExit(token, IExit(address(exitContract)));
+        tokenExitRegistry.setExit(token, Exit(address(exitContract)));
 
         // Still locked (timeLockExpiry = now + 365 days)
         assertLt(block.timestamp, timeLockExpiry, "should still be locked");
@@ -165,7 +165,7 @@ contract TimeLockDistributeExitTest is Test {
         Exit exitContract = _deployExit(200e6);
 
         vm.prank(admin);
-        tokenExitRegistry.setExit(token, IExit(address(exitContract)));
+        tokenExitRegistry.setExit(token, Exit(address(exitContract)));
 
         vm.prank(owner);
         vm.expectRevert("timelock has not expired");
@@ -186,7 +186,7 @@ contract TimeLockDistributeExitTest is Test {
     function testDistributeExitRevertsIfRecipientZero() public {
         Exit exitContract = _deployExit(200e6);
         vm.prank(admin);
-        tokenExitRegistry.setExit(token, IExit(address(exitContract)));
+        tokenExitRegistry.setExit(token, Exit(address(exitContract)));
 
         vm.warp(claimStart);
         vm.prank(owner);
@@ -198,7 +198,7 @@ contract TimeLockDistributeExitTest is Test {
     function testDistributeExitRevertsIfNotOwner() public {
         Exit exitContract = _deployExit(200e6);
         vm.prank(admin);
-        tokenExitRegistry.setExit(token, IExit(address(exitContract)));
+        tokenExitRegistry.setExit(token, Exit(address(exitContract)));
 
         vm.warp(claimStart);
         vm.expectRevert("Ownable: caller is not the owner");
@@ -218,7 +218,7 @@ contract TimeLockDistributeExitTest is Test {
 
         // Now set exit and try claimExit — should revert because no tokens remain
         vm.prank(admin);
-        tokenExitRegistry.setExit(token, IExit(address(exitContract)));
+        tokenExitRegistry.setExit(token, Exit(address(exitContract)));
 
         vm.warp(timeLockExpiry + 1 days);
         vm.prank(owner);
@@ -235,7 +235,7 @@ contract TimeLockDistributeExitTest is Test {
         FixedPayoutExit stub = new FixedPayoutExit(IERC20(address(eurc)), minPayout);
         IERC20(address(eurc)).transfer(address(stub), minPayout);
         vm.prank(admin);
-        tokenExitRegistry.setExit(token, IExit(address(stub)));
+        tokenExitRegistry.setExit(token, Exit(address(stub)));
 
         vm.prank(owner);
         timeLock.claimExit(token, recipient, minPayout);
@@ -250,7 +250,7 @@ contract TimeLockDistributeExitTest is Test {
         IERC20(address(eurc)).transfer(address(stub), minPayout);
 
         vm.prank(owner);
-        timeLock.claimDistribution(IDistribution(address(stub)), recipient, minPayout);
+        timeLock.claimDistribution(Distribution(address(stub)), recipient, minPayout);
         assertEq(eurc.balanceOf(recipient), minPayout, "recipient should receive exactly minPayout");
     }
 
@@ -274,7 +274,7 @@ contract TimeLockDistributeExitTest is Test {
         assertEq(exitContract.referenceToExitRate(IERC20(address(eure))), 1e6, "rate not stored");
 
         vm.prank(admin);
-        tokenExitRegistry.setExit(token, IExit(address(exitContract)));
+        tokenExitRegistry.setExit(token, Exit(address(exitContract)));
 
         vm.warp(claimStart);
         vm.prank(owner);
