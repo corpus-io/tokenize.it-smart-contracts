@@ -125,16 +125,17 @@ contract Exit is PayoutBase {
     }
 
     /**
-     * @notice Exchanges tokens for exit proceeds. Transfers _tokenAmount tokens from the caller to this
-     *  contract and sends the corresponding currency payout to _recipient.
-     * @param _tokenAmount Amount of tokens to exchange for exit proceeds
+     * @notice Exchanges the caller's entire token balance for exit proceeds,
+     * which are then sent to _recipient.
      * @param _recipient Address that receives the currency payout
      * @param _minPayout Minimum net payout required; reverts if not met
      */
-    function claim(uint256 _tokenAmount, address _recipient, uint256 _minPayout) external nonReentrant {
+    function claim(address _recipient, uint256 _minPayout) external nonReentrant {
         require(block.timestamp >= claimStart, "exit not yet started");
-        IERC20(address(token)).safeTransferFrom(_msgSender(), address(this), _tokenAmount);
-        uint256 currencyAmount = (_tokenAmount * pricePerToken) / 10 ** token.decimals();
+        uint256 tokenAmount = token.balanceOf(_msgSender());
+        require(tokenAmount > 0, "nothing to claim");
+        IERC20(address(token)).safeTransferFrom(_msgSender(), address(this), tokenAmount);
+        uint256 currencyAmount = (tokenAmount * pricePerToken) / 10 ** token.decimals();
         (uint256 fee, address feeCollector) = _feeInfo(FeeTypes.EXIT, currencyAmount);
         require(currencyAmount - fee >= _minPayout, "payout below minimum");
         if (fee != 0) {

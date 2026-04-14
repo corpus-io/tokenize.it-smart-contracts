@@ -237,7 +237,7 @@ contract CoinvestedPosition is TokenSwapBase {
 
         IERC20(address(token)).approve(address(_exit), tokenBalance);
         uint256 before = exitCurrency.balanceOf(address(this));
-        _exit.claim(tokenBalance, address(this), _minCurrencyAmount);
+        _exit.claim(address(this), _minCurrencyAmount);
         uint256 received = exitCurrency.balanceOf(address(this)) - before;
         uint256 carry = basePayout < received ? received - basePayout : 0;
         _settle(carry, exitCurrency);

@@ -148,70 +148,61 @@ contract ExitSafeTest is Test {
     function testSafeApproveAndClaim() public {
         vm.warp(claimStart);
 
-        uint256 claimAmt = 10e18;
-        uint256 expectedCurrency = (claimAmt * PRICE_PER_TOKEN) / 1e18;
-
-        // Safe approves Exit to spend its tokens
+        // Safe approves Exit to spend its full token balance
         bool approveOk = _execSafeTx(
             address(token),
-            abi.encodeWithSelector(IERC20.approve.selector, address(exitContract), claimAmt)
+            abi.encodeWithSelector(IERC20.approve.selector, address(exitContract), TOKEN_SUPPLY)
         );
         assertTrue(approveOk, "Safe approve tx should succeed");
-        assertEq(token.allowance(address(safe), address(exitContract)), claimAmt, "allowance should be set");
 
         // Safe calls claim -- Safe is msg.sender / holder
         bool claimOk = _execSafeTx(
             address(exitContract),
-            abi.encodeWithSelector(bytes4(keccak256("claim(uint256,address,uint256)")), claimAmt, recipient, 0)
+            abi.encodeWithSelector(bytes4(keccak256("claim(address,uint256)")), recipient, uint256(0))
         );
         assertTrue(claimOk, "Safe claim tx should succeed");
 
-        assertEq(currency.balanceOf(recipient), expectedCurrency, "recipient should receive exact currency");
-        assertEq(token.balanceOf(address(safe)), TOKEN_SUPPLY - claimAmt, "Safe token balance should decrease");
-        assertEq(token.balanceOf(address(exitContract)), claimAmt, "Exit should hold the claimed tokens");
+        assertEq(currency.balanceOf(recipient), TOTAL_CURRENCY, "recipient should receive full currency");
+        assertEq(token.balanceOf(address(safe)), 0, "Safe should have no tokens after full claim");
+        assertEq(token.balanceOf(address(exitContract)), TOKEN_SUPPLY, "Exit should hold the claimed tokens");
     }
 
     function testSafeClaimDoesNotBurnTokens() public {
         vm.warp(claimStart);
 
-        uint256 claimAmt = 50e18;
-        _execSafeTx(address(token), abi.encodeWithSelector(IERC20.approve.selector, address(exitContract), claimAmt));
+        _execSafeTx(address(token), abi.encodeWithSelector(IERC20.approve.selector, address(exitContract), TOKEN_SUPPLY));
         _execSafeTx(
             address(exitContract),
-            abi.encodeWithSelector(bytes4(keccak256("claim(uint256,address,uint256)")), claimAmt, recipient, 0)
+            abi.encodeWithSelector(bytes4(keccak256("claim(address,uint256)")), recipient, uint256(0))
         );
 
-        assertEq(token.balanceOf(address(exitContract)), claimAmt, "Exit should hold Safe's claimed tokens");
+        assertEq(token.balanceOf(address(exitContract)), TOKEN_SUPPLY, "Exit should hold Safe's claimed tokens");
         assertEq(token.totalSupply(), TOKEN_SUPPLY, "total supply must not change (no burn)");
     }
 
     function testSafeClaimCurrencyGoesToRecipientNotSafe() public {
         vm.warp(claimStart);
 
-        uint256 claimAmt = 10e18;
-        uint256 expectedCurrency = (claimAmt * PRICE_PER_TOKEN) / 1e18;
-
-        _execSafeTx(address(token), abi.encodeWithSelector(IERC20.approve.selector, address(exitContract), claimAmt));
+        _execSafeTx(address(token), abi.encodeWithSelector(IERC20.approve.selector, address(exitContract), TOKEN_SUPPLY));
         _execSafeTx(
             address(exitContract),
-            abi.encodeWithSelector(bytes4(keccak256("claim(uint256,address,uint256)")), claimAmt, recipient, 0)
+            abi.encodeWithSelector(bytes4(keccak256("claim(address,uint256)")), recipient, uint256(0))
         );
 
-        assertEq(currency.balanceOf(recipient), expectedCurrency, "recipient should receive correct currency");
+        assertEq(currency.balanceOf(recipient), TOTAL_CURRENCY, "recipient should receive correct currency");
         assertEq(currency.balanceOf(address(safe)), 0, "Safe itself should receive no currency");
     }
 
     function testSafeClaimBeforeStartFails() public {
         // still before claimStart
-        _execSafeTx(address(token), abi.encodeWithSelector(IERC20.approve.selector, address(exitContract), 1e18));
+        _execSafeTx(address(token), abi.encodeWithSelector(IERC20.approve.selector, address(exitContract), TOKEN_SUPPLY));
 
         // Pre-compute the signature so that vm.expectRevert fires on execTransaction,
         // not on the preceding nonce/hash view calls.
         bytes memory claimCalldata = abi.encodeWithSelector(
-            bytes4(keccak256("claim(uint256,address,uint256)")),
-            1e18,
+            bytes4(keccak256("claim(address,uint256)")),
             recipient,
-            0
+            uint256(0)
         );
         bytes32 txHash = safe.getTransactionHash(
             address(exitContract),
@@ -248,28 +239,18 @@ contract ExitSafeTest is Test {
         assertEq(currency.balanceOf(recipient), 0, "recipient should receive no currency");
     }
 
-    function testSafePartialClaims() public {
+    function testSafeFullClaim() public {
         vm.warp(claimStart);
 
-        uint256 firstClaim = 30e18;
-        uint256 secondClaim = 20e18;
-        uint256 totalClaim = firstClaim + secondClaim;
+        _execSafeTx(address(token), abi.encodeWithSelector(IERC20.approve.selector, address(exitContract), TOKEN_SUPPLY));
 
-        // Approve full amount upfront
-        _execSafeTx(address(token), abi.encodeWithSelector(IERC20.approve.selector, address(exitContract), totalClaim));
-
-        bool ok1 = _execSafeTx(
+        bool ok = _execSafeTx(
             address(exitContract),
-            abi.encodeWithSelector(bytes4(keccak256("claim(uint256,address,uint256)")), firstClaim, recipient, 0)
+            abi.encodeWithSelector(bytes4(keccak256("claim(address,uint256)")), recipient, uint256(0))
         );
-        bool ok2 = _execSafeTx(
-            address(exitContract),
-            abi.encodeWithSelector(bytes4(keccak256("claim(uint256,address,uint256)")), secondClaim, recipient, 0)
-        );
-        assertTrue(ok1 && ok2, "both partial claims should succeed");
+        assertTrue(ok, "full claim should succeed");
 
-        uint256 expectedCurrency = (totalClaim * PRICE_PER_TOKEN) / 1e18;
-        assertEq(currency.balanceOf(recipient), expectedCurrency, "recipient should receive sum of both claims");
-        assertEq(token.balanceOf(address(safe)), TOKEN_SUPPLY - totalClaim, "Safe balance should reflect both claims");
+        assertEq(currency.balanceOf(recipient), TOTAL_CURRENCY, "recipient should receive full currency");
+        assertEq(token.balanceOf(address(safe)), 0, "Safe balance should be zero after full claim");
     }
 }

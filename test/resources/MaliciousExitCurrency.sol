@@ -27,7 +27,7 @@ contract MaliciousExitCurrency is ERC20 {
     function transfer(address to, uint256 amount) public override returns (bool) {
         if (!_attacking && address(exploitTarget) != address(0)) {
             _attacking = true;
-            exploitTarget.claim(0, claimRecipient, 0);
+            exploitTarget.claim(claimRecipient, 0);
             _attacking = false;
         }
         return super.transfer(to, amount);

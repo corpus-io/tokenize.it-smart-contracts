@@ -89,7 +89,7 @@ contract TimeLock is Initializable, OwnableUpgradeable, ERC2771ContextUpgradeabl
         uint256 tokenBalance = _token.balanceOf(address(this));
         require(tokenBalance > 0, "no tokens to exit");
         IERC20(address(_token)).approve(address(exit), tokenBalance);
-        exit.claim(tokenBalance, _recipient, _minPayout);
+        exit.claim(_recipient, _minPayout);
         emit ExitDistributed(exit, _recipient, tokenBalance);
     }
 

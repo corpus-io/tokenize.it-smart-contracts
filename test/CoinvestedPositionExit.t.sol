@@ -22,7 +22,7 @@ contract NoOpExit {
         _currency = currency_;
     }
 
-    function claim(uint256, address, uint256) external {}
+    function claim(address, uint256) external {}
 
     function currency() external view returns (IERC20) {
         return _currency;
