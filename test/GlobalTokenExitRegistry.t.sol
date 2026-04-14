@@ -10,7 +10,6 @@ import "../contracts/Token.sol";
 import "./resources/CloneCreators.sol";
 import "./resources/FakePaymentToken.sol";
 
-
 /// @dev Minimal Ownable token stub — has owner() but no AccessControl
 contract FakeOwnableToken {
     address private _owner;

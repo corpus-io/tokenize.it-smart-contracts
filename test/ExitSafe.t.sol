@@ -170,7 +170,10 @@ contract ExitSafeTest is Test {
     function testSafeClaimDoesNotBurnTokens() public {
         vm.warp(claimStart);
 
-        _execSafeTx(address(token), abi.encodeWithSelector(IERC20.approve.selector, address(exitContract), TOKEN_SUPPLY));
+        _execSafeTx(
+            address(token),
+            abi.encodeWithSelector(IERC20.approve.selector, address(exitContract), TOKEN_SUPPLY)
+        );
         _execSafeTx(
             address(exitContract),
             abi.encodeWithSelector(bytes4(keccak256("claim(address,uint256)")), recipient, uint256(0))
@@ -183,7 +186,10 @@ contract ExitSafeTest is Test {
     function testSafeClaimCurrencyGoesToRecipientNotSafe() public {
         vm.warp(claimStart);
 
-        _execSafeTx(address(token), abi.encodeWithSelector(IERC20.approve.selector, address(exitContract), TOKEN_SUPPLY));
+        _execSafeTx(
+            address(token),
+            abi.encodeWithSelector(IERC20.approve.selector, address(exitContract), TOKEN_SUPPLY)
+        );
         _execSafeTx(
             address(exitContract),
             abi.encodeWithSelector(bytes4(keccak256("claim(address,uint256)")), recipient, uint256(0))
@@ -195,7 +201,10 @@ contract ExitSafeTest is Test {
 
     function testSafeClaimBeforeStartFails() public {
         // still before claimStart
-        _execSafeTx(address(token), abi.encodeWithSelector(IERC20.approve.selector, address(exitContract), TOKEN_SUPPLY));
+        _execSafeTx(
+            address(token),
+            abi.encodeWithSelector(IERC20.approve.selector, address(exitContract), TOKEN_SUPPLY)
+        );
 
         // Pre-compute the signature so that vm.expectRevert fires on execTransaction,
         // not on the preceding nonce/hash view calls.
@@ -242,7 +251,10 @@ contract ExitSafeTest is Test {
     function testSafeFullClaim() public {
         vm.warp(claimStart);
 
-        _execSafeTx(address(token), abi.encodeWithSelector(IERC20.approve.selector, address(exitContract), TOKEN_SUPPLY));
+        _execSafeTx(
+            address(token),
+            abi.encodeWithSelector(IERC20.approve.selector, address(exitContract), TOKEN_SUPPLY)
+        );
 
         bool ok = _execSafeTx(
             address(exitContract),

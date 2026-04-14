@@ -503,17 +503,29 @@ contract ExitTest is Test {
         if (fuzzAmt > 0) token.mint(h4, fuzzAmt);
         vm.stopPrank();
 
-        vm.prank(h1); token.approve(address(fuzzExit), claim1);
-        vm.prank(h2); token.approve(address(fuzzExit), claim2);
-        vm.prank(h3); token.approve(address(fuzzExit), claim3);
-        if (fuzzAmt > 0) { vm.prank(h4); token.approve(address(fuzzExit), fuzzAmt); }
+        vm.prank(h1);
+        token.approve(address(fuzzExit), claim1);
+        vm.prank(h2);
+        token.approve(address(fuzzExit), claim2);
+        vm.prank(h3);
+        token.approve(address(fuzzExit), claim3);
+        if (fuzzAmt > 0) {
+            vm.prank(h4);
+            token.approve(address(fuzzExit), fuzzAmt);
+        }
 
         vm.warp(claimStart);
 
-        vm.prank(h1); fuzzExit.claim(h1, 0);
-        vm.prank(h2); fuzzExit.claim(h2, 0);
-        vm.prank(h3); fuzzExit.claim(h3, 0);
-        if (fuzzAmt > 0) { vm.prank(h4); fuzzExit.claim(h4, 0); }
+        vm.prank(h1);
+        fuzzExit.claim(h1, 0);
+        vm.prank(h2);
+        fuzzExit.claim(h2, 0);
+        vm.prank(h3);
+        fuzzExit.claim(h3, 0);
+        if (fuzzAmt > 0) {
+            vm.prank(h4);
+            fuzzExit.claim(h4, 0);
+        }
 
         assertEq(currency.balanceOf(h1), expected1, "claim1 payout wrong");
         assertEq(currency.balanceOf(h2), expected2, "claim2 payout wrong");
@@ -563,11 +575,7 @@ contract ExitTest is Test {
         vm.prank(trustedForwarder);
         (bool success, ) = address(exitContract).call(callData);
         assertTrue(success, "meta-tx call should succeed");
-        assertEq(
-            currency.balanceOf(recipient),
-            TOTAL_CURRENCY,
-            "recipient should receive full currency via meta-tx"
-        );
+        assertEq(currency.balanceOf(recipient), TOTAL_CURRENCY, "recipient should receive full currency via meta-tx");
         assertEq(token.balanceOf(holder), 0, "holder token balance should be zero after meta-tx");
     }
 

@@ -77,11 +77,7 @@ contract DistributionTest is Test {
     }
 
     /// @dev Helper: predict address, fund, and deploy a Distribution clone
-    function _deployDist(
-        bytes32 salt,
-        uint256 initialFunding,
-        uint64 _lockedUntil
-    ) internal returns (Distribution) {
+    function _deployDist(bytes32 salt, uint256 initialFunding, uint64 _lockedUntil) internal returns (Distribution) {
         DistributionInitializerArguments memory args = DistributionInitializerArguments({
             owner: owner,
             token: token,
