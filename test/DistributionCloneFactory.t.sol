@@ -19,7 +19,7 @@ contract DistributionCloneFactoryTest is Test {
     uint256 public constant EXAMPLE_INITIAL_FUNDING = 100e6;
     uint256 public constant EXAMPLE_PRICE_PER_TOKEN = 100_000; // 0.1 currency per token
 
-    uint64 public reassignOrDrainAfter;
+    uint64 public lockedUntil;
     uint256 public snapshotId;
 
     AllowList allowList;
@@ -29,7 +29,7 @@ contract DistributionCloneFactoryTest is Test {
     TokenProxyFactory tokenFactory;
 
     function setUp() public {
-        reassignOrDrainAfter = uint64(block.timestamp + 31 days);
+        lockedUntil = uint64(block.timestamp + 31 days);
 
         allowList = createAllowList(trustedForwarder, admin);
         currency = new FakePaymentToken(0, 6);
@@ -65,7 +65,7 @@ contract DistributionCloneFactoryTest is Test {
                 snapshotId: snapshotId,
                 currency: IERC20(address(currency)),
                 pricePerToken: EXAMPLE_PRICE_PER_TOKEN,
-                reassignOrDrainAfter: reassignOrDrainAfter,
+                lockedUntil: lockedUntil,
                 initialReassignments: new Reassignment[](0)
             });
     }
@@ -188,7 +188,7 @@ contract DistributionCloneFactoryTest is Test {
     function testReassignOrDrainAfterChangesAddress() public view {
         DistributionInitializerArguments memory args = _baseArgs();
         address a1 = factory.predictCloneAddress(EXAMPLE_SALT, trustedForwarder, args);
-        args.reassignOrDrainAfter = reassignOrDrainAfter + 1;
+        args.lockedUntil = lockedUntil + 1;
         address a2 = factory.predictCloneAddress(EXAMPLE_SALT, trustedForwarder, args);
         assertFalse(a1 == a2);
     }
@@ -256,7 +256,7 @@ contract DistributionCloneFactoryTest is Test {
         assertEq(clone.snapshotId(), args.snapshotId);
         assertEq(address(clone.currency()), address(args.currency));
         assertEq(clone.pricePerToken(), args.pricePerToken);
-        assertEq(clone.reassignOrDrainAfter(), args.reassignOrDrainAfter);
+        assertEq(clone.lockedUntil(), args.lockedUntil);
         assertEq(currency.balanceOf(address(clone)), EXAMPLE_INITIAL_FUNDING);
         assertTrue(clone.isTrustedForwarder(trustedForwarder));
     }

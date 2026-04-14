@@ -57,7 +57,7 @@ contract ExitCloneFactoryTest is Test {
                 currency: IERC20(address(currency)),
                 pricePerToken: EXAMPLE_PRICE,
                 claimStart: EXAMPLE_CLAIM_START,
-                drainStart: EXAMPLE_DRAIN_START,
+                lockedUntil: EXAMPLE_DRAIN_START,
                 referenceCurrencies: new IERC20[](0),
                 referenceToExitRates: new uint256[](0)
             });
@@ -169,7 +169,7 @@ contract ExitCloneFactoryTest is Test {
     function testDrainStartChangesAddress() public {
         ExitInitializerArguments memory args = _baseArgs();
         address addr1 = factory.predictCloneAddress(EXAMPLE_SALT, trustedForwarder, args);
-        args.drainStart = EXAMPLE_DRAIN_START + 1;
+        args.lockedUntil = EXAMPLE_DRAIN_START + 1;
         address addr2 = factory.predictCloneAddress(EXAMPLE_SALT, trustedForwarder, args);
         assertFalse(addr1 == addr2);
     }
@@ -242,7 +242,7 @@ contract ExitCloneFactoryTest is Test {
         assertEq(address(clone.currency()), address(args.currency));
         assertEq(clone.pricePerToken(), args.pricePerToken);
         assertEq(clone.claimStart(), args.claimStart);
-        assertEq(clone.drainStart(), args.drainStart);
+        assertEq(clone.lockedUntil(), args.lockedUntil);
         assertEq(currency.balanceOf(address(clone)), EXAMPLE_TOTAL_CURRENCY);
         assertTrue(clone.isTrustedForwarder(trustedForwarder));
     }

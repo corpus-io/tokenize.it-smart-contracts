@@ -196,6 +196,24 @@ The following statements about the smart contracts should always be true
 - An exit claim reverts if it receives less than the required minimum currency amount.
 - All functions can be called directly or as meta transaction using ERC-2771.
 
+## GlobalTokenExitRegistry.sol
+
+- An exit can only be set for a token if the caller holds the token's `DEFAULT_ADMIN_ROLE` or is the token's `owner()`.
+- An exit address can only be set once per token.
+- Once an exit address has been set for a token, it cannot be changed again.
+- All functions can be called directly or as meta transaction using ERC-2771.
+
+## TimeLock.sol
+
+- Only the owner can drain an ERC20 token from the contract.
+- Draining any ERC20 token from the contract moves the entire balance at once.
+- Draining the tokens from the contract is only possible after the timelock period has passed.
+- If the owner is eligible for distribution proceeds, they can claim those proceeds regardless of the timelock period.
+- Claiming distribution proceeds does not move the tokens.
+- The only option for the owner to transfer the tokens out of the contract during the timelock period is through an Exit.
+- An Exit can only be used if it has been registered in the GlobalTokenExitRegistry.
+- All functions can be called directly or as meta transaction using ERC-2771.
+
 ## TokenSwap.sol
 
 - One TokenSwap contract represents one limit order to buy or sell tokens at a fixed price.

@@ -142,7 +142,7 @@ The following resources are available regarding the contracts:
 - [Basic dev overview](docs/dev_overview.md)
 - [More detailed walkthrough](docs/using_the_contracts.md)
 - In-depth explanation: please read the [contracts](contracts/)
-- [Specification](docs/specification.md)
+- [Invariants](docs/invariants.md)
 - [Price format explainer](docs/price.md)
 - [Fee Collection](./docs/fees.md)
 - [Deployment](./docs/deployment.md)

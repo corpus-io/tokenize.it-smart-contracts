@@ -16,10 +16,10 @@ contract IFeeSettingsTest is Test {
         expected = expected ^ getFunctionSelector("supportsInterface(bytes4)");
         bytes4 actual = type(IFeeSettingsV1).interfaceId;
 
-        // hardcoding this here so this test throws when search and replace changes the interface
+        // hardcoding this here so this test throws when the interface changes
         bytes4 fixedValue = 0xc664b798;
 
-        assertEq(actual, fixedValue, "interface ID mismatch: did search and replace change the interface?");
+        assertEq(actual, fixedValue, "interface ID mismatch: did the interface change?");
 
         assertEq(actual, expected, "interface ID mismatch");
     }
@@ -39,10 +39,28 @@ contract IFeeSettingsTest is Test {
         console.logBytes4(expected);
         console.logBytes4(actual);
 
-        // hardcoding this here so this test throws when search and replace changes the interface
+        // hardcoding this here so this test throws when the interface changes
         bytes4 fixedValue = 0x302be8a8;
 
-        assertEq(actual, fixedValue, "interface ID mismatch: did search and replace change the interface?");
+        assertEq(actual, fixedValue, "interface ID mismatch: did the interface change?");
+
+        assertEq(actual, expected, "interface ID mismatch");
+    }
+
+    function testManuallyVerifyInterfaceIDV3() public pure {
+        // see https://medium.com/@chiqing/ethereum-standard-erc165-explained-63b54ca0d273
+        bytes4 expected = getFunctionSelector("fee(bytes32,uint256,address)");
+        expected = expected ^ getFunctionSelector("feeCollector(bytes32,address)");
+        expected = expected ^ getFunctionSelector("supportsInterface(bytes4)");
+        bytes4 actual = type(IFeeSettingsV3).interfaceId;
+
+        console.logBytes4(expected);
+        console.logBytes4(actual);
+
+        // hardcoding this here so this test throws when the interface changes
+        bytes4 fixedValue = 0xf2e03e71;
+
+        assertEq(actual, fixedValue, "interface ID mismatch: did the interface change?");
 
         assertEq(actual, expected, "interface ID mismatch");
     }

@@ -4,10 +4,10 @@ pragma solidity 0.8.23;
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
+import "./Distribution.sol";
+import "./Exit.sol";
 import "./GlobalTokenExitRegistry.sol";
 import "./common/TokenSwapBase.sol";
-import "./common/IDistribution.sol";
-import "./common/IExit.sol";
 
 struct LeadInvestor {
     /// lead investor address that receives carry
@@ -191,7 +191,7 @@ contract CoinvestedPosition is TokenSwapBase {
      * @param _dist the Distribution (dividend) contract to claim from
      * @param _minPayout minimum currency the call must receive; passed through to the distribution
      */
-    function claimDistribution(IDistribution _dist, uint256 _minPayout) external onlyOwner nonReentrant {
+    function claimDistribution(Distribution _dist, uint256 _minPayout) external onlyOwner nonReentrant {
         IERC20 dividendCurrency = _dist.currency();
         require(
             token.allowList().map(address(dividendCurrency)) == TRUSTED_CURRENCY,
@@ -214,7 +214,7 @@ contract CoinvestedPosition is TokenSwapBase {
      * @param _basePrice base price in exit currency's units; ignored when exit currency matches stored currency
      */
     function claimExit(uint256 _minCurrencyAmount, uint256 _basePrice) external onlyOwner nonReentrant {
-        IExit _exit = tokenExitRegistry.exits(token);
+        Exit _exit = tokenExitRegistry.exits(token);
         require(address(_exit) != address(0), "no exit set in tokenExitRegistry");
         uint256 tokenBalance = token.balanceOf(address(this));
         require(tokenBalance > 0, "no tokens to claim");
@@ -237,7 +237,7 @@ contract CoinvestedPosition is TokenSwapBase {
 
         IERC20(address(token)).approve(address(_exit), tokenBalance);
         uint256 before = exitCurrency.balanceOf(address(this));
-        _exit.claim(tokenBalance, address(this), _minCurrencyAmount);
+        _exit.claim(address(this), _minCurrencyAmount);
         uint256 received = exitCurrency.balanceOf(address(this)) - before;
         uint256 carry = basePayout < received ? received - basePayout : 0;
         _settle(carry, exitCurrency);

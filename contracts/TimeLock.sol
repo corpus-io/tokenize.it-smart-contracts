@@ -8,7 +8,8 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "./common/IDistribution.sol";
+import "./Distribution.sol";
+import "./Exit.sol";
 import "./GlobalTokenExitRegistry.sol";
 
 /**
@@ -27,8 +28,8 @@ contract TimeLock is Initializable, OwnableUpgradeable, ERC2771ContextUpgradeabl
     GlobalTokenExitRegistry public tokenExitRegistry;
 
     event Drained(IERC20 indexed token, address indexed recipient, uint256 amount);
-    event DividendsDistributed(IDistribution indexed distribution, address indexed recipient);
-    event ExitDistributed(IExit indexed exit, address indexed recipient, uint256 tokenAmount);
+    event DividendsDistributed(Distribution indexed distribution, address indexed recipient);
+    event ExitDistributed(Exit indexed exit, address indexed recipient, uint256 tokenAmount);
 
     /**
      * This contract will be used through clones, so the constructor only initializes
@@ -66,7 +67,7 @@ contract TimeLock is Initializable, OwnableUpgradeable, ERC2771ContextUpgradeabl
      * @param _recipient address to forward the received currency to
      */
     function claimDistribution(
-        IDistribution _dist,
+        Distribution _dist,
         address _recipient,
         uint256 _minPayout
     ) external onlyOwner nonReentrant {
@@ -83,13 +84,13 @@ contract TimeLock is Initializable, OwnableUpgradeable, ERC2771ContextUpgradeabl
      * @param _recipient address to receive the exit proceeds
      */
     function claimExit(Token _token, address _recipient, uint256 _minPayout) external onlyOwner nonReentrant {
-        IExit exit = tokenExitRegistry.exits(_token);
+        Exit exit = tokenExitRegistry.exits(_token);
         require(address(exit) != address(0), "no exit set in tokenExitRegistry");
         require(_recipient != address(0), "recipient can not be zero address");
         uint256 tokenBalance = _token.balanceOf(address(this));
         require(tokenBalance > 0, "no tokens to exit");
         IERC20(address(_token)).approve(address(exit), tokenBalance);
-        exit.claim(tokenBalance, _recipient, _minPayout);
+        exit.claim(_recipient, _minPayout);
         emit ExitDistributed(exit, _recipient, tokenBalance);
     }
 
