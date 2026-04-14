@@ -7,7 +7,9 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "./Distribution.sol";
 import "./Exit.sol";
 import "./GlobalTokenExitRegistry.sol";
+import "./PrivateOffer.sol";
 import "./common/TokenSwapBase.sol";
+import "./factories/PrivateOfferFactory.sol";
 
 struct LeadInvestor {
     /// lead investor address that receives carry
@@ -33,6 +35,17 @@ struct CoinvestedPositionInitializerArguments {
     uint64 lockedUntil;
     /// registry contract; if an exit is set for the token, it can be claimed
     GlobalTokenExitRegistry tokenExitRegistry;
+}
+
+struct OneTimeSyndicateFeeArguments {
+    /// factory used to deploy the PrivateOffer
+    PrivateOfferFactory privateOfferFactory;
+    /// salt passed to the PrivateOfferFactory for deterministic address derivation
+    bytes32 privateOfferSalt;
+    /// arguments for the PrivateOffer; currencyPayer and tokenReceiver are overridden to address(this)
+    PrivateOfferArguments privateOfferArguments;
+    /// one-time fee as a fraction of the investment amount, divided by type(uint64).max; 0 means no fee
+    uint64 oneTimeFee;
 }
 
 /**
@@ -61,6 +74,9 @@ contract CoinvestedPosition is TokenSwapBase {
     /// address even if lockedUntil has not passed yet
     GlobalTokenExitRegistry public tokenExitRegistry;
 
+    /// @notice Emitted when the one-time syndicate fee is charged during initializeWithPrivateOffer.
+    event OneTimeSyndicateFeeCharged(uint256 feeAmount);
+
     /**
      * This constructor creates a logic contract that is used to clone new contracts.
      * It has no owner, and can not be used directly.
@@ -75,6 +91,74 @@ contract CoinvestedPosition is TokenSwapBase {
      * @param _arguments Struct containing all arguments for the initializer
      */
     function initialize(CoinvestedPositionInitializerArguments memory _arguments) external initializer {
+        _initializeCoinvestedPosition(_arguments);
+    }
+
+    /**
+     * @notice Sets up the CoinvestedPosition and immediately executes a PrivateOffer investment in one transaction.
+     *      The receiver must have pre-approved this contract's address for investmentAmount + oneTimeFeeAmount
+     *      of baseCurrency before this is called. The token issuer must have pre-approved the PrivateOffer address
+     *      (returned by predictCoinvestedPositionAndPrivateOfferAddress) for minting or transfer.
+     *      currencyPayer and tokenReceiver in _feeArguments.privateOfferArguments are overridden to address(this).
+     * @param _baseArguments Struct containing all base initialization parameters
+     * @param _feeArguments Struct containing PrivateOffer parameters and the one-time syndicate fee fraction
+     */
+    function initializeWithPrivateOffer(
+        CoinvestedPositionInitializerArguments memory _baseArguments,
+        OneTimeSyndicateFeeArguments memory _feeArguments
+    ) external initializer {
+        _initializeCoinvestedPosition(_baseArguments);
+
+        require(
+            _feeArguments.privateOfferArguments.currency == _baseArguments.baseCurrency,
+            "privateOffer currency must match baseCurrency"
+        );
+        require(
+            address(_feeArguments.privateOfferArguments.token) == address(_baseArguments.token),
+            "privateOffer token must match token"
+        );
+
+        uint256 investmentAmount = Math.ceilDiv(
+            _feeArguments.privateOfferArguments.tokenAmount * _feeArguments.privateOfferArguments.tokenPrice,
+            10 ** _baseArguments.token.decimals()
+        );
+        uint256 oneTimeFeeAmount = (uint256(_feeArguments.oneTimeFee) * investmentAmount) / type(uint64).max;
+
+        // Override: this contract is both the currency payer and the token receiver
+        _feeArguments.privateOfferArguments.currencyPayer = address(this);
+        _feeArguments.privateOfferArguments.tokenReceiver = address(this);
+
+        // Single pull from receiver covering investment and fee
+        _baseArguments.baseCurrency.safeTransferFrom(receiver, address(this), investmentAmount + oneTimeFeeAmount);
+
+        if (oneTimeFeeAmount != 0) {
+            _distributeOneTimeSyndicateFee(oneTimeFeeAmount, _baseArguments.baseCurrency);
+            emit OneTimeSyndicateFeeCharged(oneTimeFeeAmount);
+        }
+
+        // Approve the deterministic PrivateOffer address for exactly the investment amount
+        address privateOfferAddress = _feeArguments.privateOfferFactory.predictPrivateOfferAddress(
+            _feeArguments.privateOfferSalt,
+            _feeArguments.privateOfferArguments
+        );
+        _baseArguments.baseCurrency.approve(privateOfferAddress, investmentAmount);
+
+        // Deploy PrivateOffer: pulls investmentAmount from this contract, delivers tokens here
+        _feeArguments.privateOfferFactory.deployPrivateOffer(
+            _feeArguments.privateOfferSalt,
+            _feeArguments.privateOfferArguments
+        );
+
+        require(
+            _baseArguments.token.balanceOf(address(this)) == _feeArguments.privateOfferArguments.tokenAmount,
+            "token delivery failed"
+        );
+    }
+
+    /**
+     * @notice Shared setup logic called by both initializers.
+     */
+    function _initializeCoinvestedPosition(CoinvestedPositionInitializerArguments memory _arguments) private {
         _initializeBase(_arguments.owner, 0, _arguments.baseCurrency, _arguments.token, _arguments.receiver);
 
         require(
@@ -96,6 +180,30 @@ contract CoinvestedPosition is TokenSwapBase {
 
         // Pausing the contract prevents an immediate sell of the tokens. Once they should be sold, update price and unpause.
         _pause();
+    }
+
+    /**
+     * @notice Distributes feeAmount of feeCurrency among lead investors proportionally by carryFraction.
+     *      The full feeAmount is distributed; the last lead investor absorbs any rounding dust.
+     * @param feeAmount total fee to distribute, in feeCurrency bits
+     * @param feeCurrency the ERC20 token to distribute
+     */
+    function _distributeOneTimeSyndicateFee(uint256 feeAmount, IERC20 feeCurrency) private {
+        uint256 carryFractionsSum = 0;
+        for (uint256 i = 0; i < leadInvestors.length; i++) {
+            carryFractionsSum += leadInvestors[i].carryFraction;
+        }
+        uint256 remainingFee = feeAmount;
+        for (uint256 i = 0; i < leadInvestors.length - 1; i++) {
+            uint256 share = (uint256(leadInvestors[i].carryFraction) * feeAmount) / carryFractionsSum;
+            if (share != 0) {
+                feeCurrency.safeTransfer(leadInvestors[i].account, share);
+                remainingFee -= share;
+            }
+        }
+        if (remainingFee != 0) {
+            feeCurrency.safeTransfer(leadInvestors[leadInvestors.length - 1].account, remainingFee);
+        }
     }
 
     /**
