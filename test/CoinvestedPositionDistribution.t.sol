@@ -68,8 +68,8 @@ contract CoinvestedPositionDistributionTest is Test {
     uint256 public constant PRICE_PER_TOKEN_USDC = 2_000_000; // 2000e6 / 1000e18 * 1e18
     uint256 public constant PRICE_PER_TOKEN_EURE = 1e18; // 1000e18 / 1000e18 * 1e18
 
-    // ── reassignOrDrainAfter ─────────────────────────────────────────────────
-    uint64 public reassignOrDrainAfter;
+    // ── lockedUntil ─────────────────────────────────────────────────
+    uint64 public lockedUntil;
 
     // ── Contracts ─────────────────────────────────────────────────────────────
     AllowList allowList;
@@ -102,7 +102,7 @@ contract CoinvestedPositionDistributionTest is Test {
     // ─────────────────────────────────────────────────────────────────────────
 
     function setUp() public {
-        reassignOrDrainAfter = uint64(block.timestamp + 31 days);
+        lockedUntil = uint64(block.timestamp + 31 days);
 
         // Infrastructure
         allowList = createAllowList(trustedForwarder, admin);
@@ -211,7 +211,7 @@ contract CoinvestedPositionDistributionTest is Test {
             snapshotId: _snapshotId,
             currency: IERC20(address(_currency)),
             pricePerToken: _pricePerToken,
-            reassignOrDrainAfter: reassignOrDrainAfter,
+            lockedUntil: lockedUntil,
             initialReassignments: new Reassignment[](0)
         });
         address cloneAddr = distributionFactory.predictCloneAddress(salt, trustedForwarder, args);
@@ -665,7 +665,7 @@ contract CoinvestedPositionDistributionTest is Test {
         );
         assertEq(distribution.eligible(holderY), holderYEligible, "DI-VII: wrong holderY eligible");
 
-        vm.warp(reassignOrDrainAfter);
+        vm.warp(lockedUntil);
         uint256 yEligible = distribution.eligible(holderY);
         vm.prank(owner);
         distribution.reassign(holderY, address(coinvestedPosition), yEligible);
@@ -931,7 +931,7 @@ contract CoinvestedPositionDistributionTest is Test {
             snapshotId: snapshotId,
             currency: IERC20(address(token)),
             pricePerToken: PRICE_PER_TOKEN_USDC,
-            reassignOrDrainAfter: reassignOrDrainAfter,
+            lockedUntil: lockedUntil,
             initialReassignments: new Reassignment[](0)
         });
         address cloneAddr = distributionFactory.predictCloneAddress(bytes32("DI-XII"), trustedForwarder, args);
@@ -1081,7 +1081,7 @@ contract CoinvestedPositionDistributionTest is Test {
                 snapshotId: snapFuzz,
                 currency: IERC20(address(usdc)),
                 pricePerToken: uint256(fuzzPricePerToken),
-                reassignOrDrainAfter: reassignOrDrainAfter,
+                lockedUntil: lockedUntil,
                 initialReassignments: new Reassignment[](0)
             });
             address cloneAddr = distributionFactory.predictCloneAddress(

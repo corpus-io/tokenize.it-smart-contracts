@@ -25,7 +25,7 @@ contract ExitTest is Test {
     uint256 public constant TOTAL_CURRENCY = 200e6; // 100 tokens × 2e6
 
     uint64 public claimStart;
-    uint64 public drainStart;
+    uint64 public lockedUntil;
 
     AllowList allowList;
     FakePaymentToken currency;
@@ -37,7 +37,7 @@ contract ExitTest is Test {
 
     function setUp() public {
         claimStart = uint64(block.timestamp + 1 days);
-        drainStart = uint64(block.timestamp + 30 days);
+        lockedUntil = uint64(block.timestamp + 30 days);
 
         allowList = createAllowList(trustedForwarder, admin);
         currency = new FakePaymentToken(0, CURRENCY_DECIMALS);
@@ -63,7 +63,7 @@ contract ExitTest is Test {
         currency.mint(currencyProvider, TOTAL_CURRENCY);
         exitLogic = new Exit(trustedForwarder);
         factory = new ExitCloneFactory(address(exitLogic));
-        exitContract = _deployExit(bytes32(0), PRICE_PER_TOKEN, claimStart, drainStart, TOTAL_CURRENCY);
+        exitContract = _deployExit(bytes32(0), PRICE_PER_TOKEN, claimStart, lockedUntil, TOTAL_CURRENCY);
 
         vm.prank(holder);
         token.approve(address(exitContract), TOKEN_SUPPLY);
@@ -83,7 +83,7 @@ contract ExitTest is Test {
             currency: IERC20(address(currency)),
             pricePerToken: price,
             claimStart: start,
-            drainStart: end,
+            lockedUntil: end,
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
         });
@@ -103,7 +103,7 @@ contract ExitTest is Test {
             currency: IERC20(address(currency)),
             pricePerToken: PRICE_PER_TOKEN,
             claimStart: claimStart,
-            drainStart: drainStart,
+            lockedUntil: lockedUntil,
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
         });
@@ -116,7 +116,7 @@ contract ExitTest is Test {
         assertEq(address(exitLogic.currency()), address(0), "logic contract currency should be zero");
         assertEq(exitLogic.pricePerToken(), 0, "logic contract pricePerToken should be zero");
         assertEq(exitLogic.claimStart(), 0, "logic contract claimStart should be zero");
-        assertEq(exitLogic.drainStart(), 0, "logic contract drainStart should be zero");
+        assertEq(exitLogic.lockedUntil(), 0, "logic contract lockedUntil should be zero");
         assertEq(exitLogic.owner(), address(0), "logic contract owner should be zero");
     }
 
@@ -141,7 +141,7 @@ contract ExitTest is Test {
             currency: IERC20(address(currency)),
             pricePerToken: PRICE_PER_TOKEN,
             claimStart: claimStart,
-            drainStart: drainStart,
+            lockedUntil: lockedUntil,
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
         });
@@ -158,7 +158,7 @@ contract ExitTest is Test {
             currency: IERC20(address(currency)),
             pricePerToken: 0,
             claimStart: claimStart,
-            drainStart: drainStart,
+            lockedUntil: lockedUntil,
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
         });
@@ -173,7 +173,7 @@ contract ExitTest is Test {
             currency: IERC20(address(currency)),
             pricePerToken: PRICE_PER_TOKEN,
             claimStart: 0,
-            drainStart: drainStart,
+            lockedUntil: lockedUntil,
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
         });
@@ -188,11 +188,11 @@ contract ExitTest is Test {
             currency: IERC20(address(currency)),
             pricePerToken: PRICE_PER_TOKEN,
             claimStart: claimStart,
-            drainStart: claimStart,
+            lockedUntil: claimStart,
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
         });
-        vm.expectRevert("drainStart must be after claimStart");
+        vm.expectRevert("lockedUntil must be after claimStart");
         factory.createExitClone(bytes32("ce0"), trustedForwarder, currencyProvider, args, 0);
     }
 
@@ -203,7 +203,7 @@ contract ExitTest is Test {
             currency: IERC20(address(token)),
             pricePerToken: PRICE_PER_TOKEN,
             claimStart: claimStart,
-            drainStart: drainStart,
+            lockedUntil: lockedUntil,
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
         });
@@ -220,7 +220,7 @@ contract ExitTest is Test {
             currency: IERC20(address(badCurrency)),
             pricePerToken: PRICE_PER_TOKEN,
             claimStart: claimStart,
-            drainStart: drainStart,
+            lockedUntil: lockedUntil,
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
         });
@@ -235,7 +235,7 @@ contract ExitTest is Test {
             currency: IERC20(address(currency)),
             pricePerToken: PRICE_PER_TOKEN,
             claimStart: claimStart,
-            drainStart: drainStart,
+            lockedUntil: lockedUntil,
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
         });
@@ -252,7 +252,7 @@ contract ExitTest is Test {
         assertEq(address(exitContract.currency()), address(currency), "currency address mismatch");
         assertEq(exitContract.pricePerToken(), PRICE_PER_TOKEN, "pricePerToken mismatch");
         assertEq(exitContract.claimStart(), claimStart, "claimStart mismatch");
-        assertEq(exitContract.drainStart(), drainStart, "drainStart mismatch");
+        assertEq(exitContract.lockedUntil(), lockedUntil, "lockedUntil mismatch");
         assertEq(exitContract.owner(), owner, "owner mismatch");
         assertEq(currency.balanceOf(address(exitContract)), TOTAL_CURRENCY, "exitContract currency balance mismatch");
     }
@@ -272,7 +272,7 @@ contract ExitTest is Test {
     }
 
     function testClaimAfterEndSucceeds() public {
-        vm.warp(drainStart + 1);
+        vm.warp(lockedUntil + 1);
         assertEq(currency.balanceOf(recipient), 0, "recipient currency balance should be zero before claim");
         vm.prank(holder);
         exitContract.claim(1e18, recipient, 0);
@@ -386,7 +386,7 @@ contract ExitTest is Test {
     // ========== E6. drain() ==========
 
     function testDrainNonOwnerReverts() public {
-        vm.warp(drainStart + 1);
+        vm.warp(lockedUntil + 1);
         vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(holder);
         exitContract.drain(recipient, currency);
@@ -396,7 +396,7 @@ contract ExitTest is Test {
         vm.assume(caller != owner);
         vm.assume(caller != address(0));
         vm.assume(caller != trustedForwarder);
-        vm.warp(drainStart + 1);
+        vm.warp(lockedUntil + 1);
         vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(caller);
         exitContract.drain(recipient, currency);
@@ -405,8 +405,8 @@ contract ExitTest is Test {
     function testFuzzDrainTiming(uint64 timestamp) public {
         vm.assume(timestamp < type(uint64).max - 1);
         vm.warp(timestamp);
-        if (timestamp <= drainStart) {
-            vm.expectRevert("exit window not yet closed");
+        if (timestamp < lockedUntil) {
+            vm.expectRevert("drain not yet available");
             vm.prank(owner);
             exitContract.drain(recipient, currency);
         } else {
@@ -423,15 +423,17 @@ contract ExitTest is Test {
         }
     }
 
-    function testDrainAtDrainStartReverts() public {
-        vm.warp(drainStart);
-        vm.expectRevert("exit window not yet closed");
+    function testDrainAtLockedUntilSucceeds() public {
+        vm.warp(lockedUntil);
+        uint256 contractBalance = currency.balanceOf(address(exitContract));
         vm.prank(owner);
         exitContract.drain(recipient, currency);
+        assertEq(currency.balanceOf(recipient), contractBalance, "recipient should receive full balance");
+        assertEq(currency.balanceOf(address(exitContract)), 0, "exitContract should be empty after drain");
     }
 
     function testDrainAfterDrainStartTransfersFullBalance() public {
-        vm.warp(drainStart + 1);
+        vm.warp(lockedUntil + 1);
         assertEq(currency.balanceOf(recipient), 0, "recipient currency balance should be zero before drain");
         assertEq(
             currency.balanceOf(address(exitContract)),
@@ -480,7 +482,7 @@ contract ExitTest is Test {
         vm.assume(uint256(fuzzAmt) <= 100e18 - claim1 - claim2 - claim3);
 
         // 100e18 tokens * 2e18 / 1e18 = 200e18 total currency
-        Exit fuzzExit = _deployExit(keccak256(abi.encode("fuzzMath", fuzzAmt)), 2e18, claimStart, drainStart, 200e18);
+        Exit fuzzExit = _deployExit(keccak256(abi.encode("fuzzMath", fuzzAmt)), 2e18, claimStart, lockedUntil, 200e18);
 
         vm.prank(admin);
         token.mint(address(this), claim1 + claim2 + claim3 + uint256(fuzzAmt));
@@ -595,7 +597,7 @@ contract ExitTest is Test {
             currency: IERC20(address(currency)),
             pricePerToken: PRICE_PER_TOKEN,
             claimStart: claimStart,
-            drainStart: drainStart,
+            lockedUntil: lockedUntil,
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
         });
@@ -814,7 +816,7 @@ contract ExitTest is Test {
             "feeExit currency balance should reflect full payout including fee"
         );
 
-        vm.warp(drainStart + 1);
+        vm.warp(lockedUntil + 1);
         vm.prank(owner);
         feeExit.drain(owner, currency);
         assertEq(currency.balanceOf(owner), expected, "owner should receive remaining currency after drain");
@@ -838,7 +840,7 @@ contract ExitTest is Test {
             currency: IERC20(address(maliciousCurrency)),
             pricePerToken: PRICE_PER_TOKEN,
             claimStart: claimStart,
-            drainStart: drainStart,
+            lockedUntil: lockedUntil,
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
         });
@@ -869,7 +871,7 @@ contract ExitTest is Test {
         Exit exitWithMaliciousCurrency = _deployExitWithMaliciousCurrency(maliciousCurrency, TOTAL_CURRENCY);
         maliciousCurrency.setExploitTarget(address(exitWithMaliciousCurrency), recipient);
 
-        vm.warp(drainStart + 1);
+        vm.warp(lockedUntil + 1);
         vm.prank(owner);
         vm.expectRevert("ReentrancyGuard: reentrant call");
         exitWithMaliciousCurrency.drain(owner, IERC20(address(maliciousCurrency)));
@@ -893,7 +895,7 @@ contract ExitTest is Test {
             currency: IERC20(address(currency)),
             pricePerToken: PRICE_PER_TOKEN,
             claimStart: claimStart,
-            drainStart: drainStart,
+            lockedUntil: lockedUntil,
             referenceCurrencies: referenceCurrencies,
             referenceToExitRates: rates
         });
@@ -918,7 +920,7 @@ contract ExitTest is Test {
             currency: IERC20(address(currency)),
             pricePerToken: PRICE_PER_TOKEN,
             claimStart: claimStart,
-            drainStart: drainStart,
+            lockedUntil: lockedUntil,
             referenceCurrencies: referenceCurrencies,
             referenceToExitRates: rates
         });
@@ -939,7 +941,7 @@ contract ExitTest is Test {
             currency: IERC20(address(currency)),
             pricePerToken: PRICE_PER_TOKEN,
             claimStart: claimStart,
-            drainStart: drainStart,
+            lockedUntil: lockedUntil,
             referenceCurrencies: referenceCurrencies,
             referenceToExitRates: rates
         });
@@ -964,7 +966,7 @@ contract ExitTest is Test {
             currency: IERC20(address(currency)),
             pricePerToken: PRICE_PER_TOKEN,
             claimStart: claimStart,
-            drainStart: drainStart,
+            lockedUntil: lockedUntil,
             referenceCurrencies: referenceCurrencies,
             referenceToExitRates: rates
         });

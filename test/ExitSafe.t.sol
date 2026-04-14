@@ -35,7 +35,7 @@ contract ExitSafeTest is Test {
     uint256 public constant TOTAL_CURRENCY = 200e6;
 
     uint64 public claimStart;
-    uint64 public drainStart;
+    uint64 public lockedUntil;
 
     AllowList allowList;
     FakePaymentToken currency;
@@ -51,7 +51,7 @@ contract ExitSafeTest is Test {
         safeOwner = vm.addr(SAFE_OWNER_PK);
 
         claimStart = uint64(block.timestamp + 1 days);
-        drainStart = uint64(block.timestamp + 30 days);
+        lockedUntil = uint64(block.timestamp + 30 days);
 
         // --- Token & currency ---
         allowList = createAllowList(trustedForwarder, admin);
@@ -80,7 +80,7 @@ contract ExitSafeTest is Test {
             currency: IERC20(address(currency)),
             pricePerToken: PRICE_PER_TOKEN,
             claimStart: claimStart,
-            drainStart: drainStart,
+            lockedUntil: lockedUntil,
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
         });

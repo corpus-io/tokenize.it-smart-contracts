@@ -31,7 +31,7 @@ contract DistributionTest is Test {
     // pricePerToken: 200e6 currency for 1000e18 tokens → 200e6 * 1e18 / 1000e18 = 200_000
     uint256 public constant PRICE_PER_TOKEN = 200_000;
 
-    uint64 public reassignOrDrainAfter;
+    uint64 public lockedUntil;
 
     AllowList allowList;
     FakePaymentToken currency;
@@ -43,7 +43,7 @@ contract DistributionTest is Test {
     uint256 public snapshotId;
 
     function setUp() public {
-        reassignOrDrainAfter = uint64(block.timestamp + 31 days);
+        lockedUntil = uint64(block.timestamp + 31 days);
 
         allowList = createAllowList(trustedForwarder, admin);
         currency = new FakePaymentToken(0, CURRENCY_DECIMALS);
@@ -73,14 +73,14 @@ contract DistributionTest is Test {
 
         distLogic = new Distribution(trustedForwarder);
         factory = new DistributionCloneFactory(address(distLogic));
-        dist = _deployDist(bytes32(0), TOTAL_CURRENCY, reassignOrDrainAfter);
+        dist = _deployDist(bytes32(0), TOTAL_CURRENCY, lockedUntil);
     }
 
     /// @dev Helper: predict address, fund, and deploy a Distribution clone
     function _deployDist(
         bytes32 salt,
         uint256 initialFunding,
-        uint64 _reassignOrDrainAfter
+        uint64 _lockedUntil
     ) internal returns (Distribution) {
         DistributionInitializerArguments memory args = DistributionInitializerArguments({
             owner: owner,
@@ -88,7 +88,7 @@ contract DistributionTest is Test {
             snapshotId: snapshotId,
             currency: IERC20(address(currency)),
             pricePerToken: PRICE_PER_TOKEN,
-            reassignOrDrainAfter: _reassignOrDrainAfter,
+            lockedUntil: _lockedUntil,
             initialReassignments: new Reassignment[](0)
         });
         address cloneAddr = factory.predictCloneAddress(salt, trustedForwarder, args);
@@ -112,7 +112,7 @@ contract DistributionTest is Test {
             snapshotId: snapshotId,
             currency: IERC20(address(currency)),
             pricePerToken: PRICE_PER_TOKEN,
-            reassignOrDrainAfter: reassignOrDrainAfter,
+            lockedUntil: lockedUntil,
             initialReassignments: new Reassignment[](0)
         });
         vm.expectRevert("Initializable: contract is already initialized");
@@ -126,7 +126,7 @@ contract DistributionTest is Test {
             snapshotId: snapshotId,
             currency: IERC20(address(currency)),
             pricePerToken: PRICE_PER_TOKEN,
-            reassignOrDrainAfter: reassignOrDrainAfter,
+            lockedUntil: lockedUntil,
             initialReassignments: new Reassignment[](0)
         });
         vm.expectRevert("Initializable: contract is already initialized");
@@ -143,7 +143,7 @@ contract DistributionTest is Test {
             snapshotId: snapshotId,
             currency: IERC20(address(badCurrency)),
             pricePerToken: PRICE_PER_TOKEN,
-            reassignOrDrainAfter: reassignOrDrainAfter,
+            lockedUntil: lockedUntil,
             initialReassignments: new Reassignment[](0)
         });
         vm.expectRevert("currency needs to be on the allowlist with TRUSTED_CURRENCY attribute");
@@ -157,7 +157,7 @@ contract DistributionTest is Test {
             snapshotId: snapshotId,
             currency: IERC20(address(currency)),
             pricePerToken: PRICE_PER_TOKEN,
-            reassignOrDrainAfter: reassignOrDrainAfter,
+            lockedUntil: lockedUntil,
             initialReassignments: new Reassignment[](0)
         });
         address cloneAddr = factory.predictCloneAddress(bytes32("lowA"), trustedForwarder, args);
@@ -175,7 +175,7 @@ contract DistributionTest is Test {
             snapshotId: snapshotId,
             currency: IERC20(address(currency)),
             pricePerToken: 0,
-            reassignOrDrainAfter: reassignOrDrainAfter,
+            lockedUntil: lockedUntil,
             initialReassignments: new Reassignment[](0)
         });
         vm.expectRevert("price must be positive");
@@ -187,7 +187,7 @@ contract DistributionTest is Test {
         assertEq(dist.snapshotId(), snapshotId, "unexpected snapshotId");
         assertEq(address(dist.currency()), address(currency), "unexpected currency address");
         assertEq(dist.pricePerToken(), PRICE_PER_TOKEN, "unexpected pricePerToken");
-        assertEq(dist.reassignOrDrainAfter(), reassignOrDrainAfter, "unexpected reassignOrDrainAfter");
+        assertEq(dist.lockedUntil(), lockedUntil, "unexpected lockedUntil");
         assertEq(dist.owner(), owner, "unexpected owner");
         assertEq(currency.balanceOf(address(dist)), TOTAL_CURRENCY, "dist not fully funded");
     }
@@ -220,7 +220,7 @@ contract DistributionTest is Test {
             snapshotId: emptySnap,
             currency: IERC20(address(currency)),
             pricePerToken: PRICE_PER_TOKEN,
-            reassignOrDrainAfter: reassignOrDrainAfter,
+            lockedUntil: lockedUntil,
             initialReassignments: new Reassignment[](0)
         });
         vm.expectRevert("snapshot has no tokens");
@@ -228,7 +228,7 @@ contract DistributionTest is Test {
     }
 
     function testInitializeWithZeroFunding() public {
-        Distribution unfunded = _deployDist(bytes32("unfunded"), 0, reassignOrDrainAfter);
+        Distribution unfunded = _deployDist(bytes32("unfunded"), 0, lockedUntil);
         assertEq(currency.balanceOf(address(unfunded)), 0, "unfunded dist should have zero balance");
         assertEq(unfunded.pricePerToken(), PRICE_PER_TOKEN, "pricePerToken should be set even without funding");
         // eligible is based on price, not balance
@@ -302,7 +302,7 @@ contract DistributionTest is Test {
             snapshotId: snap,
             currency: IERC20(address(currency)),
             pricePerToken: pricePerTokenFuzz,
-            reassignOrDrainAfter: reassignOrDrainAfter,
+            lockedUntil: lockedUntil,
             initialReassignments: new Reassignment[](0)
         });
         Distribution fuzzDistribution = Distribution(
@@ -390,7 +390,7 @@ contract DistributionTest is Test {
             snapshotId: snap,
             currency: IERC20(address(currency)),
             pricePerToken: PRICE_PER_TOKEN,
-            reassignOrDrainAfter: reassignOrDrainAfter,
+            lockedUntil: lockedUntil,
             initialReassignments: new Reassignment[](0)
         });
         address cloneAddr = factory.predictCloneAddress(salt, trustedForwarder, args);
@@ -408,7 +408,7 @@ contract DistributionTest is Test {
     // ========== D5. drain() ==========
 
     function testDrainNonOwnerReverts() public {
-        vm.warp(reassignOrDrainAfter);
+        vm.warp(lockedUntil);
         vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(holderA);
         dist.drain(holderA, currency);
@@ -421,7 +421,7 @@ contract DistributionTest is Test {
     }
 
     function testDrainAtExactDeadlineSucceeds() public {
-        vm.warp(reassignOrDrainAfter);
+        vm.warp(lockedUntil);
         vm.prank(owner);
         dist.drain(owner, currency);
         assertEq(currency.balanceOf(owner), TOTAL_CURRENCY, "owner should receive full balance after drain");
@@ -434,7 +434,7 @@ contract DistributionTest is Test {
         uint256 remaining = currency.balanceOf(address(dist));
         assertEq(remaining, TOTAL_CURRENCY - 120e6, "remaining balance wrong after holderA claim");
 
-        vm.warp(reassignOrDrainAfter);
+        vm.warp(lockedUntil);
         vm.prank(owner);
         dist.drain(owner, currency);
         assertEq(currency.balanceOf(owner), remaining, "owner should receive remaining balance after drain");
@@ -444,7 +444,7 @@ contract DistributionTest is Test {
     function testFuzzDrainTiming(uint64 warpTo) public {
         vm.assume(warpTo >= block.timestamp);
         vm.warp(warpTo);
-        if (warpTo < reassignOrDrainAfter) {
+        if (warpTo < lockedUntil) {
             vm.expectRevert("drain not yet available");
             vm.prank(owner);
             dist.drain(owner, currency);
@@ -458,7 +458,7 @@ contract DistributionTest is Test {
     // ========== D7. reassign() ==========
 
     function testReassignNonOwnerReverts() public {
-        vm.warp(reassignOrDrainAfter);
+        vm.warp(lockedUntil);
         uint256 amount = dist.eligible(holderA);
         vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(holderA);
@@ -473,7 +473,7 @@ contract DistributionTest is Test {
     }
 
     function testReassignAtExactDeadlineSucceeds() public {
-        vm.warp(reassignOrDrainAfter);
+        vm.warp(lockedUntil);
         uint256 amount = dist.eligible(holderA);
         vm.prank(owner);
         dist.reassign(holderA, holderB, amount);
@@ -485,7 +485,7 @@ contract DistributionTest is Test {
         vm.warp(warpTo);
         assertEq(dist.eligible(holderA), amount, "holderA eligible should be non-zero before reassign");
         assertEq(dist.eligible(holderB), 60e6, "holderB eligible should be own share before reassign");
-        if (warpTo < reassignOrDrainAfter) {
+        if (warpTo < lockedUntil) {
             vm.expectRevert("reassignment not yet available");
             vm.prank(owner);
             dist.reassign(holderA, holderB, amount);
@@ -500,7 +500,7 @@ contract DistributionTest is Test {
     }
 
     function testReassignToZeroAddressReverts() public {
-        vm.warp(reassignOrDrainAfter);
+        vm.warp(lockedUntil);
         uint256 amount = dist.eligible(holderA);
         vm.expectRevert("to can not be zero address");
         vm.prank(owner);
@@ -508,21 +508,21 @@ contract DistributionTest is Test {
     }
 
     function testReassignZeroAmountReverts() public {
-        vm.warp(reassignOrDrainAfter);
+        vm.warp(lockedUntil);
         vm.expectRevert("amount must be positive");
         vm.prank(owner);
         dist.reassign(holderA, holderB, 0);
     }
 
     function testReassignExceedsEligibleReverts() public {
-        vm.warp(reassignOrDrainAfter);
+        vm.warp(lockedUntil);
         vm.expectRevert("amount exceeds eligible");
         vm.prank(owner);
         dist.reassign(address(42), holderB, 1); // address(42) has no balance
     }
 
     function testReassignEffect() public {
-        vm.warp(reassignOrDrainAfter);
+        vm.warp(lockedUntil);
         assertEq(dist.eligible(holderA), 120e6, "holderA eligible should be 120e6 before reassign");
         assertEq(dist.eligible(holderB), 60e6, "holderB eligible should be 60e6 before reassign");
         uint256 amountA = dist.eligible(holderA);
@@ -536,7 +536,7 @@ contract DistributionTest is Test {
     }
 
     function testReassignEmitsEvent() public {
-        vm.warp(reassignOrDrainAfter);
+        vm.warp(lockedUntil);
         vm.expectEmit(true, true, false, true, address(dist));
         emit Distribution.Reassigned(holderA, holderB, 120e6);
         vm.prank(owner);
@@ -544,7 +544,7 @@ contract DistributionTest is Test {
     }
 
     function testReassignStackingMultipleToSameRecipient() public {
-        vm.warp(reassignOrDrainAfter);
+        vm.warp(lockedUntil);
         uint256 amountB = dist.eligible(holderB);
         vm.prank(owner);
         dist.reassign(holderB, holderA, amountB); // A gets B's 60e6
@@ -566,7 +566,7 @@ contract DistributionTest is Test {
     }
 
     function testReassignSelfIsNoOp() public {
-        vm.warp(reassignOrDrainAfter);
+        vm.warp(lockedUntil);
         uint256 eligibleBefore = dist.eligible(holderA);
         vm.prank(owner);
         dist.reassign(holderA, holderA, eligibleBefore); // self-reassign
@@ -576,14 +576,14 @@ contract DistributionTest is Test {
     function testReassignAfterClaimReverts() public {
         vm.prank(holderA);
         dist.claim(holderA, 0); // eligible drops to 0
-        vm.warp(reassignOrDrainAfter);
+        vm.warp(lockedUntil);
         vm.expectRevert("amount exceeds eligible");
         vm.prank(owner);
         dist.reassign(holderA, holderB, 1);
     }
 
     function testSecondReassignFromSameAddressReverts() public {
-        vm.warp(reassignOrDrainAfter);
+        vm.warp(lockedUntil);
         uint256 amountA = dist.eligible(holderA);
         vm.prank(owner);
         dist.reassign(holderA, holderB, amountA);
@@ -593,7 +593,7 @@ contract DistributionTest is Test {
     }
 
     function testPartialReassign() public {
-        vm.warp(reassignOrDrainAfter);
+        vm.warp(lockedUntil);
         uint256 aliceEligible = dist.eligible(holderA); // 120e6
 
         vm.prank(owner);
@@ -614,14 +614,14 @@ contract DistributionTest is Test {
 
     function testChainedReassignAToB() public {
         // A → B → C (B has no snapshot balance)
-        Distribution chainDist = _deployDist(bytes32("chain"), TOTAL_CURRENCY, reassignOrDrainAfter);
+        Distribution chainDist = _deployDist(bytes32("chain"), TOTAL_CURRENCY, lockedUntil);
 
         // initial state
         assertEq(chainDist.eligible(holderA), 120e6, "holderA initial eligible");
         assertEq(chainDist.eligible(holderB), 60e6, "holderB initial eligible");
         assertEq(chainDist.eligible(holderC), 20e6, "holderC initial eligible");
 
-        vm.warp(reassignOrDrainAfter);
+        vm.warp(lockedUntil);
         uint256 amountA = chainDist.eligible(holderA);
         vm.prank(owner);
         chainDist.reassign(holderA, holderB, amountA); // B now has 120+60=180e6
@@ -657,7 +657,7 @@ contract DistributionTest is Test {
         // After each reassign, sum of all eligible must remain constant
         uint256 sumBefore = dist.eligible(holderA) + dist.eligible(holderB) + dist.eligible(holderC);
 
-        vm.warp(reassignOrDrainAfter);
+        vm.warp(lockedUntil);
         uint256 amountA = dist.eligible(holderA);
         vm.prank(owner);
         dist.reassign(holderA, holderB, amountA);
@@ -671,7 +671,7 @@ contract DistributionTest is Test {
     function testClaimThenReassignReverts() public {
         vm.prank(holderA);
         dist.claim(holderA, 0); // eligible(A) = 0
-        vm.warp(reassignOrDrainAfter);
+        vm.warp(lockedUntil);
         vm.expectRevert("amount exceeds eligible");
         vm.prank(owner);
         dist.reassign(holderA, holderB, 1);
@@ -680,7 +680,7 @@ contract DistributionTest is Test {
     // ========== D9. Interaction: reassign then claim by recipient ==========
 
     function testReassignThenClaimByRecipient() public {
-        vm.warp(reassignOrDrainAfter);
+        vm.warp(lockedUntil);
         uint256 amountA = dist.eligible(holderA);
         vm.prank(owner);
         dist.reassign(holderA, holderB, amountA); // B gets 60 + 120 = 180e6
@@ -729,7 +729,7 @@ contract DistributionTest is Test {
             dist.eligible(holderC) +
             dist.eligible(reassignTo);
 
-        vm.warp(reassignOrDrainAfter);
+        vm.warp(lockedUntil);
         uint256 amountA = dist.eligible(holderA);
         vm.prank(owner);
         dist.reassign(holderA, reassignTo, amountA);
@@ -744,7 +744,7 @@ contract DistributionTest is Test {
     // ========== D11. Underfunding ==========
 
     function testClaimRevertsWhenUnderfunded() public {
-        Distribution unfunded = _deployDist(bytes32("underfund"), 0, reassignOrDrainAfter);
+        Distribution unfunded = _deployDist(bytes32("underfund"), 0, lockedUntil);
         // holderA is eligible for 120e6 but contract has 0 balance
         vm.prank(holderA);
         vm.expectRevert("ERC20: transfer amount exceeds balance");
@@ -752,7 +752,7 @@ contract DistributionTest is Test {
     }
 
     function testClaimSucceedsAfterLaterFunding() public {
-        Distribution unfunded = _deployDist(bytes32("lateFund"), 0, reassignOrDrainAfter);
+        Distribution unfunded = _deployDist(bytes32("lateFund"), 0, lockedUntil);
         // Fund later
         currency.mint(address(unfunded), TOTAL_CURRENCY);
         vm.prank(holderA);
@@ -762,7 +762,7 @@ contract DistributionTest is Test {
 
     function testPartialFundingAllowsSomeClaims() public {
         // Fund only enough for holderC (20e6)
-        Distribution partialDist = _deployDist(bytes32("partial"), 20e6, reassignOrDrainAfter);
+        Distribution partialDist = _deployDist(bytes32("partial"), 20e6, lockedUntil);
         vm.prank(holderC);
         partialDist.claim(holderC, 0);
         assertEq(currency.balanceOf(holderC), 20e6, "holderC should claim from partial funding");
@@ -809,7 +809,7 @@ contract DistributionTest is Test {
             snapshotId: snap,
             currency: IERC20(address(currency)),
             pricePerToken: PRICE_PER_TOKEN,
-            reassignOrDrainAfter: reassignOrDrainAfter,
+            lockedUntil: lockedUntil,
             initialReassignments: new Reassignment[](0)
         });
         address cloneAddr = factory.predictCloneAddress(bytes32("feeDist"), trustedForwarder, args);
@@ -935,7 +935,7 @@ contract DistributionTest is Test {
 
         amount = bound(amount, 1, grossA); // can reassign up to full gross allocation
 
-        vm.warp(reassignOrDrainAfter);
+        vm.warp(lockedUntil);
         vm.prank(owner);
         d.reassign(holderA, holderB, amount);
 
@@ -984,7 +984,7 @@ contract DistributionTest is Test {
             snapshotId: snapshotId,
             currency: IERC20(address(maliciousCurrency)),
             pricePerToken: PRICE_PER_TOKEN,
-            reassignOrDrainAfter: reassignOrDrainAfter,
+            lockedUntil: lockedUntil,
             initialReassignments: new Reassignment[](0)
         });
         address cloneAddr = factory.predictCloneAddress(bytes32("malicious"), trustedForwarder, args);
@@ -1014,7 +1014,7 @@ contract DistributionTest is Test {
         Distribution distribution = _deployDistWithMaliciousCurrency(maliciousCurrency, TOTAL_CURRENCY);
         maliciousCurrency.setExploitTarget(address(distribution), recipient);
 
-        vm.warp(reassignOrDrainAfter);
+        vm.warp(lockedUntil);
         vm.prank(owner);
         vm.expectRevert("ReentrancyGuard: reentrant call");
         distribution.drain(owner, IERC20(address(maliciousCurrency)));

@@ -44,8 +44,8 @@ contract TimeLockDistributeExitTest is Test {
     uint256 public constant TOKEN_AMOUNT = 200e18;
 
     uint64 public claimStart;
-    uint64 public drainStart;
     uint64 public lockedUntil;
+    uint64 public timeLockExpiry;
 
     AllowList allowList;
     IFeeSettingsV2 feeSettings;
@@ -59,8 +59,8 @@ contract TimeLockDistributeExitTest is Test {
 
     function setUp() public {
         claimStart = uint64(block.timestamp + 1 days);
-        drainStart = uint64(block.timestamp + 30 days);
-        lockedUntil = uint64(block.timestamp + 365 days);
+        lockedUntil = uint64(block.timestamp + 30 days);
+        timeLockExpiry = uint64(block.timestamp + 365 days);
 
         // Infrastructure
         allowList = createAllowList(trustedForwarder, admin);
@@ -88,7 +88,7 @@ contract TimeLockDistributeExitTest is Test {
         TimeLock timeLockLogic = new TimeLock(trustedForwarder);
         TimeLockCloneFactory timeLockFactory = new TimeLockCloneFactory(address(timeLockLogic));
         timeLock = TimeLock(
-            timeLockFactory.createTimeLockClone(bytes32(0), trustedForwarder, owner, lockedUntil, tokenExitRegistry)
+            timeLockFactory.createTimeLockClone(bytes32(0), trustedForwarder, owner, timeLockExpiry, tokenExitRegistry)
         );
 
         // Mint tokens directly to timeLock
@@ -112,7 +112,7 @@ contract TimeLockDistributeExitTest is Test {
             currency: IERC20(address(eurc)),
             pricePerToken: pricePerToken,
             claimStart: claimStart,
-            drainStart: drainStart,
+            lockedUntil: lockedUntil,
             referenceCurrencies: referenceCurrencies,
             referenceToExitRates: rates
         });
@@ -137,8 +137,8 @@ contract TimeLockDistributeExitTest is Test {
         vm.prank(admin);
         tokenExitRegistry.setExit(token, IExit(address(exitContract)));
 
-        // Still locked (lockedUntil = now + 365 days)
-        assertLt(block.timestamp, lockedUntil, "should still be locked");
+        // Still locked (timeLockExpiry = now + 365 days)
+        assertLt(block.timestamp, timeLockExpiry, "should still be locked");
 
         vm.warp(claimStart);
         vm.prank(owner);
@@ -209,8 +209,8 @@ contract TimeLockDistributeExitTest is Test {
     function testDistributeExitRevertsIfNoTokens() public {
         Exit exitContract = _deployExit(200e6);
 
-        // Drain all tokens after lockedUntil has passed
-        vm.warp(lockedUntil);
+        // Drain all tokens after timeLockExpiry has passed
+        vm.warp(timeLockExpiry);
         vm.prank(owner);
         timeLock.drain(IERC20(address(token)), recipient);
 
@@ -220,7 +220,7 @@ contract TimeLockDistributeExitTest is Test {
         vm.prank(admin);
         tokenExitRegistry.setExit(token, IExit(address(exitContract)));
 
-        vm.warp(lockedUntil + 1 days);
+        vm.warp(timeLockExpiry + 1 days);
         vm.prank(owner);
         vm.expectRevert("no tokens to exit");
         timeLock.claimExit(token, recipient, 0);

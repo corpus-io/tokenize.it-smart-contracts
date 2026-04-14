@@ -66,7 +66,7 @@ contract CoinvestedPositionExitTest is Test {
 
     // ── Claim window ──────────────────────────────────────────────────────────
     uint64 public claimStart;
-    uint64 public drainStart;
+    uint64 public lockedUntil;
 
     // ── Contracts ─────────────────────────────────────────────────────────────
     AllowList allowList;
@@ -93,7 +93,7 @@ contract CoinvestedPositionExitTest is Test {
     // ── setUp ──────────────────────────────────────────────────────────────────
     function setUp() public {
         claimStart = uint64(block.timestamp + 1 days);
-        drainStart = uint64(block.timestamp + 30 days);
+        lockedUntil = uint64(block.timestamp + 30 days);
 
         // Infrastructure
         allowList = createAllowList(trustedForwarder, admin);
@@ -186,7 +186,7 @@ contract CoinvestedPositionExitTest is Test {
             currency: IERC20(address(exitCurrency)),
             pricePerToken: pricePerToken,
             claimStart: claimStart,
-            drainStart: drainStart,
+            lockedUntil: lockedUntil,
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
         });
@@ -210,7 +210,7 @@ contract CoinvestedPositionExitTest is Test {
             currency: IERC20(address(exitCurrency)),
             pricePerToken: pricePerToken,
             claimStart: claimStart,
-            drainStart: drainStart,
+            lockedUntil: lockedUntil,
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
         });
@@ -255,7 +255,7 @@ contract CoinvestedPositionExitTest is Test {
     function testDistributeExitSucceedsAfterDrainStart() public {
         Exit exitContract = _deployExit(bytes32("i2"), eurc, 200e6, CP_TOKEN_AMOUNT);
 
-        vm.warp(drainStart + 1);
+        vm.warp(lockedUntil + 1);
         vm.prank(admin);
         tokenExitRegistry.setExit(token, IExit(address(exitContract)));
         vm.prank(owner);
@@ -678,7 +678,7 @@ contract CoinvestedPositionExitTest is Test {
             currency: IERC20(address(eurc)),
             pricePerToken: 200e6,
             claimStart: claimStart,
-            drainStart: drainStart,
+            lockedUntil: lockedUntil,
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
         });
@@ -885,7 +885,7 @@ contract CoinvestedPositionExitTest is Test {
             currency: IERC20(address(eurc)),
             pricePerToken: uint256(pricePerToken),
             claimStart: claimStart,
-            drainStart: drainStart,
+            lockedUntil: lockedUntil,
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
         });
@@ -998,7 +998,7 @@ contract CoinvestedPositionExitTest is Test {
             currency: IERC20(address(eurc)),
             pricePerToken: pricePerToken,
             claimStart: claimStart,
-            drainStart: drainStart,
+            lockedUntil: lockedUntil,
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
         });
@@ -1261,7 +1261,7 @@ contract CoinvestedPositionExitTest is Test {
             currency: IERC20(address(exitCurrency)),
             pricePerToken: pricePerToken,
             claimStart: claimStart,
-            drainStart: drainStart,
+            lockedUntil: lockedUntil,
             referenceCurrencies: referenceCurrencies,
             referenceToExitRates: rates
         });
@@ -1363,7 +1363,7 @@ contract CoinvestedPositionExitTest is Test {
             currency: IERC20(address(eure)),
             pricePerToken: 200e18,
             claimStart: claimStart,
-            drainStart: drainStart,
+            lockedUntil: lockedUntil,
             referenceCurrencies: referenceCurrencies,
             referenceToExitRates: rates
         });
@@ -1418,7 +1418,7 @@ contract CoinvestedPositionExitTest is Test {
             currency: IERC20(address(eure)),
             pricePerToken: 200e18,
             claimStart: claimStart,
-            drainStart: drainStart,
+            lockedUntil: lockedUntil,
             referenceCurrencies: referenceCurrencies,
             referenceToExitRates: rates
         });
@@ -1440,7 +1440,7 @@ contract CoinvestedPositionExitTest is Test {
             currency: IERC20(address(eure)),
             pricePerToken: 200e18,
             claimStart: claimStart,
-            drainStart: drainStart,
+            lockedUntil: lockedUntil,
             referenceCurrencies: referenceCurrencies,
             referenceToExitRates: rates
         });
