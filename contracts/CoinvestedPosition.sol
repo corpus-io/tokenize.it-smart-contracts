@@ -37,16 +37,6 @@ struct CoinvestedPositionInitializerArguments {
     GlobalTokenExitRegistry tokenExitRegistry;
 }
 
-struct OneTimeSyndicateFeeArguments {
-    /// factory used to deploy the PrivateOffer
-    PrivateOfferFactory privateOfferFactory;
-    /// salt passed to the PrivateOfferFactory for deterministic address derivation
-    bytes32 privateOfferSalt;
-    /// arguments for the PrivateOffer; currencyPayer and tokenReceiver are overridden to address(this)
-    PrivateOfferArguments privateOfferArguments;
-    /// one-time fee as a fraction of the investment amount, divided by type(uint64).max; 0 means no fee
-    uint64 oneTimeFee;
-}
 
 /**
  * @title CoinvestedPosition
@@ -99,34 +89,40 @@ contract CoinvestedPosition is TokenSwapBase {
      *      The receiver must have pre-approved this contract's address for investmentAmount + oneTimeFeeAmount
      *      of baseCurrency before this is called. The token issuer must have pre-approved the PrivateOffer address
      *      (returned by predictCoinvestedPositionAndPrivateOfferAddress) for minting or transfer.
-     *      currencyPayer and tokenReceiver in _feeArguments.privateOfferArguments are overridden to address(this).
+     *      currencyPayer and tokenReceiver in _privateOfferArguments are overridden to address(this).
      * @param _baseArguments Struct containing all base initialization parameters
-     * @param _feeArguments Struct containing PrivateOffer parameters and the one-time syndicate fee fraction
+     * @param _privateOfferFactory factory used to deploy the PrivateOffer
+     * @param _rawSalt salt used for deterministic PrivateOffer address derivation; same salt as used for this clone
+     * @param _privateOfferArguments arguments for the PrivateOffer; currencyPayer and tokenReceiver are overridden
+     * @param _oneTimeFee one-time fee as a fraction of the investment amount, divided by type(uint64).max; 0 = no fee
      */
     function initializeWithPrivateOffer(
         CoinvestedPositionInitializerArguments memory _baseArguments,
-        OneTimeSyndicateFeeArguments memory _feeArguments
+        PrivateOfferFactory _privateOfferFactory,
+        bytes32 _rawSalt,
+        PrivateOfferArguments memory _privateOfferArguments,
+        uint64 _oneTimeFee
     ) external initializer {
         _initializeCoinvestedPosition(_baseArguments);
 
         require(
-            _feeArguments.privateOfferArguments.currency == _baseArguments.baseCurrency,
+            _privateOfferArguments.currency == _baseArguments.baseCurrency,
             "privateOffer currency must match baseCurrency"
         );
         require(
-            address(_feeArguments.privateOfferArguments.token) == address(_baseArguments.token),
+            address(_privateOfferArguments.token) == address(_baseArguments.token),
             "privateOffer token must match token"
         );
 
         uint256 investmentAmount = Math.ceilDiv(
-            _feeArguments.privateOfferArguments.tokenAmount * _feeArguments.privateOfferArguments.tokenPrice,
+            _privateOfferArguments.tokenAmount * _privateOfferArguments.tokenPrice,
             10 ** _baseArguments.token.decimals()
         );
-        uint256 oneTimeFeeAmount = (uint256(_feeArguments.oneTimeFee) * investmentAmount) / type(uint64).max;
+        uint256 oneTimeFeeAmount = (uint256(_oneTimeFee) * investmentAmount) / type(uint64).max;
 
         // Override: this contract is both the currency payer and the token receiver
-        _feeArguments.privateOfferArguments.currencyPayer = address(this);
-        _feeArguments.privateOfferArguments.tokenReceiver = address(this);
+        _privateOfferArguments.currencyPayer = address(this);
+        _privateOfferArguments.tokenReceiver = address(this);
 
         // Single pull from receiver covering investment and fee
         _baseArguments.baseCurrency.safeTransferFrom(receiver, address(this), investmentAmount + oneTimeFeeAmount);
@@ -137,20 +133,17 @@ contract CoinvestedPosition is TokenSwapBase {
         }
 
         // Approve the deterministic PrivateOffer address for exactly the investment amount
-        address privateOfferAddress = _feeArguments.privateOfferFactory.predictPrivateOfferAddress(
-            _feeArguments.privateOfferSalt,
-            _feeArguments.privateOfferArguments
+        address privateOfferAddress = _privateOfferFactory.predictPrivateOfferAddress(
+            _rawSalt,
+            _privateOfferArguments
         );
         _baseArguments.baseCurrency.approve(privateOfferAddress, investmentAmount);
 
         // Deploy PrivateOffer: pulls investmentAmount from this contract, delivers tokens here
-        _feeArguments.privateOfferFactory.deployPrivateOffer(
-            _feeArguments.privateOfferSalt,
-            _feeArguments.privateOfferArguments
-        );
+        _privateOfferFactory.deployPrivateOffer(_rawSalt, _privateOfferArguments);
 
         require(
-            _baseArguments.token.balanceOf(address(this)) == _feeArguments.privateOfferArguments.tokenAmount,
+            _baseArguments.token.balanceOf(address(this)) == _privateOfferArguments.tokenAmount,
             "token delivery failed"
         );
     }
