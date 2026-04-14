@@ -118,7 +118,7 @@ contract Exit is PayoutBase {
      * @param _holder Address of the token holder
      * @return Net currency amount after fees
      */
-    function eligible(address _holder) public view returns (uint256) {
+    function eligible(address _holder) public view override returns (uint256) {
         uint256 gross = (token.balanceOf(_holder) * pricePerToken) / 10 ** token.decimals();
         (uint256 fee, ) = _feeInfo(FeeTypes.EXIT, gross);
         return gross - fee;
@@ -130,7 +130,7 @@ contract Exit is PayoutBase {
      * @param _recipient Address that receives the currency payout
      * @param _minPayout Minimum net payout required; reverts if not met
      */
-    function claim(address _recipient, uint256 _minPayout) external nonReentrant {
+    function claim(address _recipient, uint256 _minPayout) external override nonReentrant {
         require(block.timestamp >= claimStart, "exit not yet started");
         uint256 tokenAmount = token.balanceOf(_msgSender());
         require(tokenAmount > 0, "nothing to claim");

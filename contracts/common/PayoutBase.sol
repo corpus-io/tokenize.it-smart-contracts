@@ -56,6 +56,14 @@ abstract contract PayoutBase is ERC2771ContextUpgradeable, Ownable2StepUpgradeab
         lockedUntil = _lockedUntil;
     }
 
+    /// @notice Returns the net currency payout a holder would receive if they claimed now.
+    function eligible(address _holder) public view virtual returns (uint256);
+
+    /// @notice Claims the caller's payout and sends it to _recipient.
+    /// @param _recipient Address that receives the currency payout
+    /// @param _minPayout Minimum net payout required; reverts if not met
+    function claim(address _recipient, uint256 _minPayout) external virtual;
+
     /**
      * @notice Returns the fee amount and fee collector address for the given fee type and amount.
      * @param _feeType Fee type identifier (use FeeTypes library constants)

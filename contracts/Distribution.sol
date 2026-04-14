@@ -111,7 +111,7 @@ contract Distribution is PayoutBase {
      * @param _holder Address of the token holder
      * @return Net currency amount after fees
      */
-    function eligible(address _holder) public view returns (uint256) {
+    function eligible(address _holder) public view override returns (uint256) {
         uint256 gross = _grossEligible(_holder);
         (uint256 fee, ) = _feeInfo(FeeTypes.DISTRIBUTION, gross);
         return gross - fee;
@@ -154,7 +154,7 @@ contract Distribution is PayoutBase {
      * @param _recipient Address that receives the currency payout
      * @param _minPayout Minimum net payout required; reverts if not met
      */
-    function claim(address _recipient, uint256 _minPayout) external nonReentrant {
+    function claim(address _recipient, uint256 _minPayout) external override nonReentrant {
         uint256 gross = _grossEligible(_msgSender());
         require(gross > 0, "nothing to claim");
         paidOut[_msgSender()] += gross;
