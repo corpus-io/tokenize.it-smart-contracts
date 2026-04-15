@@ -28,9 +28,9 @@ contract FakeOwnableToken {
  * @notice Tests for GlobalTokenExitRegistry.
  */
 contract GlobalTokenExitRegistryTest is Test {
-    address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
-    address public constant nonAdmin = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
-    address public constant trustedForwarder = 0xa109709ecfA91A80626ff3989D68F67F5b1dD12a;
+    address public constant ADMIN = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
+    address public constant NON_ADMIN = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
+    address public constant TRUSTED_FORWARDER = 0xa109709ecfA91A80626ff3989D68F67F5b1dD12a;
 
     AllowList allowList;
     IFeeSettingsV2 feeSettings;
@@ -39,16 +39,16 @@ contract GlobalTokenExitRegistryTest is Test {
     GlobalTokenExitRegistry registry;
 
     function setUp() public {
-        allowList = createAllowList(trustedForwarder, admin);
-        feeSettings = createFeeSettings(trustedForwarder, admin, buildFeeTypes(0, 0, 0, admin, admin, admin));
+        allowList = createAllowList(TRUSTED_FORWARDER, ADMIN);
+        feeSettings = createFeeSettings(TRUSTED_FORWARDER, ADMIN, buildFeeTypes(0, 0, 0, ADMIN, ADMIN, ADMIN));
 
-        address tokenLogic = address(new Token(trustedForwarder));
+        address tokenLogic = address(new Token(TRUSTED_FORWARDER));
         tokenFactory = new TokenProxyFactory(tokenLogic);
         token = Token(
-            tokenFactory.createTokenProxy(0, trustedForwarder, feeSettings, admin, allowList, 0, "TestToken", "TTK")
+            tokenFactory.createTokenProxy(0, TRUSTED_FORWARDER, feeSettings, ADMIN, allowList, 0, "TestToken", "TTK")
         );
 
-        registry = new GlobalTokenExitRegistry(trustedForwarder);
+        registry = new GlobalTokenExitRegistry(TRUSTED_FORWARDER);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -63,9 +63,9 @@ contract GlobalTokenExitRegistryTest is Test {
         Token otherToken = Token(
             tokenFactory.createTokenProxy(
                 bytes32(uint256(1)),
-                trustedForwarder,
+                TRUSTED_FORWARDER,
                 feeSettings,
-                admin,
+                ADMIN,
                 allowList,
                 0,
                 "OtherToken",
@@ -82,7 +82,7 @@ contract GlobalTokenExitRegistryTest is Test {
     function testSetExitHappyPath() public {
         address fakeExit = makeAddr("fakeExit");
 
-        vm.prank(admin);
+        vm.prank(ADMIN);
         vm.expectEmit(true, true, false, false, address(registry));
         emit GlobalTokenExitRegistry.ExitSet(token, Exit(address(fakeExit)));
         registry.setExit(token, Exit(address(fakeExit)));
@@ -93,21 +93,21 @@ contract GlobalTokenExitRegistryTest is Test {
     function testSetExitRevertsIfCallerIsNotTokenAdmin() public {
         address fakeExit = makeAddr("fakeExit");
 
-        vm.prank(nonAdmin);
-        vm.expectRevert("caller is not token admin or owner");
+        vm.prank(NON_ADMIN);
+        vm.expectRevert("caller is not token ADMIN or owner");
         registry.setExit(token, Exit(address(fakeExit)));
     }
 
     function testSetExitRevertsIfTokenIsZeroAddress() public {
         address fakeExit = makeAddr("fakeExit");
 
-        vm.prank(admin);
+        vm.prank(ADMIN);
         vm.expectRevert("token can not be zero address");
         registry.setExit(Token(address(0)), Exit(address(fakeExit)));
     }
 
     function testSetExitRevertsIfExitIsZeroAddress() public {
-        vm.prank(admin);
+        vm.prank(ADMIN);
         vm.expectRevert("exit can not be zero address");
         registry.setExit(token, Exit(address(0)));
     }
@@ -116,10 +116,10 @@ contract GlobalTokenExitRegistryTest is Test {
         address fakeExit1 = makeAddr("fakeExit1");
         address fakeExit2 = makeAddr("fakeExit2");
 
-        vm.prank(admin);
+        vm.prank(ADMIN);
         registry.setExit(token, Exit(address(fakeExit1)));
 
-        vm.prank(admin);
+        vm.prank(ADMIN);
         vm.expectRevert("exit has already been set");
         registry.setExit(token, Exit(address(fakeExit2)));
     }
@@ -127,35 +127,35 @@ contract GlobalTokenExitRegistryTest is Test {
     function testSetExitOnlyCallableByRoleHolder() public {
         address fakeExit = makeAddr("fakeExit");
 
-        // Grant DEFAULT_ADMIN_ROLE to nonAdmin
+        // Grant DEFAULT_ADMIN_ROLE to NON_ADMIN
         bytes32 defaultAdminRole = token.DEFAULT_ADMIN_ROLE();
-        vm.prank(admin);
-        token.grantRole(defaultAdminRole, nonAdmin);
+        vm.prank(ADMIN);
+        token.grantRole(defaultAdminRole, NON_ADMIN);
 
-        // Now nonAdmin can set exit
-        vm.prank(nonAdmin);
+        // Now NON_ADMIN can set exit
+        vm.prank(NON_ADMIN);
         registry.setExit(token, Exit(address(fakeExit)));
 
-        assertEq(address(registry.exits(token)), address(fakeExit), "exit not set by new admin");
+        assertEq(address(registry.exits(token)), address(fakeExit), "exit not set by new ADMIN");
     }
 
     function testSetExitViaTokenOwner() public {
-        FakeOwnableToken ownableToken = new FakeOwnableToken(admin);
+        FakeOwnableToken ownableToken = new FakeOwnableToken(ADMIN);
         address fakeExit = makeAddr("fakeExit");
 
-        // admin is the owner() of ownableToken — should be allowed
-        vm.prank(admin);
+        // ADMIN is the owner() of ownableToken — should be allowed
+        vm.prank(ADMIN);
         registry.setExit(Token(address(ownableToken)), Exit(address(fakeExit)));
 
         assertEq(address(registry.exits(Token(address(ownableToken)))), address(fakeExit), "exit not set via owner()");
     }
 
     function testSetExitRevertsForNonOwnerOfOwnableToken() public {
-        FakeOwnableToken ownableToken = new FakeOwnableToken(admin);
+        FakeOwnableToken ownableToken = new FakeOwnableToken(ADMIN);
         address fakeExit = makeAddr("fakeExit");
 
-        vm.prank(nonAdmin);
-        vm.expectRevert("caller is not token admin or owner");
+        vm.prank(NON_ADMIN);
+        vm.expectRevert("caller is not token ADMIN or owner");
         registry.setExit(Token(address(ownableToken)), Exit(address(fakeExit)));
     }
 
@@ -163,9 +163,9 @@ contract GlobalTokenExitRegistryTest is Test {
         Token token2 = Token(
             tokenFactory.createTokenProxy(
                 bytes32(uint256(2)),
-                trustedForwarder,
+                TRUSTED_FORWARDER,
                 feeSettings,
-                admin,
+                ADMIN,
                 allowList,
                 0,
                 "Token2",
@@ -175,10 +175,10 @@ contract GlobalTokenExitRegistryTest is Test {
         address fakeExit1 = makeAddr("fakeExit1");
         address fakeExit2 = makeAddr("fakeExit2");
 
-        vm.prank(admin);
+        vm.prank(ADMIN);
         registry.setExit(token, Exit(address(fakeExit1)));
 
-        vm.prank(admin);
+        vm.prank(ADMIN);
         registry.setExit(token2, Exit(address(fakeExit2)));
 
         assertEq(address(registry.exits(token)), address(fakeExit1), "token1 exit wrong");
@@ -186,7 +186,7 @@ contract GlobalTokenExitRegistryTest is Test {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // ── Fuzz: only token admin can setExit ────────────────────────────────────
+    // ── Fuzz: only token ADMIN can setExit ────────────────────────────────────
     // ─────────────────────────────────────────────────────────────────────────
 
     /// Any address that does not hold DEFAULT_ADMIN_ROLE on the token must be rejected.
@@ -194,7 +194,7 @@ contract GlobalTokenExitRegistryTest is Test {
         vm.assume(!token.hasRole(token.DEFAULT_ADMIN_ROLE(), caller));
         address fakeExit = makeAddr("fakeExit");
         vm.prank(caller);
-        vm.expectRevert("caller is not token admin or owner");
+        vm.expectRevert("caller is not token ADMIN or owner");
         registry.setExit(token, Exit(address(fakeExit)));
     }
 
@@ -202,32 +202,32 @@ contract GlobalTokenExitRegistryTest is Test {
     // ── ERC2771 ───────────────────────────────────────────────────────────────
     // ─────────────────────────────────────────────────────────────────────────
 
-    /// Admin calling setExit through the trusted forwarder (admin address appended to calldata)
-    /// must succeed: _msgSender() resolves to admin, not the forwarder.
+    /// Admin calling setExit through the trusted forwarder (ADMIN address appended to calldata)
+    /// must succeed: _msgSender() resolves to ADMIN, not the forwarder.
     function testSetExitViaERC2771TrustedForwarder() public {
         address fakeExit = makeAddr("fakeExit");
         bytes memory callData = abi.encodePacked(
             abi.encodeWithSelector(GlobalTokenExitRegistry.setExit.selector, token, Exit(address(fakeExit))),
-            admin
+            ADMIN
         );
-        vm.prank(trustedForwarder);
+        vm.prank(TRUSTED_FORWARDER);
         (bool success, ) = address(registry).call(callData);
         assertTrue(success, "setExit via trusted forwarder failed");
         assertEq(address(registry.exits(token)), address(fakeExit), "exit not set via ERC2771");
     }
 
-    /// An untrusted forwarder appending admin's address must NOT be treated as admin:
+    /// An untrusted forwarder appending ADMIN's address must NOT be treated as ADMIN:
     /// _msgSender() returns msg.sender (the untrusted address), so the call reverts.
     function testSetExitUntrustedForwarderCannotSpoofAdmin() public {
         address fakeExit = makeAddr("fakeExit");
         address untrusted = address(0xDEAD);
         bytes memory callData = abi.encodePacked(
             abi.encodeWithSelector(GlobalTokenExitRegistry.setExit.selector, token, Exit(address(fakeExit))),
-            admin
+            ADMIN
         );
         vm.prank(untrusted);
         (bool success, ) = address(registry).call(callData);
-        assertFalse(success, "untrusted forwarder should not be able to spoof admin");
+        assertFalse(success, "untrusted forwarder should not be able to spoof ADMIN");
         assertEq(address(registry.exits(token)), address(0), "exit must not be set");
     }
 }

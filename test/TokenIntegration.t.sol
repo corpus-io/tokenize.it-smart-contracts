@@ -17,34 +17,34 @@ contract tokenTest is Test {
     Token token;
     AllowList allowList;
     FeeSettings feeSettings;
-    address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
-    address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
-    address public constant requirer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
-    address public constant mintAllower = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
-    address public constant minter = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
-    address public constant burner = 0x4109709eCFa91A80626ff3989d68F67f5b1DD124;
-    address public constant transfererAdmin = 0x5109709EcFA91a80626ff3989d68f67F5B1dD125;
-    address public constant transferer = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
-    address public constant pauser = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
-    address public constant feeSettingsOwner = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
+    address public constant TRUSTED_FORWARDER = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
+    address public constant ADMIN = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
+    address public constant REQUIRER = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
+    address public constant MINT_ALLOWER = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
+    address public constant MINTER = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
+    address public constant BURNER = 0x4109709eCFa91A80626ff3989d68F67f5b1DD124;
+    address public constant TRANSFERER_ADMIN = 0x5109709EcFA91a80626ff3989d68f67F5B1dD125;
+    address public constant TRANSFERER = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
+    address public constant PAUSER = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
+    address public constant FEE_SETTINGS_OWNER = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
 
     event RequirementsChanged(uint256 newRequirements);
 
     function setUp() public {
-        allowList = createAllowList(trustedForwarder, admin);
+        allowList = createAllowList(TRUSTED_FORWARDER, ADMIN);
         feeSettings = createFeeSettings(
-            trustedForwarder,
-            feeSettingsOwner,
-            buildFeeTypes(100, 100, 100, admin, admin, admin)
+            TRUSTED_FORWARDER,
+            FEE_SETTINGS_OWNER,
+            buildFeeTypes(100, 100, 100, ADMIN, ADMIN, ADMIN)
         );
-        Token implementation = new Token(trustedForwarder);
+        Token implementation = new Token(TRUSTED_FORWARDER);
         TokenProxyFactory tokenCloneFactory = new TokenProxyFactory(address(implementation));
         token = Token(
             tokenCloneFactory.createTokenProxy(
                 0,
-                trustedForwarder,
+                TRUSTED_FORWARDER,
                 feeSettings,
-                admin,
+                ADMIN,
                 allowList,
                 0x0,
                 "testToken",
@@ -54,29 +54,29 @@ contract tokenTest is Test {
         console.log(msg.sender);
 
         // set up roles
-        vm.startPrank(admin);
-        token.grantRole(token.BURNER_ROLE(), burner);
-        token.grantRole(token.TRANSFERER_ROLE(), transferer);
-        token.grantRole(token.PAUSER_ROLE(), pauser);
-        token.grantRole(token.REQUIREMENT_ROLE(), requirer);
-        token.grantRole(token.MINTALLOWER_ROLE(), mintAllower);
-        token.grantRole(token.TRANSFERERADMIN_ROLE(), transfererAdmin);
+        vm.startPrank(ADMIN);
+        token.grantRole(token.BURNER_ROLE(), BURNER);
+        token.grantRole(token.TRANSFERER_ROLE(), TRANSFERER);
+        token.grantRole(token.PAUSER_ROLE(), PAUSER);
+        token.grantRole(token.REQUIREMENT_ROLE(), REQUIRER);
+        token.grantRole(token.MINTALLOWER_ROLE(), MINT_ALLOWER);
+        token.grantRole(token.TRANSFERERADMIN_ROLE(), TRANSFERER_ADMIN);
 
-        // revoke roles from admin
-        token.revokeRole(token.BURNER_ROLE(), admin);
-        token.revokeRole(token.TRANSFERER_ROLE(), admin);
-        token.revokeRole(token.PAUSER_ROLE(), admin);
-        token.revokeRole(token.REQUIREMENT_ROLE(), admin);
-        token.revokeRole(token.MINTALLOWER_ROLE(), admin);
-        token.revokeRole(token.TRANSFERERADMIN_ROLE(), admin);
+        // revoke roles from ADMIN
+        token.revokeRole(token.BURNER_ROLE(), ADMIN);
+        token.revokeRole(token.TRANSFERER_ROLE(), ADMIN);
+        token.revokeRole(token.PAUSER_ROLE(), ADMIN);
+        token.revokeRole(token.REQUIREMENT_ROLE(), ADMIN);
+        token.revokeRole(token.MINTALLOWER_ROLE(), ADMIN);
+        token.revokeRole(token.TRANSFERERADMIN_ROLE(), ADMIN);
 
         vm.stopPrank();
     }
 
     function testUpdateAllowList() public {
-        AllowList newAllowList = createAllowList(trustedForwarder, admin); // deploy new AllowList
+        AllowList newAllowList = createAllowList(TRUSTED_FORWARDER, ADMIN); // deploy new AllowList
         assertTrue(token.allowList() != newAllowList);
-        vm.prank(admin);
+        vm.prank(ADMIN);
         vm.expectEmit(true, true, true, true, address(token));
         emit AllowListChanged(newAllowList);
         token.setAllowList(newAllowList);
@@ -85,16 +85,16 @@ contract tokenTest is Test {
 
     function testUpdateAllowList0() public {
         vm.expectRevert("AllowList must not be zero address");
-        vm.prank(admin);
+        vm.prank(ADMIN);
         token.setAllowList(AllowList(address(0)));
     }
 
     function testSuggestNewFeeSettingsWrongCaller(address wrongUpdater) public {
         vm.assume(wrongUpdater != feeSettings.owner());
         FeeSettings newFeeSettings = createFeeSettings(
-            trustedForwarder,
+            TRUSTED_FORWARDER,
             address(this),
-            buildFeeTypes(0, 0, 0, pauser, pauser, pauser)
+            buildFeeTypes(0, 0, 0, PAUSER, PAUSER, PAUSER)
         );
         vm.prank(wrongUpdater);
         vm.expectRevert("Only fee settings owner can suggest fee settings update");
@@ -103,9 +103,9 @@ contract tokenTest is Test {
 
     function testSuggestNewFeeSettingsFeeCollector() public {
         FeeSettings newFeeSettings = createFeeSettings(
-            trustedForwarder,
+            TRUSTED_FORWARDER,
             address(this),
-            buildFeeTypes(0, 0, 0, pauser, pauser, pauser)
+            buildFeeTypes(0, 0, 0, PAUSER, PAUSER, PAUSER)
         );
         vm.prank(feeSettings.feeCollector());
         vm.expectRevert("Only fee settings owner can suggest fee settings update");
@@ -121,7 +121,7 @@ contract tokenTest is Test {
     function testSuggestNewFeeSettings(address newCollector) public {
         vm.assume(newCollector != address(0));
         FeeSettings newFeeSettings = createFeeSettings(
-            trustedForwarder,
+            TRUSTED_FORWARDER,
             address(this),
             buildFeeTypes(0, 0, 0, newCollector, newCollector, newCollector)
         );
@@ -162,7 +162,7 @@ contract tokenTest is Test {
     function testAcceptNewFeeSettings(address newCollector) public {
         vm.assume(newCollector != address(0));
         FeeSettings newFeeSettings = createFeeSettings(
-            trustedForwarder,
+            TRUSTED_FORWARDER,
             address(this),
             buildFeeTypes(0, 0, 0, newCollector, newCollector, newCollector)
         );
@@ -177,7 +177,7 @@ contract tokenTest is Test {
         // accept
         vm.expectEmit(true, true, true, true, address(token));
         emit FeeSettingsChanged(newFeeSettings);
-        vm.prank(admin);
+        vm.prank(ADMIN);
         token.acceptNewFeeSettings(newFeeSettings);
 
         (, uint32 _newTokenFeeNumerator) = FeeSettings(address(token.feeSettings())).feeTypeConfigs(FeeTypes.TOKEN);
@@ -196,7 +196,7 @@ contract tokenTest is Test {
     function testAcceptFeeCollectorInsteadOfFeeSettings(address newFeeSettingsPretendAddress) public {
         vm.assume(newFeeSettingsPretendAddress != address(0));
         FeeSettings newFeeSettings = createFeeSettings(
-            trustedForwarder,
+            TRUSTED_FORWARDER,
             address(this),
             buildFeeTypes(
                 0,
@@ -213,16 +213,16 @@ contract tokenTest is Test {
         token.suggestNewFeeSettings(newFeeSettings);
         console.log("Suggested fee settings: ", address(newFeeSettings));
 
-        // admin thinks he is accepting a, but suggestion is b
+        // ADMIN thinks he is accepting a, but suggestion is b
         vm.expectRevert();
-        vm.prank(admin);
+        vm.prank(ADMIN);
         token.acceptNewFeeSettings(FeeSettings(newFeeSettingsPretendAddress));
     }
 
     function testAcceptWrongFeeSettings() public {
         {
             FeeSettings realNewFeeSettings = createFeeSettings(
-                trustedForwarder,
+                TRUSTED_FORWARDER,
                 feeSettings.owner(),
                 buildFeeTypes(
                     0,
@@ -234,7 +234,7 @@ contract tokenTest is Test {
                 )
             );
             FeeSettings fakeNewFeeSettings = createFeeSettings(
-                trustedForwarder,
+                TRUSTED_FORWARDER,
                 address(this),
                 buildFeeTypes(
                     0,
@@ -255,9 +255,9 @@ contract tokenTest is Test {
             token.suggestNewFeeSettings(realNewFeeSettings);
             console.log("Suggested fee settings: ", address(realNewFeeSettings));
 
-            // admin thinks he is accepting a, but suggestion is b
+            // ADMIN thinks he is accepting a, but suggestion is b
             vm.expectRevert("Only suggested fee settings can be accepted");
-            vm.prank(admin);
+            vm.prank(ADMIN);
             token.acceptNewFeeSettings(fakeNewFeeSettings);
         }
     }
@@ -268,25 +268,25 @@ contract tokenTest is Test {
         address feeCollector = feeSettings.feeCollector();
 
         console.log("Token holder: ", tokenHolder);
-        console.log("Local minter: ", localMinter);
+        console.log("Local MINTER: ", localMinter);
         console.log("Fee collector: ", feeSettings.feeCollector());
-        console.log("transfererAdmin: ", transfererAdmin);
-        console.log("mintAllower: ", mintAllower);
+        console.log("TRANSFERER_ADMIN: ", TRANSFERER_ADMIN);
+        console.log("MINT_ALLOWER: ", MINT_ALLOWER);
         console.log("this: ", address(this));
 
         // set requirements
-        vm.prank(requirer);
+        vm.prank(REQUIRER);
         token.setRequirements(812349);
 
         uint256 _amount = 2 * 10 ** 18;
 
-        // allow minter to mint
-        vm.prank(mintAllower);
+        // allow MINTER to mint
+        vm.prank(MINT_ALLOWER);
         token.increaseMintingAllowance(localMinter, _amount);
 
         // allow token holder to transfer
         console.log("before");
-        vm.startPrank(transfererAdmin);
+        vm.startPrank(TRANSFERER_ADMIN);
         token.grantRole(token.TRANSFERER_ROLE(), tokenHolder);
         vm.stopPrank();
 
@@ -295,8 +295,8 @@ contract tokenTest is Test {
         // ensure fee collector does not meet requirements
         assertTrue(token.requirements() > 0, "fee collector might meet requirements");
         assertTrue(token.allowList().map(feeCollector) == 0, "fee collector might meet requirements");
-        // ensure fee collector is not a transferer
-        assertEq(token.hasRole(token.TRANSFERER_ROLE(), feeCollector), false, "fee collector is a transferer");
+        // ensure fee collector is not a TRANSFERER
+        assertEq(token.hasRole(token.TRANSFERER_ROLE(), feeCollector), false, "fee collector is a TRANSFERER");
 
         uint feeCollectorBalanceBeforeMint = token.balanceOf(feeCollector);
         // mint tokens for token holder. Currently, this also mints tokens to the fee collector, already proving they can receive tokens.
@@ -322,27 +322,27 @@ contract tokenTest is Test {
         address localMinter = vm.addr(2);
         address feeCollector = feeSettings.feeCollector();
 
-        console.log("Local minter: ", localMinter);
+        console.log("Local MINTER: ", localMinter);
         console.log("Fee collector: ", feeSettings.feeCollector());
-        console.log("transfererAdmin: ", transfererAdmin);
-        console.log("mintAllower: ", mintAllower);
+        console.log("TRANSFERER_ADMIN: ", TRANSFERER_ADMIN);
+        console.log("MINT_ALLOWER: ", MINT_ALLOWER);
         console.log("this: ", address(this));
 
         // set requirements
-        vm.prank(requirer);
+        vm.prank(REQUIRER);
         token.setRequirements(812349);
 
         uint256 _amount = 2 * 10 ** 18;
 
-        // allow minter to mint
-        vm.prank(mintAllower);
+        // allow MINTER to mint
+        vm.prank(MINT_ALLOWER);
         token.increaseMintingAllowance(localMinter, _amount);
 
         // ensure fee collector does not meet requirements
         assertTrue(token.requirements() > 0, "fee collector might meet requirements");
         assertTrue(token.allowList().map(feeCollector) == 0, "fee collector might meet requirements");
-        // ensure fee collector is not a transferer
-        assertEq(token.hasRole(token.TRANSFERER_ROLE(), feeCollector), false, "fee collector is a transferer");
+        // ensure fee collector is not a TRANSFERER
+        assertEq(token.hasRole(token.TRANSFERER_ROLE(), feeCollector), false, "fee collector is a TRANSFERER");
 
         // mint tokens for feeCollector
         vm.startPrank(localMinter);

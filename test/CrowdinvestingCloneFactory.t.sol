@@ -18,72 +18,72 @@ contract CrowdinvestingCloneFactoryTest is Test {
     TokenProxyFactory tokenFactory;
     Crowdinvesting fundraisingImplementation;
     CrowdinvestingCloneFactory fundraisingFactory;
-    address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
-    address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
-    address public constant requirer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
-    address public constant mintAllower = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
-    address public constant minter = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
-    address public constant burner = 0x4109709eCFa91A80626ff3989d68F67f5b1DD124;
-    address public constant transfererAdmin = 0x5109709EcFA91a80626ff3989d68f67F5B1dD125;
-    address public constant transferer = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
-    address public constant pauser = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
-    address public constant feeSettingsAndAllowListOwner = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
+    address public constant TRUSTED_FORWARDER = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
+    address public constant ADMIN = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
+    address public constant REQUIRER = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
+    address public constant MINT_ALLOWER = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
+    address public constant MINTER = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
+    address public constant BURNER = 0x4109709eCFa91A80626ff3989d68F67f5b1DD124;
+    address public constant TRANSFERER_ADMIN = 0x5109709EcFA91a80626ff3989d68f67F5B1dD125;
+    address public constant TRANSFERER = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
+    address public constant PAUSER = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
+    address public constant FEE_SETTINGS_AND_ALLOW_LIST_OWNER = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
 
     uint256 requirements = 0;
 
     // these are defined globally to make some tests work in spite of compiler limitations
-    bytes32 public constant exampleRawSalt = 0x00000000;
-    address public constant exampleTrustedForwarder = address(52);
-    address public constant exampleOwner = address(53);
-    address public constant exampleCurrencyReceiver = address(54);
-    uint256 public constant exampleMinAmountPerBuyer = 1;
-    uint256 public constant exampleMaxAmountPerBuyer = type(uint256).max;
-    uint256 public constant exampleTokenPrice = 2;
-    uint256 public constant exampleMinTokenPrice = 1;
-    uint256 public constant exampleMaxTokenPrice = type(uint256).max;
-    uint256 public constant exampleMaxAmountOfTokenToBeSold = 82398479821374;
-    IERC20 public constant exampleCurrency = IERC20(address(1));
+    bytes32 public constant EXAMPLE_RAW_SALT = 0x00000000;
+    address public constant EXAMPLE_TRUSTED_FORWARDER = address(52);
+    address public constant EXAMPLE_OWNER = address(53);
+    address public constant EXAMPLE_CURRENCY_RECEIVER = address(54);
+    uint256 public constant EXAMPLE_MIN_AMOUNT_PER_BUYER = 1;
+    uint256 public constant EXAMPLE_MAX_AMOUNT_PER_BUYER = type(uint256).max;
+    uint256 public constant EXAMPLE_TOKEN_PRICE = 2;
+    uint256 public constant EXAMPLE_MIN_TOKEN_PRICE = 1;
+    uint256 public constant EXAMPLE_MAX_TOKEN_PRICE = type(uint256).max;
+    uint256 public constant EXAMPLE_MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD = 82398479821374;
+    IERC20 public constant EXAMPLE_CURRENCY = IERC20(address(1));
     Token exampleToken;
-    uint256 public constant exampleLastBuyDate = 0;
-    address public constant examplePriceOracle = address(3);
+    uint256 public constant EXAMPLE_LAST_BUY_DATE = 0;
+    address public constant EXAMPLE_PRICE_ORACLE = address(3);
 
     event RequirementsChanged(uint256 newRequirements);
 
     function setUp() public {
-        vm.startPrank(feeSettingsAndAllowListOwner);
-        allowList = createAllowList(trustedForwarder, feeSettingsAndAllowListOwner);
+        vm.startPrank(FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
+        allowList = createAllowList(TRUSTED_FORWARDER, FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
 
-        FeeSettings feeSettingsLogicContract = new FeeSettings(trustedForwarder);
+        FeeSettings feeSettingsLogicContract = new FeeSettings(TRUSTED_FORWARDER);
         FeeSettingsCloneFactory feeSettingsCloneFactory = new FeeSettingsCloneFactory(
             address(feeSettingsLogicContract)
         );
         {
             FeeSettings.FeeTypeInit[] memory feeTypes = new FeeSettings.FeeTypeInit[](4);
-            feeTypes[0] = FeeSettings.FeeTypeInit(FeeTypes.TOKEN, 500, 100, feeSettingsAndAllowListOwner);
-            feeTypes[1] = FeeSettings.FeeTypeInit(FeeTypes.CROWDINVESTING, 1000, 100, feeSettingsAndAllowListOwner);
-            feeTypes[2] = FeeSettings.FeeTypeInit(FeeTypes.PRIVATE_OFFER, 500, 100, feeSettingsAndAllowListOwner);
-            feeTypes[3] = FeeSettings.FeeTypeInit(FeeTypes.SECONDARY_MARKET, 500, 0, feeSettingsAndAllowListOwner);
+            feeTypes[0] = FeeSettings.FeeTypeInit(FeeTypes.TOKEN, 500, 100, FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
+            feeTypes[1] = FeeSettings.FeeTypeInit(FeeTypes.CROWDINVESTING, 1000, 100, FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
+            feeTypes[2] = FeeSettings.FeeTypeInit(FeeTypes.PRIVATE_OFFER, 500, 100, FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
+            feeTypes[3] = FeeSettings.FeeTypeInit(FeeTypes.SECONDARY_MARKET, 500, 0, FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
             feeSettings = FeeSettings(
                 feeSettingsCloneFactory.createFeeSettingsClone(
                     0,
-                    trustedForwarder,
-                    feeSettingsAndAllowListOwner,
+                    TRUSTED_FORWARDER,
+                    FEE_SETTINGS_AND_ALLOW_LIST_OWNER,
                     feeTypes
                 )
             );
         }
         vm.stopPrank();
 
-        vm.prank(feeSettingsAndAllowListOwner);
-        allowList.set(address(exampleCurrency), TRUSTED_CURRENCY);
+        vm.prank(FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
+        allowList.set(address(EXAMPLE_CURRENCY), TRUSTED_CURRENCY);
 
-        Token tokenImplementation = new Token(trustedForwarder);
+        Token tokenImplementation = new Token(TRUSTED_FORWARDER);
         tokenFactory = new TokenProxyFactory(address(tokenImplementation));
 
         exampleToken = Token(
             tokenFactory.createTokenProxy(
                 "2",
-                trustedForwarder,
+                TRUSTED_FORWARDER,
                 feeSettings,
                 address(this),
                 allowList,
@@ -93,7 +93,7 @@ contract CrowdinvestingCloneFactoryTest is Test {
             )
         );
 
-        fundraisingImplementation = new Crowdinvesting(trustedForwarder);
+        fundraisingImplementation = new Crowdinvesting(TRUSTED_FORWARDER);
         fundraisingFactory = new CrowdinvestingCloneFactory(address(fundraisingImplementation));
     }
 
@@ -108,21 +108,21 @@ contract CrowdinvestingCloneFactoryTest is Test {
         address _priceOracle
     ) public {
         vm.assume(address(_currency) != address(0));
-        vm.assume(exampleMinAmountPerBuyer > 0);
-        vm.assume(_maxAmountPerBuyer >= exampleMinAmountPerBuyer);
+        vm.assume(EXAMPLE_MIN_AMOUNT_PER_BUYER > 0);
+        vm.assume(_maxAmountPerBuyer >= EXAMPLE_MIN_AMOUNT_PER_BUYER);
         vm.assume(_tokenPrice > 0);
         vm.assume(_tokenPriceMin <= _tokenPrice);
         vm.assume(_tokenPriceMax >= _tokenPrice);
         vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
         vm.assume(_lastBuyDate > block.timestamp || _lastBuyDate == 0);
 
-        vm.prank(feeSettingsAndAllowListOwner);
+        vm.prank(FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
         allowList.set(address(_currency), TRUSTED_CURRENCY);
 
         Token _token = Token(
             tokenFactory.createTokenProxy(
                 0,
-                trustedForwarder,
+                TRUSTED_FORWARDER,
                 feeSettings,
                 address(this),
                 allowList,
@@ -133,13 +133,13 @@ contract CrowdinvestingCloneFactoryTest is Test {
         );
 
         // create new clone factory so we can use the local forwarder
-        fundraisingImplementation = new Crowdinvesting(exampleTrustedForwarder);
+        fundraisingImplementation = new Crowdinvesting(EXAMPLE_TRUSTED_FORWARDER);
         fundraisingFactory = new CrowdinvestingCloneFactory(address(fundraisingImplementation));
 
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
-            exampleOwner,
-            exampleCurrencyReceiver,
-            exampleMinAmountPerBuyer,
+            EXAMPLE_OWNER,
+            EXAMPLE_CURRENCY_RECEIVER,
+            EXAMPLE_MIN_AMOUNT_PER_BUYER,
             _maxAmountPerBuyer,
             _tokenPrice,
             _tokenPriceMin,
@@ -153,16 +153,16 @@ contract CrowdinvestingCloneFactoryTest is Test {
         );
 
         address expected1 = fundraisingFactory.predictCloneAddress(
-            keccak256(abi.encode(exampleRawSalt, exampleTrustedForwarder, arguments))
+            keccak256(abi.encode(EXAMPLE_RAW_SALT, EXAMPLE_TRUSTED_FORWARDER, arguments))
         );
 
-        address expected2 = fundraisingFactory.predictCloneAddress(exampleRawSalt, exampleTrustedForwarder, arguments);
+        address expected2 = fundraisingFactory.predictCloneAddress(EXAMPLE_RAW_SALT, EXAMPLE_TRUSTED_FORWARDER, arguments);
 
         assertEq(expected1, expected2, "address prediction with salt and params not equal");
 
         address actual = fundraisingFactory.createCrowdinvestingClone(
-            exampleRawSalt,
-            exampleTrustedForwarder,
+            EXAMPLE_RAW_SALT,
+            EXAMPLE_TRUSTED_FORWARDER,
             arguments
         );
         assertEq(expected1, actual, "address prediction failed");
@@ -188,15 +188,15 @@ contract CrowdinvestingCloneFactoryTest is Test {
             _owner,
             _currencyReceiver,
             _minAmountPerBuyer,
-            exampleMaxAmountPerBuyer,
-            exampleTokenPrice,
-            exampleMinTokenPrice,
-            exampleMaxTokenPrice,
-            exampleMaxAmountOfTokenToBeSold,
-            exampleCurrency,
+            EXAMPLE_MAX_AMOUNT_PER_BUYER,
+            EXAMPLE_TOKEN_PRICE,
+            EXAMPLE_MIN_TOKEN_PRICE,
+            EXAMPLE_MAX_TOKEN_PRICE,
+            EXAMPLE_MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD,
+            EXAMPLE_CURRENCY,
             exampleToken,
-            exampleLastBuyDate,
-            examplePriceOracle,
+            EXAMPLE_LAST_BUY_DATE,
+            EXAMPLE_PRICE_ORACLE,
             address(0)
         );
 
@@ -231,21 +231,21 @@ contract CrowdinvestingCloneFactoryTest is Test {
             _owner,
             _currencyReceiver,
             _minAmountPerBuyer,
-            exampleMaxAmountPerBuyer,
-            exampleTokenPrice,
-            exampleMinTokenPrice,
-            exampleMaxTokenPrice,
-            exampleMaxAmountOfTokenToBeSold,
-            exampleCurrency,
+            EXAMPLE_MAX_AMOUNT_PER_BUYER,
+            EXAMPLE_TOKEN_PRICE,
+            EXAMPLE_MIN_TOKEN_PRICE,
+            EXAMPLE_MAX_TOKEN_PRICE,
+            EXAMPLE_MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD,
+            EXAMPLE_CURRENCY,
             exampleToken,
-            exampleLastBuyDate,
-            examplePriceOracle,
+            EXAMPLE_LAST_BUY_DATE,
+            EXAMPLE_PRICE_ORACLE,
             address(0)
         );
 
         address expected1 = fundraisingFactory.predictCloneAddress(_rawSalt, _trustedForwarder, arguments);
 
-        arguments.maxAmountPerBuyer = exampleMaxAmountPerBuyer - 1;
+        arguments.maxAmountPerBuyer = EXAMPLE_MAX_AMOUNT_PER_BUYER - 1;
 
         address expected2 = fundraisingFactory.predictCloneAddress(_rawSalt, _trustedForwarder, arguments);
 
@@ -274,13 +274,13 @@ contract CrowdinvestingCloneFactoryTest is Test {
         vm.assume(_tokenPriceMax >= _priceBase);
         vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
 
-        vm.prank(feeSettingsAndAllowListOwner);
+        vm.prank(FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
         allowList.set(address(_currency), TRUSTED_CURRENCY);
 
         Token _token = Token(
             tokenFactory.createTokenProxy(
                 0,
-                trustedForwarder,
+                TRUSTED_FORWARDER,
                 feeSettings,
                 address(this),
                 allowList,
@@ -301,17 +301,17 @@ contract CrowdinvestingCloneFactoryTest is Test {
             _maxAmountOfTokenToBeSold,
             _currency,
             _token,
-            exampleLastBuyDate,
-            examplePriceOracle,
+            EXAMPLE_LAST_BUY_DATE,
+            EXAMPLE_PRICE_ORACLE,
             address(0)
         );
 
         // deploy once
-        fundraisingFactory.createCrowdinvestingClone(_rawSalt, trustedForwarder, arguments);
+        fundraisingFactory.createCrowdinvestingClone(_rawSalt, TRUSTED_FORWARDER, arguments);
 
         // deploy again
         vm.expectRevert("ERC1167: create2 failed");
-        fundraisingFactory.createCrowdinvestingClone(_rawSalt, trustedForwarder, arguments);
+        fundraisingFactory.createCrowdinvestingClone(_rawSalt, TRUSTED_FORWARDER, arguments);
     }
 
     function testInitialization1(
@@ -337,14 +337,14 @@ contract CrowdinvestingCloneFactoryTest is Test {
             _currencyReceiver,
             _minAmountPerBuyer,
             _maxAmountPerBuyer,
-            exampleTokenPrice,
-            exampleMinTokenPrice,
-            exampleMaxTokenPrice,
-            exampleMaxAmountOfTokenToBeSold,
-            exampleCurrency,
+            EXAMPLE_TOKEN_PRICE,
+            EXAMPLE_MIN_TOKEN_PRICE,
+            EXAMPLE_MAX_TOKEN_PRICE,
+            EXAMPLE_MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD,
+            EXAMPLE_CURRENCY,
             exampleToken,
-            exampleLastBuyDate,
-            examplePriceOracle,
+            EXAMPLE_LAST_BUY_DATE,
+            EXAMPLE_PRICE_ORACLE,
             address(0)
         );
 
@@ -352,7 +352,7 @@ contract CrowdinvestingCloneFactoryTest is Test {
             fundraisingFactory.createCrowdinvestingClone(_rawSalt, _trustedForwarder, arguments)
         );
 
-        assertTrue(crowdinvesting.isTrustedForwarder(_trustedForwarder), "trustedForwarder not set");
+        assertTrue(crowdinvesting.isTrustedForwarder(_trustedForwarder), "TRUSTED_FORWARDER not set");
         assertEq(crowdinvesting.owner(), _owner, "owner not set");
         assertEq(crowdinvesting.currencyReceiver(), _currencyReceiver, "currencyReceiver not set");
         assertEq(crowdinvesting.minAmountPerBuyer(), _minAmountPerBuyer, "minAmountPerBuyer not set");
@@ -377,13 +377,13 @@ contract CrowdinvestingCloneFactoryTest is Test {
         vm.assume(_maxAmountPerBuyer > 0);
         vm.assume(_lastBuyDate > block.timestamp || _lastBuyDate == 0);
 
-        vm.prank(feeSettingsAndAllowListOwner);
+        vm.prank(FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
         allowList.set(address(_currency), TRUSTED_CURRENCY);
 
         Token _token = Token(
             tokenFactory.createTokenProxy(
                 0,
-                trustedForwarder,
+                TRUSTED_FORWARDER,
                 feeSettings,
                 address(this),
                 allowList,
@@ -394,13 +394,13 @@ contract CrowdinvestingCloneFactoryTest is Test {
         );
 
         // create new clone factory so we can use the local forwarder
-        fundraisingImplementation = new Crowdinvesting(exampleTrustedForwarder);
+        fundraisingImplementation = new Crowdinvesting(EXAMPLE_TRUSTED_FORWARDER);
         fundraisingFactory = new CrowdinvestingCloneFactory(address(fundraisingImplementation));
 
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
-            exampleOwner,
-            exampleCurrencyReceiver,
-            exampleMinAmountPerBuyer,
+            EXAMPLE_OWNER,
+            EXAMPLE_CURRENCY_RECEIVER,
+            EXAMPLE_MIN_AMOUNT_PER_BUYER,
             _maxAmountPerBuyer,
             _priceBase,
             _priceMin,
@@ -414,7 +414,7 @@ contract CrowdinvestingCloneFactoryTest is Test {
         );
 
         Crowdinvesting crowdinvesting = Crowdinvesting(
-            fundraisingFactory.createCrowdinvestingClone(exampleRawSalt, exampleTrustedForwarder, arguments)
+            fundraisingFactory.createCrowdinvestingClone(EXAMPLE_RAW_SALT, EXAMPLE_TRUSTED_FORWARDER, arguments)
         );
 
         assertEq(crowdinvesting.maxAmountPerBuyer(), _maxAmountPerBuyer, "maxAmountPerBuyer not set");
@@ -442,32 +442,32 @@ contract CrowdinvestingCloneFactoryTest is Test {
     function testInitializationRevertsWithUntrustedCurrency(address someCurrency, uint256 currencyAttributes) public {
         vm.assume(someCurrency != address(0));
         vm.assume(currencyAttributes != TRUSTED_CURRENCY);
-        vm.prank(feeSettingsAndAllowListOwner);
+        vm.prank(FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
         allowList.set(someCurrency, currencyAttributes);
 
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
-            exampleOwner,
-            exampleCurrencyReceiver,
-            exampleMinAmountPerBuyer,
-            exampleMaxAmountPerBuyer,
-            exampleTokenPrice,
-            exampleMinTokenPrice,
-            exampleMaxTokenPrice,
-            exampleMaxAmountOfTokenToBeSold,
+            EXAMPLE_OWNER,
+            EXAMPLE_CURRENCY_RECEIVER,
+            EXAMPLE_MIN_AMOUNT_PER_BUYER,
+            EXAMPLE_MAX_AMOUNT_PER_BUYER,
+            EXAMPLE_TOKEN_PRICE,
+            EXAMPLE_MIN_TOKEN_PRICE,
+            EXAMPLE_MAX_TOKEN_PRICE,
+            EXAMPLE_MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD,
             IERC20(someCurrency),
             exampleToken,
-            exampleLastBuyDate,
-            examplePriceOracle,
+            EXAMPLE_LAST_BUY_DATE,
+            EXAMPLE_PRICE_ORACLE,
             address(0)
         );
 
         vm.expectRevert("currency needs to be on the allowlist with TRUSTED_CURRENCY attribute");
-        fundraisingFactory.createCrowdinvestingClone("salt", trustedForwarder, arguments);
+        fundraisingFactory.createCrowdinvestingClone("salt", TRUSTED_FORWARDER, arguments);
 
         // test deployment succeeds with trusted currency
-        vm.prank(feeSettingsAndAllowListOwner);
+        vm.prank(FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
         allowList.set(someCurrency, TRUSTED_CURRENCY);
-        fundraisingFactory.createCrowdinvestingClone("salt", trustedForwarder, arguments);
+        fundraisingFactory.createCrowdinvestingClone("salt", TRUSTED_FORWARDER, arguments);
     }
 
     /*
@@ -481,21 +481,21 @@ contract CrowdinvestingCloneFactoryTest is Test {
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             _admin,
             _admin,
-            exampleMinAmountPerBuyer,
-            exampleMaxAmountPerBuyer,
-            exampleTokenPrice,
-            exampleMinTokenPrice,
-            exampleMaxTokenPrice,
-            exampleMaxAmountOfTokenToBeSold,
-            exampleCurrency,
+            EXAMPLE_MIN_AMOUNT_PER_BUYER,
+            EXAMPLE_MAX_AMOUNT_PER_BUYER,
+            EXAMPLE_TOKEN_PRICE,
+            EXAMPLE_MIN_TOKEN_PRICE,
+            EXAMPLE_MAX_TOKEN_PRICE,
+            EXAMPLE_MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD,
+            EXAMPLE_CURRENCY,
             exampleToken,
-            exampleLastBuyDate,
-            examplePriceOracle,
+            EXAMPLE_LAST_BUY_DATE,
+            EXAMPLE_PRICE_ORACLE,
             address(0)
         );
 
         Crowdinvesting crowdinvesting = Crowdinvesting(
-            fundraisingFactory.createCrowdinvestingClone(0, trustedForwarder, arguments)
+            fundraisingFactory.createCrowdinvestingClone(0, TRUSTED_FORWARDER, arguments)
         );
 
         vm.prank(rando);

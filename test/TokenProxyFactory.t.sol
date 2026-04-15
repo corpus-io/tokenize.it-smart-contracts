@@ -15,36 +15,36 @@ contract tokenProxyFactoryTest is Test {
     AllowList allowList;
     FeeSettings feeSettings;
     TokenProxyFactory factory;
-    address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
-    address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
-    address public constant requirer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
-    address public constant mintAllower = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
-    address public constant minter = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
-    address public constant burner = 0x4109709eCFa91A80626ff3989d68F67f5b1DD124;
-    address public constant transfererAdmin = 0x5109709EcFA91a80626ff3989d68f67F5B1dD125;
-    address public constant transferer = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
-    address public constant pauser = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
-    address public constant feeSettingsAndAllowListOwner = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
+    address public constant TRUSTED_FORWARDER = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
+    address public constant ADMIN = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
+    address public constant REQUIRER = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
+    address public constant MINT_ALLOWER = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
+    address public constant MINTER = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
+    address public constant BURNER = 0x4109709eCFa91A80626ff3989d68F67f5b1DD124;
+    address public constant TRANSFERER_ADMIN = 0x5109709EcFA91a80626ff3989d68f67F5B1dD125;
+    address public constant TRANSFERER = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
+    address public constant PAUSER = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
+    address public constant FEE_SETTINGS_AND_ALLOW_LIST_OWNER = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
 
     uint256 requirements = 0;
 
     function setUp() public {
-        allowList = createAllowList(trustedForwarder, feeSettingsAndAllowListOwner);
+        allowList = createAllowList(TRUSTED_FORWARDER, FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
         feeSettings = createFeeSettings(
-            trustedForwarder,
-            feeSettingsAndAllowListOwner,
+            TRUSTED_FORWARDER,
+            FEE_SETTINGS_AND_ALLOW_LIST_OWNER,
             buildFeeTypes(
                 100,
                 100,
                 100,
-                feeSettingsAndAllowListOwner,
-                feeSettingsAndAllowListOwner,
-                feeSettingsAndAllowListOwner
+                FEE_SETTINGS_AND_ALLOW_LIST_OWNER,
+                FEE_SETTINGS_AND_ALLOW_LIST_OWNER,
+                FEE_SETTINGS_AND_ALLOW_LIST_OWNER
             )
         );
         vm.stopPrank();
 
-        implementation = new Token(trustedForwarder);
+        implementation = new Token(TRUSTED_FORWARDER);
 
         factory = new TokenProxyFactory(address(implementation));
     }
@@ -62,17 +62,17 @@ contract tokenProxyFactoryTest is Test {
 
         console.log("Supports interface: ", feeSettings.supportsInterface(type(IFeeSettingsV2).interfaceId));
 
-        vm.assume(trustedForwarder != address(0));
+        vm.assume(TRUSTED_FORWARDER != address(0));
         vm.assume(_admin != address(0));
         vm.assume(address(_allowList) != address(0));
 
         bytes32 salt = keccak256(
-            abi.encode(_salt, trustedForwarder, feeSettings, _admin, _allowList, _requirements, _name, _symbol)
+            abi.encode(_salt, TRUSTED_FORWARDER, feeSettings, _admin, _allowList, _requirements, _name, _symbol)
         );
         address expected1 = factory.predictProxyAddress(salt);
         address expected2 = factory.predictProxyAddress(
             _salt,
-            trustedForwarder,
+            TRUSTED_FORWARDER,
             feeSettings,
             _admin,
             _allowList,
@@ -84,7 +84,7 @@ contract tokenProxyFactoryTest is Test {
 
         address actual = factory.createTokenProxy(
             _salt,
-            trustedForwarder,
+            TRUSTED_FORWARDER,
             feeSettings,
             _admin,
             _allowList,
@@ -103,13 +103,13 @@ contract tokenProxyFactoryTest is Test {
         string memory _name,
         string memory _symbol
     ) public {
-        vm.assume(trustedForwarder != address(0));
+        vm.assume(TRUSTED_FORWARDER != address(0));
         vm.assume(_admin != address(0));
         vm.assume(address(_allowList) != address(0));
 
         factory.createTokenProxy(
             _salt,
-            trustedForwarder,
+            TRUSTED_FORWARDER,
             feeSettings,
             _admin,
             _allowList,
@@ -121,7 +121,7 @@ contract tokenProxyFactoryTest is Test {
         vm.expectRevert("Create2: Failed on deploy");
         factory.createTokenProxy(
             _salt,
-            trustedForwarder,
+            TRUSTED_FORWARDER,
             feeSettings,
             _admin,
             _allowList,
@@ -132,16 +132,16 @@ contract tokenProxyFactoryTest is Test {
     }
 
     function testWrongForwarder(address _wrongForwarder) public {
-        vm.assume(trustedForwarder != _wrongForwarder);
+        vm.assume(TRUSTED_FORWARDER != _wrongForwarder);
         vm.assume(_wrongForwarder != address(0));
 
-        // using a different trustedForwarder should fail
-        vm.expectRevert("TokenProxyFactory: Unexpected trustedForwarder");
+        // using a different TRUSTED_FORWARDER should fail
+        vm.expectRevert("TokenProxyFactory: Unexpected TRUSTED_FORWARDER");
         factory.createTokenProxy(
             bytes32(uint256(0)),
             _wrongForwarder,
             feeSettings,
-            admin,
+            ADMIN,
             AllowList(allowList),
             requirements,
             "testToken",
@@ -165,22 +165,22 @@ contract tokenProxyFactoryTest is Test {
         console.log("symbol: %s", symbol);
 
         FeeSettings _feeSettings = createFeeSettings(
-            trustedForwarder,
+            TRUSTED_FORWARDER,
             address(this),
             buildFeeTypes(
                 100,
                 100,
                 100,
-                feeSettingsAndAllowListOwner,
-                feeSettingsAndAllowListOwner,
-                feeSettingsAndAllowListOwner
+                FEE_SETTINGS_AND_ALLOW_LIST_OWNER,
+                FEE_SETTINGS_AND_ALLOW_LIST_OWNER,
+                FEE_SETTINGS_AND_ALLOW_LIST_OWNER
             )
         );
 
         Token clone = Token(
             factory.createTokenProxy(
                 0,
-                trustedForwarder,
+                TRUSTED_FORWARDER,
                 _feeSettings,
                 _admin,
                 AllowList(_allowList),
@@ -193,20 +193,20 @@ contract tokenProxyFactoryTest is Test {
         // test constructor arguments are used
         assertEq(clone.name(), name, "name not set");
         assertEq(clone.symbol(), symbol, "symbol not set");
-        assertTrue(clone.hasRole(clone.DEFAULT_ADMIN_ROLE(), _admin), "admin not set");
+        assertTrue(clone.hasRole(clone.DEFAULT_ADMIN_ROLE(), _admin), "ADMIN not set");
         assertEq(address(clone.allowList()), _allowList, "allowList not set");
         assertEq(clone.requirements(), _requirements, "requirements not set");
         assertEq(address(clone.feeSettings()), address(_feeSettings), "feeSettings not set");
 
-        // check trustedForwarder is set
-        assertTrue(clone.isTrustedForwarder(trustedForwarder), "trustedForwarder not set");
+        // check TRUSTED_FORWARDER is set
+        assertTrue(clone.isTrustedForwarder(TRUSTED_FORWARDER), "TRUSTED_FORWARDER not set");
 
         // test roles are assigned
-        assertTrue(clone.hasRole(clone.REQUIREMENT_ROLE(), _admin), "requirer not set");
-        assertTrue(clone.hasRole(clone.MINTALLOWER_ROLE(), _admin), "mintAllower not set");
-        assertTrue(clone.hasRole(clone.BURNER_ROLE(), _admin), "burner not set");
-        assertTrue(clone.hasRole(clone.TRANSFERERADMIN_ROLE(), _admin), "transfererAdmin not set");
-        assertTrue(clone.hasRole(clone.PAUSER_ROLE(), _admin), "pauser not set");
+        assertTrue(clone.hasRole(clone.REQUIREMENT_ROLE(), _admin), "REQUIRER not set");
+        assertTrue(clone.hasRole(clone.MINTALLOWER_ROLE(), _admin), "MINT_ALLOWER not set");
+        assertTrue(clone.hasRole(clone.BURNER_ROLE(), _admin), "BURNER not set");
+        assertTrue(clone.hasRole(clone.TRANSFERERADMIN_ROLE(), _admin), "TRANSFERER_ADMIN not set");
+        assertTrue(clone.hasRole(clone.PAUSER_ROLE(), _admin), "PAUSER not set");
 
         // test EIP712 Domain Separator is set correctly
         string memory domainSeparatorName;
@@ -224,7 +224,7 @@ contract tokenProxyFactoryTest is Test {
 
         // test contract can not be initialized again
         vm.expectRevert("Initializable: contract is already initialized");
-        clone.initialize(feeSettings, admin, allowList, requirements, "testToken", "TEST");
+        clone.initialize(feeSettings, ADMIN, allowList, requirements, "testToken", "TEST");
     }
 
     /*
@@ -232,28 +232,28 @@ contract tokenProxyFactoryTest is Test {
     */
     function testPausing(address _admin, address rando) public {
         vm.assume(_admin != address(0));
-        vm.assume(_admin != trustedForwarder);
+        vm.assume(_admin != TRUSTED_FORWARDER);
         vm.assume(rando != address(0));
         vm.assume(rando != _admin);
-        vm.assume(rando != trustedForwarder);
+        vm.assume(rando != TRUSTED_FORWARDER);
 
         FeeSettings _feeSettings = createFeeSettings(
-            trustedForwarder,
+            TRUSTED_FORWARDER,
             address(this),
             buildFeeTypes(
                 100,
                 100,
                 100,
-                feeSettingsAndAllowListOwner,
-                feeSettingsAndAllowListOwner,
-                feeSettingsAndAllowListOwner
+                FEE_SETTINGS_AND_ALLOW_LIST_OWNER,
+                FEE_SETTINGS_AND_ALLOW_LIST_OWNER,
+                FEE_SETTINGS_AND_ALLOW_LIST_OWNER
             )
         );
 
         Token _token = Token(
             factory.createTokenProxy(
                 0,
-                trustedForwarder,
+                TRUSTED_FORWARDER,
                 _feeSettings,
                 _admin,
                 AllowList(address(3)),
@@ -291,28 +291,28 @@ contract tokenProxyFactoryTest is Test {
     */
     function testGrantRole(address newPauser) public {
         vm.assume(newPauser != address(0));
-        vm.assume(newPauser != admin);
-        vm.assume(newPauser != trustedForwarder);
+        vm.assume(newPauser != ADMIN);
+        vm.assume(newPauser != TRUSTED_FORWARDER);
 
         FeeSettings _feeSettings = createFeeSettings(
-            trustedForwarder,
+            TRUSTED_FORWARDER,
             address(this),
             buildFeeTypes(
                 100,
                 100,
                 100,
-                feeSettingsAndAllowListOwner,
-                feeSettingsAndAllowListOwner,
-                feeSettingsAndAllowListOwner
+                FEE_SETTINGS_AND_ALLOW_LIST_OWNER,
+                FEE_SETTINGS_AND_ALLOW_LIST_OWNER,
+                FEE_SETTINGS_AND_ALLOW_LIST_OWNER
             )
         );
 
         Token _token = Token(
             factory.createTokenProxy(
                 0,
-                trustedForwarder,
+                TRUSTED_FORWARDER,
                 _feeSettings,
-                admin,
+                ADMIN,
                 AllowList(address(3)),
                 0,
                 "TestToken",
@@ -328,7 +328,7 @@ contract tokenProxyFactoryTest is Test {
         vm.prank(newPauser);
         _token.pause();
 
-        vm.prank(admin);
+        vm.prank(ADMIN);
         _token.grantRole(pauserRole, newPauser);
 
         assertTrue(_token.hasRole(pauserRole, newPauser));
@@ -351,10 +351,10 @@ contract tokenProxyFactoryTest is Test {
         address _relayer
     ) public {
         vm.assume(_relayer != address(0));
-        vm.assume(_admin != trustedForwarder);
+        vm.assume(_admin != TRUSTED_FORWARDER);
         vm.assume(_tokenSpender != address(0));
-        vm.assume(_tokenSpender != feeSettingsAndAllowListOwner);
-        vm.assume(_tokenSpender != trustedForwarder);
+        vm.assume(_tokenSpender != FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
+        vm.assume(_tokenSpender != TRUSTED_FORWARDER);
         vm.assume(bytes(name).length > 0);
         vm.assume(bytes(symbol).length > 0);
         vm.assume(_tokenPermitAmount < type(uint256).max / feeSettings.FEE_DENOMINATOR()); // leave room for fees
@@ -366,7 +366,7 @@ contract tokenProxyFactoryTest is Test {
         Token clone = Token(
             factory.createTokenProxy(
                 0,
-                trustedForwarder,
+                TRUSTED_FORWARDER,
                 feeSettings,
                 _admin,
                 AllowList(allowList),
@@ -378,7 +378,7 @@ contract tokenProxyFactoryTest is Test {
 
         address tokenOwner = vm.addr(_tokenOwnerPrivateKey);
         vm.assume(tokenOwner != address(0));
-        vm.assume(tokenOwner != feeSettingsAndAllowListOwner);
+        vm.assume(tokenOwner != FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
         vm.assume(_tokenSpender != tokenOwner);
         vm.assume(_relayer != tokenOwner);
 

@@ -19,7 +19,7 @@ contract TokenERC2612Test is Test {
     Token implementation;
     TokenProxyFactory tokenCloneFactory;
     FakePaymentToken paymentToken;
-    //Forwarder trustedForwarder;
+    //Forwarder TRUSTED_FORWARDER;
 
     // copied from openGSN IForwarder
     struct ForwardRequest {
@@ -32,49 +32,49 @@ contract TokenERC2612Test is Test {
         uint256 validUntil;
     }
 
-    address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
+    address public constant TRUSTED_FORWARDER = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
 
     // DO NOT USE IN PRODUCTION! Key was generated online for testing only.
-    uint256 public constant tokenOwnerPrivateKey = 0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
+    uint256 public constant TOKEN_OWNER_PRIVATE_KEY = 0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
     address public tokenOwner; // = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
 
     address public companyAdmin = 0x38d6703d37988C644D6d31551e9af6dcB762E618;
 
-    address public constant mintAllower = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
-    address public constant investor = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
+    address public constant MINT_ALLOWER = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
+    address public constant INVESTOR = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
 
-    address public constant platformHotWallet = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
-    address public constant tokenSpender = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
+    address public constant PLATFORM_HOT_WALLET = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
+    address public constant TOKEN_SPENDER = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
 
-    address public constant platformAdmin = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
-    address public constant feeCollector = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
+    address public constant PLATFORM_ADMIN = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
+    address public constant FEE_COLLECTOR = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
 
-    uint32 public constant tokenFeeNumerator = 0;
-    uint32 public constant crowdinvestingFeeNumerator = 200;
-    uint32 public constant privateOfferFeeNumerator = 150;
+    uint32 public constant TOKEN_FEE_NUMERATOR = 0;
+    uint32 public constant CROWDINVESTING_FEE_NUMERATOR = 200;
+    uint32 public constant PRIVATE_OFFER_FEE_NUMERATOR = 150;
 
-    uint256 public constant tokenMintAmount = UINT256_MAX - 1; // -1 to avoid overflow caused by fee mint
+    uint256 public constant TOKEN_MINT_AMOUNT = UINT256_MAX - 1; // -1 to avoid overflow caused by fee mint
     bytes32 domainSeparator;
     bytes32 requestType;
 
     function setUp() public {
         // calculate address
-        tokenOwner = vm.addr(tokenOwnerPrivateKey);
+        tokenOwner = vm.addr(TOKEN_OWNER_PRIVATE_KEY);
 
         // deploy allow list
-        allowList = createAllowList(trustedForwarder, platformAdmin);
+        allowList = createAllowList(TRUSTED_FORWARDER, PLATFORM_ADMIN);
 
         // deploy fee settings
         feeSettings = createFeeSettings(
-            trustedForwarder,
-            platformAdmin,
+            TRUSTED_FORWARDER,
+            PLATFORM_ADMIN,
             buildFeeTypes(
-                tokenFeeNumerator,
-                crowdinvestingFeeNumerator,
-                privateOfferFeeNumerator,
-                feeCollector,
-                feeCollector,
-                feeCollector
+                TOKEN_FEE_NUMERATOR,
+                CROWDINVESTING_FEE_NUMERATOR,
+                PRIVATE_OFFER_FEE_NUMERATOR,
+                FEE_COLLECTOR,
+                FEE_COLLECTOR,
+                FEE_COLLECTOR
             )
         );
 
@@ -100,10 +100,10 @@ contract TokenERC2612Test is Test {
 
         // mint tokens for holder
         vm.startPrank(companyAdmin);
-        token.increaseMintingAllowance(companyAdmin, tokenMintAmount);
-        token.mint(tokenOwner, tokenMintAmount);
+        token.increaseMintingAllowance(companyAdmin, TOKEN_MINT_AMOUNT);
+        token.mint(tokenOwner, TOKEN_MINT_AMOUNT);
         vm.stopPrank();
-        assertEq(token.balanceOf(tokenOwner), tokenMintAmount);
+        assertEq(token.balanceOf(tokenOwner), TOKEN_MINT_AMOUNT);
     }
 
     function testPermit(uint256 _tokenPermitAmount, uint256 _tokenTransferAmount) public {
@@ -118,36 +118,36 @@ contract TokenERC2612Test is Test {
         );
         bytes32 DOMAIN_SEPARATOR = token.DOMAIN_SEPARATOR();
         bytes32 structHash = keccak256(
-            abi.encode(permitTypehash, tokenOwner, tokenSpender, _tokenPermitAmount, nonce, deadline)
+            abi.encode(permitTypehash, tokenOwner, TOKEN_SPENDER, _tokenPermitAmount, nonce, deadline)
         );
 
         bytes32 hash = ECDSA.toTypedDataHash(DOMAIN_SEPARATOR, structHash);
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(tokenOwnerPrivateKey, hash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(TOKEN_OWNER_PRIVATE_KEY, hash);
 
         // verify signature
         require(tokenOwner == ECDSA.recover(hash, v, r, s), "invalid signature");
 
         // check allowance
-        assertEq(token.allowance(tokenOwner, tokenSpender), 0);
+        assertEq(token.allowance(tokenOwner, TOKEN_SPENDER), 0);
 
         // call permit with a wallet that is not tokenOwner
-        vm.prank(platformHotWallet);
-        token.permit(tokenOwner, tokenSpender, _tokenPermitAmount, deadline, v, r, s);
+        vm.prank(PLATFORM_HOT_WALLET);
+        token.permit(tokenOwner, TOKEN_SPENDER, _tokenPermitAmount, deadline, v, r, s);
 
         // check allowance
-        assertEq(token.allowance(tokenOwner, tokenSpender), _tokenPermitAmount);
+        assertEq(token.allowance(tokenOwner, TOKEN_SPENDER), _tokenPermitAmount);
 
-        // check token balance of investor
-        assertEq(token.balanceOf(tokenOwner), tokenMintAmount);
-        assertEq(token.balanceOf(investor), 0);
+        // check token balance of INVESTOR
+        assertEq(token.balanceOf(tokenOwner), TOKEN_MINT_AMOUNT);
+        assertEq(token.balanceOf(INVESTOR), 0);
 
         // spend tokens
-        vm.prank(tokenSpender);
-        token.transferFrom(tokenOwner, investor, _tokenPermitAmount);
+        vm.prank(TOKEN_SPENDER);
+        token.transferFrom(tokenOwner, INVESTOR, _tokenPermitAmount);
 
-        // check token balance of investor
-        assertEq(token.balanceOf(tokenOwner), tokenMintAmount - _tokenPermitAmount);
-        assertEq(token.balanceOf(investor), _tokenPermitAmount);
+        // check token balance of INVESTOR
+        assertEq(token.balanceOf(tokenOwner), TOKEN_MINT_AMOUNT - _tokenPermitAmount);
+        assertEq(token.balanceOf(INVESTOR), _tokenPermitAmount);
     }
 }

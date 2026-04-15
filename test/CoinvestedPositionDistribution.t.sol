@@ -38,17 +38,17 @@ contract TokenTransferStub {
  */
 contract CoinvestedPositionDistributionTest is Test {
     // ── Well-known addresses ──────────────────────────────────────────────────
-    address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
-    address public constant owner = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
-    address public constant receiver = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
-    address public constant buyer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
-    address public constant leadA = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
-    address public constant leadB = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
-    address public constant leadC = 0x4109709eCFa91A80626ff3989d68F67f5b1DD124;
-    address public constant holderX = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
-    address public constant currencyProvider = 0x5109709EcFA91a80626ff3989d68f67F5B1dD125;
-    address public constant trustedForwarder = 0xa109709ecfA91A80626ff3989D68F67F5b1dD12a;
-    address public constant feeCollector = 0xB109709ECfa91A80626ff3989d68f67f5B1Dd12B;
+    address public constant ADMIN = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
+    address public constant OWNER = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
+    address public constant RECEIVER = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
+    address public constant BUYER = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
+    address public constant LEAD_A = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
+    address public constant LEAD_B = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
+    address public constant LEAD_C = 0x4109709eCFa91A80626ff3989d68F67f5b1DD124;
+    address public constant HOLDER_X = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
+    address public constant CURRENCY_PROVIDER = 0x5109709EcFA91a80626ff3989d68f67F5B1dD125;
+    address public constant TRUSTED_FORWARDER = 0xa109709ecfA91A80626ff3989D68F67F5b1dD12a;
+    address public constant FEE_COLLECTOR = 0xB109709ECfa91A80626ff3989d68f67f5B1Dd12B;
 
     // ── Carry constants ───────────────────────────────────────────────────────
     /// 10% of uint64.max
@@ -59,7 +59,7 @@ contract CoinvestedPositionDistributionTest is Test {
     // ── Token/Distribution setup ──────────────────────────────────────────────
     uint256 public constant TOKEN_SUPPLY = 1000e18;
     uint256 public constant COINVESTED_POSITION_TOKEN_AMOUNT = 200e18; // 20% of supply
-    uint256 public constant OTHER_TOKENS = 800e18; // remainder to holderX
+    uint256 public constant OTHER_TOKENS = 800e18; // remainder to HOLDER_X
     uint256 public constant BASE_PRICE_EURC = 100e6; // 100 EURc per token (6 dec)
 
     uint256 public constant TOTAL_USDC = 2000e6; // total distribution
@@ -91,10 +91,10 @@ contract CoinvestedPositionDistributionTest is Test {
     Distribution distributionLogic;
     DistributionCloneFactory distributionFactory;
 
-    /// Snapshot taken after minting COINVESTED_POSITION_TOKEN_AMOUNT to `cp` and OTHER_TOKENS to `holderX`
+    /// Snapshot taken after minting COINVESTED_POSITION_TOKEN_AMOUNT to `cp` and OTHER_TOKENS to `HOLDER_X`
     uint256 public snapshotId;
 
-    /// Default CoinvestedPosition: basePrice=100e6 EURc, leadA=10%, leadB=5%
+    /// Default CoinvestedPosition: basePrice=100e6 EURc, LEAD_A=10%, LEAD_B=5%
     CoinvestedPosition coinvestedPosition;
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -105,11 +105,11 @@ contract CoinvestedPositionDistributionTest is Test {
         lockedUntil = uint64(block.timestamp + 31 days);
 
         // Infrastructure
-        allowList = createAllowList(trustedForwarder, admin);
+        allowList = createAllowList(TRUSTED_FORWARDER, ADMIN);
         feeSettings = createFeeSettings(
-            trustedForwarder,
-            admin,
-            buildFeeTypes(0, 0, 0, feeCollector, feeCollector, feeCollector)
+            TRUSTED_FORWARDER,
+            ADMIN,
+            buildFeeTypes(0, 0, 0, FEE_COLLECTOR, FEE_COLLECTOR, FEE_COLLECTOR)
         );
 
         // Currencies
@@ -117,42 +117,42 @@ contract CoinvestedPositionDistributionTest is Test {
         usdc = new FakePaymentToken(0, 6);
         eure = new FakePaymentToken(0, 18);
 
-        vm.startPrank(admin);
+        vm.startPrank(ADMIN);
         allowList.set(address(eurc), TRUSTED_CURRENCY);
         allowList.set(address(usdc), TRUSTED_CURRENCY);
         allowList.set(address(eure), TRUSTED_CURRENCY);
         vm.stopPrank();
 
         // Token
-        address tokenLogicAddr = address(new Token(trustedForwarder));
+        address tokenLogicAddr = address(new Token(TRUSTED_FORWARDER));
         tokenFactory = new TokenProxyFactory(tokenLogicAddr);
         token = Token(
-            tokenFactory.createTokenProxy(0, trustedForwarder, feeSettings, admin, allowList, 0, "TestToken", "TTK")
+            tokenFactory.createTokenProxy(0, TRUSTED_FORWARDER, feeSettings, ADMIN, allowList, 0, "TestToken", "TTK")
         );
-        vm.startPrank(admin);
-        token.grantRole(token.MINTALLOWER_ROLE(), admin);
+        vm.startPrank(ADMIN);
+        token.grantRole(token.MINTALLOWER_ROLE(), ADMIN);
         vm.stopPrank();
 
         // Factories
-        coinvestedPositionLogic = new CoinvestedPosition(trustedForwarder);
+        coinvestedPositionLogic = new CoinvestedPosition(TRUSTED_FORWARDER);
         coinvestedPositionFactory = new CoinvestedPositionCloneFactory(address(coinvestedPositionLogic));
-        distributionLogic = new Distribution(trustedForwarder);
+        distributionLogic = new Distribution(TRUSTED_FORWARDER);
         distributionFactory = new DistributionCloneFactory(address(distributionLogic));
 
         // GlobalTokenExitRegistry
-        tokenExitRegistry = new GlobalTokenExitRegistry(trustedForwarder);
+        tokenExitRegistry = new GlobalTokenExitRegistry(TRUSTED_FORWARDER);
 
-        // Deploy default CoinvestedPosition (base currency = EURc, leadA=10%, leadB=5%)
+        // Deploy default CoinvestedPosition (base currency = EURc, LEAD_A=10%, LEAD_B=5%)
         coinvestedPosition = _deployCoinvestedPosition(bytes32(0), BASE_PRICE_EURC, eurc, _defaultLeadInvestors());
 
-        // Mint tokens: 200 to coinvestedPosition, 800 to holderX
-        vm.startPrank(admin);
+        // Mint tokens: 200 to coinvestedPosition, 800 to HOLDER_X
+        vm.startPrank(ADMIN);
         token.mint(address(coinvestedPosition), COINVESTED_POSITION_TOKEN_AMOUNT);
-        token.mint(holderX, OTHER_TOKENS);
+        token.mint(HOLDER_X, OTHER_TOKENS);
         vm.stopPrank();
 
-        // Take snapshot (admin has SNAPSHOTCREATOR_ROLE by default)
-        vm.prank(admin);
+        // Take snapshot (ADMIN has SNAPSHOTCREATOR_ROLE by default)
+        vm.prank(ADMIN);
         snapshotId = token.createSnapshot();
     }
 
@@ -162,8 +162,8 @@ contract CoinvestedPositionDistributionTest is Test {
 
     function _defaultLeadInvestors() internal pure returns (LeadInvestor[] memory) {
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](2);
-        leadInvestors[0] = LeadInvestor({account: leadA, carryFraction: CARRY_10PCT});
-        leadInvestors[1] = LeadInvestor({account: leadB, carryFraction: CARRY_5PCT});
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, carryFraction: CARRY_10PCT});
+        leadInvestors[1] = LeadInvestor({account: LEAD_B, carryFraction: CARRY_5PCT});
         return leadInvestors;
     }
 
@@ -174,8 +174,8 @@ contract CoinvestedPositionDistributionTest is Test {
         LeadInvestor[] memory leadInvestors
     ) internal returns (CoinvestedPosition) {
         CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
-            owner: owner,
-            receiver: receiver,
+            owner: OWNER,
+            receiver: RECEIVER,
             leadInvestors: leadInvestors,
             basePrice: basePrice,
             baseCurrency: IERC20(address(baseCurrency)),
@@ -184,7 +184,7 @@ contract CoinvestedPositionDistributionTest is Test {
             tokenExitRegistry: tokenExitRegistry
         });
         return
-            CoinvestedPosition(coinvestedPositionFactory.createCoinvestedPositionClone(salt, trustedForwarder, args));
+            CoinvestedPosition(coinvestedPositionFactory.createCoinvestedPositionClone(salt, TRUSTED_FORWARDER, args));
     }
 
     /// @dev Deploy a funded Distribution clone against the pre-created snapshotId
@@ -206,7 +206,7 @@ contract CoinvestedPositionDistributionTest is Test {
         uint256 _snapshotId
     ) internal returns (Distribution) {
         DistributionInitializerArguments memory args = DistributionInitializerArguments({
-            owner: owner,
+            owner: OWNER,
             token: token,
             snapshotId: _snapshotId,
             currency: IERC20(address(_currency)),
@@ -214,18 +214,18 @@ contract CoinvestedPositionDistributionTest is Test {
             lockedUntil: lockedUntil,
             initialReassignments: new Reassignment[](0)
         });
-        address cloneAddr = distributionFactory.predictCloneAddress(salt, trustedForwarder, args);
+        address cloneAddr = distributionFactory.predictCloneAddress(salt, TRUSTED_FORWARDER, args);
         if (initialFunding > 0) {
-            _currency.mint(currencyProvider, initialFunding);
-            vm.prank(currencyProvider);
+            _currency.mint(CURRENCY_PROVIDER, initialFunding);
+            vm.prank(CURRENCY_PROVIDER);
             _currency.approve(cloneAddr, initialFunding);
         }
         return
             Distribution(
                 distributionFactory.createDistributionClone(
                     salt,
-                    trustedForwarder,
-                    currencyProvider,
+                    TRUSTED_FORWARDER,
+                    CURRENCY_PROVIDER,
                     args,
                     initialFunding
                 )
@@ -260,16 +260,16 @@ contract CoinvestedPositionDistributionTest is Test {
             "DI-I: wrong eligible before claim"
         );
 
-        uint256 beforeA = usdc.balanceOf(leadA);
-        uint256 beforeB = usdc.balanceOf(leadB);
-        uint256 beforeR = usdc.balanceOf(receiver);
+        uint256 beforeA = usdc.balanceOf(LEAD_A);
+        uint256 beforeB = usdc.balanceOf(LEAD_B);
+        uint256 beforeR = usdc.balanceOf(RECEIVER);
 
-        vm.prank(owner);
+        vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
 
-        uint256 aGot = usdc.balanceOf(leadA) - beforeA;
-        uint256 bGot = usdc.balanceOf(leadB) - beforeB;
-        uint256 rGot = usdc.balanceOf(receiver) - beforeR;
+        uint256 aGot = usdc.balanceOf(LEAD_A) - beforeA;
+        uint256 bGot = usdc.balanceOf(LEAD_B) - beforeB;
+        uint256 rGot = usdc.balanceOf(RECEIVER) - beforeR;
 
         // floor(10% * 200e6) and floor(5% * 200e6) using uint64 fractions
         uint256 expectedA = _leadShare(CARRY_10PCT, COINVESTED_POSITION_ELIGIBLE_USDC);
@@ -277,9 +277,9 @@ contract CoinvestedPositionDistributionTest is Test {
         uint256 expectedR = COINVESTED_POSITION_ELIGIBLE_USDC - expectedA - expectedB;
 
         // auto-check
-        assertEq(aGot, expectedA, "DI-I: wrong leadA payout");
-        assertEq(bGot, expectedB, "DI-I: wrong leadB payout");
-        assertEq(rGot, expectedR, "DI-I: wrong receiver payout");
+        assertEq(aGot, expectedA, "DI-I: wrong LEAD_A payout");
+        assertEq(bGot, expectedB, "DI-I: wrong LEAD_B payout");
+        assertEq(rGot, expectedR, "DI-I: wrong RECEIVER payout");
 
         // manual check
         assertEq(aGot, 40e6 - 1, "wrong payout A");
@@ -308,38 +308,38 @@ contract CoinvestedPositionDistributionTest is Test {
     function testDI_II_MinorityHolder_OthersClaimFirst() public {
         Distribution distribution = _deployDistribution(bytes32(0), usdc, TOTAL_USDC, PRICE_PER_TOKEN_USDC);
 
-        // holderX (800 tokens = 80%) claims first
-        vm.prank(holderX);
-        distribution.claim(holderX, 0);
+        // HOLDER_X (800 tokens = 80%) claims first
+        vm.prank(HOLDER_X);
+        distribution.claim(HOLDER_X, 0);
 
         uint256 expectedHolderX = (OTHER_TOKENS * PRICE_PER_TOKEN_USDC) / (10 ** token.decimals());
-        assertEq(usdc.balanceOf(holderX), expectedHolderX, "DI-II: wrong holderX payout");
+        assertEq(usdc.balanceOf(HOLDER_X), expectedHolderX, "DI-II: wrong HOLDER_X payout");
         assertEq(expectedHolderX, 1600e6, "wrong amount for X");
 
         // CoinvestedPosition still has its full eligible share
         assertEq(
             distribution.eligible(address(coinvestedPosition)),
             COINVESTED_POSITION_ELIGIBLE_USDC,
-            "DI-II: coinvestedPosition eligible changed after holderX claim"
+            "DI-II: coinvestedPosition eligible changed after HOLDER_X claim"
         );
 
-        uint256 beforeR = usdc.balanceOf(receiver);
-        uint256 beforeA = usdc.balanceOf(leadA);
-        uint256 beforeB = usdc.balanceOf(leadB);
+        uint256 beforeR = usdc.balanceOf(RECEIVER);
+        uint256 beforeA = usdc.balanceOf(LEAD_A);
+        uint256 beforeB = usdc.balanceOf(LEAD_B);
 
-        vm.prank(owner);
+        vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
 
-        uint256 aGot = usdc.balanceOf(leadA) - beforeA;
-        uint256 bGot = usdc.balanceOf(leadB) - beforeB;
-        uint256 rGot = usdc.balanceOf(receiver) - beforeR;
+        uint256 aGot = usdc.balanceOf(LEAD_A) - beforeA;
+        uint256 bGot = usdc.balanceOf(LEAD_B) - beforeB;
+        uint256 rGot = usdc.balanceOf(RECEIVER) - beforeR;
 
         uint256 expectedA = _leadShare(CARRY_10PCT, COINVESTED_POSITION_ELIGIBLE_USDC);
         uint256 expectedB = _leadShare(CARRY_5PCT, COINVESTED_POSITION_ELIGIBLE_USDC);
 
-        assertEq(aGot, expectedA, "DI-II: wrong leadA payout");
-        assertEq(bGot, expectedB, "DI-II: wrong leadB payout");
-        assertEq(rGot, COINVESTED_POSITION_ELIGIBLE_USDC - expectedA - expectedB, "DI-II: wrong receiver payout");
+        assertEq(aGot, expectedA, "DI-II: wrong LEAD_A payout");
+        assertEq(bGot, expectedB, "DI-II: wrong LEAD_B payout");
+        assertEq(rGot, COINVESTED_POSITION_ELIGIBLE_USDC - expectedA - expectedB, "DI-II: wrong RECEIVER payout");
 
         // Distribution currency balance after all claims <= total (rounding dust may remain)
         assertLe(usdc.balanceOf(address(distribution)), TOTAL_USDC, "DI-II: dist balance exceeded total");
@@ -358,11 +358,11 @@ contract CoinvestedPositionDistributionTest is Test {
     function _threeLeadInvestors() internal pure returns (LeadInvestor[] memory) {
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](3);
         // 7% ≈ type(uint64).max * 7 / 100
-        leadInvestors[0] = LeadInvestor({account: leadA, carryFraction: uint64((type(uint64).max / 100) * 7)});
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, carryFraction: uint64((type(uint64).max / 100) * 7)});
         // 13% ≈ type(uint64).max * 13 / 100
-        leadInvestors[1] = LeadInvestor({account: leadB, carryFraction: uint64((type(uint64).max / 100) * 13)});
+        leadInvestors[1] = LeadInvestor({account: LEAD_B, carryFraction: uint64((type(uint64).max / 100) * 13)});
         // 3% ≈ type(uint64).max * 3 / 100
-        leadInvestors[2] = LeadInvestor({account: leadC, carryFraction: uint64((type(uint64).max / 100) * 3)});
+        leadInvestors[2] = LeadInvestor({account: LEAD_C, carryFraction: uint64((type(uint64).max / 100) * 3)});
         return leadInvestors;
     }
 
@@ -378,14 +378,14 @@ contract CoinvestedPositionDistributionTest is Test {
         // Mint 200 tokens to the new coinvestedPosition (snapshot already taken — cp3 has 0 at snapshot)
         // We need cp3 to have tokens at snapshot time, so deploy fresh token state:
         // For this test, redeploy with a fresh snapshot.
-        vm.prank(admin);
+        vm.prank(ADMIN);
         token.mint(address(coinvestedPosition3), COINVESTED_POSITION_TOKEN_AMOUNT);
 
-        vm.prank(admin);
+        vm.prank(ADMIN);
         uint256 snap3 = token.createSnapshot();
 
         // Now cp3 holds 200 tokens in snap3.
-        // Total supply at snap3 = original 1000e18 (coinvestedPosition, holderX) + 200e18 (cp3) = 1200e18
+        // Total supply at snap3 = original 1000e18 (coinvestedPosition, HOLDER_X) + 200e18 (cp3) = 1200e18
         // cp3 eligible = 200e18 * PRICE_PER_TOKEN_USDC / 1e18
         uint256 coinvestedPosition3Eligible = (COINVESTED_POSITION_TOKEN_AMOUNT * PRICE_PER_TOKEN_USDC) /
             (10 ** token.decimals());
@@ -409,23 +409,23 @@ contract CoinvestedPositionDistributionTest is Test {
         uint256 expectedB = _leadShare(leadInvestors[1].carryFraction, coinvestedPosition3Eligible);
         uint256 expectedC = _leadShare(leadInvestors[2].carryFraction, coinvestedPosition3Eligible);
 
-        uint256 beforeA = usdc.balanceOf(leadA);
-        uint256 beforeB = usdc.balanceOf(leadB);
-        uint256 beforeC = usdc.balanceOf(leadC);
-        uint256 beforeR = usdc.balanceOf(receiver);
+        uint256 beforeA = usdc.balanceOf(LEAD_A);
+        uint256 beforeB = usdc.balanceOf(LEAD_B);
+        uint256 beforeC = usdc.balanceOf(LEAD_C);
+        uint256 beforeR = usdc.balanceOf(RECEIVER);
 
-        vm.prank(owner);
+        vm.prank(OWNER);
         coinvestedPosition3.claimDistribution(Distribution(address(distribution)), 0);
 
-        assertEq(usdc.balanceOf(leadA) - beforeA, expectedA, "DI-III-A: wrong leadA payout");
-        assertEq(usdc.balanceOf(leadB) - beforeB, expectedB, "DI-III-A: wrong leadB payout");
-        assertEq(usdc.balanceOf(leadC) - beforeC, expectedC, "DI-III-A: wrong leadC payout");
-        // receiver collects remainder via sweep
-        uint256 rGot = usdc.balanceOf(receiver) - beforeR;
+        assertEq(usdc.balanceOf(LEAD_A) - beforeA, expectedA, "DI-III-A: wrong LEAD_A payout");
+        assertEq(usdc.balanceOf(LEAD_B) - beforeB, expectedB, "DI-III-A: wrong LEAD_B payout");
+        assertEq(usdc.balanceOf(LEAD_C) - beforeC, expectedC, "DI-III-A: wrong LEAD_C payout");
+        // RECEIVER collects remainder via sweep
+        uint256 rGot = usdc.balanceOf(RECEIVER) - beforeR;
         assertEq(
             rGot,
             coinvestedPosition3Eligible - expectedA - expectedB - expectedC,
-            "DI-III-A: wrong receiver payout"
+            "DI-III-A: wrong RECEIVER payout"
         );
 
         uint256[] memory payouts = new uint256[](3);
@@ -444,10 +444,10 @@ contract CoinvestedPositionDistributionTest is Test {
             _threeLeadInvestors()
         );
 
-        vm.prank(admin);
+        vm.prank(ADMIN);
         token.mint(address(coinvestedPosition3), COINVESTED_POSITION_TOKEN_AMOUNT);
 
-        vm.prank(admin);
+        vm.prank(ADMIN);
         uint256 snap3 = token.createSnapshot();
 
         uint256 totalEure = 1000e18;
@@ -497,22 +497,22 @@ contract CoinvestedPositionDistributionTest is Test {
             "expectedC wrong"
         );
 
-        uint256 beforeA = eure.balanceOf(leadA);
-        uint256 beforeB = eure.balanceOf(leadB);
-        uint256 beforeC = eure.balanceOf(leadC);
-        uint256 beforeR = eure.balanceOf(receiver);
+        uint256 beforeA = eure.balanceOf(LEAD_A);
+        uint256 beforeB = eure.balanceOf(LEAD_B);
+        uint256 beforeC = eure.balanceOf(LEAD_C);
+        uint256 beforeR = eure.balanceOf(RECEIVER);
 
-        vm.prank(owner);
+        vm.prank(OWNER);
         coinvestedPosition3.claimDistribution(Distribution(address(distribution)), 0);
 
-        assertEq(eure.balanceOf(leadA) - beforeA, expectedA, "DI-III-B: wrong leadA EURe payout");
-        assertEq(eure.balanceOf(leadB) - beforeB, expectedB, "DI-III-B: wrong leadB EURe payout");
-        assertEq(eure.balanceOf(leadC) - beforeC, expectedC, "DI-III-B: wrong leadC EURe payout");
-        uint256 rGot = eure.balanceOf(receiver) - beforeR;
+        assertEq(eure.balanceOf(LEAD_A) - beforeA, expectedA, "DI-III-B: wrong LEAD_A EURe payout");
+        assertEq(eure.balanceOf(LEAD_B) - beforeB, expectedB, "DI-III-B: wrong LEAD_B EURe payout");
+        assertEq(eure.balanceOf(LEAD_C) - beforeC, expectedC, "DI-III-B: wrong LEAD_C EURe payout");
+        uint256 rGot = eure.balanceOf(RECEIVER) - beforeR;
         assertEq(
             rGot,
             coinvestedPosition3Eligible - expectedA - expectedB - expectedC,
-            "DI-III-B: wrong receiver EURe payout"
+            "DI-III-B: wrong RECEIVER EURe payout"
         );
 
         // No basePriceDecimals scaling — raw bits
@@ -531,24 +531,24 @@ contract CoinvestedPositionDistributionTest is Test {
         // USDC has TRUSTED_CURRENCY bit — must be accepted by claimDistribution
         Distribution distribution = _deployDistribution(bytes32(0), usdc, TOTAL_USDC, PRICE_PER_TOKEN_USDC);
 
-        uint256 beforeA = usdc.balanceOf(leadA);
-        uint256 beforeB = usdc.balanceOf(leadB);
-        uint256 beforeR = usdc.balanceOf(receiver);
+        uint256 beforeA = usdc.balanceOf(LEAD_A);
+        uint256 beforeB = usdc.balanceOf(LEAD_B);
+        uint256 beforeR = usdc.balanceOf(RECEIVER);
 
         // Must not revert
-        vm.prank(owner);
+        vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
 
-        uint256 aGot = usdc.balanceOf(leadA) - beforeA;
-        uint256 bGot = usdc.balanceOf(leadB) - beforeB;
-        uint256 rGot = usdc.balanceOf(receiver) - beforeR;
+        uint256 aGot = usdc.balanceOf(LEAD_A) - beforeA;
+        uint256 bGot = usdc.balanceOf(LEAD_B) - beforeB;
+        uint256 rGot = usdc.balanceOf(RECEIVER) - beforeR;
 
         uint256 expectedA = _leadShare(CARRY_10PCT, COINVESTED_POSITION_ELIGIBLE_USDC);
         uint256 expectedB = _leadShare(CARRY_5PCT, COINVESTED_POSITION_ELIGIBLE_USDC);
 
-        assertEq(aGot, expectedA, "DI-IV: wrong leadA USDC payout");
-        assertEq(bGot, expectedB, "DI-IV: wrong leadB USDC payout");
-        assertEq(rGot, COINVESTED_POSITION_ELIGIBLE_USDC - expectedA - expectedB, "DI-IV: wrong receiver USDC payout");
+        assertEq(aGot, expectedA, "DI-IV: wrong LEAD_A USDC payout");
+        assertEq(bGot, expectedB, "DI-IV: wrong LEAD_B USDC payout");
+        assertEq(rGot, COINVESTED_POSITION_ELIGIBLE_USDC - expectedA - expectedB, "DI-IV: wrong RECEIVER USDC payout");
 
         uint256[] memory payouts = new uint256[](2);
         payouts[0] = aGot;
@@ -565,7 +565,7 @@ contract CoinvestedPositionDistributionTest is Test {
         IERC20 untrustedCurrency = IERC20(address(stub.currency()));
 
         vm.expectRevert("dividend currency must be a trusted currency");
-        vm.prank(owner);
+        vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(stub)), 0);
     }
 
@@ -581,24 +581,24 @@ contract CoinvestedPositionDistributionTest is Test {
         eurc.mint(address(coinvestedPosition), 500e6);
         uint256 eurcBefore = eurc.balanceOf(address(coinvestedPosition));
 
-        uint256 beforeA = usdc.balanceOf(leadA);
-        uint256 beforeB = usdc.balanceOf(leadB);
-        uint256 beforeR = usdc.balanceOf(receiver);
+        uint256 beforeA = usdc.balanceOf(LEAD_A);
+        uint256 beforeB = usdc.balanceOf(LEAD_B);
+        uint256 beforeR = usdc.balanceOf(RECEIVER);
 
-        vm.prank(owner);
+        vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
 
-        uint256 aGot = usdc.balanceOf(leadA) - beforeA;
-        uint256 bGot = usdc.balanceOf(leadB) - beforeB;
-        uint256 rGot = usdc.balanceOf(receiver) - beforeR;
+        uint256 aGot = usdc.balanceOf(LEAD_A) - beforeA;
+        uint256 bGot = usdc.balanceOf(LEAD_B) - beforeB;
+        uint256 rGot = usdc.balanceOf(RECEIVER) - beforeR;
 
         uint256 expectedA = _leadShare(CARRY_10PCT, COINVESTED_POSITION_ELIGIBLE_USDC);
         uint256 expectedB = _leadShare(CARRY_5PCT, COINVESTED_POSITION_ELIGIBLE_USDC);
 
         // No decimal conversion — raw 6-dec USDC bits used directly
-        assertEq(aGot, expectedA, "DI-V: wrong leadA USDC payout");
-        assertEq(bGot, expectedB, "DI-V: wrong leadB USDC payout");
-        assertEq(rGot, COINVESTED_POSITION_ELIGIBLE_USDC - expectedA - expectedB, "DI-V: wrong receiver USDC payout");
+        assertEq(aGot, expectedA, "DI-V: wrong LEAD_A USDC payout");
+        assertEq(bGot, expectedB, "DI-V: wrong LEAD_B USDC payout");
+        assertEq(rGot, COINVESTED_POSITION_ELIGIBLE_USDC - expectedA - expectedB, "DI-V: wrong RECEIVER USDC payout");
 
         // EURc balance untouched
         assertEq(eurc.balanceOf(address(coinvestedPosition)), eurcBefore, "DI-V: EURc balance changed");
@@ -630,7 +630,7 @@ contract CoinvestedPositionDistributionTest is Test {
 
         // claimDistribution must revert because eligible = 0
         vm.expectRevert("nothing to claim");
-        vm.prank(owner);
+        vm.prank(OWNER);
         coinvestedPositionZero.claimDistribution(Distribution(address(distribution)), 0);
     }
 
@@ -638,13 +638,13 @@ contract CoinvestedPositionDistributionTest is Test {
     // ── DI-VII. Extra Credit via Reassignment ─────────────────────────────────
     // ─────────────────────────────────────────────────────────────────────────
 
-    address constant holderY = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
+    address constant HOLDER_Y = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
 
     function testDI_VII_ExtraCreditViaReassignment() public {
-        // Mint 100 tokens to holderY, retake snapshot
-        vm.prank(admin);
-        token.mint(holderY, 100e18);
-        vm.prank(admin);
+        // Mint 100 tokens to HOLDER_Y, retake snapshot
+        vm.prank(ADMIN);
+        token.mint(HOLDER_Y, 100e18);
+        vm.prank(ADMIN);
         uint256 snap7 = token.createSnapshot();
 
         uint256 coinvestedPositionEligible7 = (COINVESTED_POSITION_TOKEN_AMOUNT * PRICE_PER_TOKEN_USDC) /
@@ -663,12 +663,12 @@ contract CoinvestedPositionDistributionTest is Test {
             coinvestedPositionEligible7,
             "DI-VII: wrong coinvestedPosition eligible before reassign"
         );
-        assertEq(distribution.eligible(holderY), holderYEligible, "DI-VII: wrong holderY eligible");
+        assertEq(distribution.eligible(HOLDER_Y), holderYEligible, "DI-VII: wrong HOLDER_Y eligible");
 
         vm.warp(lockedUntil);
-        uint256 yEligible = distribution.eligible(holderY);
-        vm.prank(owner);
-        distribution.reassign(holderY, address(coinvestedPosition), yEligible);
+        uint256 yEligible = distribution.eligible(HOLDER_Y);
+        vm.prank(OWNER);
+        distribution.reassign(HOLDER_Y, address(coinvestedPosition), yEligible);
 
         uint256 coinvestedPositionEligibleAfter = coinvestedPositionEligible7 + holderYEligible;
         assertEq(
@@ -676,38 +676,38 @@ contract CoinvestedPositionDistributionTest is Test {
             coinvestedPositionEligibleAfter,
             "DI-VII: wrong coinvestedPosition eligible after reassign"
         );
-        assertEq(distribution.eligible(holderY), 0, "DI-VII: holderY eligible not zero after reassign");
+        assertEq(distribution.eligible(HOLDER_Y), 0, "DI-VII: HOLDER_Y eligible not zero after reassign");
 
-        uint256 beforeA = usdc.balanceOf(leadA);
-        uint256 beforeB = usdc.balanceOf(leadB);
-        uint256 beforeR = usdc.balanceOf(receiver);
+        uint256 beforeA = usdc.balanceOf(LEAD_A);
+        uint256 beforeB = usdc.balanceOf(LEAD_B);
+        uint256 beforeR = usdc.balanceOf(RECEIVER);
 
-        vm.prank(owner);
+        vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
 
-        uint256 aGot = usdc.balanceOf(leadA) - beforeA;
-        uint256 bGot = usdc.balanceOf(leadB) - beforeB;
-        uint256 rGot = usdc.balanceOf(receiver) - beforeR;
+        uint256 aGot = usdc.balanceOf(LEAD_A) - beforeA;
+        uint256 bGot = usdc.balanceOf(LEAD_B) - beforeB;
+        uint256 rGot = usdc.balanceOf(RECEIVER) - beforeR;
 
         assertEq(
             aGot,
             _leadShare(CARRY_10PCT, coinvestedPositionEligibleAfter),
-            "DI-VII: wrong leadA payout on combined eligible"
+            "DI-VII: wrong LEAD_A payout on combined eligible"
         );
         assertEq(
             bGot,
             _leadShare(CARRY_5PCT, coinvestedPositionEligibleAfter),
-            "DI-VII: wrong leadB payout on combined eligible"
+            "DI-VII: wrong LEAD_B payout on combined eligible"
         );
-        assertEq(rGot, coinvestedPositionEligibleAfter - aGot - bGot, "DI-VII: wrong receiver payout");
+        assertEq(rGot, coinvestedPositionEligibleAfter - aGot - bGot, "DI-VII: wrong RECEIVER payout");
 
-        // holderY cannot claim anything
-        uint256 holderYBalBefore = usdc.balanceOf(holderY);
-        // holderY's eligible is 0 after full reassign → claim reverts
-        vm.prank(holderY);
+        // HOLDER_Y cannot claim anything
+        uint256 holderYBalBefore = usdc.balanceOf(HOLDER_Y);
+        // HOLDER_Y's eligible is 0 after full reassign → claim reverts
+        vm.prank(HOLDER_Y);
         vm.expectRevert("nothing to claim");
-        distribution.claim(holderY, 0);
-        assertEq(usdc.balanceOf(holderY), holderYBalBefore, "DI-VII: holderY received non-zero after reassign");
+        distribution.claim(HOLDER_Y, 0);
+        assertEq(usdc.balanceOf(HOLDER_Y), holderYBalBefore, "DI-VII: HOLDER_Y received non-zero after reassign");
 
         uint256[] memory payouts = new uint256[](2);
         payouts[0] = aGot;
@@ -725,28 +725,28 @@ contract CoinvestedPositionDistributionTest is Test {
 
         // --- Claim USDC distribution ---
         {
-            uint256 beforeA = usdc.balanceOf(leadA);
-            uint256 beforeB = usdc.balanceOf(leadB);
-            uint256 beforeR = usdc.balanceOf(receiver);
+            uint256 beforeA = usdc.balanceOf(LEAD_A);
+            uint256 beforeB = usdc.balanceOf(LEAD_B);
+            uint256 beforeR = usdc.balanceOf(RECEIVER);
 
-            vm.prank(owner);
+            vm.prank(OWNER);
             coinvestedPosition.claimDistribution(Distribution(address(usdcDistribution)), 0);
 
-            uint256 aGot = usdc.balanceOf(leadA) - beforeA;
-            uint256 bGot = usdc.balanceOf(leadB) - beforeB;
-            uint256 rGot = usdc.balanceOf(receiver) - beforeR;
+            uint256 aGot = usdc.balanceOf(LEAD_A) - beforeA;
+            uint256 bGot = usdc.balanceOf(LEAD_B) - beforeB;
+            uint256 rGot = usdc.balanceOf(RECEIVER) - beforeR;
 
             assertEq(
                 aGot,
                 _leadShare(CARRY_10PCT, COINVESTED_POSITION_ELIGIBLE_USDC),
-                "DI-VIII: wrong leadA USDC payout"
+                "DI-VIII: wrong LEAD_A USDC payout"
             );
             assertEq(
                 bGot,
                 _leadShare(CARRY_5PCT, COINVESTED_POSITION_ELIGIBLE_USDC),
-                "DI-VIII: wrong leadB USDC payout"
+                "DI-VIII: wrong LEAD_B USDC payout"
             );
-            assertEq(rGot, COINVESTED_POSITION_ELIGIBLE_USDC - aGot - bGot, "DI-VIII: wrong receiver USDC payout");
+            assertEq(rGot, COINVESTED_POSITION_ELIGIBLE_USDC - aGot - bGot, "DI-VIII: wrong RECEIVER USDC payout");
 
             uint256[] memory payouts = new uint256[](2);
             payouts[0] = aGot;
@@ -763,20 +763,20 @@ contract CoinvestedPositionDistributionTest is Test {
         // --- Claim EURe distribution ---
         uint256 coinvestedPositionEligibleEure = (1000e18 * COINVESTED_POSITION_TOKEN_AMOUNT) / TOKEN_SUPPLY;
         {
-            uint256 beforeA = eure.balanceOf(leadA);
-            uint256 beforeB = eure.balanceOf(leadB);
-            uint256 beforeR = eure.balanceOf(receiver);
+            uint256 beforeA = eure.balanceOf(LEAD_A);
+            uint256 beforeB = eure.balanceOf(LEAD_B);
+            uint256 beforeR = eure.balanceOf(RECEIVER);
 
-            vm.prank(owner);
+            vm.prank(OWNER);
             coinvestedPosition.claimDistribution(Distribution(address(eureDistribution)), 0);
 
-            uint256 aGot = eure.balanceOf(leadA) - beforeA;
-            uint256 bGot = eure.balanceOf(leadB) - beforeB;
-            uint256 rGot = eure.balanceOf(receiver) - beforeR;
+            uint256 aGot = eure.balanceOf(LEAD_A) - beforeA;
+            uint256 bGot = eure.balanceOf(LEAD_B) - beforeB;
+            uint256 rGot = eure.balanceOf(RECEIVER) - beforeR;
 
-            assertEq(aGot, _leadShare(CARRY_10PCT, coinvestedPositionEligibleEure), "DI-VIII: wrong leadA EURe payout");
-            assertEq(bGot, _leadShare(CARRY_5PCT, coinvestedPositionEligibleEure), "DI-VIII: wrong leadB EURe payout");
-            assertEq(rGot, coinvestedPositionEligibleEure - aGot - bGot, "DI-VIII: wrong receiver EURe payout");
+            assertEq(aGot, _leadShare(CARRY_10PCT, coinvestedPositionEligibleEure), "DI-VIII: wrong LEAD_A EURe payout");
+            assertEq(bGot, _leadShare(CARRY_5PCT, coinvestedPositionEligibleEure), "DI-VIII: wrong LEAD_B EURe payout");
+            assertEq(rGot, coinvestedPositionEligibleEure - aGot - bGot, "DI-VIII: wrong RECEIVER EURe payout");
 
             uint256[] memory payouts = new uint256[](2);
             payouts[0] = aGot;
@@ -803,30 +803,30 @@ contract CoinvestedPositionDistributionTest is Test {
         Distribution distribution = _deployDistribution(bytes32(0), usdc, TOTAL_USDC, PRICE_PER_TOKEN_USDC);
 
         // before snapshot is taken at call time — pre-existing is excluded from `received`
-        uint256 beforeA = usdc.balanceOf(leadA);
-        uint256 beforeB = usdc.balanceOf(leadB);
-        uint256 beforeR = usdc.balanceOf(receiver);
+        uint256 beforeA = usdc.balanceOf(LEAD_A);
+        uint256 beforeB = usdc.balanceOf(LEAD_B);
+        uint256 beforeR = usdc.balanceOf(RECEIVER);
 
-        vm.prank(owner);
+        vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
 
-        uint256 aGot = usdc.balanceOf(leadA) - beforeA;
-        uint256 bGot = usdc.balanceOf(leadB) - beforeB;
-        uint256 rGot = usdc.balanceOf(receiver) - beforeR;
+        uint256 aGot = usdc.balanceOf(LEAD_A) - beforeA;
+        uint256 bGot = usdc.balanceOf(LEAD_B) - beforeB;
+        uint256 rGot = usdc.balanceOf(RECEIVER) - beforeR;
 
         // received = 200e6 (from distribution, not 300e6 pre-existing)
         uint256 received = COINVESTED_POSITION_ELIGIBLE_USDC;
         uint256 expectedA = _leadShare(CARRY_10PCT, received);
         uint256 expectedB = _leadShare(CARRY_5PCT, received);
 
-        assertEq(aGot, expectedA, "DI-IX: wrong leadA carry");
-        assertEq(bGot, expectedB, "DI-IX: wrong leadB carry");
+        assertEq(aGot, expectedA, "DI-IX: wrong LEAD_A carry");
+        assertEq(bGot, expectedB, "DI-IX: wrong LEAD_B carry");
 
-        // receiver gets dividend share + 300e6 pre-existing via sweep
+        // RECEIVER gets dividend share + 300e6 pre-existing via sweep
         uint256 expectedR = received - expectedA - expectedB + preExisting;
-        assertEq(rGot, expectedR, "DI-IX: wrong receiver payout");
+        assertEq(rGot, expectedR, "DI-IX: wrong RECEIVER payout");
 
-        // Total: A + B + receiver = 200e6 + 300e6 = 500e6
+        // Total: A + B + RECEIVER = 200e6 + 300e6 = 500e6
         assertEq(aGot + bGot + rGot, received + preExisting, "DI-IX: total sum mismatch");
     }
 
@@ -844,57 +844,57 @@ contract CoinvestedPositionDistributionTest is Test {
             "DI-X: wrong eligible at snapshot"
         );
 
-        // Now simulate a buyer purchasing 50 tokens from coinvestedPosition after the snapshot
-        // Need: set token price, flag buyer on allowList, unpause coinvestedPosition, buyer buys
+        // Now simulate a BUYER purchasing 50 tokens from coinvestedPosition after the snapshot
+        // Need: set token price, flag BUYER on allowList, unpause coinvestedPosition, BUYER buys
         uint256 tokenPrice = 200e6; // 200 EURc per token
-        vm.prank(owner);
+        vm.prank(OWNER);
         coinvestedPosition.setTokenPrice(tokenPrice);
 
-        // Flag buyer
-        vm.prank(admin);
+        // Flag BUYER
+        vm.prank(ADMIN);
 
-        // Mint EURc for buyer
+        // Mint EURc for BUYER
         uint256 buyAmount = 50e18;
         // ceilDiv(50e18 * 200e6 / 1e18) = 10_000e6
         uint256 costEurc = Math.ceilDiv(buyAmount * tokenPrice, 10 ** token.decimals());
-        eurc.mint(buyer, costEurc);
+        eurc.mint(BUYER, costEurc);
 
-        vm.prank(owner);
+        vm.prank(OWNER);
         coinvestedPosition.unpause();
 
-        vm.startPrank(buyer);
+        vm.startPrank(BUYER);
         eurc.approve(address(coinvestedPosition), costEurc);
-        coinvestedPosition.buy(buyAmount, costEurc, buyer);
+        coinvestedPosition.buy(buyAmount, costEurc, BUYER);
         vm.stopPrank();
 
-        // coinvestedPosition now holds 150 tokens, buyer holds 50
+        // coinvestedPosition now holds 150 tokens, BUYER holds 50
         assertEq(
             token.balanceOf(address(coinvestedPosition)),
             COINVESTED_POSITION_TOKEN_AMOUNT - buyAmount,
             "DI-X: wrong coinvestedPosition token balance after buy"
         );
-        assertEq(token.balanceOf(buyer), buyAmount, "DI-X: wrong buyer token balance");
+        assertEq(token.balanceOf(BUYER), buyAmount, "DI-X: wrong BUYER token balance");
 
         // claimDistribution still claims full snapshot-eligible 200e6
-        uint256 beforeA = usdc.balanceOf(leadA);
-        uint256 beforeB = usdc.balanceOf(leadB);
-        uint256 beforeR = usdc.balanceOf(receiver);
+        uint256 beforeA = usdc.balanceOf(LEAD_A);
+        uint256 beforeB = usdc.balanceOf(LEAD_B);
+        uint256 beforeR = usdc.balanceOf(RECEIVER);
 
-        vm.prank(owner);
+        vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
 
-        uint256 aGot = usdc.balanceOf(leadA) - beforeA;
-        uint256 bGot = usdc.balanceOf(leadB) - beforeB;
-        uint256 rGot = usdc.balanceOf(receiver) - beforeR;
+        uint256 aGot = usdc.balanceOf(LEAD_A) - beforeA;
+        uint256 bGot = usdc.balanceOf(LEAD_B) - beforeB;
+        uint256 rGot = usdc.balanceOf(RECEIVER) - beforeR;
 
         // received = 200e6 (snapshot-based, ignores the post-snapshot sell)
         uint256 received = COINVESTED_POSITION_ELIGIBLE_USDC;
         uint256 expectedA = _leadShare(CARRY_10PCT, received);
         uint256 expectedB = _leadShare(CARRY_5PCT, received);
 
-        assertEq(aGot, expectedA, "DI-X: wrong leadA payout");
-        assertEq(bGot, expectedB, "DI-X: wrong leadB payout");
-        assertEq(rGot, received - expectedA - expectedB, "DI-X: wrong receiver payout");
+        assertEq(aGot, expectedA, "DI-X: wrong LEAD_A payout");
+        assertEq(bGot, expectedB, "DI-X: wrong LEAD_B payout");
+        assertEq(rGot, received - expectedA - expectedB, "DI-X: wrong RECEIVER payout");
 
         uint256[] memory payouts = new uint256[](2);
         payouts[0] = aGot;
@@ -912,11 +912,11 @@ contract CoinvestedPositionDistributionTest is Test {
 
     function testDI_XII_DistributionRevertsWhenCurrencyIsToken() public {
         // Give the equity token the TRUSTED_CURRENCY bit so the allowList check passes
-        vm.prank(admin);
+        vm.prank(ADMIN);
         allowList.set(address(token), TRUSTED_CURRENCY);
 
         DistributionInitializerArguments memory args = DistributionInitializerArguments({
-            owner: owner,
+            owner: OWNER,
             token: token,
             snapshotId: snapshotId,
             currency: IERC20(address(token)),
@@ -924,33 +924,33 @@ contract CoinvestedPositionDistributionTest is Test {
             lockedUntil: lockedUntil,
             initialReassignments: new Reassignment[](0)
         });
-        address cloneAddr = distributionFactory.predictCloneAddress(bytes32(0), trustedForwarder, args);
-        vm.prank(admin);
-        token.mint(currencyProvider, 100e18);
-        vm.prank(currencyProvider);
+        address cloneAddr = distributionFactory.predictCloneAddress(bytes32(0), TRUSTED_FORWARDER, args);
+        vm.prank(ADMIN);
+        token.mint(CURRENCY_PROVIDER, 100e18);
+        vm.prank(CURRENCY_PROVIDER);
         token.approve(cloneAddr, 100e18);
 
         vm.expectRevert("currency and token must be different");
-        distributionFactory.createDistributionClone(bytes32(0), trustedForwarder, currencyProvider, args, 100e18);
+        distributionFactory.createDistributionClone(bytes32(0), TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, 100e18);
     }
 
     /// DI-XIII: _settle reverts when currency == held token, tested via a stub Distribution
     /// that bypasses Distribution's own guard and actually delivers the equity token to cp.
     function testDI_XIII_SettleRevertsWhenCurrencyIsHeldToken() public {
         // Give the equity token TRUSTED_CURRENCY so it passes claimDistribution' allowList check
-        vm.prank(admin);
+        vm.prank(ADMIN);
         allowList.set(address(token), TRUSTED_CURRENCY);
 
         // Seed the stub with equity tokens so claim() can transfer them to cp
         uint256 stubAmount = 10e18;
-        vm.prank(admin);
+        vm.prank(ADMIN);
         token.mint(address(this), stubAmount);
         TokenTransferStub stub = new TokenTransferStub(IERC20(address(token)), stubAmount);
         IERC20(address(token)).transfer(address(stub), stubAmount);
         IERC20 tokenCurrency = IERC20(address(stub.currency()));
 
         vm.expectRevert("currency cannot be the held token");
-        vm.prank(owner);
+        vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(stub)), 0);
     }
 
@@ -991,9 +991,9 @@ contract CoinvestedPositionDistributionTest is Test {
         uint256 coinvestedPositionEligible;
         {
             LeadInvestor[] memory leadInvestors = new LeadInvestor[](numLeads);
-            leadInvestors[0] = LeadInvestor({account: leadA, carryFraction: carryA});
-            if (numLeads >= 2) leadInvestors[1] = LeadInvestor({account: leadB, carryFraction: carryB});
-            if (numLeads >= 3) leadInvestors[2] = LeadInvestor({account: leadC, carryFraction: carryC});
+            leadInvestors[0] = LeadInvestor({account: LEAD_A, carryFraction: carryA});
+            if (numLeads >= 2) leadInvestors[1] = LeadInvestor({account: LEAD_B, carryFraction: carryB});
+            if (numLeads >= 3) leadInvestors[2] = LeadInvestor({account: LEAD_C, carryFraction: carryC});
 
             Token fuzzToken;
             uint256 snapFuzz;
@@ -1012,25 +1012,25 @@ contract CoinvestedPositionDistributionTest is Test {
                 fuzzToken = Token(
                     tokenFactory.createTokenProxy(
                         bytes32(uint256(uint160(address(tempCoinvestedPosition)))),
-                        trustedForwarder,
+                        TRUSTED_FORWARDER,
                         feeSettings,
-                        admin,
+                        ADMIN,
                         allowList,
                         0,
                         "FuzzToken",
                         "FZT"
                     )
                 );
-                vm.startPrank(admin);
-                fuzzToken.grantRole(fuzzToken.MINTALLOWER_ROLE(), admin);
+                vm.startPrank(ADMIN);
+                fuzzToken.grantRole(fuzzToken.MINTALLOWER_ROLE(), ADMIN);
                 fuzzToken.mint(address(tempCoinvestedPosition), coinvestedPositionTokens);
-                if (otherTokens > 0) fuzzToken.mint(holderX, otherTokens);
+                if (otherTokens > 0) fuzzToken.mint(HOLDER_X, otherTokens);
                 vm.stopPrank();
 
                 CoinvestedPositionInitializerArguments
                     memory coinvestedPositionArgs = CoinvestedPositionInitializerArguments({
-                        owner: owner,
-                        receiver: receiver,
+                        owner: OWNER,
+                        receiver: RECEIVER,
                         leadInvestors: leadInvestors,
                         basePrice: BASE_PRICE_EURC,
                         baseCurrency: IERC20(address(eurc)),
@@ -1041,13 +1041,13 @@ contract CoinvestedPositionDistributionTest is Test {
                 coinvestedPositionFuzz = CoinvestedPosition(
                     coinvestedPositionFactory.createCoinvestedPositionClone(
                         bytes32(uint256(uint160(address(tempCoinvestedPosition))) + 1),
-                        trustedForwarder,
+                        TRUSTED_FORWARDER,
                         coinvestedPositionArgs
                     )
                 );
                 vm.prank(address(tempCoinvestedPosition));
                 fuzzToken.transfer(address(coinvestedPositionFuzz), coinvestedPositionTokens);
-                vm.prank(admin);
+                vm.prank(ADMIN);
                 snapFuzz = fuzzToken.createSnapshot();
             }
 
@@ -1060,7 +1060,7 @@ contract CoinvestedPositionDistributionTest is Test {
             uint256 initialFunding = (totalSupplyFuzz * uint256(fuzzPricePerToken)) / (10 ** fuzzToken.decimals());
 
             DistributionInitializerArguments memory distributionArgs = DistributionInitializerArguments({
-                owner: owner,
+                owner: OWNER,
                 token: fuzzToken,
                 snapshotId: snapFuzz,
                 currency: IERC20(address(usdc)),
@@ -1068,15 +1068,15 @@ contract CoinvestedPositionDistributionTest is Test {
                 lockedUntil: lockedUntil,
                 initialReassignments: new Reassignment[](0)
             });
-            address cloneAddr = distributionFactory.predictCloneAddress(bytes32(0), trustedForwarder, distributionArgs);
-            usdc.mint(currencyProvider, initialFunding);
-            vm.prank(currencyProvider);
+            address cloneAddr = distributionFactory.predictCloneAddress(bytes32(0), TRUSTED_FORWARDER, distributionArgs);
+            usdc.mint(CURRENCY_PROVIDER, initialFunding);
+            vm.prank(CURRENCY_PROVIDER);
             usdc.approve(cloneAddr, initialFunding);
             distributionFuzz = Distribution(
                 distributionFactory.createDistributionClone(
                     bytes32(0),
-                    trustedForwarder,
-                    currencyProvider,
+                    TRUSTED_FORWARDER,
+                    CURRENCY_PROVIDER,
                     distributionArgs,
                     initialFunding
                 )
@@ -1092,41 +1092,41 @@ contract CoinvestedPositionDistributionTest is Test {
 
         if (coinvestedPositionEligible == 0) {
             vm.expectRevert("didn't receive expected currency from distribution");
-            vm.prank(owner);
+            vm.prank(OWNER);
             coinvestedPositionFuzz.claimDistribution(Distribution(address(distributionFuzz)), 0);
             return;
         }
 
         // Pack snap values into a memory array (1 stack slot) to stay under the stack limit.
-        // Layout: [0]=leadA, [1]=leadB, [2]=leadC, [3]=receiver
+        // Layout: [0]=LEAD_A, [1]=LEAD_B, [2]=LEAD_C, [3]=RECEIVER
         uint256[4] memory snaps;
-        snaps[0] = usdc.balanceOf(leadA);
-        snaps[1] = usdc.balanceOf(leadB);
-        snaps[2] = usdc.balanceOf(leadC);
-        snaps[3] = usdc.balanceOf(receiver);
+        snaps[0] = usdc.balanceOf(LEAD_A);
+        snaps[1] = usdc.balanceOf(LEAD_B);
+        snaps[2] = usdc.balanceOf(LEAD_C);
+        snaps[3] = usdc.balanceOf(RECEIVER);
 
-        vm.prank(owner);
+        vm.prank(OWNER);
         coinvestedPositionFuzz.claimDistribution(Distribution(address(distributionFuzz)), 0);
 
         uint256 totalGot = 0;
         {
-            uint256 aGot = usdc.balanceOf(leadA) - snaps[0];
-            assertEq(aGot, _leadShare(carryA, coinvestedPositionEligible), "DI-XI: wrong leadA payout");
+            uint256 aGot = usdc.balanceOf(LEAD_A) - snaps[0];
+            assertEq(aGot, _leadShare(carryA, coinvestedPositionEligible), "DI-XI: wrong LEAD_A payout");
             totalGot += aGot;
         }
         {
-            uint256 bGot = usdc.balanceOf(leadB) - snaps[1];
+            uint256 bGot = usdc.balanceOf(LEAD_B) - snaps[1];
             if (numLeads >= 2)
-                assertEq(bGot, _leadShare(carryB, coinvestedPositionEligible), "DI-XI: wrong leadB payout");
+                assertEq(bGot, _leadShare(carryB, coinvestedPositionEligible), "DI-XI: wrong LEAD_B payout");
             totalGot += bGot;
         }
         {
-            uint256 cGot = usdc.balanceOf(leadC) - snaps[2];
+            uint256 cGot = usdc.balanceOf(LEAD_C) - snaps[2];
             if (numLeads >= 3)
-                assertEq(cGot, _leadShare(carryC, coinvestedPositionEligible), "DI-XI: wrong leadC payout");
+                assertEq(cGot, _leadShare(carryC, coinvestedPositionEligible), "DI-XI: wrong LEAD_C payout");
             totalGot += cGot;
         }
-        totalGot += usdc.balanceOf(receiver) - snaps[3];
+        totalGot += usdc.balanceOf(RECEIVER) - snaps[3];
 
         assertEq(totalGot, coinvestedPositionEligible, "DI-XI: sum of payouts != received");
         assertEq(distributionFuzz.eligible(address(coinvestedPositionFuzz)), 0, "DI-XI: eligible not zero after claim");
@@ -1143,7 +1143,7 @@ contract CoinvestedPositionDistributionTest is Test {
         TokenTransferStub stub = new TokenTransferStub(IERC20(address(usdc)), minPayout);
         IERC20(address(usdc)).transfer(address(stub), minPayout);
 
-        vm.prank(owner);
+        vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(stub)), minPayout);
         assertEq(usdc.balanceOf(address(coinvestedPosition)), 0, "cp should hold no usdc after settle");
     }

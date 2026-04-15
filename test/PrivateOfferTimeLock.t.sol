@@ -23,45 +23,45 @@ contract PrivateOfferTimeLockTest is Test {
 
     uint256 MAX_INT = type(uint256).max;
 
-    address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
-    address public constant tokenReceiver = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
-    address public constant mintAllower = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
-    address public constant currencyPayer = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
-    address public constant owner = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
-    address public constant currencyReceiver = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
-    address public constant paymentTokenProvider = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
-    address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
+    address public constant ADMIN = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
+    address public constant TOKEN_RECEIVER = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
+    address public constant MINT_ALLOWER = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
+    address public constant CURRENCY_PAYER = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
+    address public constant OWNER = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
+    address public constant CURRENCY_RECEIVER = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
+    address public constant PAYMENT_TOKEN_PROVIDER = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
+    address public constant TRUSTED_FORWARDER = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
 
-    uint256 public constant price = 10000000;
+    uint256 public constant PRICE = 10000000;
 
     uint256 requirements = 92785934;
 
     function setUp() public {
-        TimeLock timeLockImplementation = new TimeLock(trustedForwarder);
+        TimeLock timeLockImplementation = new TimeLock(TRUSTED_FORWARDER);
         TimeLockCloneFactory timeLockCloneFactory = new TimeLockCloneFactory(address(timeLockImplementation));
         privateOfferFactory = new PrivateOfferFactory(timeLockCloneFactory);
 
-        vm.prank(paymentTokenProvider);
+        vm.prank(PAYMENT_TOKEN_PROVIDER);
         currency = new FakePaymentToken(0, 18);
 
-        list = createAllowList(trustedForwarder, address(this));
-        list.set(tokenReceiver, requirements);
+        list = createAllowList(TRUSTED_FORWARDER, address(this));
+        list.set(TOKEN_RECEIVER, requirements);
         list.set(address(currency), TRUSTED_CURRENCY);
 
         feeSettings = createFeeSettings(
-            trustedForwarder,
+            TRUSTED_FORWARDER,
             address(this),
-            buildFeeTypes(100, 100, 100, admin, admin, admin)
+            buildFeeTypes(100, 100, 100, ADMIN, ADMIN, ADMIN)
         );
 
-        Token implementation = new Token(trustedForwarder);
+        Token implementation = new Token(TRUSTED_FORWARDER);
         TokenProxyFactory tokenCloneFactory = new TokenProxyFactory(address(implementation));
         token = Token(
             tokenCloneFactory.createTokenProxy(
                 0,
-                trustedForwarder,
+                TRUSTED_FORWARDER,
                 feeSettings,
-                admin,
+                ADMIN,
                 list,
                 requirements,
                 "token",
@@ -69,7 +69,7 @@ contract PrivateOfferTimeLockTest is Test {
             )
         );
 
-        tokenExitRegistry = new GlobalTokenExitRegistry(trustedForwarder);
+        tokenExitRegistry = new GlobalTokenExitRegistry(TRUSTED_FORWARDER);
     }
 
     /**
@@ -84,18 +84,18 @@ contract PrivateOfferTimeLockTest is Test {
         vm.assume(attemptTime < lockedUntil);
 
         PrivateOfferArguments memory arguments = PrivateOfferArguments(
-            currencyPayer,
-            tokenReceiver,
-            currencyReceiver,
+            CURRENCY_PAYER,
+            TOKEN_RECEIVER,
+            CURRENCY_RECEIVER,
             20000000000000,
-            price,
+            PRICE,
             block.timestamp + 1000,
             currency,
             token,
             address(0)
         );
 
-        uint256 currencyAmount = (arguments.tokenAmount * price) / 10 ** token.decimals();
+        uint256 currencyAmount = (arguments.tokenAmount * PRICE) / 10 ** token.decimals();
 
         // predict addresses
         (address expectedInviteAddress, address expectedTimeLockAddress) = privateOfferFactory
@@ -103,30 +103,30 @@ contract PrivateOfferTimeLockTest is Test {
                 salt,
                 arguments,
                 lockedUntil,
-                admin,
+                ADMIN,
                 tokenExitRegistry,
-                trustedForwarder
+                TRUSTED_FORWARDER
             );
 
         // add time lock and token receiver to the allow list
         list.set(expectedTimeLockAddress, requirements);
-        list.set(tokenReceiver, requirements);
+        list.set(TOKEN_RECEIVER, requirements);
 
         // grant minting allowance to the invite address
-        vm.prank(admin);
+        vm.prank(ADMIN);
         token.increaseMintingAllowance(expectedInviteAddress, arguments.tokenAmount);
 
         // mint currency to the payer
-        vm.prank(paymentTokenProvider);
-        currency.mint(currencyPayer, currencyAmount);
+        vm.prank(PAYMENT_TOKEN_PROVIDER);
+        currency.mint(CURRENCY_PAYER, currencyAmount);
 
         // approve the invite address to spend the currency
-        vm.prank(currencyPayer);
+        vm.prank(CURRENCY_PAYER);
         currency.approve(expectedInviteAddress, currencyAmount);
 
         // make sure balances are as expected before deployment
-        assertEq(currency.balanceOf(currencyPayer), currencyAmount, "currencyPayer wrong balance before deployment");
-        assertEq(currency.balanceOf(currencyReceiver), 0, "currencyReceiver wrong balance before deployment");
+        assertEq(currency.balanceOf(CURRENCY_PAYER), currencyAmount, "CURRENCY_PAYER wrong balance before deployment");
+        assertEq(currency.balanceOf(CURRENCY_RECEIVER), 0, "CURRENCY_RECEIVER wrong balance before deployment");
         assertEq(currency.balanceOf(expectedTimeLockAddress), 0, "timeLock wrong currency balance before deployment");
         assertEq(token.balanceOf(expectedTimeLockAddress), 0, "timeLock wrong token balance before deployment");
 
@@ -143,24 +143,24 @@ contract PrivateOfferTimeLockTest is Test {
                 salt,
                 arguments,
                 lockedUntil,
-                admin,
+                ADMIN,
                 tokenExitRegistry,
-                trustedForwarder
+                TRUSTED_FORWARDER
             )
         );
         uint256 gasAfter = gasleft();
         console.log("gas used: %s", gasBefore - gasAfter);
 
-        console.log("payer balance: %s", currency.balanceOf(currencyPayer));
-        console.log("receiver balance: %s", currency.balanceOf(currencyReceiver));
+        console.log("payer balance: %s", currency.balanceOf(CURRENCY_PAYER));
+        console.log("receiver balance: %s", currency.balanceOf(CURRENCY_RECEIVER));
         console.log("timeLock token balance: %s", token.balanceOf(address(timeLock)));
 
-        assertEq(currency.balanceOf(currencyPayer), 0, "currencyPayer wrong balance after deployment");
+        assertEq(currency.balanceOf(CURRENCY_PAYER), 0, "CURRENCY_PAYER wrong balance after deployment");
 
         assertEq(
-            currency.balanceOf(currencyReceiver),
+            currency.balanceOf(CURRENCY_RECEIVER),
             currencyAmount - token.feeSettings().privateOfferFee(currencyAmount, address(token)),
-            "currencyReceiver wrong balance after deployment"
+            "CURRENCY_RECEIVER wrong balance after deployment"
         );
 
         assertEq(
@@ -185,21 +185,21 @@ contract PrivateOfferTimeLockTest is Test {
          * PrivateOffer worked properly, now test the time lock
          */
         // drain before lock expires should revert
-        assertEq(token.balanceOf(tokenReceiver), 0, "investor vault should have no tokens");
-        vm.prank(admin);
+        assertEq(token.balanceOf(TOKEN_RECEIVER), 0, "investor vault should have no tokens");
+        vm.prank(ADMIN);
         vm.expectRevert("timelock has not expired");
-        timeLock.drain(IERC20(address(token)), tokenReceiver);
+        timeLock.drain(IERC20(address(token)), TOKEN_RECEIVER);
 
         // drain at attemptTime (still before lockedUntil) should also revert
         vm.warp(attemptTime);
-        vm.prank(admin);
+        vm.prank(ADMIN);
         vm.expectRevert("timelock has not expired");
-        timeLock.drain(IERC20(address(token)), tokenReceiver);
+        timeLock.drain(IERC20(address(token)), TOKEN_RECEIVER);
 
         // drain after lock expires transfers all tokens to recipient
         vm.warp(lockedUntil);
-        vm.prank(admin);
-        timeLock.drain(IERC20(address(token)), tokenReceiver);
-        assertEq(token.balanceOf(tokenReceiver), arguments.tokenAmount, "investor vault should have all tokens");
+        vm.prank(ADMIN);
+        timeLock.drain(IERC20(address(token)), TOKEN_RECEIVER);
+        assertEq(token.balanceOf(TOKEN_RECEIVER), arguments.tokenAmount, "investor vault should have all tokens");
     }
 }

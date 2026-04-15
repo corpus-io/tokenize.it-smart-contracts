@@ -35,11 +35,11 @@ contract FixedPayoutDistribution {
  * @notice Tests for TimeLock.claimExit(, 0), which claims exit proceeds bypassing lockedUntil.
  */
 contract TimeLockDistributeExitTest is Test {
-    address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
-    address public constant owner = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
-    address public constant recipient = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
-    address public constant currencyProvider = 0x5109709EcFA91a80626ff3989d68f67F5B1dD125;
-    address public constant trustedForwarder = 0xa109709ecfA91A80626ff3989D68F67F5b1dD12a;
+    address public constant ADMIN = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
+    address public constant OWNER = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
+    address public constant RECIPIENT = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
+    address public constant CURRENCY_PROVIDER = 0x5109709EcFA91a80626ff3989d68f67F5B1dD125;
+    address public constant TRUSTED_FORWARDER = 0xa109709ecfA91A80626ff3989D68F67F5b1dD12a;
 
     uint256 public constant TOKEN_AMOUNT = 200e18;
 
@@ -63,40 +63,40 @@ contract TimeLockDistributeExitTest is Test {
         timeLockExpiry = uint64(block.timestamp + 365 days);
 
         // Infrastructure
-        allowList = createAllowList(trustedForwarder, admin);
-        feeSettings = createFeeSettings(trustedForwarder, admin, buildFeeTypes(0, 0, 0, admin, admin, admin));
+        allowList = createAllowList(TRUSTED_FORWARDER, ADMIN);
+        feeSettings = createFeeSettings(TRUSTED_FORWARDER, ADMIN, buildFeeTypes(0, 0, 0, ADMIN, ADMIN, ADMIN));
 
         eurc = new FakePaymentToken(0, 6);
 
-        vm.prank(admin);
+        vm.prank(ADMIN);
         allowList.set(address(eurc), TRUSTED_CURRENCY);
 
         // Token (requirements=0 so timeLock can freely transfer tokens)
-        address tokenLogic = address(new Token(trustedForwarder));
+        address tokenLogic = address(new Token(TRUSTED_FORWARDER));
         TokenProxyFactory tokenFactory = new TokenProxyFactory(tokenLogic);
         token = Token(
-            tokenFactory.createTokenProxy(0, trustedForwarder, feeSettings, admin, allowList, 0, "TestToken", "TTK")
+            tokenFactory.createTokenProxy(0, TRUSTED_FORWARDER, feeSettings, ADMIN, allowList, 0, "TestToken", "TTK")
         );
-        vm.startPrank(admin);
-        token.grantRole(token.MINTALLOWER_ROLE(), admin);
+        vm.startPrank(ADMIN);
+        token.grantRole(token.MINTALLOWER_ROLE(), ADMIN);
         vm.stopPrank();
 
         // GlobalTokenExitRegistry
-        tokenExitRegistry = new GlobalTokenExitRegistry(trustedForwarder);
+        tokenExitRegistry = new GlobalTokenExitRegistry(TRUSTED_FORWARDER);
 
         // TimeLock (locked for 1 year)
-        TimeLock timeLockLogic = new TimeLock(trustedForwarder);
+        TimeLock timeLockLogic = new TimeLock(TRUSTED_FORWARDER);
         TimeLockCloneFactory timeLockFactory = new TimeLockCloneFactory(address(timeLockLogic));
         timeLock = TimeLock(
-            timeLockFactory.createTimeLockClone(bytes32(0), trustedForwarder, owner, timeLockExpiry, tokenExitRegistry)
+            timeLockFactory.createTimeLockClone(bytes32(0), TRUSTED_FORWARDER, OWNER, timeLockExpiry, tokenExitRegistry)
         );
 
         // Mint tokens directly to timeLock
-        vm.prank(admin);
+        vm.prank(ADMIN);
         token.mint(address(timeLock), TOKEN_AMOUNT);
 
         // Exit factory
-        exitLogic = new Exit(trustedForwarder);
+        exitLogic = new Exit(TRUSTED_FORWARDER);
         exitFactory = new ExitCloneFactory(address(exitLogic));
     }
 
@@ -107,7 +107,7 @@ contract TimeLockDistributeExitTest is Test {
     ) internal returns (Exit) {
         uint256 totalCurrency = (TOKEN_AMOUNT * pricePerToken) / (10 ** token.decimals());
         ExitInitializerArguments memory args = ExitInitializerArguments({
-            owner: owner,
+            owner: OWNER,
             token: token,
             currency: IERC20(address(eurc)),
             pricePerToken: pricePerToken,
@@ -116,11 +116,11 @@ contract TimeLockDistributeExitTest is Test {
             referenceCurrencies: referenceCurrencies,
             referenceToExitRates: rates
         });
-        address cloneAddr = exitFactory.predictCloneAddress(bytes32(0), trustedForwarder, args);
-        eurc.mint(currencyProvider, totalCurrency);
-        vm.prank(currencyProvider);
+        address cloneAddr = exitFactory.predictCloneAddress(bytes32(0), TRUSTED_FORWARDER, args);
+        eurc.mint(CURRENCY_PROVIDER, totalCurrency);
+        vm.prank(CURRENCY_PROVIDER);
         eurc.approve(cloneAddr, totalCurrency);
-        return Exit(exitFactory.createExitClone(bytes32(0), trustedForwarder, currencyProvider, args, totalCurrency));
+        return Exit(exitFactory.createExitClone(bytes32(0), TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, totalCurrency));
     }
 
     function _deployExit(uint256 pricePerToken) internal returns (Exit) {
@@ -133,42 +133,42 @@ contract TimeLockDistributeExitTest is Test {
     function testDistributeExitBeforeLockedUntil() public {
         Exit exitContract = _deployExit(200e6);
 
-        vm.prank(admin);
+        vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
 
         // Still locked (timeLockExpiry = now + 365 days)
         assertLt(block.timestamp, timeLockExpiry, "should still be locked");
 
         vm.warp(claimStart);
-        vm.prank(owner);
-        timeLock.claimExit(token, recipient, 0);
+        vm.prank(OWNER);
+        timeLock.claimExit(token, RECIPIENT, 0);
 
         assertEq(token.balanceOf(address(timeLock)), 0, "timeLock should have no tokens after exit");
         assertEq(
-            eurc.balanceOf(recipient),
+            eurc.balanceOf(RECIPIENT),
             (TOKEN_AMOUNT * 200e6) / (10 ** token.decimals()),
-            "recipient got wrong amount"
+            "RECIPIENT got wrong amount"
         );
     }
 
     /// drain() still blocks before lockedUntil (when no exit is set)
     function testDrainStillBlockedBeforeLockedUntil() public {
         // No exit is set — drain must be blocked
-        vm.prank(owner);
+        vm.prank(OWNER);
         vm.expectRevert("timelock has not expired");
-        timeLock.drain(IERC20(address(token)), recipient);
+        timeLock.drain(IERC20(address(token)), RECIPIENT);
     }
 
     /// drain() is still blocked before lockedUntil even after setExit is called
     function testDrainStillBlockedAfterExitSet() public {
         Exit exitContract = _deployExit(200e6);
 
-        vm.prank(admin);
+        vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
 
-        vm.prank(owner);
+        vm.prank(OWNER);
         vm.expectRevert("timelock has not expired");
-        timeLock.drain(IERC20(address(token)), recipient);
+        timeLock.drain(IERC20(address(token)), RECIPIENT);
     }
 
     // ── Revert cases ─────────────────────────────────────────────────────────
@@ -176,32 +176,32 @@ contract TimeLockDistributeExitTest is Test {
     /// Reverts when no exit is set in tokenExitRegistry
     function testDistributeExitRevertsIfNoExitRegistered() public {
         vm.warp(claimStart);
-        vm.prank(owner);
+        vm.prank(OWNER);
         vm.expectRevert("no exit set in tokenExitRegistry");
-        timeLock.claimExit(token, recipient, 0);
+        timeLock.claimExit(token, RECIPIENT, 0);
     }
 
-    /// Reverts when recipient is zero address
+    /// Reverts when RECIPIENT is zero address
     function testDistributeExitRevertsIfRecipientZero() public {
         Exit exitContract = _deployExit(200e6);
-        vm.prank(admin);
+        vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
 
         vm.warp(claimStart);
-        vm.prank(owner);
-        vm.expectRevert("recipient can not be zero address");
+        vm.prank(OWNER);
+        vm.expectRevert("RECIPIENT can not be zero address");
         timeLock.claimExit(token, address(0), 0);
     }
 
-    /// Only owner can call claimExit
+    /// Only OWNER can call claimExit
     function testDistributeExitRevertsIfNotOwner() public {
         Exit exitContract = _deployExit(200e6);
-        vm.prank(admin);
+        vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
 
         vm.warp(claimStart);
-        vm.expectRevert("Ownable: caller is not the owner");
-        timeLock.claimExit(token, recipient, 0);
+        vm.expectRevert("Ownable: caller is not the OWNER");
+        timeLock.claimExit(token, RECIPIENT, 0);
     }
 
     /// Reverts when timeLock holds no tokens (drain after lock expires, then try claimExit)
@@ -210,19 +210,19 @@ contract TimeLockDistributeExitTest is Test {
 
         // Drain all tokens after timeLockExpiry has passed
         vm.warp(timeLockExpiry);
-        vm.prank(owner);
-        timeLock.drain(IERC20(address(token)), recipient);
+        vm.prank(OWNER);
+        timeLock.drain(IERC20(address(token)), RECIPIENT);
 
         assertEq(token.balanceOf(address(timeLock)), 0, "timeLock should have no tokens after drain");
 
         // Now set exit and try claimExit — should revert because no tokens remain
-        vm.prank(admin);
+        vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
 
         vm.warp(timeLockExpiry + 1 days);
-        vm.prank(owner);
+        vm.prank(OWNER);
         vm.expectRevert("no tokens to exit");
-        timeLock.claimExit(token, recipient, 0);
+        timeLock.claimExit(token, RECIPIENT, 0);
     }
 
     // ── minPayout passthrough (stub-based) ───────────────────────────────────
@@ -233,12 +233,12 @@ contract TimeLockDistributeExitTest is Test {
         eurc.mint(address(this), minPayout);
         FixedPayoutExit stub = new FixedPayoutExit(IERC20(address(eurc)), minPayout);
         IERC20(address(eurc)).transfer(address(stub), minPayout);
-        vm.prank(admin);
+        vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(stub)));
 
-        vm.prank(owner);
-        timeLock.claimExit(token, recipient, minPayout);
-        assertEq(eurc.balanceOf(recipient), minPayout, "recipient should receive exactly minPayout");
+        vm.prank(OWNER);
+        timeLock.claimExit(token, RECIPIENT, minPayout);
+        assertEq(eurc.balanceOf(RECIPIENT), minPayout, "RECIPIENT should receive exactly minPayout");
     }
 
     /// FixedPayoutDistribution pays exactly _minPayout: claimDistribution succeeds
@@ -248,9 +248,9 @@ contract TimeLockDistributeExitTest is Test {
         FixedPayoutDistribution stub = new FixedPayoutDistribution(IERC20(address(eurc)), minPayout);
         IERC20(address(eurc)).transfer(address(stub), minPayout);
 
-        vm.prank(owner);
-        timeLock.claimDistribution(Distribution(address(stub)), recipient, minPayout);
-        assertEq(eurc.balanceOf(recipient), minPayout, "recipient should receive exactly minPayout");
+        vm.prank(OWNER);
+        timeLock.claimDistribution(Distribution(address(stub)), RECIPIENT, minPayout);
+        assertEq(eurc.balanceOf(RECIPIENT), minPayout, "RECIPIENT should receive exactly minPayout");
     }
 
     // ── referenceToExitRate ──────────────────────────────────────────────────
@@ -260,7 +260,7 @@ contract TimeLockDistributeExitTest is Test {
     /// to an exit without reference rates.
     function testClaimExitPayoutUnaffectedByReferenceRates() public {
         FakePaymentToken eure = new FakePaymentToken(0, 18);
-        vm.prank(admin);
+        vm.prank(ADMIN);
         allowList.set(address(eure), TRUSTED_CURRENCY);
 
         IERC20[] memory referenceCurrencies = new IERC20[](1);
@@ -272,15 +272,15 @@ contract TimeLockDistributeExitTest is Test {
 
         assertEq(exitContract.referenceToExitRate(IERC20(address(eure))), 1e6, "rate not stored");
 
-        vm.prank(admin);
+        vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
 
         vm.warp(claimStart);
-        vm.prank(owner);
-        timeLock.claimExit(token, recipient, 0);
+        vm.prank(OWNER);
+        timeLock.claimExit(token, RECIPIENT, 0);
 
         uint256 expectedPayout = (TOKEN_AMOUNT * 200e6) / (10 ** token.decimals());
-        assertEq(eurc.balanceOf(recipient), expectedPayout, "wrong payout");
+        assertEq(eurc.balanceOf(RECIPIENT), expectedPayout, "wrong payout");
         assertEq(token.balanceOf(address(timeLock)), 0, "timeLock should have no tokens");
     }
 }

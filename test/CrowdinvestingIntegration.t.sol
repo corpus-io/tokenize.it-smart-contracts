@@ -15,55 +15,55 @@ contract CrowdinvestingTest is Test {
     AllowList list;
     FeeSettings feeSettings;
 
-    Token implementation = new Token(trustedForwarder);
+    Token implementation = new Token(TRUSTED_FORWARDER);
     TokenProxyFactory tokenFactory = new TokenProxyFactory(address(implementation));
     Token token;
     FakePaymentToken paymentToken;
     CrowdinvestingCloneFactory fundraisingFactory;
 
-    address public constant platformAdmin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
-    address public constant investor = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
-    address public constant mintAllower = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
-    address public constant minter = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
-    address public constant companyOwner = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
-    address public constant receiver = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
-    address public constant paymentTokenProvider = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
-    address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
+    address public constant PLATFORM_ADMIN = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
+    address public constant INVESTOR = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
+    address public constant MINT_ALLOWER = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
+    address public constant MINTER = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
+    address public constant COMPANY_OWNER = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
+    address public constant RECEIVER = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
+    address public constant PAYMENT_TOKEN_PROVIDER = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
+    address public constant TRUSTED_FORWARDER = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
 
-    uint8 public constant paymentTokenDecimals = 6;
-    uint256 public constant paymentTokenAmount = 1000 * 10 ** paymentTokenDecimals;
+    uint8 public constant PAYMENT_TOKEN_DECIMALS = 6;
+    uint256 public constant PAYMENT_TOKEN_AMOUNT = 1000 * 10 ** PAYMENT_TOKEN_DECIMALS;
 
-    uint256 public constant price = 7 * 10 ** paymentTokenDecimals; // 7 payment tokens per token
+    uint256 public constant PRICE = 7 * 10 ** PAYMENT_TOKEN_DECIMALS; // 7 payment tokens per token
 
-    uint256 public constant maxAmountOfTokenToBeSold = 20 * 10 ** 18; // 20 token
-    uint256 public constant maxAmountPerBuyer = maxAmountOfTokenToBeSold / 2; // 10 token
-    uint256 public constant minAmountPerBuyer = maxAmountOfTokenToBeSold / 200; // 0.1 token
+    uint256 public constant MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD = 20 * 10 ** 18; // 20 token
+    uint256 public constant MAX_AMOUNT_PER_BUYER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 2; // 10 token
+    uint256 public constant MIN_AMOUNT_PER_BUYER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 200; // 0.1 token
 
     function setUp() public {
         // set up currency
-        vm.prank(paymentTokenProvider);
-        paymentToken = new FakePaymentToken(paymentTokenAmount, paymentTokenDecimals); // 1000 tokens with 6 decimals
+        vm.prank(PAYMENT_TOKEN_PROVIDER);
+        paymentToken = new FakePaymentToken(PAYMENT_TOKEN_AMOUNT, PAYMENT_TOKEN_DECIMALS); // 1000 tokens with 6 decimals
         // transfer currency to buyer
-        vm.prank(paymentTokenProvider);
-        paymentToken.transfer(investor, paymentTokenAmount);
-        assertTrue(paymentToken.balanceOf(investor) == paymentTokenAmount);
+        vm.prank(PAYMENT_TOKEN_PROVIDER);
+        paymentToken.transfer(INVESTOR, PAYMENT_TOKEN_AMOUNT);
+        assertTrue(paymentToken.balanceOf(INVESTOR) == PAYMENT_TOKEN_AMOUNT);
 
-        list = createAllowList(trustedForwarder, platformAdmin);
-        vm.prank(platformAdmin);
+        list = createAllowList(TRUSTED_FORWARDER, PLATFORM_ADMIN);
+        vm.prank(PLATFORM_ADMIN);
         list.set(address(paymentToken), TRUSTED_CURRENCY);
 
         feeSettings = createFeeSettings(
-            trustedForwarder,
-            platformAdmin,
-            buildFeeTypes(100, 100, 100, platformAdmin, platformAdmin, platformAdmin)
+            TRUSTED_FORWARDER,
+            PLATFORM_ADMIN,
+            buildFeeTypes(100, 100, 100, PLATFORM_ADMIN, PLATFORM_ADMIN, PLATFORM_ADMIN)
         );
-        vm.prank(platformAdmin);
+        vm.prank(PLATFORM_ADMIN);
         token = Token(
             tokenFactory.createTokenProxy(
                 0,
-                trustedForwarder,
+                TRUSTED_FORWARDER,
                 feeSettings,
-                companyOwner,
+                COMPANY_OWNER,
                 list,
                 0x0,
                 "TESTTOKEN",
@@ -71,19 +71,19 @@ contract CrowdinvestingTest is Test {
             )
         );
 
-        vm.prank(companyOwner);
+        vm.prank(COMPANY_OWNER);
 
-        fundraisingFactory = new CrowdinvestingCloneFactory(address(new Crowdinvesting(trustedForwarder)));
+        fundraisingFactory = new CrowdinvestingCloneFactory(address(new Crowdinvesting(TRUSTED_FORWARDER)));
 
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             address(this),
-            payable(receiver),
-            minAmountPerBuyer,
-            maxAmountPerBuyer,
-            price,
-            price,
-            price,
-            maxAmountOfTokenToBeSold,
+            payable(RECEIVER),
+            MIN_AMOUNT_PER_BUYER,
+            MAX_AMOUNT_PER_BUYER,
+            PRICE,
+            PRICE,
+            PRICE,
+            MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD,
             paymentToken,
             token,
             0,
@@ -91,19 +91,19 @@ contract CrowdinvestingTest is Test {
             address(0)
         );
 
-        crowdinvesting = Crowdinvesting(fundraisingFactory.createCrowdinvestingClone(0, trustedForwarder, arguments));
+        crowdinvesting = Crowdinvesting(fundraisingFactory.createCrowdinvestingClone(0, TRUSTED_FORWARDER, arguments));
 
         // allow crowdinvesting contract to mint
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
-        vm.prank(companyOwner);
-        token.grantRole(roleMintAllower, mintAllower);
-        vm.prank(mintAllower);
-        token.increaseMintingAllowance(address(crowdinvesting), maxAmountOfTokenToBeSold);
+        vm.prank(COMPANY_OWNER);
+        token.grantRole(roleMintAllower, MINT_ALLOWER);
+        vm.prank(MINT_ALLOWER);
+        token.increaseMintingAllowance(address(crowdinvesting), MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD);
 
         // give crowdinvesting contract allowance
-        vm.prank(investor);
-        paymentToken.approve(address(crowdinvesting), paymentTokenAmount);
+        vm.prank(INVESTOR);
+        paymentToken.approve(address(crowdinvesting), PAYMENT_TOKEN_AMOUNT);
     }
 
     /*
@@ -112,18 +112,18 @@ contract CrowdinvestingTest is Test {
     function feeCalculation(uint32 tokenFeeNumerator, uint32 crowdinvestingFeeNumerator) public {
         // apply fees for test
         uint64 activationDate = uint64(block.timestamp + 13 weeks);
-        vm.prank(platformAdmin);
+        vm.prank(PLATFORM_ADMIN);
         feeSettings.planFeeChange(FeeTypes.TOKEN, tokenFeeNumerator, activationDate);
-        vm.prank(platformAdmin);
+        vm.prank(PLATFORM_ADMIN);
         feeSettings.planFeeChange(FeeTypes.CROWDINVESTING, crowdinvestingFeeNumerator, activationDate);
-        vm.prank(platformAdmin);
+        vm.prank(PLATFORM_ADMIN);
         feeSettings.planFeeChange(FeeTypes.PRIVATE_OFFER, crowdinvestingFeeNumerator, activationDate);
         vm.warp(activationDate + 1 seconds);
-        vm.prank(platformAdmin);
+        vm.prank(PLATFORM_ADMIN);
         feeSettings.executeFeeChange(FeeTypes.TOKEN);
-        vm.prank(platformAdmin);
+        vm.prank(PLATFORM_ADMIN);
         feeSettings.executeFeeChange(FeeTypes.CROWDINVESTING);
-        vm.prank(platformAdmin);
+        vm.prank(PLATFORM_ADMIN);
         feeSettings.executeFeeChange(FeeTypes.PRIVATE_OFFER);
 
         uint8 _paymentTokenDecimals = 6;
@@ -138,20 +138,20 @@ contract CrowdinvestingTest is Test {
         /*
         _paymentToken: 1 FPT = 10**_paymentTokenDecimals FPTbits (bit = smallest subunit of token)
         Token: 1 CT = 10**18 CTbits
-        price definition: 30FPT buy 1CT, but must be expressed in FPTbits/CT
-        price = 30 * 10**_paymentTokenDecimals
+        PRICE definition: 30FPT buy 1CT, but must be expressed in FPTbits/CT
+        PRICE = 30 * 10**_paymentTokenDecimals
         */
         uint256 _price = 30 * 10 ** _paymentTokenDecimals;
         uint256 _maxMintAmount = 2 ** 256 - 1; // need maximum possible value because we are using a fake token with variable decimals
         uint256 _paymentTokenAmount = 1000 * 10 ** _paymentTokenDecimals;
 
-        list = createAllowList(trustedForwarder, platformAdmin);
+        list = createAllowList(TRUSTED_FORWARDER, PLATFORM_ADMIN);
         Token _token = Token(
             tokenFactory.createTokenProxy(
                 0,
-                trustedForwarder,
+                TRUSTED_FORWARDER,
                 feeSettings,
-                companyOwner,
+                COMPANY_OWNER,
                 list,
                 0x0,
                 "FEETESTTOKEN",
@@ -159,15 +159,15 @@ contract CrowdinvestingTest is Test {
             )
         );
 
-        vm.prank(paymentTokenProvider);
+        vm.prank(PAYMENT_TOKEN_PROVIDER);
         paymentToken = new FakePaymentToken(_paymentTokenAmount, _paymentTokenDecimals);
-        vm.prank(platformAdmin);
+        vm.prank(PLATFORM_ADMIN);
         list.set(address(paymentToken), TRUSTED_CURRENCY);
 
-        vm.prank(companyOwner);
+        vm.prank(COMPANY_OWNER);
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             address(this),
-            payable(receiver),
+            payable(RECEIVER),
             1,
             _maxMintAmount / 100,
             _price,
@@ -182,24 +182,24 @@ contract CrowdinvestingTest is Test {
         );
 
         Crowdinvesting _crowdinvesting = Crowdinvesting(
-            fundraisingFactory.createCrowdinvestingClone(0, trustedForwarder, arguments)
+            fundraisingFactory.createCrowdinvestingClone(0, TRUSTED_FORWARDER, arguments)
         );
 
         // allow invite contract to mint
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
-        vm.prank(companyOwner);
-        _token.grantRole(roleMintAllower, mintAllower);
-        vm.prank(mintAllower);
+        vm.prank(COMPANY_OWNER);
+        _token.grantRole(roleMintAllower, MINT_ALLOWER);
+        vm.prank(MINT_ALLOWER);
         _token.increaseMintingAllowance(address(_crowdinvesting), _maxMintAmount);
 
         // mint _paymentToken for buyer
-        vm.prank(paymentTokenProvider);
-        paymentToken.transfer(investor, _paymentTokenAmount);
-        assertTrue(paymentToken.balanceOf(investor) == _paymentTokenAmount);
+        vm.prank(PAYMENT_TOKEN_PROVIDER);
+        paymentToken.transfer(INVESTOR, _paymentTokenAmount);
+        assertTrue(paymentToken.balanceOf(INVESTOR) == _paymentTokenAmount);
 
         // give invite contract allowance
-        vm.prank(investor);
+        vm.prank(INVESTOR);
         paymentToken.approve(address(_crowdinvesting), _paymentTokenAmount);
 
         // run actual test
@@ -207,15 +207,15 @@ contract CrowdinvestingTest is Test {
         uint tokenAmount = 33 * 10 ** token.decimals();
 
         // buyer has 1k FPT
-        assertTrue(paymentToken.balanceOf(investor) == _paymentTokenAmount);
+        assertTrue(paymentToken.balanceOf(INVESTOR) == _paymentTokenAmount);
         // they should be able to buy 33 CT for 999 FPT
-        vm.prank(investor);
-        _crowdinvesting.buy(tokenAmount, type(uint256).max, investor);
+        vm.prank(INVESTOR);
+        _crowdinvesting.buy(tokenAmount, type(uint256).max, INVESTOR);
         // buyer should have 10 FPT left
-        assertTrue(paymentToken.balanceOf(investor) == 10 * 10 ** _paymentTokenDecimals);
+        assertTrue(paymentToken.balanceOf(INVESTOR) == 10 * 10 ** _paymentTokenDecimals);
         // buyer should have the 33 CT they bought
-        assertTrue(_token.balanceOf(investor) == tokenAmount, "buyer has wrong amount of token");
-        // receiver should have the 990 FPT that were paid, minus the fee
+        assertTrue(_token.balanceOf(INVESTOR) == tokenAmount, "buyer has wrong amount of token");
+        // RECEIVER should have the 990 FPT that were paid, minus the fee
 
         uint currencyAmount = 990 * 10 ** _paymentTokenDecimals;
         uint256 currencyFee = FeeSettings(address(token.feeSettings())).crowdinvestingFee(
@@ -223,8 +223,8 @@ contract CrowdinvestingTest is Test {
             address(_token)
         );
         assertTrue(
-            paymentToken.balanceOf(receiver) == currencyAmount - currencyFee,
-            "receiver has wrong amount of currency"
+            paymentToken.balanceOf(RECEIVER) == currencyAmount - currencyFee,
+            "RECEIVER has wrong amount of currency"
         );
         // fee collector should have the token and currency fees
         assertEq(
@@ -264,20 +264,20 @@ contract CrowdinvestingTest is Test {
             /*
             _paymentToken: 1 FPT = 10**_paymentTokenDecimals FPTbits (bit = smallest subunit of token)
             Token: 1 CT = 10**18 CTbits
-            price definition: 30FPT buy 1CT, but must be expressed in FPTbits/CT
-            price = 30 * 10**_paymentTokenDecimals
+            PRICE definition: 30FPT buy 1CT, but must be expressed in FPTbits/CT
+            PRICE = 30 * 10**_paymentTokenDecimals
             */
             uint256 _price = 30 * 10 ** _paymentTokenDecimals;
             uint256 _maxMintAmount = 2 ** 256 - 1; // need maximum possible value because we are using a fake token with variable decimals
             uint256 _paymentTokenAmount = 1000 * 10 ** _paymentTokenDecimals;
 
-            list = createAllowList(trustedForwarder, platformAdmin);
+            list = createAllowList(TRUSTED_FORWARDER, PLATFORM_ADMIN);
             Token _token = Token(
                 tokenFactory.createTokenProxy(
                     0,
-                    trustedForwarder,
+                    TRUSTED_FORWARDER,
                     feeSettings,
-                    companyOwner,
+                    COMPANY_OWNER,
                     list,
                     0x0,
                     "DECIMALSTESTTOKEN",
@@ -285,16 +285,16 @@ contract CrowdinvestingTest is Test {
                 )
             );
 
-            vm.prank(paymentTokenProvider);
+            vm.prank(PAYMENT_TOKEN_PROVIDER);
             paymentToken = new FakePaymentToken(_paymentTokenAmount, _paymentTokenDecimals);
-            vm.prank(platformAdmin);
+            vm.prank(PLATFORM_ADMIN);
             list.set(address(paymentToken), TRUSTED_CURRENCY);
 
-            vm.prank(companyOwner);
+            vm.prank(COMPANY_OWNER);
 
             CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
                 address(this),
-                payable(receiver),
+                payable(RECEIVER),
                 1,
                 _maxMintAmount / 100,
                 _price,
@@ -309,23 +309,23 @@ contract CrowdinvestingTest is Test {
             );
 
             Crowdinvesting _crowdinvesting = Crowdinvesting(
-                fundraisingFactory.createCrowdinvestingClone(0, trustedForwarder, arguments)
+                fundraisingFactory.createCrowdinvestingClone(0, TRUSTED_FORWARDER, arguments)
             );
             // allow invite contract to mint
             bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
-            vm.prank(companyOwner);
-            _token.grantRole(roleMintAllower, mintAllower);
-            vm.prank(mintAllower);
+            vm.prank(COMPANY_OWNER);
+            _token.grantRole(roleMintAllower, MINT_ALLOWER);
+            vm.prank(MINT_ALLOWER);
             _token.increaseMintingAllowance(address(_crowdinvesting), _maxMintAmount);
 
             // mint _paymentToken for buyer
-            vm.prank(paymentTokenProvider);
-            paymentToken.transfer(investor, _paymentTokenAmount);
-            assertTrue(paymentToken.balanceOf(investor) == _paymentTokenAmount);
+            vm.prank(PAYMENT_TOKEN_PROVIDER);
+            paymentToken.transfer(INVESTOR, _paymentTokenAmount);
+            assertTrue(paymentToken.balanceOf(INVESTOR) == _paymentTokenAmount);
 
             // give invite contract allowance
-            vm.prank(investor);
+            vm.prank(INVESTOR);
             paymentToken.approve(address(_crowdinvesting), _paymentTokenAmount);
 
             // run actual test
@@ -333,23 +333,23 @@ contract CrowdinvestingTest is Test {
             uint tokenAmount = 33 * 10 ** token.decimals();
 
             // buyer has 1k FPT
-            assertTrue(paymentToken.balanceOf(investor) == _paymentTokenAmount);
+            assertTrue(paymentToken.balanceOf(INVESTOR) == _paymentTokenAmount);
             // they should be able to buy 33 CT for 999 FPT
-            vm.prank(investor);
-            _crowdinvesting.buy(tokenAmount, type(uint256).max, investor);
+            vm.prank(INVESTOR);
+            _crowdinvesting.buy(tokenAmount, type(uint256).max, INVESTOR);
             // buyer should have 10 FPT left
-            assertTrue(paymentToken.balanceOf(investor) == 10 * 10 ** _paymentTokenDecimals);
+            assertTrue(paymentToken.balanceOf(INVESTOR) == 10 * 10 ** _paymentTokenDecimals);
             // buyer should have the 33 CT they bought
-            assertTrue(_token.balanceOf(investor) == tokenAmount, "buyer has wrong amount of token");
-            // receiver should have the 990 FPT that were paid, minus the fee
+            assertTrue(_token.balanceOf(INVESTOR) == tokenAmount, "buyer has wrong amount of token");
+            // RECEIVER should have the 990 FPT that were paid, minus the fee
             uint currencyAmount = 990 * 10 ** _paymentTokenDecimals;
             uint256 currencyFee = FeeSettings(address(token.feeSettings())).crowdinvestingFee(
                 currencyAmount,
                 address(_token)
             );
             assertTrue(
-                paymentToken.balanceOf(receiver) == currencyAmount - currencyFee,
-                "receiver has wrong amount of currency"
+                paymentToken.balanceOf(RECEIVER) == currencyAmount - currencyFee,
+                "RECEIVER has wrong amount of currency"
             );
             // fee collector should have the token and currency fees
             assertEq(

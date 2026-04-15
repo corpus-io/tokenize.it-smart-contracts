@@ -19,29 +19,29 @@ contract FeeSettingERC2771Test is Test {
     ERC2771Helper ERC2771helper;
 
     // DO NOT USE IN PRODUCTION! Key was generated online for testing only.
-    uint256 public constant platformHotWalletPrivateKey =
+    uint256 public constant PLATFORM_HOT_WALLET_PRIVATE_KEY =
         0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
-    address public platformHotWallet = vm.addr(platformHotWalletPrivateKey); // = 0x38d6703d37988C644D6d31551e9af6dcB762E618;
+    address public platformHotWallet = vm.addr(PLATFORM_HOT_WALLET_PRIVATE_KEY); // = 0x38d6703d37988C644D6d31551e9af6dcB762E618;
 
-    address public constant mintAllower = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
-    address public constant relayer = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
+    address public constant MINT_ALLOWER = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
+    address public constant RELAYER = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
 
-    address public constant receiver = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
-    address public constant companyAdmin = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
-    address public constant sender = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
+    address public constant RECEIVER = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
+    address public constant COMPANY_ADMIN = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
+    address public constant SENDER = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
 
-    address public constant platformColdWallet = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
-    address public constant feeCollector = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
+    address public constant PLATFORM_COLD_WALLET = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
+    address public constant FEE_COLLECTOR = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
 
-    uint32 public constant feeSettingsFeeNumerator = 100;
-    uint32 public constant crowdinvestingFeeNumerator = 50;
-    uint32 public constant privateOfferFeeNumerator = 70;
+    uint32 public constant FEE_SETTINGS_FEE_NUMERATOR = 100;
+    uint32 public constant CROWDINVESTING_FEE_NUMERATOR = 50;
+    uint32 public constant PRIVATE_OFFER_FEE_NUMERATOR = 70;
 
     bytes32 domainSeparator;
     bytes32 requestType;
 
     function setUp() public {
-        vm.prank(platformColdWallet);
+        vm.prank(PLATFORM_COLD_WALLET);
 
         // deploy helper functions (only for testing with foundry)
         ERC2771helper = new ERC2771Helper();
@@ -51,19 +51,19 @@ contract FeeSettingERC2771Test is Test {
         // this is part of the platform setup, but we need it here to use the correct forwarder
         feeSettings = createFeeSettings(
             address(forwarder),
-            platformColdWallet,
+            PLATFORM_COLD_WALLET,
             buildFeeTypes(
-                feeSettingsFeeNumerator,
-                crowdinvestingFeeNumerator,
-                privateOfferFeeNumerator,
-                feeCollector,
-                feeCollector,
-                feeCollector
+                FEE_SETTINGS_FEE_NUMERATOR,
+                CROWDINVESTING_FEE_NUMERATOR,
+                PRIVATE_OFFER_FEE_NUMERATOR,
+                FEE_COLLECTOR,
+                FEE_COLLECTOR,
+                FEE_COLLECTOR
             )
         );
 
         // make platform hot wallet a manager
-        vm.prank(platformColdWallet);
+        vm.prank(PLATFORM_COLD_WALLET);
         feeSettings.addManager(platformHotWallet);
 
         // log fee settings address
@@ -134,7 +134,7 @@ contract FeeSettingERC2771Test is Test {
         );
 
         // 3. sign request
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(platformHotWalletPrivateKey, digest);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(PLATFORM_HOT_WALLET_PRIVATE_KEY, digest);
         bytes memory signature = abi.encodePacked(r, s, v); // https://docs.openzeppelin.com/contracts/2.x/utilities
 
         require(digest.recover(signature) == request.from, "FWD: signature mismatch");
@@ -152,7 +152,7 @@ contract FeeSettingERC2771Test is Test {
 
         // 5.  execute request
         // send call through forwarder contract
-        vm.prank(relayer);
+        vm.prank(RELAYER);
         _forwarder.execute(request, domainSeparator, requestType, suffixData, signature);
         /*
             try to execute request again (must fail)
