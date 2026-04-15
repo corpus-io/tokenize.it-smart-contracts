@@ -57,6 +57,40 @@ contract FeeSettings is
     }
 
     /**
+     * @notice Input entry for planFeeChanges().
+     * @param feeType          The fee type identifier.
+     * @param numerator        The proposed new default numerator.
+     * @param activationDate   Unix timestamp after which the change can be executed.
+     */
+    struct FeeChangeEntry {
+        bytes32 feeType;
+        uint32 numerator;
+        uint64 activationDate;
+    }
+
+    /**
+     * @notice Input entry for setCustomFees().
+     * @param feeType      The fee type identifier.
+     * @param numerator    The discounted fee numerator.
+     * @param validityDate Unix timestamp until which the discount is valid.
+     */
+    struct CustomFeeEntry {
+        bytes32 feeType;
+        uint32 numerator;
+        uint64 validityDate;
+    }
+
+    /**
+     * @notice Input entry for setCustomFeeCollectors().
+     * @param feeType   The fee type identifier.
+     * @param collector The fee collector address.
+     */
+    struct CustomFeeCollectorEntry {
+        bytes32 feeType;
+        address collector;
+    }
+
+    /**
      * @notice A pending custom discount for a specific token.
      * @param numerator    The discounted fee numerator.
      * @param validityDate Unix timestamp up to which the discount is valid.
@@ -218,38 +252,37 @@ contract FeeSettings is
     // -------------------------------------------------------------------------
 
     /**
-     * @notice Proposes a new default numerator for a fee type.
-     *      If the numerator increases, the activation date must be at least 12 weeks in the future.
-     * @param _feeType        The fee type to change
-     * @param _numerator      The new default numerator
-     * @param _activationDate Unix timestamp after which executeFeeChange can be called
+     * @notice Proposes new default numerators for multiple fee types in one transaction.
+     * @param _feeChanges Array of fee type / numerator / activationDate entries
      */
-    function planFeeChange(bytes32 _feeType, uint32 _numerator, uint64 _activationDate) external onlyOwner {
-        FeeTypeConfig storage config = feeTypeConfigs[_feeType];
-        require(config.maxNumerator > 0, "unknown fee type");
-        require(_numerator <= config.maxNumerator, "exceeds max numerator");
-        if (_numerator > config.defaultNumerator) {
-            require(_activationDate > block.timestamp + 12 weeks, "fee increase needs 12 week delay");
+    function planFeeChanges(FeeChangeEntry[] calldata _feeChanges) external onlyOwner {
+        for (uint256 i = 0; i < _feeChanges.length; i++) {
+            FeeChangeEntry calldata entry = _feeChanges[i];
+            FeeTypeConfig storage config = feeTypeConfigs[entry.feeType];
+            require(config.maxNumerator > 0, "unknown fee type");
+            require(entry.numerator <= config.maxNumerator, "exceeds max numerator");
+            if (entry.numerator > config.defaultNumerator) {
+                require(entry.activationDate > block.timestamp + 12 weeks, "fee increase needs 12 week delay");
+            }
+            uint64 activationDate = entry.activationDate == 0 ? uint64(block.timestamp) : entry.activationDate;
+            proposedFeeChanges[entry.feeType] = ProposedFeeChange({numerator: entry.numerator, activationDate: activationDate});
+            emit FeeChangeProposed(entry.feeType, entry.numerator, activationDate);
         }
-        // activationDate=0 means "immediately" — store block.timestamp so executeFeeChange sentinel works
-        if (_activationDate == 0) {
-            _activationDate = uint64(block.timestamp);
-        }
-        proposedFeeChanges[_feeType] = ProposedFeeChange({numerator: _numerator, activationDate: _activationDate});
-        emit FeeChangeProposed(_feeType, _numerator, _activationDate);
     }
 
     /**
-     * @notice Executes a previously planned default fee change.
-     * @param _feeType The fee type to update
+     * @notice Executes previously planned default fee changes for multiple fee types.
+     * @param _feeTypes Array of fee type identifiers to execute
      */
-    function executeFeeChange(bytes32 _feeType) external onlyOwner {
-        ProposedFeeChange memory proposal = proposedFeeChanges[_feeType];
-        require(proposal.activationDate != 0, "no proposed fee change");
-        require(block.timestamp >= proposal.activationDate, "activation date not reached");
-        feeTypeConfigs[_feeType].defaultNumerator = proposal.numerator;
-        delete proposedFeeChanges[_feeType];
-        emit FeeChanged(_feeType, proposal.numerator);
+    function executeFeeChanges(bytes32[] calldata _feeTypes) external onlyOwner {
+        for (uint256 i = 0; i < _feeTypes.length; i++) {
+            ProposedFeeChange memory proposal = proposedFeeChanges[_feeTypes[i]];
+            require(proposal.activationDate != 0, "no proposed fee change");
+            require(block.timestamp >= proposal.activationDate, "activation date not reached");
+            feeTypeConfigs[_feeTypes[i]].defaultNumerator = proposal.numerator;
+            delete proposedFeeChanges[_feeTypes[i]];
+            emit FeeChanged(_feeTypes[i], proposal.numerator);
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -257,36 +290,33 @@ contract FeeSettings is
     // -------------------------------------------------------------------------
 
     /**
-     * @notice Sets a custom fee discount for a specific token on a fee type.
-     *      Custom fees can only reduce the effective fee (the min of custom and default is used).
-     * @param _feeType      The fee type
-     * @param _token        The token address (must not be address(0))
-     * @param _numerator    The discounted numerator
-     * @param _validityDate Unix timestamp until which the discount is valid
+     * @notice Sets custom fee discounts for multiple fee types for a single token.
+     * @param _token   The token address (must not be address(0))
+     * @param _fees    Array of fee type / numerator / validityDate entries
      */
-    function setCustomFee(
-        bytes32 _feeType,
-        address _token,
-        uint32 _numerator,
-        uint64 _validityDate
-    ) external onlyManager {
-        require(feeTypeConfigs[_feeType].maxNumerator > 0, "unknown fee type");
+    function setCustomFees(address _token, CustomFeeEntry[] calldata _fees) external onlyManager {
         require(_token != address(0), "token cannot be 0x0");
-        require(_numerator <= feeTypeConfigs[_feeType].maxNumerator, "numerator exceeds max");
-        require(_validityDate > block.timestamp, "validity date must be in the future");
-        customFees[_feeType][_token] = CustomFee({numerator: _numerator, validityDate: _validityDate});
-        emit CustomFeeSet(_feeType, _token, _numerator, _validityDate);
+        for (uint256 i = 0; i < _fees.length; i++) {
+            CustomFeeEntry calldata entry = _fees[i];
+            require(feeTypeConfigs[entry.feeType].maxNumerator > 0, "unknown fee type");
+            require(entry.numerator <= feeTypeConfigs[entry.feeType].maxNumerator, "numerator exceeds max");
+            require(entry.validityDate > block.timestamp, "validity date must be in the future");
+            customFees[entry.feeType][_token] = CustomFee({numerator: entry.numerator, validityDate: entry.validityDate});
+            emit CustomFeeSet(entry.feeType, _token, entry.numerator, entry.validityDate);
+        }
     }
 
     /**
-     * @notice Removes a custom fee discount for a token, reverting to the type default.
-     * @param _feeType The fee type
-     * @param _token   The token address
+     * @notice Removes custom fee discounts for multiple fee types for a single token.
+     * @param _token     The token address (must not be address(0))
+     * @param _feeTypes  Array of fee type identifiers to remove discounts for
      */
-    function removeCustomFee(bytes32 _feeType, address _token) external onlyManager {
+    function removeCustomFees(address _token, bytes32[] calldata _feeTypes) external onlyManager {
         require(_token != address(0), "token cannot be 0x0");
-        delete customFees[_feeType][_token];
-        emit CustomFeeRemoved(_feeType, _token);
+        for (uint256 i = 0; i < _feeTypes.length; i++) {
+            delete customFees[_feeTypes[i]][_token];
+            emit CustomFeeRemoved(_feeTypes[i], _token);
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -306,28 +336,32 @@ contract FeeSettings is
     }
 
     /**
-     * @notice Sets a per-token fee collector override for a fee type. Manager only.
-     * @param _feeType   The fee type
-     * @param _token     The token address (must not be address(0))
-     * @param _collector The collector address (must not be address(0))
+     * @notice Sets per-token fee collector overrides for multiple fee types for a single token.
+     * @param _token       The token address (must not be address(0))
+     * @param _collectors  Array of fee type / collector entries
      */
-    function setCustomFeeCollector(bytes32 _feeType, address _token, address _collector) external onlyManager {
-        require(feeTypeConfigs[_feeType].maxNumerator > 0, "unknown fee type");
+    function setCustomFeeCollectors(address _token, CustomFeeCollectorEntry[] calldata _collectors) external onlyManager {
         require(_token != address(0), "token cannot be 0x0");
-        require(_collector != address(0), "collector cannot be 0x0");
-        collectors[_feeType][_token] = _collector;
-        emit FeeCollectorSet(_feeType, _token, _collector);
+        for (uint256 i = 0; i < _collectors.length; i++) {
+            CustomFeeCollectorEntry calldata entry = _collectors[i];
+            require(feeTypeConfigs[entry.feeType].maxNumerator > 0, "unknown fee type");
+            require(entry.collector != address(0), "collector cannot be 0x0");
+            collectors[entry.feeType][_token] = entry.collector;
+            emit FeeCollectorSet(entry.feeType, _token, entry.collector);
+        }
     }
 
     /**
-     * @notice Removes the per-token fee collector override, reverting to the type default.
-     * @param _feeType The fee type
-     * @param _token   The token address (must not be address(0))
+     * @notice Removes per-token fee collector overrides for multiple fee types for a single token.
+     * @param _token     The token address (must not be address(0))
+     * @param _feeTypes  Array of fee type identifiers to remove collector overrides for
      */
-    function removeCustomFeeCollector(bytes32 _feeType, address _token) external onlyManager {
+    function removeCustomFeeCollectors(address _token, bytes32[] calldata _feeTypes) external onlyManager {
         require(_token != address(0), "token cannot be 0x0");
-        delete collectors[_feeType][_token];
-        emit CustomFeeCollectorRemoved(_feeType, _token);
+        for (uint256 i = 0; i < _feeTypes.length; i++) {
+            delete collectors[_feeTypes[i]][_token];
+            emit CustomFeeCollectorRemoved(_feeTypes[i], _token);
+        }
     }
 
     // -------------------------------------------------------------------------
