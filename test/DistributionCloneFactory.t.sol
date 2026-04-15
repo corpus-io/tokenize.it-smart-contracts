@@ -198,7 +198,7 @@ contract DistributionCloneFactoryTest is Test {
     function testCurrencyProviderDoesNotAffectAddress(address _currencyProvider) public {
         vm.assume(_currencyProvider != address(0));
         DistributionInitializerArguments memory args = _baseArgs();
-        bytes32 salt = bytes32("salt");
+        bytes32 salt = bytes32(0);
         address cloneAddr = factory.predictCloneAddress(salt, trustedForwarder, args);
         currency.mint(_currencyProvider, EXAMPLE_INITIAL_FUNDING);
         vm.prank(_currencyProvider);
@@ -331,7 +331,7 @@ contract DistributionCloneFactoryTest is Test {
         DistributionInitializerArguments memory args = _baseArgs();
         args.currency = IERC20(address(badCurrency));
         vm.expectRevert("currency needs to be on the allowlist with TRUSTED_CURRENCY attribute");
-        factory.createDistributionClone(bytes32("bad"), trustedForwarder, currencyProvider, args, 0);
+        factory.createDistributionClone(bytes32(0), trustedForwarder, currencyProvider, args, 0);
     }
 
     function testTrustedNonEuroCurrencyAccepted() public {

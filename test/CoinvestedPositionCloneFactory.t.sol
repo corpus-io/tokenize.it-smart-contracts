@@ -287,7 +287,7 @@ contract CoinvestedPositionCloneFactoryTest is Test {
         CoinvestedPositionInitializerArguments memory args = _baseArgs();
         args.baseCurrency = IERC20(address(badCurrency));
         vm.expectRevert("currency needs to be on the allowlist with TRUSTED_CURRENCY attribute");
-        factory.createCoinvestedPositionClone(bytes32("bad1"), trustedForwarder, args);
+        factory.createCoinvestedPositionClone(bytes32(0), trustedForwarder, args);
     }
 
     function testTrustedCurrencyBitSucceeds() public {

@@ -163,7 +163,7 @@ contract ExitTest is Test {
             referenceToExitRates: new uint256[](0)
         });
         vm.expectRevert("price must be positive");
-        factory.createExitClone(bytes32("p0"), trustedForwarder, currencyProvider, args, 0);
+        factory.createExitClone(bytes32(0), trustedForwarder, currencyProvider, args, 0);
     }
 
     function testInitializeZeroClaimStartReverts() public {
@@ -178,7 +178,7 @@ contract ExitTest is Test {
             referenceToExitRates: new uint256[](0)
         });
         vm.expectRevert("claimStart must be set");
-        factory.createExitClone(bytes32("cs0"), trustedForwarder, currencyProvider, args, 0);
+        factory.createExitClone(bytes32(0), trustedForwarder, currencyProvider, args, 0);
     }
 
     function testInitializeDrainStartEqualToStartReverts() public {
@@ -193,7 +193,7 @@ contract ExitTest is Test {
             referenceToExitRates: new uint256[](0)
         });
         vm.expectRevert("lockedUntil must be after claimStart");
-        factory.createExitClone(bytes32("ce0"), trustedForwarder, currencyProvider, args, 0);
+        factory.createExitClone(bytes32(0), trustedForwarder, currencyProvider, args, 0);
     }
 
     function testInitializeCurrencyEqualsTokenReverts() public {
@@ -208,7 +208,7 @@ contract ExitTest is Test {
             referenceToExitRates: new uint256[](0)
         });
         vm.expectRevert("currency and token must be different");
-        factory.createExitClone(bytes32("cet"), trustedForwarder, currencyProvider, args, 0);
+        factory.createExitClone(bytes32(0), trustedForwarder, currencyProvider, args, 0);
     }
 
     function testInitializeNonTrustedCurrencyReverts() public {
@@ -225,7 +225,7 @@ contract ExitTest is Test {
             referenceToExitRates: new uint256[](0)
         });
         vm.expectRevert("currency needs to be on the allowlist with TRUSTED_CURRENCY attribute");
-        factory.createExitClone(bytes32("ntc"), trustedForwarder, currencyProvider, args, 0);
+        factory.createExitClone(bytes32(0), trustedForwarder, currencyProvider, args, 0);
     }
 
     function testInitializeInsufficientAllowanceReverts() public {
@@ -239,12 +239,13 @@ contract ExitTest is Test {
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
         });
-        address cloneAddr = factory.predictCloneAddress(bytes32("lowApproval"), trustedForwarder, args);
+        bytes32 salt = "3";
+        address cloneAddr = factory.predictCloneAddress(salt, trustedForwarder, args);
         currency.mint(currencyProvider, 1000e6);
         vm.prank(currencyProvider);
         currency.approve(cloneAddr, 999e6); // one unit short
         vm.expectRevert("ERC20: insufficient allowance");
-        factory.createExitClone(bytes32("lowApproval"), trustedForwarder, currencyProvider, args, 1000e6);
+        factory.createExitClone(salt, trustedForwarder, currencyProvider, args, 1000e6);
     }
 
     function testInitializeStateVariables() public view {
@@ -594,7 +595,7 @@ contract ExitTest is Test {
         );
         feeToken = Token(
             tokenFactory.createTokenProxy(
-                bytes32("feeTok"),
+                bytes32(0),
                 trustedForwarder,
                 feeSettingsWithFee,
                 admin,
@@ -619,13 +620,11 @@ contract ExitTest is Test {
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
         });
-        address cloneAddr = factory.predictCloneAddress(bytes32("feeExit"), trustedForwarder, args);
+        address cloneAddr = factory.predictCloneAddress(bytes32(0), trustedForwarder, args);
         currency.mint(currencyProvider, TOTAL_CURRENCY);
         vm.prank(currencyProvider);
         currency.approve(cloneAddr, TOTAL_CURRENCY);
-        feeExit = Exit(
-            factory.createExitClone(bytes32("feeExit"), trustedForwarder, currencyProvider, args, TOTAL_CURRENCY)
-        );
+        feeExit = Exit(factory.createExitClone(bytes32(0), trustedForwarder, currencyProvider, args, TOTAL_CURRENCY));
 
         vm.prank(holder);
         feeToken.approve(address(feeExit), TOKEN_SUPPLY);
@@ -847,11 +846,11 @@ contract ExitTest is Test {
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
         });
-        address cloneAddr = factory.predictCloneAddress(bytes32("malicious"), trustedForwarder, args);
+        address cloneAddr = factory.predictCloneAddress(bytes32(0), trustedForwarder, args);
         maliciousCurrency.mint(currencyProvider, funding);
         vm.prank(currencyProvider);
         maliciousCurrency.approve(cloneAddr, funding);
-        return Exit(factory.createExitClone(bytes32("malicious"), trustedForwarder, currencyProvider, args, funding));
+        return Exit(factory.createExitClone(bytes32(0), trustedForwarder, currencyProvider, args, funding));
     }
 
     /// claim() reverts when the currency reenters claim() during the payout transfer
@@ -903,7 +902,7 @@ contract ExitTest is Test {
             referenceToExitRates: rates
         });
         vm.expectRevert("referenceCurrencies and referenceToExitRates must have the same length");
-        factory.createExitClone(bytes32("mismatch"), trustedForwarder, currencyProvider, args, 0);
+        factory.createExitClone(bytes32(0), trustedForwarder, currencyProvider, args, 0);
     }
 
     /// Reverts when a referenceToExitRate entry is zero.
@@ -928,7 +927,7 @@ contract ExitTest is Test {
             referenceToExitRates: rates
         });
         vm.expectRevert("referenceToExitRate must be positive");
-        factory.createExitClone(bytes32("zerorate"), trustedForwarder, currencyProvider, args, 0);
+        factory.createExitClone(bytes32(0), trustedForwarder, currencyProvider, args, 0);
     }
 
     /// Reverts when a referenceCurrency equals the exit currency.
@@ -949,7 +948,7 @@ contract ExitTest is Test {
             referenceToExitRates: rates
         });
         vm.expectRevert("referenceCurrency can not be the exit currency");
-        factory.createExitClone(bytes32("selfref"), trustedForwarder, currencyProvider, args, 0);
+        factory.createExitClone(bytes32(0), trustedForwarder, currencyProvider, args, 0);
     }
 
     /// referenceToExitRate values are stored correctly and retrievable.
@@ -973,12 +972,12 @@ contract ExitTest is Test {
             referenceCurrencies: referenceCurrencies,
             referenceToExitRates: rates
         });
-        address cloneAddr = factory.predictCloneAddress(bytes32("stored"), trustedForwarder, args);
+        address cloneAddr = factory.predictCloneAddress(bytes32(0), trustedForwarder, args);
         currency.mint(currencyProvider, TOTAL_CURRENCY);
         vm.prank(currencyProvider);
         currency.approve(cloneAddr, TOTAL_CURRENCY);
         Exit exitWithRate = Exit(
-            factory.createExitClone(bytes32("stored"), trustedForwarder, currencyProvider, args, TOTAL_CURRENCY)
+            factory.createExitClone(bytes32(0), trustedForwarder, currencyProvider, args, TOTAL_CURRENCY)
         );
 
         assertEq(exitWithRate.referenceToExitRate(IERC20(address(refCurrency))), 1e6, "rate not stored correctly");

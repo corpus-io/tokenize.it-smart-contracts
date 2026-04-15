@@ -41,7 +41,7 @@ contract PrivateOfferFactoryTest is Test {
     uint256 public constant tokenAmount = 3e18;
     uint256 public constant currencyAmount = (tokenAmount * price) / 1e18;
     uint256 public constant expiration = 200 days;
-    bytes32 public constant salt = bytes32("234");
+    bytes32 public constant salt = bytes32(0);
 
     function setUp() public {
         TimeLock timeLockImplementation = new TimeLock(trustedForwarder);

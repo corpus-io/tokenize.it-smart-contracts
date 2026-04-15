@@ -299,7 +299,7 @@ contract ExitCloneFactoryTest is Test {
         ExitInitializerArguments memory args = _baseArgs();
         args.currency = IERC20(address(badCurrency));
         vm.expectRevert("currency needs to be on the allowlist with TRUSTED_CURRENCY attribute");
-        factory.createExitClone(bytes32("bad1"), trustedForwarder, currencyProvider, args, 0);
+        factory.createExitClone(bytes32(0), trustedForwarder, currencyProvider, args, 0);
     }
 
     function testTrustedCurrencyBitSucceeds() public {

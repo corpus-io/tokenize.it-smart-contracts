@@ -231,7 +231,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             tokenExitRegistry: tokenExitRegistry
         });
         vm.expectRevert("currency needs to be on the allowlist with TRUSTED_CURRENCY attribute");
-        factory.createCoinvestedPositionClone(bytes32("nonTrusted"), trustedForwarder, args);
+        factory.createCoinvestedPositionClone(bytes32(0), trustedForwarder, args);
     }
 
     function testInitCurrencyNotOnAllowListReverts() public {
@@ -249,12 +249,12 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             tokenExitRegistry: tokenExitRegistry
         });
         vm.expectRevert();
-        factory.createCoinvestedPositionClone(bytes32("noBit"), trustedForwarder, args);
+        factory.createCoinvestedPositionClone(bytes32(0), trustedForwarder, args);
 
         // Adding the currency to the allowList with TRUSTED_CURRENCY bit makes creation succeed
         vm.prank(admin);
         allowList.set(address(noBit), TRUSTED_CURRENCY);
-        factory.createCoinvestedPositionClone(bytes32("noBit"), trustedForwarder, args); // must not revert
+        factory.createCoinvestedPositionClone(bytes32(0), trustedForwarder, args); // must not revert
     }
 
     function testInitEmptyLeadInvestorsReverts() public {
@@ -270,7 +270,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             tokenExitRegistry: tokenExitRegistry
         });
         vm.expectRevert("There must be at least one lead investor");
-        factory.createCoinvestedPositionClone(bytes32("emptyLead"), trustedForwarder, args);
+        factory.createCoinvestedPositionClone(bytes32(0), trustedForwarder, args);
     }
 
     function testInitZeroAddressLeadInvestorReverts() public {
@@ -287,7 +287,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             tokenExitRegistry: tokenExitRegistry
         });
         vm.expectRevert("lead investor can not be zero address");
-        factory.createCoinvestedPositionClone(bytes32("zeroLead"), trustedForwarder, args);
+        factory.createCoinvestedPositionClone(bytes32(0), trustedForwarder, args);
     }
 
     function testInitCarryFractionZeroReverts() public {
@@ -304,7 +304,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             tokenExitRegistry: tokenExitRegistry
         });
         vm.expectRevert("lead investor carry fraction can not be zero");
-        factory.createCoinvestedPositionClone(bytes32("zeroCarry"), trustedForwarder, args);
+        factory.createCoinvestedPositionClone(bytes32(0), trustedForwarder, args);
     }
 
     function testInitCarryFractionsSumOverflowReverts() public {
@@ -323,14 +323,14 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             tokenExitRegistry: tokenExitRegistry
         });
         vm.expectRevert("panic: arithmetic underflow or overflow (0x11)"); // arithmetic overflow
-        factory.createCoinvestedPositionClone(bytes32("overflow"), trustedForwarder, args);
+        factory.createCoinvestedPositionClone(bytes32(0), trustedForwarder, args);
     }
 
     function testInitCarryFractionsSumMaxAccepted() public {
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](1);
         leadInvestors[0] = LeadInvestor({account: leadA, carryFraction: type(uint64).max});
         CoinvestedPosition coinvestedPositionBoundary = _deployCoinvestedPosition(
-            bytes32("boundary"),
+            bytes32(0),
             100e6,
             eurc,
             leadInvestors
@@ -563,7 +563,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             tokenExitRegistry: tokenExitRegistry
         });
         CoinvestedPosition coinvestedPositionWithFee = CoinvestedPosition(
-            factory.createCoinvestedPositionClone(bytes32("fee"), trustedForwarder, args)
+            factory.createCoinvestedPositionClone(bytes32(0), trustedForwarder, args)
         );
 
         vm.prank(admin);
@@ -633,7 +633,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             tokenExitRegistry: tokenExitRegistry
         });
         CoinvestedPosition coinvestedPositionHighFee = CoinvestedPosition(
-            factory.createCoinvestedPositionClone(bytes32("highFee"), trustedForwarder, args)
+            factory.createCoinvestedPositionClone(bytes32(0), trustedForwarder, args)
         );
 
         vm.prank(admin);
@@ -700,7 +700,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         leadInvestors[1] = LeadInvestor({account: leadB, carryFraction: CARRY_2PCT}); // 2%
         leadInvestors[2] = LeadInvestor({account: tokenReceiver, carryFraction: CARRY_10PCT}); // 10%
         CoinvestedPosition coinvestedPositionThreeLeads = _deployCoinvestedPosition(
-            bytes32("3leads"),
+            bytes32(0),
             300e6,
             eurc,
             leadInvestors
@@ -802,7 +802,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         // Then setCurrency→EURc (6 dec), tokenPrice=200e6
         // scaledBasePrice = 100e18 / 1e12 = 100e6
         CoinvestedPosition coinvestedPosition18 = _deployCoinvestedPosition(
-            bytes32("18base"),
+            bytes32(0),
             100e18,
             eure,
             _defaultLeadInvestors()
@@ -964,12 +964,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         // Use a fresh coinvestedPosition with single 10% lead investor to simplify
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](1);
         leadInvestors[0] = LeadInvestor({account: leadA, carryFraction: CARRY_10PCT});
-        CoinvestedPosition coinvestedPositionSweep = _deployCoinvestedPosition(
-            bytes32("sweep"),
-            100e6,
-            eurc,
-            leadInvestors
-        );
+        CoinvestedPosition coinvestedPositionSweep = _deployCoinvestedPosition(bytes32(0), 100e6, eurc, leadInvestors);
 
         vm.prank(admin);
         token.mint(address(coinvestedPositionSweep), 10e18);
@@ -1003,7 +998,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](1);
         leadInvestors[0] = LeadInvestor({account: leadA, carryFraction: CARRY_10PCT});
         CoinvestedPosition coinvestedPositionZeroCarry = _deployCoinvestedPosition(
-            bytes32("zeroExtra"),
+            bytes32(0),
             100e6,
             eurc,
             leadInvestors
@@ -1390,7 +1385,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             tokenExitRegistry: tokenExitRegistry
         });
         CoinvestedPosition coinvestedPositionMalicious = CoinvestedPosition(
-            factory.createCoinvestedPositionClone(bytes32("mal"), trustedForwarder, args)
+            factory.createCoinvestedPositionClone(bytes32(0), trustedForwarder, args)
         );
         malicious.setTarget(address(coinvestedPositionMalicious));
 

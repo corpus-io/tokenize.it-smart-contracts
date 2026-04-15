@@ -143,7 +143,7 @@ contract DistributionTest is Test {
             initialReassignments: new Reassignment[](0)
         });
         vm.expectRevert("currency needs to be on the allowlist with TRUSTED_CURRENCY attribute");
-        factory.createDistributionClone(bytes32("ntc"), trustedForwarder, currencyProvider, args, 0);
+        factory.createDistributionClone(bytes32(0), trustedForwarder, currencyProvider, args, 0);
     }
 
     function testInitializeInsufficientAllowanceReverts() public {
@@ -156,12 +156,12 @@ contract DistributionTest is Test {
             lockedUntil: lockedUntil,
             initialReassignments: new Reassignment[](0)
         });
-        address cloneAddr = factory.predictCloneAddress(bytes32("lowA"), trustedForwarder, args);
+        address cloneAddr = factory.predictCloneAddress(bytes32("2"), trustedForwarder, args);
         currency.mint(currencyProvider, 500e6);
         vm.prank(currencyProvider);
         currency.approve(cloneAddr, 499e6); // one short
         vm.expectRevert("ERC20: insufficient allowance");
-        factory.createDistributionClone(bytes32("lowA"), trustedForwarder, currencyProvider, args, 500e6);
+        factory.createDistributionClone(bytes32("2"), trustedForwarder, currencyProvider, args, 500e6);
     }
 
     function testInitializeZeroPriceReverts() public {
@@ -175,7 +175,7 @@ contract DistributionTest is Test {
             initialReassignments: new Reassignment[](0)
         });
         vm.expectRevert("price must be positive");
-        factory.createDistributionClone(bytes32("zeroP"), trustedForwarder, currencyProvider, args, 0);
+        factory.createDistributionClone(bytes32(0), trustedForwarder, currencyProvider, args, 0);
     }
 
     function testInitializeStateVariables() public view {
@@ -197,7 +197,7 @@ contract DistributionTest is Test {
         );
         Token emptyToken = Token(
             tokenFactory.createTokenProxy(
-                bytes32("empty"),
+                bytes32(0),
                 trustedForwarder,
                 feeSettings,
                 admin,
@@ -220,11 +220,11 @@ contract DistributionTest is Test {
             initialReassignments: new Reassignment[](0)
         });
         vm.expectRevert("snapshot has no tokens");
-        factory.createDistributionClone(bytes32("emptyDist"), trustedForwarder, currencyProvider, args, 0);
+        factory.createDistributionClone(bytes32(0), trustedForwarder, currencyProvider, args, 0);
     }
 
     function testInitializeWithZeroFunding() public {
-        Distribution unfunded = _deployDist(bytes32("unfunded"), 0, lockedUntil);
+        Distribution unfunded = _deployDist(bytes32("1"), 0, lockedUntil);
         assertEq(currency.balanceOf(address(unfunded)), 0, "unfunded dist should have zero balance");
         assertEq(unfunded.pricePerToken(), PRICE_PER_TOKEN, "pricePerToken should be set even without funding");
         // eligible is based on price, not balance
@@ -270,7 +270,7 @@ contract DistributionTest is Test {
         );
         Token fuzzToken = Token(
             tokenFactory.createTokenProxy(
-                bytes32("fuzz"),
+                bytes32(0),
                 trustedForwarder,
                 feeSettings,
                 admin,
@@ -302,7 +302,7 @@ contract DistributionTest is Test {
             initialReassignments: new Reassignment[](0)
         });
         Distribution fuzzDistribution = Distribution(
-            factory.createDistributionClone(bytes32("fuzz2"), trustedForwarder, currencyProvider, args, 0)
+            factory.createDistributionClone(bytes32(0), trustedForwarder, currencyProvider, args, 0)
         );
 
         uint256 sumE = fuzzDistribution.eligible(holderA) +
@@ -610,7 +610,7 @@ contract DistributionTest is Test {
 
     function testChainedReassignAToB() public {
         // A → B → C (B has no snapshot balance)
-        Distribution chainDist = _deployDist(bytes32("chain"), TOTAL_CURRENCY, lockedUntil);
+        Distribution chainDist = _deployDist(bytes32("1"), TOTAL_CURRENCY, lockedUntil);
 
         // initial state
         assertEq(chainDist.eligible(holderA), 120e6, "holderA initial eligible");
@@ -740,7 +740,7 @@ contract DistributionTest is Test {
     // ========== D11. Underfunding ==========
 
     function testClaimRevertsWhenUnderfunded() public {
-        Distribution unfunded = _deployDist(bytes32("underfund"), 0, lockedUntil);
+        Distribution unfunded = _deployDist(bytes32("1"), 0, lockedUntil);
         // holderA is eligible for 120e6 but contract has 0 balance
         vm.prank(holderA);
         vm.expectRevert("ERC20: transfer amount exceeds balance");
@@ -748,7 +748,7 @@ contract DistributionTest is Test {
     }
 
     function testClaimSucceedsAfterLaterFunding() public {
-        Distribution unfunded = _deployDist(bytes32("lateFund"), 0, lockedUntil);
+        Distribution unfunded = _deployDist(bytes32("1"), 0, lockedUntil);
         // Fund later
         currency.mint(address(unfunded), TOTAL_CURRENCY);
         vm.prank(holderA);
@@ -758,7 +758,7 @@ contract DistributionTest is Test {
 
     function testPartialFundingAllowsSomeClaims() public {
         // Fund only enough for holderC (20e6)
-        Distribution partialDist = _deployDist(bytes32("partial"), 20e6, lockedUntil);
+        Distribution partialDist = _deployDist(bytes32("1"), 20e6, lockedUntil);
         vm.prank(holderC);
         partialDist.claim(holderC, 0);
         assertEq(currency.balanceOf(holderC), 20e6, "holderC should claim from partial funding");
@@ -780,7 +780,7 @@ contract DistributionTest is Test {
         );
         Token feeToken = Token(
             tokenFactory.createTokenProxy(
-                bytes32("feeTok"),
+                bytes32(0),
                 trustedForwarder,
                 feeSettingsWithFee,
                 admin,
@@ -808,18 +808,12 @@ contract DistributionTest is Test {
             lockedUntil: lockedUntil,
             initialReassignments: new Reassignment[](0)
         });
-        address cloneAddr = factory.predictCloneAddress(bytes32("feeDist"), trustedForwarder, args);
+        address cloneAddr = factory.predictCloneAddress(bytes32(0), trustedForwarder, args);
         currency.mint(currencyProvider, TOTAL_CURRENCY);
         vm.prank(currencyProvider);
         currency.approve(cloneAddr, TOTAL_CURRENCY);
         d = Distribution(
-            factory.createDistributionClone(
-                bytes32("feeDist"),
-                trustedForwarder,
-                currencyProvider,
-                args,
-                TOTAL_CURRENCY
-            )
+            factory.createDistributionClone(bytes32(0), trustedForwarder, currencyProvider, args, TOTAL_CURRENCY)
         );
     }
 
@@ -983,13 +977,13 @@ contract DistributionTest is Test {
             lockedUntil: lockedUntil,
             initialReassignments: new Reassignment[](0)
         });
-        address cloneAddr = factory.predictCloneAddress(bytes32("malicious"), trustedForwarder, args);
+        address cloneAddr = factory.predictCloneAddress(bytes32(0), trustedForwarder, args);
         maliciousCurrency.mint(currencyProvider, funding);
         vm.prank(currencyProvider);
         maliciousCurrency.approve(cloneAddr, funding);
         return
             Distribution(
-                factory.createDistributionClone(bytes32("malicious"), trustedForwarder, currencyProvider, args, funding)
+                factory.createDistributionClone(bytes32(0), trustedForwarder, currencyProvider, args, funding)
             );
     }
 

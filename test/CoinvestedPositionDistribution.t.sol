@@ -251,7 +251,7 @@ contract CoinvestedPositionDistributionTest is Test {
     // ─────────────────────────────────────────────────────────────────────────
 
     function testDI_I_BasicProportionalClaim() public {
-        Distribution distribution = _deployDistribution(bytes32("DI-I"), usdc, TOTAL_USDC, PRICE_PER_TOKEN_USDC);
+        Distribution distribution = _deployDistribution(bytes32(0), usdc, TOTAL_USDC, PRICE_PER_TOKEN_USDC);
 
         // Verify eligible before claim
         assertEq(
@@ -306,7 +306,7 @@ contract CoinvestedPositionDistributionTest is Test {
     // ─────────────────────────────────────────────────────────────────────────
 
     function testDI_II_MinorityHolder_OthersClaimFirst() public {
-        Distribution distribution = _deployDistribution(bytes32("DI-II"), usdc, TOTAL_USDC, PRICE_PER_TOKEN_USDC);
+        Distribution distribution = _deployDistribution(bytes32(0), usdc, TOTAL_USDC, PRICE_PER_TOKEN_USDC);
 
         // holderX (800 tokens = 80%) claims first
         vm.prank(holderX);
@@ -369,7 +369,7 @@ contract CoinvestedPositionDistributionTest is Test {
     /// III-A: Non-round carry fractions, USDC (6 dec)
     function testDI_III_A_ThreeLeadInvestors_USDC() public {
         CoinvestedPosition coinvestedPosition3 = _deployCoinvestedPosition(
-            bytes32("DI-III-A-cp"),
+            bytes32(0),
             BASE_PRICE_EURC,
             eurc,
             _threeLeadInvestors()
@@ -391,7 +391,7 @@ contract CoinvestedPositionDistributionTest is Test {
             (10 ** token.decimals());
 
         Distribution distribution = _deployDistributionWithSnapshot(
-            bytes32("DI-III-A"),
+            bytes32(0),
             usdc,
             TOTAL_USDC,
             PRICE_PER_TOKEN_USDC,
@@ -438,7 +438,7 @@ contract CoinvestedPositionDistributionTest is Test {
     /// III-B: Same fractions, EURe (18 dec)
     function testDI_III_B_ThreeLeadInvestors_EURe() public {
         CoinvestedPosition coinvestedPosition3 = _deployCoinvestedPosition(
-            bytes32("DI-III-B-cp"),
+            bytes32(0),
             BASE_PRICE_EURC,
             eurc,
             _threeLeadInvestors()
@@ -457,7 +457,7 @@ contract CoinvestedPositionDistributionTest is Test {
             (10 ** token.decimals());
 
         Distribution distribution = _deployDistributionWithSnapshot(
-            bytes32("DI-III-B"),
+            bytes32(0),
             eure,
             totalEure,
             pricePerTokenEure,
@@ -529,7 +529,7 @@ contract CoinvestedPositionDistributionTest is Test {
 
     function testDI_IV_NonEuroTrustedCurrency_Accepted() public {
         // USDC has TRUSTED_CURRENCY bit — must be accepted by claimDistribution
-        Distribution distribution = _deployDistribution(bytes32("DI-IV"), usdc, TOTAL_USDC, PRICE_PER_TOKEN_USDC);
+        Distribution distribution = _deployDistribution(bytes32(0), usdc, TOTAL_USDC, PRICE_PER_TOKEN_USDC);
 
         uint256 beforeA = usdc.balanceOf(leadA);
         uint256 beforeB = usdc.balanceOf(leadB);
@@ -575,7 +575,7 @@ contract CoinvestedPositionDistributionTest is Test {
 
     function testDI_V_DividendCurrencyDiffersFromBaseCurrency() public {
         // coinvestedPosition was initialised with EURc as baseCurrency; Distribution pays USDC
-        Distribution distribution = _deployDistribution(bytes32("DI-V"), usdc, TOTAL_USDC, PRICE_PER_TOKEN_USDC);
+        Distribution distribution = _deployDistribution(bytes32(0), usdc, TOTAL_USDC, PRICE_PER_TOKEN_USDC);
 
         // Give coinvestedPosition some EURc to verify it is untouched
         eurc.mint(address(coinvestedPosition), 500e6);
@@ -616,14 +616,14 @@ contract CoinvestedPositionDistributionTest is Test {
     function testDI_VI_ZeroTokensAtSnapshot_Reverts() public {
         // Deploy a fresh CoinvestedPosition that had 0 tokens at snapshot time
         CoinvestedPosition coinvestedPositionZero = _deployCoinvestedPosition(
-            bytes32("DI-VI-cp"),
+            bytes32("1"),
             BASE_PRICE_EURC,
             eurc,
             _defaultLeadInvestors()
         );
         // Do NOT mint any tokens to coinvestedPositionZero before the snapshot (snapshotId taken in setUp)
 
-        Distribution distribution = _deployDistribution(bytes32("DI-VI"), usdc, TOTAL_USDC, PRICE_PER_TOKEN_USDC);
+        Distribution distribution = _deployDistribution(bytes32(0), usdc, TOTAL_USDC, PRICE_PER_TOKEN_USDC);
 
         // eligible must be 0
         assertEq(distribution.eligible(address(coinvestedPositionZero)), 0, "DI-VI: eligible not zero");
@@ -652,7 +652,7 @@ contract CoinvestedPositionDistributionTest is Test {
         uint256 holderYEligible = (100e18 * PRICE_PER_TOKEN_USDC) / (10 ** token.decimals());
 
         Distribution distribution = _deployDistributionWithSnapshot(
-            bytes32("DI-VII"),
+            bytes32(0),
             usdc,
             TOTAL_USDC,
             PRICE_PER_TOKEN_USDC,
@@ -720,18 +720,8 @@ contract CoinvestedPositionDistributionTest is Test {
     // ─────────────────────────────────────────────────────────────────────────
 
     function testDI_VIII_MultipleDistributions_Sequential() public {
-        Distribution usdcDistribution = _deployDistribution(
-            bytes32("DI-VIII-usdc"),
-            usdc,
-            TOTAL_USDC,
-            PRICE_PER_TOKEN_USDC
-        );
-        Distribution eureDistribution = _deployDistribution(
-            bytes32("DI-VIII-eure"),
-            eure,
-            1000e18,
-            PRICE_PER_TOKEN_EURE
-        );
+        Distribution usdcDistribution = _deployDistribution(bytes32(0), usdc, TOTAL_USDC, PRICE_PER_TOKEN_USDC);
+        Distribution eureDistribution = _deployDistribution(bytes32(0), eure, 1000e18, PRICE_PER_TOKEN_EURE);
 
         // --- Claim USDC distribution ---
         {
@@ -810,7 +800,7 @@ contract CoinvestedPositionDistributionTest is Test {
         uint256 preExisting = 300e6;
         usdc.mint(address(coinvestedPosition), preExisting);
 
-        Distribution distribution = _deployDistribution(bytes32("DI-IX"), usdc, TOTAL_USDC, PRICE_PER_TOKEN_USDC);
+        Distribution distribution = _deployDistribution(bytes32(0), usdc, TOTAL_USDC, PRICE_PER_TOKEN_USDC);
 
         // before snapshot is taken at call time — pre-existing is excluded from `received`
         uint256 beforeA = usdc.balanceOf(leadA);
@@ -847,7 +837,7 @@ contract CoinvestedPositionDistributionTest is Test {
     function testDI_X_BuyBetweenSnapshotAndClaim() public {
         // Snapshot already taken in setUp with coinvestedPosition holding 200 tokens.
         // Deploy distribution — coinvestedPosition eligible = 200e6
-        Distribution distribution = _deployDistribution(bytes32("DI-X"), usdc, TOTAL_USDC, PRICE_PER_TOKEN_USDC);
+        Distribution distribution = _deployDistribution(bytes32(0), usdc, TOTAL_USDC, PRICE_PER_TOKEN_USDC);
         assertEq(
             distribution.eligible(address(coinvestedPosition)),
             COINVESTED_POSITION_ELIGIBLE_USDC,
@@ -934,20 +924,14 @@ contract CoinvestedPositionDistributionTest is Test {
             lockedUntil: lockedUntil,
             initialReassignments: new Reassignment[](0)
         });
-        address cloneAddr = distributionFactory.predictCloneAddress(bytes32("DI-XII"), trustedForwarder, args);
+        address cloneAddr = distributionFactory.predictCloneAddress(bytes32(0), trustedForwarder, args);
         vm.prank(admin);
         token.mint(currencyProvider, 100e18);
         vm.prank(currencyProvider);
         token.approve(cloneAddr, 100e18);
 
         vm.expectRevert("currency and token must be different");
-        distributionFactory.createDistributionClone(
-            bytes32("DI-XII"),
-            trustedForwarder,
-            currencyProvider,
-            args,
-            100e18
-        );
+        distributionFactory.createDistributionClone(bytes32(0), trustedForwarder, currencyProvider, args, 100e18);
     }
 
     /// DI-XIII: _settle reverts when currency == held token, tested via a stub Distribution
@@ -1084,17 +1068,13 @@ contract CoinvestedPositionDistributionTest is Test {
                 lockedUntil: lockedUntil,
                 initialReassignments: new Reassignment[](0)
             });
-            address cloneAddr = distributionFactory.predictCloneAddress(
-                bytes32("DI-XI-dist"),
-                trustedForwarder,
-                distributionArgs
-            );
+            address cloneAddr = distributionFactory.predictCloneAddress(bytes32(0), trustedForwarder, distributionArgs);
             usdc.mint(currencyProvider, initialFunding);
             vm.prank(currencyProvider);
             usdc.approve(cloneAddr, initialFunding);
             distributionFuzz = Distribution(
                 distributionFactory.createDistributionClone(
-                    bytes32("DI-XI-dist"),
+                    bytes32(0),
                     trustedForwarder,
                     currencyProvider,
                     distributionArgs,

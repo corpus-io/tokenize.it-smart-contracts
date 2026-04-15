@@ -242,7 +242,7 @@ contract CoinvestedPositionExitTest is Test {
 
     function testDistributeExitRevertsBeforeClaimStart() public {
         // Deploy an exit with price 200e6, funded for 200 tokens
-        Exit exitContract = _deployExit(bytes32("i1"), eurc, 200e6, CP_TOKEN_AMOUNT);
+        Exit exitContract = _deployExit(bytes32(0), eurc, 200e6, CP_TOKEN_AMOUNT);
 
         vm.prank(admin);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
@@ -253,7 +253,7 @@ contract CoinvestedPositionExitTest is Test {
     }
 
     function testDistributeExitSucceedsAfterDrainStart() public {
-        Exit exitContract = _deployExit(bytes32("i2"), eurc, 200e6, CP_TOKEN_AMOUNT);
+        Exit exitContract = _deployExit(bytes32(0), eurc, 200e6, CP_TOKEN_AMOUNT);
 
         vm.warp(lockedUntil + 1);
         vm.prank(admin);
@@ -263,11 +263,11 @@ contract CoinvestedPositionExitTest is Test {
     }
 
     function testDistributeExitRevertsWhenZeroTokens() public {
-        Exit exitContract = _deployExit(bytes32("i3"), eurc, 200e6, CP_TOKEN_AMOUNT);
+        Exit exitContract = _deployExit(bytes32("1"), eurc, 200e6, CP_TOKEN_AMOUNT);
 
         // Deploy a fresh cp with no tokens minted
         CoinvestedPosition coinvestedPositionEmpty = _deployCoinvestedPosition(
-            bytes32("i3empty"),
+            bytes32("1"),
             BASE_PRICE_EURC,
             eurc,
             _defaultLeadInvestors()
@@ -296,7 +296,7 @@ contract CoinvestedPositionExitTest is Test {
     // A(10%) = 2,000e6; B(5%) = 1,000e6; receiver = 37,000e6
     function testIIA_ExitAboveBase() public {
         uint256 pricePerToken = 200e6;
-        Exit exitContract = _deployExit(bytes32("iia"), eurc, pricePerToken, CP_TOKEN_AMOUNT);
+        Exit exitContract = _deployExit(bytes32(0), eurc, pricePerToken, CP_TOKEN_AMOUNT);
 
         uint256 beforeA = eurc.balanceOf(leadA);
         uint256 beforeB = eurc.balanceOf(leadB);
@@ -334,7 +334,7 @@ contract CoinvestedPositionExitTest is Test {
     /// II-B: Exit price equals base (carry = 0)
     function testIIB_ExitAtBase() public {
         uint256 pricePerToken = 100e6; // equals base price
-        Exit exitContract = _deployExit(bytes32("iib"), eurc, pricePerToken, CP_TOKEN_AMOUNT);
+        Exit exitContract = _deployExit(bytes32(0), eurc, pricePerToken, CP_TOKEN_AMOUNT);
 
         uint256 beforeA = eurc.balanceOf(leadA);
         uint256 beforeB = eurc.balanceOf(leadB);
@@ -364,7 +364,7 @@ contract CoinvestedPositionExitTest is Test {
     /// II-C: Exit price below base (carry = 0, shortfall)
     function testIIC_ExitBelowBase() public {
         uint256 pricePerToken = 60e6;
-        Exit exitContract = _deployExit(bytes32("iic"), eurc, pricePerToken, CP_TOKEN_AMOUNT);
+        Exit exitContract = _deployExit(bytes32(0), eurc, pricePerToken, CP_TOKEN_AMOUNT);
 
         uint256 beforeA = eurc.balanceOf(leadA);
         uint256 beforeB = eurc.balanceOf(leadB);
@@ -398,7 +398,7 @@ contract CoinvestedPositionExitTest is Test {
     /// III-A: Upscaling — basePrice in EURc (6 dec), exit in EURe (18 dec)
     function testIIIA_UpscalingEURcToEURe() public {
         uint256 pricePerToken = 200e18; // 200 EURe per token
-        Exit exitContract = _deployExit(bytes32("iiia"), eure, pricePerToken, CP_TOKEN_AMOUNT);
+        Exit exitContract = _deployExit(bytes32(0), eure, pricePerToken, CP_TOKEN_AMOUNT);
 
         uint256 beforeA = eure.balanceOf(leadA);
         uint256 beforeB = eure.balanceOf(leadB);
@@ -437,12 +437,7 @@ contract CoinvestedPositionExitTest is Test {
 
     function _deployEureCp() internal returns (CoinvestedPosition) {
         LeadInvestor[] memory leadInvestors = _defaultLeadInvestors();
-        CoinvestedPosition coinvestedPositionEure = _deployCoinvestedPosition(
-            bytes32("iiib"),
-            100e18,
-            eure,
-            leadInvestors
-        );
+        CoinvestedPosition coinvestedPositionEure = _deployCoinvestedPosition(bytes32(0), 100e18, eure, leadInvestors);
         vm.prank(admin);
         token.mint(address(coinvestedPositionEure), CP_TOKEN_AMOUNT);
         return coinvestedPositionEure;
@@ -451,7 +446,7 @@ contract CoinvestedPositionExitTest is Test {
     /// III-B: Downscaling — basePrice in EURe (18 dec), exit in EURc (6 dec)
     function testIIIB_DownscalingEUReToEURc() public {
         CoinvestedPosition coinvestedPositionEure = _deployEureCp();
-        Exit exitContract = _deployExit(bytes32("iiib_exit"), eurc, 200e6, CP_TOKEN_AMOUNT);
+        Exit exitContract = _deployExit(bytes32(0), eurc, 200e6, CP_TOKEN_AMOUNT);
 
         uint256 beforeA = eurc.balanceOf(leadA);
         uint256 beforeB = eurc.balanceOf(leadB);
@@ -490,7 +485,7 @@ contract CoinvestedPositionExitTest is Test {
     function testIIIC_EqualDecimalsNoScaling() public {
         // baseCurrency = EURc (6 dec), exit currency = EURc (6 dec)
         uint256 pricePerToken = 200e6;
-        Exit exitContract = _deployExit(bytes32("iiic"), eurc, pricePerToken, CP_TOKEN_AMOUNT);
+        Exit exitContract = _deployExit(bytes32(0), eurc, pricePerToken, CP_TOKEN_AMOUNT);
 
         vm.warp(claimStart);
         vm.prank(admin);
@@ -522,7 +517,7 @@ contract CoinvestedPositionExitTest is Test {
         leadInvestors[1] = LeadInvestor({account: leadB, carryFraction: IVA_FRAC_B});
         leadInvestors[2] = LeadInvestor({account: leadC, carryFraction: IVA_FRAC_C});
         CoinvestedPosition coinvestedPosition3 = _deployCoinvestedPosition(
-            bytes32("iva"),
+            bytes32(0),
             BASE_PRICE_EURC,
             eurc,
             leadInvestors
@@ -536,7 +531,7 @@ contract CoinvestedPositionExitTest is Test {
     /// A=17%, B=11%, C=3%; pricePerToken=600e6 so received=120,000e6; base=20,000e6; carry=100,000e6
     function testIVA_ThreeLeadInvestors() public {
         CoinvestedPosition coinvestedPosition3 = _deployThreeInvestorCp();
-        Exit exitContract = _deployExit(bytes32("iva_exit"), eurc, 600e6, CP_TOKEN_AMOUNT);
+        Exit exitContract = _deployExit(bytes32(0), eurc, 600e6, CP_TOKEN_AMOUNT);
 
         uint256 beforeA = eurc.balanceOf(leadA);
         uint256 beforeB = eurc.balanceOf(leadB);
@@ -586,7 +581,7 @@ contract CoinvestedPositionExitTest is Test {
         leadInvestors[0] = LeadInvestor({account: leadA, carryFraction: fracNearMax});
 
         CoinvestedPosition coinvestedPositionSingle = _deployCoinvestedPosition(
-            bytes32("ivb"),
+            bytes32(0),
             BASE_PRICE_EURC,
             eurc,
             leadInvestors
@@ -595,7 +590,7 @@ contract CoinvestedPositionExitTest is Test {
         token.mint(address(coinvestedPositionSingle), CP_TOKEN_AMOUNT);
 
         uint256 pricePerToken = 200e6;
-        Exit exitContract = _deployExit(bytes32("ivb_exit"), eurc, pricePerToken, CP_TOKEN_AMOUNT);
+        Exit exitContract = _deployExit(bytes32(0), eurc, pricePerToken, CP_TOKEN_AMOUNT);
 
         uint256 beforeA = eurc.balanceOf(leadA);
         uint256 beforeR = eurc.balanceOf(receiver);
@@ -633,7 +628,7 @@ contract CoinvestedPositionExitTest is Test {
         );
         Token tokenWithFee = Token(
             tokenFactory.createTokenProxy(
-                bytes32("fee_token"),
+                bytes32(0),
                 trustedForwarder,
                 fsWithFee,
                 admin,
@@ -659,7 +654,7 @@ contract CoinvestedPositionExitTest is Test {
         });
         CoinvestedPosition coinvestedPositionFee = CoinvestedPosition(
             coinvestedPositionFactory.createCoinvestedPositionClone(
-                bytes32("v_cp"),
+                bytes32(0),
                 trustedForwarder,
                 coinvestedPositionArgs
             )
@@ -682,20 +677,12 @@ contract CoinvestedPositionExitTest is Test {
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
         });
-        address cloneAddr = exitFactory.predictCloneAddress(bytes32("v_exit"), trustedForwarder, exitArgs);
+        address cloneAddr = exitFactory.predictCloneAddress(bytes32(0), trustedForwarder, exitArgs);
         eurc.mint(currencyProvider, totalCurrency);
         vm.prank(currencyProvider);
         eurc.approve(cloneAddr, totalCurrency);
         return
-            Exit(
-                exitFactory.createExitClone(
-                    bytes32("v_exit"),
-                    trustedForwarder,
-                    currencyProvider,
-                    exitArgs,
-                    totalCurrency
-                )
-            );
+            Exit(exitFactory.createExitClone(bytes32(0), trustedForwarder, currencyProvider, exitArgs, totalCurrency));
     }
 
     /// V: claimExit does NOT apply fees — full received amount is distributed
@@ -734,7 +721,7 @@ contract CoinvestedPositionExitTest is Test {
     /// Pre-existing 500e6 EURc should NOT inflate carry; receiver sweeps it too
     function testVIA_PreExistingExitCurrencyBalance() public {
         uint256 pricePerToken = 200e6;
-        Exit exitContract = _deployExit(bytes32("via"), eurc, pricePerToken, CP_TOKEN_AMOUNT);
+        Exit exitContract = _deployExit(bytes32(0), eurc, pricePerToken, CP_TOKEN_AMOUNT);
 
         // Send 500e6 EURc directly to cp before the call
         uint256 preExisting = 500e6;
@@ -773,7 +760,7 @@ contract CoinvestedPositionExitTest is Test {
     /// VI-B: CoinvestedPosition holds a different currency; that currency is untouched
     function testVIB_DifferentCurrencyUntouched() public {
         uint256 pricePerToken = 200e6;
-        Exit exitContract = _deployExit(bytes32("vib"), eurc, pricePerToken, CP_TOKEN_AMOUNT);
+        Exit exitContract = _deployExit(bytes32(0), eurc, pricePerToken, CP_TOKEN_AMOUNT);
 
         // Send 1000e18 EURe to cp
         uint256 eureAmount = 1_000e18;
@@ -801,7 +788,7 @@ contract CoinvestedPositionExitTest is Test {
         uint256 pricePerToken = 200e6;
         // Fund only for 50 tokens (not enough for cp's 200)
         uint256 onlyFifty = (50e18 * pricePerToken) / (10 ** token.decimals()); // 10,000e6
-        Exit exitContract = _deployExitWithFunding(bytes32("viia"), eurc, pricePerToken, onlyFifty);
+        Exit exitContract = _deployExitWithFunding(bytes32(0), eurc, pricePerToken, onlyFifty);
 
         uint256 cpTokensBefore = token.balanceOf(address(coinvestedPosition));
 
@@ -820,7 +807,7 @@ contract CoinvestedPositionExitTest is Test {
     function testVIIB_ExitExactlyFunded() public {
         uint256 pricePerToken = 200e6;
         // Exact: 200 tokens × 200e6 = 40,000e6
-        Exit exitContract = _deployExit(bytes32("viib"), eurc, pricePerToken, CP_TOKEN_AMOUNT);
+        Exit exitContract = _deployExit(bytes32(0), eurc, pricePerToken, CP_TOKEN_AMOUNT);
 
         vm.warp(claimStart);
         vm.prank(admin);
@@ -840,7 +827,7 @@ contract CoinvestedPositionExitTest is Test {
     /// VIII: claimExit approves and transfers exactly tokenBalance; cp holds 0 tokens after
     function testVIII_TokenApprovalAndTransfer() public {
         uint256 pricePerToken = 200e6;
-        Exit exitContract = _deployExit(bytes32("viii"), eurc, pricePerToken, CP_TOKEN_AMOUNT);
+        Exit exitContract = _deployExit(bytes32(0), eurc, pricePerToken, CP_TOKEN_AMOUNT);
 
         assertEq(token.balanceOf(address(coinvestedPosition)), CP_TOKEN_AMOUNT, "VIII: wrong cp token balance before");
 
@@ -867,7 +854,7 @@ contract CoinvestedPositionExitTest is Test {
         // Deploy cp with fuzzed basePrice using EURc (6 dec)
         LeadInvestor[] memory leadInvestors = _defaultLeadInvestors();
         CoinvestedPosition coinvestedPositionFuzz = _deployCoinvestedPosition(
-            bytes32("fuzz_a"),
+            bytes32(0),
             uint256(basePrice),
             eurc,
             leadInvestors
@@ -889,18 +876,12 @@ contract CoinvestedPositionExitTest is Test {
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
         });
-        address cloneAddr = exitFactory.predictCloneAddress(bytes32("fuzz_a_exit"), trustedForwarder, exitArgs);
+        address cloneAddr = exitFactory.predictCloneAddress(bytes32(0), trustedForwarder, exitArgs);
         eurc.mint(currencyProvider, totalCurrency);
         vm.prank(currencyProvider);
         eurc.approve(cloneAddr, totalCurrency);
         Exit exitContract = Exit(
-            exitFactory.createExitClone(
-                bytes32("fuzz_a_exit"),
-                trustedForwarder,
-                currencyProvider,
-                exitArgs,
-                totalCurrency
-            )
+            exitFactory.createExitClone(bytes32(0), trustedForwarder, currencyProvider, exitArgs, totalCurrency)
         );
 
         uint256 beforeA = eurc.balanceOf(leadA);
@@ -928,7 +909,7 @@ contract CoinvestedPositionExitTest is Test {
         vm.assume(preExisting > 0);
 
         uint256 pricePerToken = 200e6;
-        Exit exitContract = _deployExit(bytes32("fuzz_b"), eurc, pricePerToken, CP_TOKEN_AMOUNT);
+        Exit exitContract = _deployExit(bytes32(0), eurc, pricePerToken, CP_TOKEN_AMOUNT);
 
         // Send pre-existing EURc to cp
         eurc.mint(address(coinvestedPosition), preExisting);
@@ -1002,12 +983,12 @@ contract CoinvestedPositionExitTest is Test {
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
         });
-        address cloneAddr = exitFactory.predictCloneAddress(bytes32("x_exit"), trustedForwarder, exitArgs);
+        address cloneAddr = exitFactory.predictCloneAddress(bytes32(0), trustedForwarder, exitArgs);
         eurc.mint(currencyProvider, totalCurrency);
         vm.prank(currencyProvider);
         eurc.approve(cloneAddr, totalCurrency);
         Exit exitContract = Exit(
-            exitFactory.createExitClone(bytes32("x_exit"), trustedForwarder, currencyProvider, exitArgs, totalCurrency)
+            exitFactory.createExitClone(bytes32(0), trustedForwarder, currencyProvider, exitArgs, totalCurrency)
         );
 
         // Snapshot balances before exit (cp may have EURc from buy() proceeds — receiver already got them via settle)
@@ -1048,7 +1029,7 @@ contract CoinvestedPositionExitTest is Test {
     // ─────────────────────────────────────────────────────────────────────────
 
     function testKeyInvariant_TokenBalanceZeroAfterExit() public {
-        Exit exitContract = _deployExit(bytes32("ki"), eurc, 200e6, CP_TOKEN_AMOUNT);
+        Exit exitContract = _deployExit(bytes32(0), eurc, 200e6, CP_TOKEN_AMOUNT);
 
         vm.warp(claimStart);
         vm.prank(admin);
@@ -1067,7 +1048,7 @@ contract CoinvestedPositionExitTest is Test {
     function testXIA_MinCurrencyAmountReverts() public {
         uint256 pricePerToken = 200e6;
         uint256 totalCurrency = (CP_TOKEN_AMOUNT * pricePerToken) / (10 ** token.decimals()); // 40,000e6
-        Exit exitContract = _deployExit(bytes32("xia"), eurc, pricePerToken, CP_TOKEN_AMOUNT);
+        Exit exitContract = _deployExit(bytes32(0), eurc, pricePerToken, CP_TOKEN_AMOUNT);
 
         vm.prank(admin);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
@@ -1081,7 +1062,7 @@ contract CoinvestedPositionExitTest is Test {
     function testXIB_MinCurrencyAmountExactBoundarySucceeds() public {
         uint256 pricePerToken = 200e6;
         uint256 totalCurrency = (CP_TOKEN_AMOUNT * pricePerToken) / (10 ** token.decimals()); // 40,000e6
-        Exit exitContract = _deployExit(bytes32("xib"), eurc, pricePerToken, CP_TOKEN_AMOUNT);
+        Exit exitContract = _deployExit(bytes32(0), eurc, pricePerToken, CP_TOKEN_AMOUNT);
 
         vm.warp(claimStart);
         vm.prank(admin);
@@ -1095,7 +1076,7 @@ contract CoinvestedPositionExitTest is Test {
     /// XI-C: zero _minCurrencyAmount always passes (backwards-compatible floor)
     function testXIC_ZeroMinCurrencyAmountAlwaysPasses() public {
         uint256 pricePerToken = 200e6;
-        Exit exitContract = _deployExit(bytes32("xic"), eurc, pricePerToken, CP_TOKEN_AMOUNT);
+        Exit exitContract = _deployExit(bytes32(0), eurc, pricePerToken, CP_TOKEN_AMOUNT);
 
         vm.warp(claimStart);
         vm.prank(admin);
@@ -1133,7 +1114,7 @@ contract CoinvestedPositionExitTest is Test {
 
         LeadInvestor[] memory leadInvestors = _defaultLeadInvestors();
         CoinvestedPosition coinvestedPositionFuzz = _deployCoinvestedPosition(
-            bytes32("xid"),
+            bytes32("1"),
             uint256(100e6),
             eurc,
             leadInvestors
@@ -1141,7 +1122,7 @@ contract CoinvestedPositionExitTest is Test {
         vm.prank(admin);
         token.mint(address(coinvestedPositionFuzz), CP_TOKEN_AMOUNT);
 
-        Exit exitContract = _deployExit(bytes32("xid_exit"), eurc, pricePerToken, CP_TOKEN_AMOUNT);
+        Exit exitContract = _deployExit(bytes32("1"), eurc, pricePerToken, CP_TOKEN_AMOUNT);
 
         vm.prank(admin);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
@@ -1194,7 +1175,7 @@ contract CoinvestedPositionExitTest is Test {
         // received = 3000 USDC, basePayout = 500 USDC (100 EURe × 5)
         // carry = 2500 USDC (= 500 EURe equiv); investor A (10%) → 250 USDC (= 50 EURe)
         CoinvestedPosition coinvestedPositionEure = _deployCoinvestedPosition(
-            bytes32("xv"),
+            bytes32(0),
             10e18,
             eure,
             _defaultLeadInvestors()
@@ -1204,7 +1185,7 @@ contract CoinvestedPositionExitTest is Test {
 
         // trustedNonEuro (6 dec) serves as USDC stand-in; rate = 5e6 USDC bits per 10^18 EURe bits
         Exit exitContract = _deployExitWithReferenceRate(
-            bytes32("xv_exit"),
+            bytes32(0),
             trustedNonEuro,
             300e6,
             10e18,
@@ -1278,7 +1259,7 @@ contract CoinvestedPositionExitTest is Test {
         // referenceToExitRate[EURc] = 1e18: 10^6 EURc bits (1 EURc) = 1e18 EURe bits (1 EURe)
         uint256 rate = 1e18; // EURe bits per 10^6 EURc bits, 1:1 value
         Exit exitContract = _deployExitWithReferenceRate(
-            bytes32("xiva"),
+            bytes32(0),
             eure,
             200e18,
             CP_TOKEN_AMOUNT,
@@ -1323,7 +1304,7 @@ contract CoinvestedPositionExitTest is Test {
         // referenceToExitRate[EURe] = 1e6: 10^18 EURe bits (1 EURe) = 1e6 EURc bits (1 EURc)
         uint256 rate = 1e6; // EURc bits per 10^18 EURe bits, 1:1 value
         Exit exitContract = _deployExitWithReferenceRate(
-            bytes32("xivb"),
+            bytes32(0),
             eurc,
             200e6,
             CP_TOKEN_AMOUNT,
@@ -1367,12 +1348,12 @@ contract CoinvestedPositionExitTest is Test {
             referenceCurrencies: referenceCurrencies,
             referenceToExitRates: rates
         });
-        address cloneAddr = exitFactory.predictCloneAddress(bytes32("xivc"), trustedForwarder, args);
+        address cloneAddr = exitFactory.predictCloneAddress(bytes32(0), trustedForwarder, args);
         eure.mint(currencyProvider, totalCurrency);
         vm.prank(currencyProvider);
         eure.approve(cloneAddr, totalCurrency);
         Exit exitContract = Exit(
-            exitFactory.createExitClone(bytes32("xivc"), trustedForwarder, currencyProvider, args, totalCurrency)
+            exitFactory.createExitClone(bytes32(0), trustedForwarder, currencyProvider, args, totalCurrency)
         );
 
         // Verify both rates are stored
@@ -1390,7 +1371,7 @@ contract CoinvestedPositionExitTest is Test {
     /// XIV-D: No rate for CP's currency → fallback to caller-provided _basePrice
     function testXIVD_NoRateFallsBackToCallerBasePrice() public {
         // Exit in EURe with no reference rate for EURc
-        Exit exitContract = _deployExit(bytes32("xivd"), eure, 200e18, CP_TOKEN_AMOUNT);
+        Exit exitContract = _deployExit(bytes32(0), eure, 200e18, CP_TOKEN_AMOUNT);
 
         vm.warp(claimStart);
         vm.prank(admin);
@@ -1423,7 +1404,7 @@ contract CoinvestedPositionExitTest is Test {
             referenceToExitRates: rates
         });
         vm.expectRevert("referenceCurrencies and referenceToExitRates must have the same length");
-        exitFactory.createExitClone(bytes32("xive"), trustedForwarder, currencyProvider, args, 0);
+        exitFactory.createExitClone(bytes32(0), trustedForwarder, currencyProvider, args, 0);
     }
 
     /// XIV-F: Exit initialization reverts when a referenceToExitRate is zero
@@ -1444,12 +1425,12 @@ contract CoinvestedPositionExitTest is Test {
             referenceCurrencies: referenceCurrencies,
             referenceToExitRates: rates
         });
-        address cloneAddr = exitFactory.predictCloneAddress(bytes32("xivf"), trustedForwarder, args);
+        address cloneAddr = exitFactory.predictCloneAddress(bytes32(0), trustedForwarder, args);
         eure.mint(currencyProvider, totalCurrency);
         vm.prank(currencyProvider);
         eure.approve(cloneAddr, totalCurrency);
         vm.expectRevert("referenceToExitRate must be positive");
-        exitFactory.createExitClone(bytes32("xivf"), trustedForwarder, currencyProvider, args, totalCurrency);
+        exitFactory.createExitClone(bytes32(0), trustedForwarder, currencyProvider, args, totalCurrency);
     }
 
     /// XIV-G: setCurrency is blocked before lockedUntil expires
@@ -1467,7 +1448,7 @@ contract CoinvestedPositionExitTest is Test {
             tokenExitRegistry: tokenExitRegistry
         });
         CoinvestedPosition lockedCp = CoinvestedPosition(
-            coinvestedPositionFactory.createCoinvestedPositionClone(bytes32("xivg"), trustedForwarder, args)
+            coinvestedPositionFactory.createCoinvestedPositionClone(bytes32(0), trustedForwarder, args)
         );
 
         // Before lock expires: setCurrency must revert

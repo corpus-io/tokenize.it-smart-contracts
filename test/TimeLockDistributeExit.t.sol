@@ -116,12 +116,11 @@ contract TimeLockDistributeExitTest is Test {
             referenceCurrencies: referenceCurrencies,
             referenceToExitRates: rates
         });
-        address cloneAddr = exitFactory.predictCloneAddress(bytes32("exit"), trustedForwarder, args);
+        address cloneAddr = exitFactory.predictCloneAddress(bytes32(0), trustedForwarder, args);
         eurc.mint(currencyProvider, totalCurrency);
         vm.prank(currencyProvider);
         eurc.approve(cloneAddr, totalCurrency);
-        return
-            Exit(exitFactory.createExitClone(bytes32("exit"), trustedForwarder, currencyProvider, args, totalCurrency));
+        return Exit(exitFactory.createExitClone(bytes32(0), trustedForwarder, currencyProvider, args, totalCurrency));
     }
 
     function _deployExit(uint256 pricePerToken) internal returns (Exit) {
