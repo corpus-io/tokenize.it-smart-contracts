@@ -238,36 +238,32 @@ The following statements about the smart contracts should always be true
 ## TokenSwap.sol
 
 - One TokenSwap contract represents one limit order to buy or sell tokens at a fixed price.
+- Token and currency are fixed at contract creation and cannot be changed.
+- Only a trusted currency can be used.
 - The price is set at contract creation and can be changed by the owner.
-- The volume is controlled by the allowance granted, which can be increased or decreased by the owner.
-- The direction (buy or sell) is determined by setting the holder and receiver addresses.
-- The holder address must hold the tokens to be sold when the contract is used as a sell order.
-- The holder address must hold the currency to be paid when the contract is used as a buy order.
-- The receiver address will receive the tokens to be bought when the contract is used as a buy order.
-- The receiver address will receive the currency to be paid when the contract is used as a sell order.
+- The holder address is fixed at contract creation and cannot be changed; it cannot be the zero address.
+- The owner can update the receiver address, but not to the zero address.
+- The owner can update the token price, but not to zero.
+- The direction (buy or sell) is determined by which side the holder funds: when the holder provides tokens, counterparties call buy; when the holder provides currency, counterparties call sell.
+- The volume available for trading is determined by the allowance the holder grants to the contract.
 - The receiver address can be equal to the holder address.
 - The owner can update the receiver address.
-- The owner can update the holder address.
+- The holder address cannot be updated.
 - The owner can update the token price.
-- Token is set at contract creation and can not be changed.
-- Currency is set at contract creation and can not be changed.
-- Currency must have the TRUSTED_CURRENCY attribute on the token's AllowList.
-- The contract can be paused and unpausedby the owner.
+- The counterparty decides how many tokens to buy or sell and specifies the destination address for the assets they receive.
+- There is no minimum amount of tokens to buy or sell.
+- The limit order can be executed partially or completely, and can be executed repeatedly as long as allowance remains.
+- The contract can be paused and unpaused by the owner
 - No new trades can be made while the contract is paused.
 - Buying and selling can be disabled by removing the allowance.
-- The contract can be transferred to a new owner by the owner.
-- The counterparty decides how many tokens to buy or sell.
-- There is no minimum amount of tokens to buy or sell.
+- The contract can be transferred to a new owner only by the owner.
 - The limit order can be executed partially or completely.
 - As long as an allowance remains, the limit order can be executed repeatedly.
-- The maximum amount of tokens to buy or sell is determined by the allowance granted.
-- Fees are deducted from the currency transferred during the swap.
-- Fee amount is determined by the token's fee settings' PrivateOfferFee.
-- Fee receiver is determined by the token's fee settings' PrivateOfferFeeCollector.
-- No fees are deducted from the tokens transferred during the swap.
-- The buyer calling the buy function will pay no more than maxCurrencyAmount, protecting them from frontrunning or other unexpected influences.
-- The seller calling the sell function will receive no less than minCurrencyAmount, protecting them from frontrunning or other unexpected influences.
-- The buy function rounds up the currency amount, protecting the owner from loss.
-- The sell function rounds down the currency amount, protecting the owner from loss.
-- It is possible to create a buy AND sell order using one TokenSwap contract, by granting allowances in token and currency. This is not an intended use case as it doesn't benefit the owner.
+- Fees are deducted from the currency transferred during the swap; no fees are deducted from the tokens.
+- The fee type used is SECONDARY_MARKET when the fee settings contract supports that interface; otherwise PrivateOfferFee is used as a fallback.
+- The buy function rounds the currency amount up, protecting the holder from loss.
+- The sell function rounds the currency amount down, protecting the holder from loss.
+- The buyer specifies a maximum currency amount; the trade reverts if the actual cost would exceed it.
+- The seller specifies a minimum currency amount; the trade reverts if the net payout would fall below it.
+- It is possible to create a buy AND sell order using one TokenSwap contract by granting allowances in both token and currency. This is not an intended use case.
 - All functions can be called directly or as meta transaction using EIP-2771. Both options yield equivalent results given equivalent inputs.
