@@ -30,32 +30,32 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
 
     function setUp() public {
         // Infrastructure
-        allowList = createAllowList(trustedForwarder, admin);
-        feeSettings = createFeeSettings(trustedForwarder, admin, buildFeeTypes(0, 0, 0, admin, admin, admin));
+        allowList = createAllowList(TRUSTED_FORWARDER, ADMIN);
+        feeSettings = createFeeSettings(TRUSTED_FORWARDER, ADMIN, buildFeeTypes(0, 0, 0, ADMIN, ADMIN, ADMIN));
 
         eurc = new FakePaymentToken(0, 6);
-        vm.prank(admin);
+        vm.prank(ADMIN);
         allowList.set(address(eurc), TRUSTED_CURRENCY);
 
         // Token (18 decimals)
-        address tokenLogic = address(new Token(trustedForwarder));
+        address tokenLogic = address(new Token(TRUSTED_FORWARDER));
         tokenFactory = new TokenProxyFactory(tokenLogic);
         token = Token(
-            tokenFactory.createTokenProxy(0, trustedForwarder, feeSettings, admin, allowList, 0, "TestToken", "TTK")
+            tokenFactory.createTokenProxy(0, TRUSTED_FORWARDER, feeSettings, ADMIN, allowList, 0, "TestToken", "TTK")
         );
-        vm.startPrank(admin);
-        token.grantRole(token.MINTALLOWER_ROLE(), admin);
+        vm.startPrank(ADMIN);
+        token.grantRole(token.MINTALLOWER_ROLE(), ADMIN);
         vm.stopPrank();
 
-        tokenExitRegistry = new GlobalTokenExitRegistry(trustedForwarder);
+        tokenExitRegistry = new GlobalTokenExitRegistry(TRUSTED_FORWARDER);
 
         // Factories
-        CoinvestedPosition coinvestedPositionLogic = new CoinvestedPosition(trustedForwarder);
+        CoinvestedPosition coinvestedPositionLogic = new CoinvestedPosition(TRUSTED_FORWARDER);
         coinvestedPositionCloneFactory = new CoinvestedPositionCloneFactory(address(coinvestedPositionLogic));
 
         feeSplitterCloneFactory = new FeeSplitterCloneFactory(address(new FeeSplitter()));
 
-        TimeLock timeLockLogic = new TimeLock(trustedForwarder);
+        TimeLock timeLockLogic = new TimeLock(TRUSTED_FORWARDER);
         TimeLockCloneFactory timeLockCloneFactory = new TimeLockCloneFactory(address(timeLockLogic));
 
         privateOfferFactory = new PrivateOfferFactory(timeLockCloneFactory, coinvestedPositionCloneFactory);
@@ -68,8 +68,8 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
     ) internal view returns (CoinvestedPositionInitializerArguments memory) {
         return
             CoinvestedPositionInitializerArguments({
-                owner: owner,
-                receiver: receiver,
+                owner: OWNER,
+                receiver: RECEIVER,
                 leadInvestors: leadInvestors,
                 basePrice: 80e6,
                 baseCurrency: IERC20(address(eurc)),
@@ -85,7 +85,7 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
     ) internal view returns (PrivateOfferArguments memory) {
         return
             PrivateOfferArguments({
-                currencyPayer: receiver, // coinvestor pays PrivateOffer directly
+                currencyPayer: RECEIVER, // coinvestor pays PrivateOffer directly
                 tokenReceiver: address(0), // overridden by factory to CoinvestedPosition address
                 currencyReceiver: currencyReceiver,
                 tokenAmount: tokenAmount,
@@ -115,7 +115,7 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
         uint256 investmentAmount = Math.ceilDiv(tokenAmount * tokenPrice, 10 ** token.decimals());
 
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](1);
-        leadInvestors[0] = LeadInvestor({account: leadA, carryFraction: CARRY_10PCT});
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, carryFraction: CARRY_10PCT});
 
         CoinvestedPositionInitializerArguments memory coinvestedPositionArgs = _buildCoinvestedPositionArgs(
             leadInvestors
@@ -129,7 +129,7 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
         (address expectedPrivateOffer, address expectedCoinvestedPosition) = privateOfferFactory
             .predictPrivateOfferAndCoinvestedPositionAddress(
                 rawSalt,
-                trustedForwarder,
+                TRUSTED_FORWARDER,
                 privateOfferArgs,
                 coinvestedPositionArgs
             );
@@ -137,12 +137,12 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
         // ── Set up approvals ──────────────────────────────────────────────────
 
         // Token issuer grants minting allowance to the predicted PrivateOffer address
-        vm.prank(admin);
+        vm.prank(ADMIN);
         token.increaseMintingAllowance(expectedPrivateOffer, tokenAmount);
 
         // Coinvestor approves the predicted PrivateOffer address for the investment amount
-        eurc.mint(receiver, investmentAmount);
-        vm.prank(receiver);
+        eurc.mint(RECEIVER, investmentAmount);
+        vm.prank(RECEIVER);
         eurc.approve(expectedPrivateOffer, investmentAmount);
 
         // ── Execute ───────────────────────────────────────────────────────────
@@ -150,7 +150,7 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
         (address privateOfferAddress, address coinvestedPositionAddress) = privateOfferFactory
             .deployPrivateOfferWithCoinvestedPosition(
                 rawSalt,
-                trustedForwarder,
+                TRUSTED_FORWARDER,
                 privateOfferArgs,
                 coinvestedPositionArgs
             );
@@ -161,7 +161,7 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
         assertEq(coinvestedPositionAddress, expectedCoinvestedPosition, "CoinvestedPosition address mismatch");
         assertEq(token.balanceOf(coinvestedPositionAddress), tokenAmount, "token balance wrong");
         assertEq(eurc.balanceOf(currencyReceiver), investmentAmount, "currencyReceiver balance wrong");
-        assertEq(eurc.balanceOf(receiver), 0, "receiver should have spent all currency");
+        assertEq(eurc.balanceOf(RECEIVER), 0, "receiver should have spent all currency");
     }
 
     /**
@@ -182,7 +182,7 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
 
         // Build a CoinvestedPosition with 2 lead investors as the fee roster source
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](2);
-        leadInvestors[0] = LeadInvestor({account: leadA, carryFraction: CARRY_10PCT});
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, carryFraction: CARRY_10PCT});
         leadInvestors[1] = LeadInvestor({account: leadB, carryFraction: CARRY_5PCT});
 
         CoinvestedPositionInitializerArguments memory coinvestedPositionArgs = _buildCoinvestedPositionArgs(
@@ -191,7 +191,7 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
         CoinvestedPosition coinvestedPositionInstance = CoinvestedPosition(
             coinvestedPositionCloneFactory.createCoinvestedPositionClone(
                 bytes32(0),
-                trustedForwarder,
+                TRUSTED_FORWARDER,
                 coinvestedPositionArgs
             )
         );
@@ -200,7 +200,7 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
 
         address expectedFeeSplitter = feeSplitterCloneFactory.predictCloneAddress(
             bytes32("1"),
-            receiver,
+            RECEIVER,
             IERC20(address(eurc)),
             feeAmount,
             coinvestedPositionInstance
@@ -208,15 +208,15 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
 
         // ── Set up approval ───────────────────────────────────────────────────
 
-        eurc.mint(receiver, feeAmount);
-        vm.prank(receiver);
+        eurc.mint(RECEIVER, feeAmount);
+        vm.prank(RECEIVER);
         eurc.approve(expectedFeeSplitter, feeAmount);
 
         // ── Execute: deploy FeeSplitter, which immediately distributes the fee ─
 
         address feeSplitterAddress = feeSplitterCloneFactory.createFeeSplitterClone(
             bytes32("1"),
-            receiver,
+            RECEIVER,
             IERC20(address(eurc)),
             feeAmount,
             coinvestedPositionInstance
@@ -227,12 +227,12 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
         assertEq(feeSplitterAddress, expectedFeeSplitter, "FeeSplitter address mismatch");
 
         uint256 carryFractionsSum = uint256(CARRY_10PCT) + uint256(CARRY_5PCT);
-        uint256 leadAShare = (uint256(CARRY_10PCT) * feeAmount) / carryFractionsSum;
-        uint256 leadBShare = feeAmount - leadAShare; // last lead absorbs rounding dust
+        uint256 LEAD_AShare = (uint256(CARRY_10PCT) * feeAmount) / carryFractionsSum;
+        uint256 leadBShare = feeAmount - LEAD_AShare; // last lead absorbs rounding dust
 
-        assertEq(eurc.balanceOf(leadA), leadAShare, "leadA fee share wrong");
+        assertEq(eurc.balanceOf(LEAD_A), LEAD_AShare, "LEAD_A fee share wrong");
         assertEq(eurc.balanceOf(leadB), leadBShare, "leadB fee share wrong");
-        assertEq(leadAShare + leadBShare, feeAmount, "fee shares do not sum to total fee");
-        assertEq(eurc.balanceOf(receiver), 0, "feePayer should have spent all fee currency");
+        assertEq(LEAD_AShare + leadBShare, feeAmount, "fee shares do not sum to total fee");
+        assertEq(eurc.balanceOf(RECEIVER), 0, "feePayer should have spent all fee currency");
     }
 }
