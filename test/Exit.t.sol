@@ -152,6 +152,20 @@ contract ExitTest is Test {
         factory.createExitClone(bytes32(0), TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, 0);
     }
 
+    function testInitializePastLockedUntilReverts() public {
+        ExitInitializerArguments memory args = ExitInitializerArguments({
+            owner: OWNER,
+            token: token,
+            currency: IERC20(address(currency)),
+            pricePerToken: PRICE_PER_TOKEN,
+            lockedUntil: uint64(block.timestamp), // present moment is not in the future
+            referenceCurrencies: new IERC20[](0),
+            referenceToExitRates: new uint256[](0)
+        });
+        vm.expectRevert("lockedUntil must be in the future");
+        factory.createExitClone("1", TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, 0);
+    }
+
     function testInitializeCurrencyEqualsTokenReverts() public {
         ExitInitializerArguments memory args = ExitInitializerArguments({
             owner: OWNER,

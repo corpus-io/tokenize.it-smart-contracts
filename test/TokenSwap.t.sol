@@ -824,7 +824,7 @@ contract TokenSwapTest is Test {
         tokenSwap.unpause();
     }
 
-    function testBuyRoundsUp(uint256 _tokenBuyAmount, uint256 _price) public {
+function testBuyRoundsUp(uint256 _tokenBuyAmount, uint256 _price) public {
         vm.assume(_tokenBuyAmount > 0);
         vm.assume(_price > 0);
         vm.assume((UINT256_MAX - paymentToken.totalSupply()) / _price > _tokenBuyAmount);
