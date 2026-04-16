@@ -21,7 +21,7 @@ contract MockCoinvestedPosition {
     LeadInvestor[] private _investors;
 
     function addLeadInvestor(address account, uint64 profitFraction) external {
-        _investors.push(LeadInvestor({ account: account, profitFraction: profitFraction }));
+        _investors.push(LeadInvestor({account: account, profitFraction: profitFraction}));
     }
 
     function clearLeadInvestors() external {
@@ -105,8 +105,8 @@ contract FeeSplitterTest is Test {
         positionFactory = new CoinvestedPositionCloneFactory(address(positionLogic));
 
         LeadInvestor[] memory investors = new LeadInvestor[](2);
-        investors[0] = LeadInvestor({ account: LEAD_A, profitFraction: CARRY_10PCT });
-        investors[1] = LeadInvestor({ account: LEAD_B, profitFraction: CARRY_5PCT });
+        investors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT});
+        investors[1] = LeadInvestor({account: LEAD_B, profitFraction: CARRY_5PCT});
 
         realPosition = CoinvestedPosition(
             positionFactory.createCoinvestedPositionClone(
