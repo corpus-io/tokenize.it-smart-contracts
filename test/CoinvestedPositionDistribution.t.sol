@@ -162,8 +162,8 @@ contract CoinvestedPositionDistributionTest is Test {
 
     function _defaultLeadInvestors() internal pure returns (LeadInvestor[] memory) {
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](2);
-        leadInvestors[0] = LeadInvestor({account: LEAD_A, carryFraction: CARRY_10PCT});
-        leadInvestors[1] = LeadInvestor({account: LEAD_B, carryFraction: CARRY_5PCT});
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT});
+        leadInvestors[1] = LeadInvestor({account: LEAD_B, profitFraction: CARRY_5PCT});
         return leadInvestors;
     }
 
@@ -232,9 +232,9 @@ contract CoinvestedPositionDistributionTest is Test {
             );
     }
 
-    /// @dev Compute expected lead-investor payout: floor(carryFraction * received / uint64.max)
-    function _leadShare(uint64 carryFraction, uint256 received) internal pure returns (uint256) {
-        return (uint256(carryFraction) * received) / type(uint64).max;
+    /// @dev Compute expected lead-investor payout: floor(profitFraction * received / uint64.max)
+    function _leadShare(uint64 profitFraction, uint256 received) internal pure returns (uint256) {
+        return (uint256(profitFraction) * received) / type(uint64).max;
     }
 
     /// @dev Assert key invariant: sum of all payouts equals received
@@ -358,11 +358,11 @@ contract CoinvestedPositionDistributionTest is Test {
     function _threeLeadInvestors() internal pure returns (LeadInvestor[] memory) {
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](3);
         // 7% ≈ type(uint64).max * 7 / 100
-        leadInvestors[0] = LeadInvestor({account: LEAD_A, carryFraction: uint64((type(uint64).max / 100) * 7)});
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: uint64((type(uint64).max / 100) * 7)});
         // 13% ≈ type(uint64).max * 13 / 100
-        leadInvestors[1] = LeadInvestor({account: LEAD_B, carryFraction: uint64((type(uint64).max / 100) * 13)});
+        leadInvestors[1] = LeadInvestor({account: LEAD_B, profitFraction: uint64((type(uint64).max / 100) * 13)});
         // 3% ≈ type(uint64).max * 3 / 100
-        leadInvestors[2] = LeadInvestor({account: LEAD_C, carryFraction: uint64((type(uint64).max / 100) * 3)});
+        leadInvestors[2] = LeadInvestor({account: LEAD_C, profitFraction: uint64((type(uint64).max / 100) * 3)});
         return leadInvestors;
     }
 
@@ -405,9 +405,9 @@ contract CoinvestedPositionDistributionTest is Test {
         );
 
         LeadInvestor[] memory leadInvestors = _threeLeadInvestors();
-        uint256 expectedA = _leadShare(leadInvestors[0].carryFraction, coinvestedPosition3Eligible);
-        uint256 expectedB = _leadShare(leadInvestors[1].carryFraction, coinvestedPosition3Eligible);
-        uint256 expectedC = _leadShare(leadInvestors[2].carryFraction, coinvestedPosition3Eligible);
+        uint256 expectedA = _leadShare(leadInvestors[0].profitFraction, coinvestedPosition3Eligible);
+        uint256 expectedB = _leadShare(leadInvestors[1].profitFraction, coinvestedPosition3Eligible);
+        uint256 expectedC = _leadShare(leadInvestors[2].profitFraction, coinvestedPosition3Eligible);
 
         uint256 beforeA = usdc.balanceOf(LEAD_A);
         uint256 beforeB = usdc.balanceOf(LEAD_B);
@@ -471,9 +471,9 @@ contract CoinvestedPositionDistributionTest is Test {
         );
 
         LeadInvestor[] memory leadInvestors = _threeLeadInvestors();
-        uint256 expectedA = _leadShare(leadInvestors[0].carryFraction, coinvestedPosition3Eligible);
-        uint256 expectedB = _leadShare(leadInvestors[1].carryFraction, coinvestedPosition3Eligible);
-        uint256 expectedC = _leadShare(leadInvestors[2].carryFraction, coinvestedPosition3Eligible);
+        uint256 expectedA = _leadShare(leadInvestors[0].profitFraction, coinvestedPosition3Eligible);
+        uint256 expectedB = _leadShare(leadInvestors[1].profitFraction, coinvestedPosition3Eligible);
+        uint256 expectedC = _leadShare(leadInvestors[2].profitFraction, coinvestedPosition3Eligible);
 
         // total token amount = 1000 + 200 = 1200e18
         // our token amount = 200e18, pricePerToken = 1000e18 * 1e18 / 1200e18 = 833333333333333333
@@ -963,7 +963,7 @@ contract CoinvestedPositionDistributionTest is Test {
      * Invariants:
      *   1. received == Distribution.eligible(coinvestedPosition) at claim time
      *   2. sum(lead investor payouts) + receiver_payout == received
-     *   3. each lead investor payout == floor(carryFraction * received / uint64.max)
+     *   3. each lead investor payout == floor(profitFraction * received / uint64.max)
      *   4. no currency created or destroyed
      */
     function testDI_XI_Fuzz(
@@ -995,9 +995,9 @@ contract CoinvestedPositionDistributionTest is Test {
         uint256 coinvestedPositionEligible;
         {
             LeadInvestor[] memory leadInvestors = new LeadInvestor[](numLeads);
-            leadInvestors[0] = LeadInvestor({account: LEAD_A, carryFraction: carryA});
-            if (numLeads >= 2) leadInvestors[1] = LeadInvestor({account: LEAD_B, carryFraction: carryB});
-            if (numLeads >= 3) leadInvestors[2] = LeadInvestor({account: LEAD_C, carryFraction: carryC});
+            leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: carryA});
+            if (numLeads >= 2) leadInvestors[1] = LeadInvestor({account: LEAD_B, profitFraction: carryB});
+            if (numLeads >= 3) leadInvestors[2] = LeadInvestor({account: LEAD_C, profitFraction: carryC});
 
             Token fuzzToken;
             uint256 snapFuzz;
@@ -1005,7 +1005,7 @@ contract CoinvestedPositionDistributionTest is Test {
                 uint256 coinvestedPositionTokens = uint256(coinvestedPositionTokenAmount) * 1e18;
                 uint256 otherTokens = uint256(otherTokenAmount) * 1e18;
 
-                bytes32 salt = bytes32(uint256(leadInvestors[0].carryFraction) ^ coinvestedPositionTokens);
+                bytes32 salt = bytes32(uint256(leadInvestors[0].profitFraction) ^ coinvestedPositionTokens);
                 CoinvestedPosition tempCoinvestedPosition = _deployCoinvestedPosition(
                     salt,
                     BASE_PRICE_EURC,

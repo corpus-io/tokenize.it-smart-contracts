@@ -22,7 +22,7 @@ contract FeeSplitter {
 
     /**
      * @notice Pulls feeAmount of currency from feePayer and distributes it proportionally among the
-     *      lead investors of coinvestedPosition by their carry fractions. The last lead investor
+     *      lead investors of coinvestedPosition by their carry fractions. The first lead investor
      *      absorbs any rounding dust so the full feeAmount is always distributed.
      *      feePayer must have pre-approved this contract's address for at least feeAmount of currency.
      * @param feePayer address from which the fee is pulled; must have pre-approved this contract
@@ -47,24 +47,24 @@ contract FeeSplitter {
         currency.safeTransferFrom(feePayer, address(this), feeAmount);
 
         // sum carry fractions to use as the denominator for proportional distribution
-        uint256 carryFractionsSum = 0;
+        uint256 profitFractionsSum = 0;
         for (uint256 i = 0; i < investorCount; i++) {
-            (, uint64 carryFraction) = coinvestedPosition.leadInvestors(i);
-            carryFractionsSum += carryFraction;
+            (, uint64 profitFraction) = coinvestedPosition.leadInvestors(i);
+            profitFractionsSum += profitFraction;
         }
 
         // distribute proportionally; last investor absorbs rounding dust
         uint256 remainingFee = feeAmount;
         for (uint256 i = 0; i < investorCount - 1; i++) {
-            (address account, uint64 carryFraction) = coinvestedPosition.leadInvestors(i);
-            uint256 share = (uint256(carryFraction) * feeAmount) / carryFractionsSum;
+            (address account, uint64 profitFraction) = coinvestedPosition.leadInvestors(i);
+            uint256 share = (uint256(profitFraction) * feeAmount) / profitFractionsSum;
             if (share != 0) {
                 currency.safeTransfer(account, share);
                 remainingFee -= share;
             }
         }
         if (remainingFee != 0) {
-            (address lastAccount, ) = coinvestedPosition.leadInvestors(investorCount - 1);
+            (address lastAccount, ) = coinvestedPosition.leadInvestors(0);
             currency.safeTransfer(lastAccount, remainingFee);
         }
 

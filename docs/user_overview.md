@@ -88,7 +88,7 @@ The CoinvestedPosition contract handles the case where a group of investors co-i
 **Parties involved:**
 
 - **Co-investor (receiver)**: The co-investor whose capital bought the tokens. Receives at least `basePrice` (a EURO reference price) per token across any proceeds.
-- **Lead investors**: Each has a `carryFraction` (a share of `uint64.max`). Lead investors receive their carry — the proceeds above the co-investor's `basePrice` — split according to their fractions.
+- **Lead investors**: Each has a `profitFraction` (a share of `uint64.max`). Lead investors receive their profit — the proceeds above the co-investor's `basePrice` — split according to their fractions.
 
 **Three payout paths:**
 

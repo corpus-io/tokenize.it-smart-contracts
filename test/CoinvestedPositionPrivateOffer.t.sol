@@ -115,7 +115,7 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
         uint256 investmentAmount = Math.ceilDiv(tokenAmount * tokenPrice, 10 ** token.decimals());
 
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](1);
-        leadInvestors[0] = LeadInvestor({account: LEAD_A, carryFraction: CARRY_10PCT});
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT});
 
         CoinvestedPositionInitializerArguments memory coinvestedPositionArgs = _buildCoinvestedPositionArgs(
             leadInvestors
@@ -182,8 +182,8 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
 
         // Build a CoinvestedPosition with 2 lead investors as the fee roster source
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](2);
-        leadInvestors[0] = LeadInvestor({account: LEAD_A, carryFraction: CARRY_10PCT});
-        leadInvestors[1] = LeadInvestor({account: leadB, carryFraction: CARRY_5PCT});
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT});
+        leadInvestors[1] = LeadInvestor({account: leadB, profitFraction: CARRY_5PCT});
 
         CoinvestedPositionInitializerArguments memory coinvestedPositionArgs = _buildCoinvestedPositionArgs(
             leadInvestors
@@ -226,8 +226,8 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
 
         assertEq(feeSplitterAddress, expectedFeeSplitter, "FeeSplitter address mismatch");
 
-        uint256 carryFractionsSum = uint256(CARRY_10PCT) + uint256(CARRY_5PCT);
-        uint256 LEAD_AShare = (uint256(CARRY_10PCT) * feeAmount) / carryFractionsSum;
+        uint256 profitFractionsSum = uint256(CARRY_10PCT) + uint256(CARRY_5PCT);
+        uint256 LEAD_AShare = (uint256(CARRY_10PCT) * feeAmount) / profitFractionsSum;
         uint256 leadBShare = feeAmount - LEAD_AShare; // last lead absorbs rounding dust
 
         assertEq(eurc.balanceOf(LEAD_A), LEAD_AShare, "LEAD_A fee share wrong");

@@ -52,7 +52,7 @@ contract CoinvestedPositionERC2771Test is CoinvestedPositionTestBase {
         CoinvestedPositionCloneFactory freshFactory = new CoinvestedPositionCloneFactory(address(freshLogic));
 
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](1);
-        leadInvestors[0] = LeadInvestor({account: LEAD_A, carryFraction: CARRY_10PCT});
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT});
 
         CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
             owner: OWNER,

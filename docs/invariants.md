@@ -185,7 +185,7 @@ The following statements about the smart contracts should always be true
 - The owner can unpause the contract when ready to sell.
 - The owner can change the currency used for selling tokens.
 - Only currency with both `TRUSTED_CURRENCY` and `EURO_CURRENCY` attributes can be used for selling tokens or claiming exits.
-- On `buy`: after fee deduction, lead investors get their share of the carry proportional to their `carryFraction`. The co-investor (receiver) receives all remaining proceeds.
+- On `buy`: after fee deduction, lead investors get their share of the profit proportional to their `profitFraction`. The co-investor (receiver) receives all remaining proceeds.
 - If net proceeds are less than the scaled base price payout, the co-investor receives all net proceeds and lead investors receive nothing.
 - During settlement of buy or claim, the contract's full remaining currency balance is swept to the receiver after lead investor shares, ensuring no dust is left in the contract.
 - `basePrice` is denominated in the smallest units of `baseCurrency` at initialization time and stored with `basePriceDecimals` for cross-currency scaling.

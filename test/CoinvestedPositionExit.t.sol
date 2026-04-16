@@ -147,8 +147,8 @@ contract CoinvestedPositionExitTest is Test {
 
     function _defaultLeadInvestors() internal pure returns (LeadInvestor[] memory) {
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](2);
-        leadInvestors[0] = LeadInvestor({account: LEAD_A, carryFraction: CARRY_10PCT});
-        leadInvestors[1] = LeadInvestor({account: LEAD_B, carryFraction: CARRY_5PCT});
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT});
+        leadInvestors[1] = LeadInvestor({account: LEAD_B, profitFraction: CARRY_5PCT});
         return leadInvestors;
     }
 
@@ -514,9 +514,9 @@ contract CoinvestedPositionExitTest is Test {
 
     function _deployThreeInvestorCp() internal returns (CoinvestedPosition) {
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](3);
-        leadInvestors[0] = LeadInvestor({account: LEAD_A, carryFraction: IVA_FRAC_A});
-        leadInvestors[1] = LeadInvestor({account: LEAD_B, carryFraction: IVA_FRAC_B});
-        leadInvestors[2] = LeadInvestor({account: LEAD_C, carryFraction: IVA_FRAC_C});
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: IVA_FRAC_A});
+        leadInvestors[1] = LeadInvestor({account: LEAD_B, profitFraction: IVA_FRAC_B});
+        leadInvestors[2] = LeadInvestor({account: LEAD_C, profitFraction: IVA_FRAC_C});
         CoinvestedPosition coinvestedPosition3 = _deployCoinvestedPosition(
             bytes32(0),
             BASE_PRICE_EURC,
@@ -576,10 +576,10 @@ contract CoinvestedPositionExitTest is Test {
 
     /// IV-B: Single lead investor with ~99.9% carry
     function testIVB_SingleLeadNearMaxCarry() public {
-        // carryFraction = type(uint64).max - 1  (≈ 100%, just below the max limit)
+        // profitFraction = type(uint64).max - 1  (≈ 100%, just below the max limit)
         uint64 fracNearMax = type(uint64).max - 1;
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](1);
-        leadInvestors[0] = LeadInvestor({account: LEAD_A, carryFraction: fracNearMax});
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: fracNearMax});
 
         CoinvestedPosition coinvestedPositionSingle = _deployCoinvestedPosition(
             bytes32(0),

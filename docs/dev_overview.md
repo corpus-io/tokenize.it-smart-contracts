@@ -128,7 +128,7 @@ Extends `TokenSwapBase`. Holds tokens for a co-investor and manages carry distri
 
 - Initialized paused; the owner unpauses when ready to sell (allowing `buy()` price to be set first).
 - `basePrice` is set in the smallest units of `baseCurrency` at initialization.
-- `leadInvestors`: array of `{account, carryFraction}`. `carryFraction` documents who is eligible to how much of the carry. The fractions are scaled with uint64max, so uint64max == 1 == 100% of carry.
+- `leadInvestors`: array of `{account, profitFraction}`. `profitFraction` documents who is eligible to how much of the carry. The fractions are scaled with uint64max, so uint64max == 1 == 100% of carry.
 - `setCurrency(currency, basePrice)` lets the owner switch the reference currency after the timelock has expired; the caller must supply the new `basePrice` expressed in the new currency's units.
 
 **Effective base price in `claimExit()`**

@@ -95,8 +95,8 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
     function _defaultLeadInvestors() internal pure returns (LeadInvestor[] memory) {
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](2);
-        leadInvestors[0] = LeadInvestor({account: LEAD_A, carryFraction: CARRY_10PCT});
-        leadInvestors[1] = LeadInvestor({account: LEAD_B, carryFraction: CARRY_5PCT});
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT});
+        leadInvestors[1] = LeadInvestor({account: LEAD_B, profitFraction: CARRY_5PCT});
         return leadInvestors;
     }
 
@@ -275,7 +275,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
     function testInitZeroAddressLeadInvestorReverts() public {
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](1);
-        leadInvestors[0] = LeadInvestor({account: address(0), carryFraction: CARRY_10PCT});
+        leadInvestors[0] = LeadInvestor({account: address(0), profitFraction: CARRY_10PCT});
         CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
             owner: OWNER,
             receiver: RECEIVER,
@@ -292,7 +292,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
     function testInitCarryFractionZeroReverts() public {
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](1);
-        leadInvestors[0] = LeadInvestor({account: LEAD_A, carryFraction: 0});
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: 0});
         CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
             owner: OWNER,
             receiver: RECEIVER,
@@ -303,15 +303,15 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             lockedUntil: 0,
             tokenExitRegistry: tokenExitRegistry
         });
-        vm.expectRevert("lead investor carry fraction can not be zero");
+        vm.expectRevert("lead investor profit fraction can not be zero");
         factory.createCoinvestedPositionClone(bytes32(0), TRUSTED_FORWARDER, args);
     }
 
     function testInitCarryFractionsSumOverflowReverts() public {
         // (max/2 + 1) + (max/2 + 1) = max + 1: sum overflows uint64 → arithmetic revert
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](2);
-        leadInvestors[0] = LeadInvestor({account: LEAD_A, carryFraction: type(uint64).max / 2 + 1});
-        leadInvestors[1] = LeadInvestor({account: LEAD_B, carryFraction: type(uint64).max / 2 + 1});
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: type(uint64).max / 2 + 1});
+        leadInvestors[1] = LeadInvestor({account: LEAD_B, profitFraction: type(uint64).max / 2 + 1});
         CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
             owner: OWNER,
             receiver: RECEIVER,
@@ -328,7 +328,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
     function testInitCarryFractionsSumMaxAccepted() public {
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](1);
-        leadInvestors[0] = LeadInvestor({account: LEAD_A, carryFraction: type(uint64).max});
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: type(uint64).max});
         CoinvestedPosition coinvestedPositionBoundary = _deployCoinvestedPosition(
             bytes32(0),
             100e6,
@@ -696,9 +696,9 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         // Paid: 800e6. Fee: 0. Remaining: 800e6. BasePayout: 600e6. Carry: 200e6.
         // Lead investors: 5% + 2% + 10%
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](3);
-        leadInvestors[0] = LeadInvestor({account: LEAD_A, carryFraction: CARRY_5PCT}); // 5%
-        leadInvestors[1] = LeadInvestor({account: LEAD_B, carryFraction: CARRY_2PCT}); // 2%
-        leadInvestors[2] = LeadInvestor({account: TOKEN_RECEIVER, carryFraction: CARRY_10PCT}); // 10%
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_5PCT}); // 5%
+        leadInvestors[1] = LeadInvestor({account: LEAD_B, profitFraction: CARRY_2PCT}); // 2%
+        leadInvestors[2] = LeadInvestor({account: TOKEN_RECEIVER, profitFraction: CARRY_10PCT}); // 10%
         CoinvestedPosition coinvestedPositionThreeLeads = _deployCoinvestedPosition(
             bytes32(0),
             300e6,
@@ -963,7 +963,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
         // Use a fresh coinvestedPosition with single 10% lead investor to simplify
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](1);
-        leadInvestors[0] = LeadInvestor({account: LEAD_A, carryFraction: CARRY_10PCT});
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT});
         CoinvestedPosition coinvestedPositionSweep = _deployCoinvestedPosition(bytes32(0), 100e6, eurc, leadInvestors);
 
         vm.prank(ADMIN);
@@ -996,7 +996,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
     function testSettleSweepCarryZeroWithExtra() public {
         // tokenPrice == basePrice → carry=0; RECEIVER gets everything including extra
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](1);
-        leadInvestors[0] = LeadInvestor({account: LEAD_A, carryFraction: CARRY_10PCT});
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT});
         CoinvestedPosition coinvestedPositionZeroCarry = _deployCoinvestedPosition(
             bytes32(0),
             100e6,
@@ -1110,7 +1110,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
                 carries[i] = uint64(bound(uint256(rawCarries[i]), 1, type(uint64).max / uint64(numLeads)));
                 // Low addresses that don't collide with any named test constant
                 leadAddrs[i] = address(uint160(0x2000 + i));
-                leadInvestors[i] = LeadInvestor({account: leadAddrs[i], carryFraction: carries[i]});
+                leadInvestors[i] = LeadInvestor({account: leadAddrs[i], profitFraction: carries[i]});
             }
 
             CoinvestedPosition fuzzPosition = _deployCoinvestedPosition(
