@@ -213,7 +213,7 @@ contract ExitCloneFactoryTest is Test {
         currency.mint(CURRENCY_PROVIDER, EXAMPLE_TOTAL_CURRENCY);
         vm.prank(CURRENCY_PROVIDER);
         currency.approve(predicted, EXAMPLE_TOTAL_CURRENCY);
-        vm.expectRevert("ExitCloneFactory: Unexpected TRUSTED_FORWARDER");
+        vm.expectRevert("ExitCloneFactory: Unexpected trustedForwarder");
         factory.createExitClone(EXAMPLE_SALT, wrongForwarder, CURRENCY_PROVIDER, args, EXAMPLE_TOTAL_CURRENCY);
     }
 

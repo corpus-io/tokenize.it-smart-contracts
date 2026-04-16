@@ -193,13 +193,13 @@ contract CrowdinvestingTest is Test {
             address(0),
             address(0)
         );
-        vm.expectRevert("CrowdinvestingCloneFactory: Unexpected TRUSTED_FORWARDER");
+        vm.expectRevert("CrowdinvestingCloneFactory: Unexpected trustedForwarder");
         Crowdinvesting(factory.createCrowdinvestingClone(0, address(0), arguments));
 
         // OWNER 0
         CrowdinvestingInitializerArguments memory tempArgs = cloneCrowdinvestingInitializerArguments(arguments);
         tempArgs.owner = address(0);
-        vm.expectRevert("OWNER can not be zero address");
+        vm.expectRevert("owner can not be zero address");
         factory.createCrowdinvestingClone(0, TRUSTED_FORWARDER, tempArgs);
 
         // RECEIVER 0
@@ -756,7 +756,7 @@ contract CrowdinvestingTest is Test {
         assertTrue(crowdinvesting.currencyReceiver() == address(BUYER));
 
         vm.prank(OWNER);
-        vm.expectRevert("RECEIVER can not be zero address");
+        vm.expectRevert("receiver can not be zero address");
         crowdinvesting.setCurrencyReceiver(address(0));
     }
 

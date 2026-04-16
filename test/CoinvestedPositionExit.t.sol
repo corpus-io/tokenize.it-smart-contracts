@@ -282,7 +282,7 @@ contract CoinvestedPositionExitTest is Test {
     }
 
     function testDistributeExitOnlyOwner() public {
-        vm.expectRevert("Ownable: caller is not the OWNER");
+        vm.expectRevert("Ownable: caller is not the owner");
         // called by address(this) which is not OWNER
         coinvestedPosition.claimExit(1, 0);
     }
@@ -854,7 +854,7 @@ contract CoinvestedPositionExitTest is Test {
         // Deploy cp with fuzzed basePrice using EURc (6 dec)
         LeadInvestor[] memory leadInvestors = _defaultLeadInvestors();
         CoinvestedPosition coinvestedPositionFuzz = _deployCoinvestedPosition(
-            bytes32(0),
+            "1",
             uint256(basePrice),
             eurc,
             leadInvestors

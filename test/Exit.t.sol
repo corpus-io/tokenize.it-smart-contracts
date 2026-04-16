@@ -130,7 +130,7 @@ contract ExitTest is Test {
     function testLogicContractDrainReverts() public {
         // OWNER is address(0) on uninitialized logic contract → onlyOwner blocks everyone
         vm.warp(block.timestamp + 365 days);
-        vm.expectRevert("Ownable: caller is not the OWNER");
+        vm.expectRevert("Ownable: caller is not the owner");
         exitLogic.drain(RECIPIENT, currency);
     }
 
@@ -395,7 +395,7 @@ contract ExitTest is Test {
 
     function testDrainNonOwnerReverts() public {
         vm.warp(lockedUntil + 1);
-        vm.expectRevert("Ownable: caller is not the OWNER");
+        vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(HOLDER);
         exitContract.drain(RECIPIENT, currency);
     }
@@ -405,7 +405,7 @@ contract ExitTest is Test {
         vm.assume(caller != address(0));
         vm.assume(caller != TRUSTED_FORWARDER);
         vm.warp(lockedUntil + 1);
-        vm.expectRevert("Ownable: caller is not the OWNER");
+        vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(caller);
         exitContract.drain(RECIPIENT, currency);
     }

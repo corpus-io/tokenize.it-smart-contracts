@@ -344,14 +344,14 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
     function testSetCurrencyOnlyOwner() public {
         vm.prank(BUYER);
-        vm.expectRevert("Ownable: caller is not the OWNER");
+        vm.expectRevert("Ownable: caller is not the owner");
         coinvestedPosition.setCurrency(IERC20(address(eure)), 1);
     }
 
     function testFuzz_SetCurrencyOnlyOwner(address caller) public {
         vm.assume(caller != OWNER && caller != address(0) && caller != TRUSTED_FORWARDER);
         vm.prank(caller);
-        vm.expectRevert("Ownable: caller is not the OWNER");
+        vm.expectRevert("Ownable: caller is not the owner");
         coinvestedPosition.setCurrency(IERC20(address(eure)), 1);
     }
 
@@ -385,7 +385,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
     function testSetTokenPriceOnlyOwner() public {
         vm.prank(BUYER);
-        vm.expectRevert("Ownable: caller is not the OWNER");
+        vm.expectRevert("Ownable: caller is not the owner");
         coinvestedPosition.setTokenPrice(200e6);
     }
 
@@ -395,7 +395,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         vm.prank(OWNER);
         coinvestedPosition.unpause();
         vm.prank(BUYER);
-        vm.expectRevert("Ownable: caller is not the OWNER");
+        vm.expectRevert("Ownable: caller is not the owner");
         coinvestedPosition.pause();
     }
 
@@ -403,7 +403,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         vm.prank(OWNER);
         coinvestedPosition.setTokenPrice(200e6);
         vm.prank(BUYER);
-        vm.expectRevert("Ownable: caller is not the OWNER");
+        vm.expectRevert("Ownable: caller is not the owner");
         coinvestedPosition.unpause();
     }
 
@@ -445,13 +445,13 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
     function testSetReceiverOnlyOwner() public {
         vm.prank(BUYER);
-        vm.expectRevert("Ownable: caller is not the OWNER");
+        vm.expectRevert("Ownable: caller is not the owner");
         coinvestedPosition.setReceiver(BUYER);
     }
 
     function testSetReceiverZeroAddressReverts() public {
         vm.prank(OWNER);
-        vm.expectRevert("RECEIVER can not be zero address");
+        vm.expectRevert("receiver can not be zero address");
         coinvestedPosition.setReceiver(address(0));
     }
 
@@ -1307,21 +1307,21 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
     function testFuzz_AccessControl_SetCurrency(address caller) public {
         vm.assume(caller != address(0) && caller != OWNER && caller != TRUSTED_FORWARDER);
         vm.prank(caller);
-        vm.expectRevert("Ownable: caller is not the OWNER");
+        vm.expectRevert("Ownable: caller is not the owner");
         coinvestedPosition.setCurrency(IERC20(address(eure)), 1);
     }
 
     function testFuzz_AccessControl_SetTokenPrice(address caller) public {
         vm.assume(caller != address(0) && caller != OWNER && caller != TRUSTED_FORWARDER);
         vm.prank(caller);
-        vm.expectRevert("Ownable: caller is not the OWNER");
+        vm.expectRevert("Ownable: caller is not the owner");
         coinvestedPosition.setTokenPrice(200e6);
     }
 
     function testFuzz_AccessControl_SetReceiver(address caller) public {
         vm.assume(caller != address(0) && caller != OWNER && caller != TRUSTED_FORWARDER);
         vm.prank(caller);
-        vm.expectRevert("Ownable: caller is not the OWNER");
+        vm.expectRevert("Ownable: caller is not the owner");
         coinvestedPosition.setReceiver(caller);
     }
 
@@ -1332,7 +1332,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         vm.prank(OWNER);
         coinvestedPosition.unpause();
         vm.prank(caller);
-        vm.expectRevert("Ownable: caller is not the OWNER");
+        vm.expectRevert("Ownable: caller is not the owner");
         coinvestedPosition.pause();
     }
 
@@ -1341,7 +1341,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         vm.prank(OWNER);
         coinvestedPosition.setTokenPrice(200e6);
         vm.prank(caller);
-        vm.expectRevert("Ownable: caller is not the OWNER");
+        vm.expectRevert("Ownable: caller is not the owner");
         coinvestedPosition.unpause();
     }
 

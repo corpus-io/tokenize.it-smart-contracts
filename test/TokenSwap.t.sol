@@ -174,25 +174,25 @@ contract TokenSwapTest is Test {
             token
         );
 
-        vm.expectRevert("TokenSwapCloneFactory: Unexpected TRUSTED_FORWARDER");
+        vm.expectRevert("TokenSwapCloneFactory: Unexpected trustedForwarder");
         TokenSwap(factory.createTokenSwapClone(0, address(0), arguments));
 
         // OWNER 0
         TokenSwapInitializerArguments memory tempArgs = cloneTokenSwapInitializerArguments(arguments);
         tempArgs.owner = address(0);
-        vm.expectRevert("OWNER can not be zero address");
+        vm.expectRevert("owner can not be zero address");
         factory.createTokenSwapClone(0, TRUSTED_FORWARDER, tempArgs);
 
         // RECEIVER 0
         tempArgs = cloneTokenSwapInitializerArguments(arguments);
         tempArgs.receiver = address(0);
-        vm.expectRevert("RECEIVER can not be zero address");
+        vm.expectRevert("receiver can not be zero address");
         factory.createTokenSwapClone(0, TRUSTED_FORWARDER, tempArgs);
 
         // HOLDER 0
         tempArgs = cloneTokenSwapInitializerArguments(arguments);
         tempArgs.holder = address(0);
-        vm.expectRevert("HOLDER can not be zero address");
+        vm.expectRevert("holder can not be zero address");
         factory.createTokenSwapClone(0, TRUSTED_FORWARDER, tempArgs);
 
         // PRICE 0
@@ -727,7 +727,7 @@ contract TokenSwapTest is Test {
         assertTrue(tokenSwap.receiver() == address(BUYER));
 
         vm.prank(OWNER);
-        vm.expectRevert("RECEIVER can not be zero address");
+        vm.expectRevert("receiver can not be zero address");
         tokenSwap.setReceiver(address(0));
     }
 
@@ -761,7 +761,7 @@ contract TokenSwapTest is Test {
         vm.assume(rando != OWNER);
         vm.assume(rando != TRUSTED_FORWARDER);
         vm.prank(rando);
-        vm.expectRevert("Ownable: caller is not the OWNER");
+        vm.expectRevert("Ownable: caller is not the owner");
         tokenSwap.pause();
     }
 
@@ -771,7 +771,7 @@ contract TokenSwapTest is Test {
         vm.prank(OWNER);
         tokenSwap.pause();
         vm.prank(rando);
-        vm.expectRevert("Ownable: caller is not the OWNER");
+        vm.expectRevert("Ownable: caller is not the owner");
         tokenSwap.unpause();
     }
 

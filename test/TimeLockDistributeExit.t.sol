@@ -189,7 +189,7 @@ contract TimeLockDistributeExitTest is Test {
 
         vm.warp(claimStart);
         vm.prank(OWNER);
-        vm.expectRevert("RECIPIENT can not be zero address");
+        vm.expectRevert("recipient can not be zero address");
         timeLock.claimExit(token, address(0), 0);
     }
 
@@ -200,7 +200,7 @@ contract TimeLockDistributeExitTest is Test {
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
 
         vm.warp(claimStart);
-        vm.expectRevert("Ownable: caller is not the OWNER");
+        vm.expectRevert("Ownable: caller is not the owner");
         timeLock.claimExit(token, RECIPIENT, 0);
     }
 

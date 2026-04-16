@@ -222,7 +222,7 @@ contract DistributionCloneFactoryTest is Test {
         currency.mint(CURRENCY_PROVIDER, EXAMPLE_INITIAL_FUNDING);
         vm.prank(CURRENCY_PROVIDER);
         currency.approve(predicted, EXAMPLE_INITIAL_FUNDING);
-        vm.expectRevert("DistributionCloneFactory: Unexpected TRUSTED_FORWARDER");
+        vm.expectRevert("DistributionCloneFactory: Unexpected trustedForwarder");
         factory.createDistributionClone(EXAMPLE_SALT, wrongForwarder, CURRENCY_PROVIDER, args, EXAMPLE_INITIAL_FUNDING);
     }
 

@@ -397,7 +397,7 @@ contract FeeSettingsTest is Test {
     }
 
     function testOwner0FailsInInitializer() public {
-        vm.expectRevert("OWNER can not be zero address");
+        vm.expectRevert("owner can not be zero address");
         feeSettingsCloneFactory.createFeeSettingsClone("salt", TRUSTED_FORWARDER, address(0), _buildFeeTypes(ADMIN));
     }
 
@@ -806,7 +806,7 @@ contract FeeSettingsTest is Test {
         vm.assume(_rando != ADMIN);
         vm.assume(_rando != TRUSTED_FORWARDER);
 
-        vm.expectRevert("Ownable: caller is not the OWNER");
+        vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(_rando);
         feeSettings.addManager(_rando);
     }
@@ -834,7 +834,7 @@ contract FeeSettingsTest is Test {
         vm.assume(_rando != ADMIN);
         vm.assume(_rando != TRUSTED_FORWARDER);
 
-        vm.expectRevert("Ownable: caller is not the OWNER");
+        vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(_rando);
         feeSettings.removeManager(_rando);
     }

@@ -405,7 +405,7 @@ contract DistributionTest is Test {
 
     function testDrainNonOwnerReverts() public {
         vm.warp(lockedUntil);
-        vm.expectRevert("Ownable: caller is not the OWNER");
+        vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(HOLDER_A);
         dist.drain(HOLDER_A, currency);
     }
@@ -456,7 +456,7 @@ contract DistributionTest is Test {
     function testReassignNonOwnerReverts() public {
         vm.warp(lockedUntil);
         uint256 amount = dist.eligible(HOLDER_A);
-        vm.expectRevert("Ownable: caller is not the OWNER");
+        vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(HOLDER_A);
         dist.reassign(HOLDER_A, HOLDER_B, amount);
     }

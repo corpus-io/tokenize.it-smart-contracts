@@ -94,7 +94,7 @@ contract GlobalTokenExitRegistryTest is Test {
         address fakeExit = makeAddr("fakeExit");
 
         vm.prank(NON_ADMIN);
-        vm.expectRevert("caller is not token ADMIN or owner");
+        vm.expectRevert("caller is not token admin or owner");
         registry.setExit(token, Exit(address(fakeExit)));
     }
 
@@ -155,7 +155,7 @@ contract GlobalTokenExitRegistryTest is Test {
         address fakeExit = makeAddr("fakeExit");
 
         vm.prank(NON_ADMIN);
-        vm.expectRevert("caller is not token ADMIN or owner");
+        vm.expectRevert("caller is not token admin or owner");
         registry.setExit(Token(address(ownableToken)), Exit(address(fakeExit)));
     }
 
@@ -194,7 +194,7 @@ contract GlobalTokenExitRegistryTest is Test {
         vm.assume(!token.hasRole(token.DEFAULT_ADMIN_ROLE(), caller));
         address fakeExit = makeAddr("fakeExit");
         vm.prank(caller);
-        vm.expectRevert("caller is not token ADMIN or owner");
+        vm.expectRevert("caller is not token admin or owner");
         registry.setExit(token, Exit(address(fakeExit)));
     }
 
