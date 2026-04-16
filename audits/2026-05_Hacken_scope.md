@@ -1,6 +1,6 @@
-## Audit Scope
+## In scope
 
-The invariants defined in [`docs/invariants.md`](../docs/invariants.md) apply to all contracts listed below and are considered part of this scope.
+The invariants defined in [`docs/invariants.md`](../docs/invariants.md) apply to all contracts listed below and are considered part of the audit scope.
 
 ### New Contracts
 
@@ -37,9 +37,10 @@ Review interface definitions for correctness and completeness.
 
 ---
 
-### Out of Scope
+## Out of Scope
 
 - All factory contracts (`contracts/factories/`)
+- docs (in `docs/`), except for `docs/invariants.md`
 - `Token`
 - `Crowdinvesting`
 - `PrivateOffer`
@@ -47,3 +48,4 @@ Review interface definitions for correctness and completeness.
 - `AllowList`
 - `PriceLinear`
 - `IPriceDynamic`
+- `FeeSplitter`

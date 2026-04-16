@@ -42,24 +42,26 @@ The following statements about the smart contracts should always be true
 
 ## FeeSettings.sol
 
-- TokenFees are always less or equal to 5%.
-- CrowdinvestingFees are always less or equal to 10%.
-- PrivateOfferFees are awlays less or equal to 5%.
-- The feeCollector can never be 0.
-- Only owner can change feeCollector and all fee default numerators and default denominators.
-- Increasing fees is only possible with a delay of at least 12 weeks.
-- Decreasing fees is possible without delay.
-- Only owner can appoint or demote managers.
-- Custom fees can only be set by managers.
-- Custom fees can only be removed by managers.
+- Fee types are registered dynamically; each type carries its own hard cap and default numerator.
+- A fee type's hard cap is fixed at registration and can never be changed.
+- The same fee type cannot be registered more than once.
+- Only the owner can register new fee types.
+- Only the owner can propose and execute changes to a type's default numerator.
+- Increasing a default numerator is only possible with an activation date at least 12 weeks in the future.
+- Decreasing a default numerator is possible without delay.
+- A default numerator can never exceed the fee type's hard cap.
+- No fee collector can ever be the zero address.
+- Only the owner can set or change the default fee collector for a fee type.
+- Only the owner can appoint or demote managers.
+- Custom fees can only be set or removed by managers.
 - Custom fees can never be set for token address 0.
-- Custom fees are only applied if they are lower than the default fee.
+- A custom fee numerator can never exceed the fee type's hard cap.
+- Custom fees are only applied if they are lower than the default fee at query time.
 - Custom fees are only applied before their expiry date.
-- Custom fees are only applied to the customers they are intended for, identified by their token address.
-- Custom fee collectors can only be set by managers.
-- Custom fee collectors can only be removed by managers.
-- If a custom fee collector is set, it is used instead of the default fee collector in the appropriate view functions.
+- Custom fees are only applied to the token they are intended for, identified by its token address.
+- Custom fee collectors can only be set or removed by managers.
 - Custom fee collectors can never be set for token address 0.
+- If a custom fee collector is set for a token, it is used instead of the type-level default.
 - Querying fees for token address 0 always returns the default fee.
 - Querying fee collectors for token address 0 always returns the default fee collector.
 - All functions can be called directly or as meta transaction using EIP-2771.
@@ -86,10 +88,11 @@ The following statements about the smart contracts should always be true
 
 ## PrivateOfferFactory.sol
 
-- Contract state cannot be changed.
-- Given equal inputs, getAddress() and deploy() return the same address.
-- Given equal inputs, getAddress() returns the same address regardless of msg.sender.
-- Deploy() returns the address the PrivateOffer contract was deployed to.
+- The factory holds no mutable state; the addresses of the TimeLockCloneFactory and CoinvestedPositionCloneFactory are fixed at construction and can never be changed.
+- All PrivateOffer contracts are deployed at deterministic addresses using create2.
+- Given equal inputs, each address prediction function returns the same address as its corresponding deploy function, regardless of msg.sender.
+- The factory can deploy both a PrivateOffer and a TimeLock in one transaction. In this case,the tokens are minted directly into the TimeLock.
+- The factory can deploy both a PrivateOffer and a CoinvestedPosition in one transaction. In this case, the tokens are minted directly into the CoinvestedPosition, and only the CoinvestedPosition address is returned.
 
 ## Crowdinvesting.sol
 
