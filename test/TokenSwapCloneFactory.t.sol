@@ -18,66 +18,71 @@ contract TokenSwapCloneFactoryTest is Test {
     TokenProxyFactory tokenFactory;
     TokenSwap tokenSwapImplementation;
     TokenSwapCloneFactory tokenSwapFactory;
-    address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
-    address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
-    address public constant requirer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
-    address public constant mintAllower = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
-    address public constant minter = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
-    address public constant burner = 0x4109709eCFa91A80626ff3989d68F67f5b1DD124;
-    address public constant transfererAdmin = 0x5109709EcFA91a80626ff3989d68f67F5B1dD125;
-    address public constant transferer = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
-    address public constant pauser = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
-    address public constant feeSettingsAndAllowListOwner = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
+    address public constant TRUSTED_FORWARDER = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
+    address public constant ADMIN = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
+    address public constant REQUIRER = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
+    address public constant MINT_ALLOWER = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
+    address public constant MINTER = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
+    address public constant BURNER = 0x4109709eCFa91A80626ff3989d68F67f5b1DD124;
+    address public constant TRANSFERER_ADMIN = 0x5109709EcFA91a80626ff3989d68f67F5B1dD125;
+    address public constant TRANSFERER = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
+    address public constant PAUSER = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
+    address public constant FEE_SETTINGS_AND_ALLOW_LIST_OWNER = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
 
     uint256 requirements = 0;
 
     // these are defined globally to make some tests work in spite of compiler limitations
-    bytes32 public constant exampleRawSalt = 0x00000000;
-    address public constant exampleTrustedForwarder = address(52);
-    address public constant exampleOwner = address(53);
-    address public constant exampleReceiver = address(54);
-    uint256 public constant exampleTokenPrice = 2;
-    IERC20 public constant exampleCurrency = IERC20(address(1));
+    bytes32 public constant EXAMPLE_RAW_SALT = 0x00000000;
+    address public constant EXAMPLE_TRUSTED_FORWARDER = address(52);
+    address public constant EXAMPLE_OWNER = address(53);
+    address public constant EXAMPLE_RECEIVER = address(54);
+    uint256 public constant EXAMPLE_TOKEN_PRICE = 2;
+    IERC20 public constant EXAMPLE_CURRENCY = IERC20(address(1));
     Token exampleToken;
-    address public constant exampleHolder = address(55);
+    address public constant EXAMPLE_HOLDER = address(55);
 
     event RequirementsChanged(uint256 newRequirements);
 
     function setUp() public {
-        vm.startPrank(feeSettingsAndAllowListOwner);
-        allowList = createAllowList(trustedForwarder, feeSettingsAndAllowListOwner);
+        vm.startPrank(FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
+        allowList = createAllowList(TRUSTED_FORWARDER, FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
 
-        FeeSettings feeSettingsLogicContract = new FeeSettings(trustedForwarder);
+        FeeSettings feeSettingsLogicContract = new FeeSettings(TRUSTED_FORWARDER);
         FeeSettingsCloneFactory feeSettingsCloneFactory = new FeeSettingsCloneFactory(
             address(feeSettingsLogicContract)
         );
         {
             FeeSettings.FeeTypeInit[] memory feeTypes = new FeeSettings.FeeTypeInit[](4);
-            feeTypes[0] = FeeSettings.FeeTypeInit(FeeTypes.TOKEN, 500, 100, feeSettingsAndAllowListOwner);
-            feeTypes[1] = FeeSettings.FeeTypeInit(FeeTypes.CROWDINVESTING, 1000, 100, feeSettingsAndAllowListOwner);
-            feeTypes[2] = FeeSettings.FeeTypeInit(FeeTypes.PRIVATE_OFFER, 500, 100, feeSettingsAndAllowListOwner);
-            feeTypes[3] = FeeSettings.FeeTypeInit(FeeTypes.SECONDARY_MARKET, 500, 0, feeSettingsAndAllowListOwner);
+            feeTypes[0] = FeeSettings.FeeTypeInit(FeeTypes.TOKEN, 500, 100, FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
+            feeTypes[1] = FeeSettings.FeeTypeInit(
+                FeeTypes.CROWDINVESTING,
+                1000,
+                100,
+                FEE_SETTINGS_AND_ALLOW_LIST_OWNER
+            );
+            feeTypes[2] = FeeSettings.FeeTypeInit(FeeTypes.PRIVATE_OFFER, 500, 100, FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
+            feeTypes[3] = FeeSettings.FeeTypeInit(FeeTypes.SECONDARY_MARKET, 500, 0, FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
             feeSettings = FeeSettings(
                 feeSettingsCloneFactory.createFeeSettingsClone(
                     0,
-                    trustedForwarder,
-                    feeSettingsAndAllowListOwner,
+                    TRUSTED_FORWARDER,
+                    FEE_SETTINGS_AND_ALLOW_LIST_OWNER,
                     feeTypes
                 )
             );
         }
         vm.stopPrank();
 
-        vm.prank(feeSettingsAndAllowListOwner);
-        allowList.set(address(exampleCurrency), TRUSTED_CURRENCY);
+        vm.prank(FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
+        allowList.set(address(EXAMPLE_CURRENCY), TRUSTED_CURRENCY);
 
-        Token tokenImplementation = new Token(trustedForwarder);
+        Token tokenImplementation = new Token(TRUSTED_FORWARDER);
         tokenFactory = new TokenProxyFactory(address(tokenImplementation));
 
         exampleToken = Token(
             tokenFactory.createTokenProxy(
                 "2",
-                trustedForwarder,
+                TRUSTED_FORWARDER,
                 feeSettings,
                 address(this),
                 allowList,
@@ -87,7 +92,7 @@ contract TokenSwapCloneFactoryTest is Test {
             )
         );
 
-        tokenSwapImplementation = new TokenSwap(trustedForwarder);
+        tokenSwapImplementation = new TokenSwap(TRUSTED_FORWARDER);
         tokenSwapFactory = new TokenSwapCloneFactory(address(tokenSwapImplementation));
     }
 
@@ -95,13 +100,13 @@ contract TokenSwapCloneFactoryTest is Test {
         vm.assume(address(_currency) != address(0));
         vm.assume(_tokenPrice > 0);
 
-        vm.prank(feeSettingsAndAllowListOwner);
+        vm.prank(FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
         allowList.set(address(_currency), TRUSTED_CURRENCY);
 
         Token _token = Token(
             tokenFactory.createTokenProxy(
                 0,
-                trustedForwarder,
+                TRUSTED_FORWARDER,
                 feeSettings,
                 address(this),
                 allowList,
@@ -112,27 +117,31 @@ contract TokenSwapCloneFactoryTest is Test {
         );
 
         // create new clone factory so we can use the local forwarder
-        tokenSwapImplementation = new TokenSwap(exampleTrustedForwarder);
+        tokenSwapImplementation = new TokenSwap(EXAMPLE_TRUSTED_FORWARDER);
         tokenSwapFactory = new TokenSwapCloneFactory(address(tokenSwapImplementation));
 
         TokenSwapInitializerArguments memory arguments = TokenSwapInitializerArguments(
-            exampleOwner,
-            exampleReceiver,
-            exampleHolder,
+            EXAMPLE_OWNER,
+            EXAMPLE_RECEIVER,
+            EXAMPLE_HOLDER,
             _tokenPrice,
             _currency,
             _token
         );
 
         address expected1 = tokenSwapFactory.predictCloneAddress(
-            keccak256(abi.encode(exampleRawSalt, exampleTrustedForwarder, arguments))
+            keccak256(abi.encode(EXAMPLE_RAW_SALT, EXAMPLE_TRUSTED_FORWARDER, arguments))
         );
 
-        address expected2 = tokenSwapFactory.predictCloneAddress(exampleRawSalt, exampleTrustedForwarder, arguments);
+        address expected2 = tokenSwapFactory.predictCloneAddress(
+            EXAMPLE_RAW_SALT,
+            EXAMPLE_TRUSTED_FORWARDER,
+            arguments
+        );
 
         assertEq(expected1, expected2, "address prediction with salt and params not equal");
 
-        address actual = tokenSwapFactory.createTokenSwapClone(exampleRawSalt, exampleTrustedForwarder, arguments);
+        address actual = tokenSwapFactory.createTokenSwapClone(EXAMPLE_RAW_SALT, EXAMPLE_TRUSTED_FORWARDER, arguments);
         assertEq(expected1, actual, "address prediction failed");
     }
 
@@ -153,9 +162,9 @@ contract TokenSwapCloneFactoryTest is Test {
         TokenSwapInitializerArguments memory arguments = TokenSwapInitializerArguments(
             _owner,
             _receiver,
-            exampleHolder,
-            exampleTokenPrice,
-            exampleCurrency,
+            EXAMPLE_HOLDER,
+            EXAMPLE_TOKEN_PRICE,
+            EXAMPLE_CURRENCY,
             exampleToken
         );
 
@@ -189,9 +198,9 @@ contract TokenSwapCloneFactoryTest is Test {
         TokenSwapInitializerArguments memory arguments = TokenSwapInitializerArguments(
             _owner,
             _receiver,
-            exampleHolder,
+            EXAMPLE_HOLDER,
             _tokenPrice,
-            exampleCurrency,
+            EXAMPLE_CURRENCY,
             exampleToken
         );
 
@@ -218,13 +227,13 @@ contract TokenSwapCloneFactoryTest is Test {
         vm.assume(_tokenPrice > 0);
         vm.assume(_holder != address(0));
 
-        vm.prank(feeSettingsAndAllowListOwner);
+        vm.prank(FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
         allowList.set(address(_currency), TRUSTED_CURRENCY);
 
         Token _token = Token(
             tokenFactory.createTokenProxy(
                 0,
-                trustedForwarder,
+                TRUSTED_FORWARDER,
                 feeSettings,
                 address(this),
                 allowList,
@@ -244,11 +253,11 @@ contract TokenSwapCloneFactoryTest is Test {
         );
 
         // deploy once
-        tokenSwapFactory.createTokenSwapClone(_rawSalt, trustedForwarder, arguments);
+        tokenSwapFactory.createTokenSwapClone(_rawSalt, TRUSTED_FORWARDER, arguments);
 
         // deploy again
         vm.expectRevert("ERC1167: create2 failed");
-        tokenSwapFactory.createTokenSwapClone(_rawSalt, trustedForwarder, arguments);
+        tokenSwapFactory.createTokenSwapClone(_rawSalt, TRUSTED_FORWARDER, arguments);
     }
 
     function testInitialization1(
@@ -271,14 +280,14 @@ contract TokenSwapCloneFactoryTest is Test {
             _owner,
             _receiver,
             _holder,
-            exampleTokenPrice,
-            exampleCurrency,
+            EXAMPLE_TOKEN_PRICE,
+            EXAMPLE_CURRENCY,
             exampleToken
         );
 
         TokenSwap tokenSwap = TokenSwap(tokenSwapFactory.createTokenSwapClone(_rawSalt, _trustedForwarder, arguments));
 
-        assertTrue(tokenSwap.isTrustedForwarder(_trustedForwarder), "trustedForwarder not set");
+        assertTrue(tokenSwap.isTrustedForwarder(_trustedForwarder), "TRUSTED_FORWARDER not set");
         assertEq(tokenSwap.owner(), _owner, "owner not set");
         assertEq(tokenSwap.receiver(), _receiver, "receiver not set");
         assertEq(tokenSwap.holder(), _holder, "holder not set");
@@ -288,13 +297,13 @@ contract TokenSwapCloneFactoryTest is Test {
         vm.assume(address(_currency) != address(0));
         vm.assume(_tokenPrice > 0);
 
-        vm.prank(feeSettingsAndAllowListOwner);
+        vm.prank(FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
         allowList.set(address(_currency), TRUSTED_CURRENCY);
 
         Token _token = Token(
             tokenFactory.createTokenProxy(
                 0,
-                trustedForwarder,
+                TRUSTED_FORWARDER,
                 feeSettings,
                 address(this),
                 allowList,
@@ -305,20 +314,20 @@ contract TokenSwapCloneFactoryTest is Test {
         );
 
         // create new clone factory so we can use the local forwarder
-        tokenSwapImplementation = new TokenSwap(exampleTrustedForwarder);
+        tokenSwapImplementation = new TokenSwap(EXAMPLE_TRUSTED_FORWARDER);
         tokenSwapFactory = new TokenSwapCloneFactory(address(tokenSwapImplementation));
 
         TokenSwapInitializerArguments memory arguments = TokenSwapInitializerArguments(
-            exampleOwner,
-            exampleReceiver,
-            exampleHolder,
+            EXAMPLE_OWNER,
+            EXAMPLE_RECEIVER,
+            EXAMPLE_HOLDER,
             _tokenPrice,
             _currency,
             _token
         );
 
         TokenSwap tokenSwap = TokenSwap(
-            tokenSwapFactory.createTokenSwapClone(exampleRawSalt, exampleTrustedForwarder, arguments)
+            tokenSwapFactory.createTokenSwapClone(EXAMPLE_RAW_SALT, EXAMPLE_TRUSTED_FORWARDER, arguments)
         );
 
         assertEq(tokenSwap.tokenPrice(), _tokenPrice, "tokenPrice not set");
@@ -329,25 +338,25 @@ contract TokenSwapCloneFactoryTest is Test {
     function testInitializationRevertsWithUntrustedCurrency(address someCurrency, uint256 currencyAttributes) public {
         vm.assume(someCurrency != address(0));
         vm.assume(currencyAttributes != TRUSTED_CURRENCY);
-        vm.prank(feeSettingsAndAllowListOwner);
+        vm.prank(FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
         allowList.set(someCurrency, currencyAttributes);
 
         TokenSwapInitializerArguments memory arguments = TokenSwapInitializerArguments(
-            exampleOwner,
-            exampleReceiver,
-            exampleHolder,
-            exampleTokenPrice,
+            EXAMPLE_OWNER,
+            EXAMPLE_RECEIVER,
+            EXAMPLE_HOLDER,
+            EXAMPLE_TOKEN_PRICE,
             IERC20(someCurrency),
             exampleToken
         );
 
         vm.expectRevert("currency needs to be on the allowlist with TRUSTED_CURRENCY attribute");
-        tokenSwapFactory.createTokenSwapClone("salt", trustedForwarder, arguments);
+        tokenSwapFactory.createTokenSwapClone("salt", TRUSTED_FORWARDER, arguments);
 
         // test deployment succeeds with trusted currency
-        vm.prank(feeSettingsAndAllowListOwner);
+        vm.prank(FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
         allowList.set(someCurrency, TRUSTED_CURRENCY);
-        tokenSwapFactory.createTokenSwapClone("salt", trustedForwarder, arguments);
+        tokenSwapFactory.createTokenSwapClone("salt", TRUSTED_FORWARDER, arguments);
     }
 
     /*
@@ -355,21 +364,21 @@ contract TokenSwapCloneFactoryTest is Test {
     */
     function testPausing(address _admin, address rando) public {
         vm.assume(_admin != address(0));
-        vm.assume(_admin != trustedForwarder);
+        vm.assume(_admin != TRUSTED_FORWARDER);
         vm.assume(rando != address(0));
         vm.assume(rando != _admin);
-        vm.assume(rando != trustedForwarder);
+        vm.assume(rando != TRUSTED_FORWARDER);
 
         TokenSwapInitializerArguments memory arguments = TokenSwapInitializerArguments(
             _admin,
             _admin,
-            exampleHolder,
-            exampleTokenPrice,
-            exampleCurrency,
+            EXAMPLE_HOLDER,
+            EXAMPLE_TOKEN_PRICE,
+            EXAMPLE_CURRENCY,
             exampleToken
         );
 
-        TokenSwap tokenSwap = TokenSwap(tokenSwapFactory.createTokenSwapClone(0, trustedForwarder, arguments));
+        TokenSwap tokenSwap = TokenSwap(tokenSwapFactory.createTokenSwapClone(0, TRUSTED_FORWARDER, arguments));
 
         vm.prank(rando);
         vm.expectRevert("Ownable: caller is not the owner");

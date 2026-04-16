@@ -28,41 +28,41 @@ contract PrivateOfferFactoryTest is Test {
 
     uint256 MAX_INT = type(uint256).max;
 
-    address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
-    address public constant buyer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
-    address public constant mintAllower = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
-    address public constant minter = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
-    address public constant owner = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
-    address public constant currencyReceiver = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
-    address public constant paymentTokenProvider = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
-    address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
+    address public constant ADMIN = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
+    address public constant BUYER = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
+    address public constant MINT_ALLOWER = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
+    address public constant MINTER = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
+    address public constant OWNER = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
+    address public constant CURRENCY_RECEIVER = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
+    address public constant PAYMENT_TOKEN_PROVIDER = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
+    address public constant TRUSTED_FORWARDER = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
 
-    uint256 public constant price = 10000000;
+    uint256 public constant PRICE = 10000000;
 
-    uint256 public constant tokenAmount = 3e18;
-    uint256 public constant currencyAmount = (tokenAmount * price) / 1e18;
-    uint256 public constant expiration = 200 days;
-    bytes32 public constant salt = bytes32("234");
+    uint256 public constant TOKEN_AMOUNT = 3e18;
+    uint256 public constant CURRENCY_AMOUNT = (TOKEN_AMOUNT * PRICE) / 1e18;
+    uint256 public constant EXPIRATION = 200 days;
+    bytes32 public constant SALT = bytes32(0);
 
     function setUp() public {
-        TimeLock timeLockImplementation = new TimeLock(trustedForwarder);
+        TimeLock timeLockImplementation = new TimeLock(TRUSTED_FORWARDER);
         TimeLockCloneFactory timeLockCloneFactory = new TimeLockCloneFactory(address(timeLockImplementation));
         factory = new PrivateOfferFactory(timeLockCloneFactory, CoinvestedPositionCloneFactory(address(1)));
         currency = new ERC20MintableByAnyone("currency", "CUR");
 
-        list = createAllowList(trustedForwarder, owner);
-        vm.prank(owner);
+        list = createAllowList(TRUSTED_FORWARDER, OWNER);
+        vm.prank(OWNER);
         list.set(address(currency), TRUSTED_CURRENCY);
 
-        feeSettings = createFeeSettings(trustedForwarder, address(this), buildFeeTypes(0, 0, 0, admin, admin, admin));
+        feeSettings = createFeeSettings(TRUSTED_FORWARDER, address(this), buildFeeTypes(0, 0, 0, ADMIN, ADMIN, ADMIN));
 
-        Token implementation = new Token(trustedForwarder);
+        Token implementation = new Token(TRUSTED_FORWARDER);
         TokenProxyFactory tokenCloneFactory = new TokenProxyFactory(address(implementation));
         token = Token(
-            tokenCloneFactory.createTokenProxy(0, trustedForwarder, feeSettings, admin, list, 0x0, "token", "TOK")
+            tokenCloneFactory.createTokenProxy(0, TRUSTED_FORWARDER, feeSettings, ADMIN, list, 0x0, "token", "TOK")
         );
 
-        tokenExitRegistry = new GlobalTokenExitRegistry(trustedForwarder);
+        tokenExitRegistry = new GlobalTokenExitRegistry(TRUSTED_FORWARDER);
     }
 
     function testDeployContract(bytes32 _salt) public {
@@ -71,11 +71,11 @@ contract PrivateOfferFactoryTest is Test {
         uint256 _expiration = block.timestamp + 1000;
 
         PrivateOfferArguments memory arguments = PrivateOfferArguments(
-            buyer,
-            buyer,
-            currencyReceiver,
+            BUYER,
+            BUYER,
+            CURRENCY_RECEIVER,
             _amount,
-            price,
+            PRICE,
             _expiration,
             IERC20(address(currency)),
             token,
@@ -90,12 +90,12 @@ contract PrivateOfferFactoryTest is Test {
         }
         assert(len == 0);
 
-        vm.prank(admin);
+        vm.prank(ADMIN);
         token.increaseMintingAllowance(expectedAddress, _amount);
 
-        currency.mint(buyer, _amount * price);
-        vm.prank(buyer);
-        currency.approve(expectedAddress, _amount * price);
+        currency.mint(BUYER, _amount * PRICE);
+        vm.prank(BUYER);
+        currency.approve(expectedAddress, _amount * PRICE);
 
         vm.expectEmit(true, true, true, true, address(factory));
         emit Deploy(expectedAddress);
@@ -116,18 +116,18 @@ contract PrivateOfferFactoryTest is Test {
         vm.assume(tokenReceiver != address(0));
         vm.assume(timeLockOwner != address(0));
         vm.assume(tokenReceiver != timeLockOwner);
-        vm.assume(timeLockOwner != trustedForwarder);
+        vm.assume(timeLockOwner != TRUSTED_FORWARDER);
 
-        // mint currency to buyer
-        currency.mint(buyer, currencyAmount);
+        // mint currency to BUYER
+        currency.mint(BUYER, CURRENCY_AMOUNT);
 
         PrivateOfferArguments memory arguments = PrivateOfferArguments(
-            buyer,
+            BUYER,
             tokenReceiver,
-            currencyReceiver,
-            tokenAmount,
-            price,
-            expiration,
+            CURRENCY_RECEIVER,
+            TOKEN_AMOUNT,
+            PRICE,
+            EXPIRATION,
             IERC20(address(currency)),
             token,
             address(0)
@@ -135,12 +135,12 @@ contract PrivateOfferFactoryTest is Test {
 
         // predict addresses for time lock contract and private offer contract
         (address expectedPrivateOffer, address expectedTimeLock) = factory.predictPrivateOfferAndTimeLockAddress(
-            salt,
+            SALT,
             arguments,
             _lockedUntil,
             timeLockOwner,
             tokenExitRegistry,
-            trustedForwarder
+            TRUSTED_FORWARDER
         );
 
         console.log("expectedPrivateOffer", expectedPrivateOffer);
@@ -151,16 +151,16 @@ contract PrivateOfferFactoryTest is Test {
         assertFalse(Address.isContract(expectedTimeLock), "TimeLock address already contains contract");
 
         // give allowances to private offer contract
-        vm.prank(buyer);
-        currency.approve(expectedPrivateOffer, currencyAmount);
-        vm.prank(admin);
-        token.increaseMintingAllowance(expectedPrivateOffer, tokenAmount);
+        vm.prank(BUYER);
+        currency.approve(expectedPrivateOffer, CURRENCY_AMOUNT);
+        vm.prank(ADMIN);
+        token.increaseMintingAllowance(expectedPrivateOffer, TOKEN_AMOUNT);
 
         // check state before deployment
-        assertEq(currency.balanceOf(buyer), currencyAmount, "Buyer has wrong currency balance before deployment");
-        assertEq(token.balanceOf(buyer), 0, "Buyer has wrong token balance before deployment");
+        assertEq(currency.balanceOf(BUYER), CURRENCY_AMOUNT, "Buyer has wrong currency balance before deployment");
+        assertEq(token.balanceOf(BUYER), 0, "Buyer has wrong token balance before deployment");
         assertEq(
-            currency.balanceOf(currencyReceiver),
+            currency.balanceOf(CURRENCY_RECEIVER),
             0,
             "Currency receiver has wrong currency balance before deployment"
         );
@@ -168,12 +168,12 @@ contract PrivateOfferFactoryTest is Test {
         // deploy contracts
         assertEq(
             factory.deployPrivateOfferWithTimeLock(
-                salt,
+                SALT,
                 arguments,
                 _lockedUntil,
                 timeLockOwner,
                 tokenExitRegistry,
-                trustedForwarder
+                TRUSTED_FORWARDER
             ),
             expectedTimeLock
         );
@@ -188,11 +188,15 @@ contract PrivateOfferFactoryTest is Test {
         assertEq(timeLockContract.lockedUntil(), _lockedUntil, "TimeLock contract has wrong lockedUntil");
 
         // check balances: tokens are held in the time lock, not yet accessible
-        assertEq(currency.balanceOf(buyer), 0, "Buyer has wrong currency balance after deployment");
-        assertEq(token.balanceOf(buyer), 0, "Buyer has wrong token balance after deployment");
-        assertEq(currency.balanceOf(currencyReceiver), currencyAmount, "Currency receiver has wrong currency balance");
+        assertEq(currency.balanceOf(BUYER), 0, "Buyer has wrong currency balance after deployment");
+        assertEq(token.balanceOf(BUYER), 0, "Buyer has wrong token balance after deployment");
+        assertEq(
+            currency.balanceOf(CURRENCY_RECEIVER),
+            CURRENCY_AMOUNT,
+            "Currency receiver has wrong currency balance"
+        );
         assertEq(token.balanceOf(tokenReceiver), 0, "Token receiver has wrong token balance");
-        assertEq(token.balanceOf(expectedTimeLock), tokenAmount, "TimeLock contract has wrong token balance");
+        assertEq(token.balanceOf(expectedTimeLock), TOKEN_AMOUNT, "TimeLock contract has wrong token balance");
 
         // try to drain before lock expires — must revert
         vm.prank(timeLockOwner);
@@ -203,6 +207,6 @@ contract PrivateOfferFactoryTest is Test {
         vm.warp(_lockedUntil);
         vm.prank(timeLockOwner);
         timeLockContract.drain(IERC20(address(token)), tokenReceiver);
-        assertEq(token.balanceOf(tokenReceiver), tokenAmount, "Token receiver has wrong token balance after drain");
+        assertEq(token.balanceOf(tokenReceiver), TOKEN_AMOUNT, "Token receiver has wrong token balance after drain");
     }
 }

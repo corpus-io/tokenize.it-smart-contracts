@@ -40,34 +40,35 @@ contract CompanySetUpTest is Test {
     }
 
     // this address will be the admin of contracts controlled by the platform (AllowList, FeeSettings)
-    address public constant platformAdmin = 0xDFcEB49eD21aE199b33A76B726E2bea7A72127B0;
-    address public constant platformHotWallet = 0x5B38Da6a701c568545dCfcB03FcB875f56beddC4;
-    address public constant platformFeeCollector = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
+    address public constant PLATFORM_ADMIN = 0xDFcEB49eD21aE199b33A76B726E2bea7A72127B0;
+    address public constant PLATFORM_HOT_WALLET = 0x5B38Da6a701c568545dCfcB03FcB875f56beddC4;
+    address public constant PLATFORM_FEE_COLLECTOR = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
 
-    address public constant companyCurrencyReceiver = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
+    address public constant COMPANY_CURRENCY_RECEIVER = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
 
-    address public constant paymentTokenProvider = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
+    address public constant PAYMENT_TOKEN_PROVIDER = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
 
     // DO NOT USE IN PRODUCTION! Key was generated online for testing only.
-    uint256 public constant investorPrivateKey = 0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
+    uint256 public constant INVESTOR_PRIVATE_KEY = 0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
     address public investor; // = 0x38d6703d37988C644D6d31551e9af6dcB762E618;
 
     address public investorColdWallet = 0x5109709EcFA91a80626ff3989d68f67F5B1dD125;
 
     // DO NOT USE IN PRODUCTION! Key was generated online for testing only.
-    uint256 public constant companyAdminPrivateKey = 0x8da4ef21b864d2cc526dbdb2a120bd2874c36c9d0a1fb7f8c63d7f7a8b41de8f;
+    uint256 public constant COMPANY_ADMIN_PRIVATE_KEY =
+        0x8da4ef21b864d2cc526dbdb2a120bd2874c36c9d0a1fb7f8c63d7f7a8b41de8f;
     address public companyAdmin; // = 0x63FaC9201494f0bd17B9892B9fae4d52fe3BD377;
 
-    uint8 public constant paymentTokenDecimals = 6;
-    uint256 public constant paymentTokenAmount = 1000 * 10 ** paymentTokenDecimals;
+    uint8 public constant PAYMENT_TOKEN_DECIMALS = 6;
+    uint256 public constant PAYMENT_TOKEN_AMOUNT = 1000 * 10 ** PAYMENT_TOKEN_DECIMALS;
 
-    uint256 public constant price = 7 * 10 ** paymentTokenDecimals; // 7 payment tokens per token
+    uint256 public constant PRICE = 7 * 10 ** PAYMENT_TOKEN_DECIMALS; // 7 payment tokens per token
 
-    uint256 public constant maxAmountOfTokenToBeSold = 20 * 10 ** 18; // 20 token
-    uint256 public constant maxAmountPerBuyer = maxAmountOfTokenToBeSold / 2; // 10 token
-    uint256 public constant minAmountPerBuyer = maxAmountOfTokenToBeSold / 200; // 0.1 token
+    uint256 public constant MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD = 20 * 10 ** 18; // 20 token
+    uint256 public constant MAX_AMOUNT_PER_BUYER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 2; // 10 token
+    uint256 public constant MIN_AMOUNT_PER_BUYER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 200; // 0.1 token
 
-    uint256 public constant requirements = 0x3842; // 0b111100000010
+    uint256 public constant REQUIREMENTS = 0x3842; // 0b111100000010
 
     uint256 tokenBuyAmount;
     uint256 costInPaymentToken;
@@ -89,39 +90,39 @@ contract CompanySetUpTest is Test {
 
     function setUp() public {
         // derive addresses from the private keys. Irl the addresses would be provided by the wallet that holds their private keys.
-        investor = vm.addr(investorPrivateKey);
-        companyAdmin = vm.addr(companyAdminPrivateKey);
+        investor = vm.addr(INVESTOR_PRIVATE_KEY);
+        companyAdmin = vm.addr(COMPANY_ADMIN_PRIVATE_KEY);
 
         // set up FeeSettings
         feeSettings = createFeeSettings(
             address(8),
-            platformAdmin,
+            PLATFORM_ADMIN,
             buildFeeTypes(
                 tokenFeeNumerator,
                 paymentTokenFeeNumerator,
                 paymentTokenFeeNumerator,
-                platformFeeCollector,
-                platformFeeCollector,
-                platformFeeCollector
+                PLATFORM_FEE_COLLECTOR,
+                PLATFORM_FEE_COLLECTOR,
+                PLATFORM_FEE_COLLECTOR
             )
         );
 
         // set up currency. In real life (irl) this would be a real currency, but for testing purposes we use a fake one.
-        vm.prank(paymentTokenProvider);
-        paymentToken = new FakePaymentToken(paymentTokenAmount, paymentTokenDecimals); // 1000 tokens with 6 decimals
-        vm.prank(paymentTokenProvider);
-        paymentToken.transfer(investor, paymentTokenAmount); // transfer currency to investor so they can buy tokens later
-        assertTrue(paymentToken.balanceOf(investor) == paymentTokenAmount);
+        vm.prank(PAYMENT_TOKEN_PROVIDER);
+        paymentToken = new FakePaymentToken(PAYMENT_TOKEN_AMOUNT, PAYMENT_TOKEN_DECIMALS); // 1000 tokens with 6 decimals
+        vm.prank(PAYMENT_TOKEN_PROVIDER);
+        paymentToken.transfer(investor, PAYMENT_TOKEN_AMOUNT); // transfer currency to investor so they can buy tokens later
+        assertTrue(paymentToken.balanceOf(investor) == PAYMENT_TOKEN_AMOUNT);
 
         // set up AllowList
-        list = createAllowList(address(8), platformAdmin);
-        vm.prank(platformAdmin);
+        list = createAllowList(address(8), PLATFORM_ADMIN);
+        vm.prank(PLATFORM_ADMIN);
         list.set(address(paymentToken), TRUSTED_CURRENCY);
 
         // investor registers with the platform
         // after kyc, the platform adds the investor to the allowlist with all the properties they were able to proof
-        vm.prank(platformAdmin);
-        list.set(investorColdWallet, requirements); // it is possible to set more bits to true than the requirements, but not less, for the investor to be allowed to invest
+        vm.prank(PLATFORM_ADMIN);
+        list.set(investorColdWallet, REQUIREMENTS); // it is possible to set more bits to true than the REQUIREMENTS, but not less, for the investor to be allowed to invest
 
         // setting up AllowList and FeeSettings is one-time step. These contracts will be used by all companies.
     }
@@ -139,7 +140,7 @@ contract CompanySetUpTest is Test {
         // launch the company token. The platform deploys the contract. There is no need to transfer ownership, because the token is never controlled by the address that deployed it.
         // Instead, it is immediately controlled by the address provided in the constructor, which is the companyAdmin in this case.
 
-        vm.startPrank(platformHotWallet);
+        vm.startPrank(PLATFORM_HOT_WALLET);
         token = Token(
             tokenFactory.createTokenProxy(
                 0,
@@ -147,7 +148,7 @@ contract CompanySetUpTest is Test {
                 feeSettings,
                 companyAdmin,
                 list,
-                requirements,
+                REQUIREMENTS,
                 name,
                 symbol
             )
@@ -188,22 +189,22 @@ contract CompanySetUpTest is Test {
 
         // just some calculations
         tokenBuyAmount = 5 * 10 ** token.decimals();
-        costInPaymentToken = (tokenBuyAmount * price) / 10 ** 18;
+        costInPaymentToken = (tokenBuyAmount * PRICE) / 10 ** 18;
 
         // after setting up their company, the company admin might want to launch a fundraising campaign. They choose all settings in the web, but the contract
         // will be deployed by the platform.
-        vm.prank(platformHotWallet);
+        vm.prank(PLATFORM_HOT_WALLET);
         fundraisingFactory = new CrowdinvestingCloneFactory(address(new Crowdinvesting(address(forwarder))));
 
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             companyAdmin,
-            companyCurrencyReceiver,
-            minAmountPerBuyer,
-            maxAmountPerBuyer,
-            price,
-            price,
-            price,
-            maxAmountOfTokenToBeSold,
+            COMPANY_CURRENCY_RECEIVER,
+            MIN_AMOUNT_PER_BUYER,
+            MAX_AMOUNT_PER_BUYER,
+            PRICE,
+            PRICE,
+            PRICE,
+            MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD,
             paymentToken,
             token,
             deadline,
@@ -222,7 +223,7 @@ contract CompanySetUpTest is Test {
         bytes memory payload = abi.encodeWithSelector(
             token.increaseMintingAllowance.selector,
             address(crowdinvesting),
-            maxAmountOfTokenToBeSold
+            MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD
         );
 
         IForwarder.ForwardRequest memory request = IForwarder.ForwardRequest({
@@ -249,7 +250,7 @@ contract CompanySetUpTest is Test {
 
         // sign request. This would usually happen in the web app, which would present the companyAdmin with a request to sign the message. Metamask would come up and present the message to sign.
         // If EIP-712 is used properly, Metamask is able to show some information about the contents of the message, too.
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(companyAdminPrivateKey, digest);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(COMPANY_ADMIN_PRIVATE_KEY, digest);
         bytes memory signature = abi.encodePacked(r, s, v); // https://docs.openzeppelin.com/contracts/2.x/utilities
 
         // check the signature is correct
@@ -260,14 +261,14 @@ contract CompanySetUpTest is Test {
         // check the crowdinvesting contract has no allowance yet
         assertTrue(token.mintingAllowance(address(crowdinvesting)) == 0);
         // If the platform has received the signature, it can now execute the meta transaction.
-        vm.prank(platformHotWallet);
+        vm.prank(PLATFORM_HOT_WALLET);
         forwarder.execute(request, domainSeparator, requestType, suffixData, signature);
 
         console.log("Forwarder address: ", address(forwarder));
         console.log("allowance set to: ", token.mintingAllowance(address(crowdinvesting)));
 
         // check the crowdinvesting contract has a mintingAllowance now now
-        assertTrue(token.mintingAllowance(address(crowdinvesting)) == maxAmountOfTokenToBeSold);
+        assertTrue(token.mintingAllowance(address(crowdinvesting)) == MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD);
 
         // ----------------------
         // company and fundraising campaign are set up. Now the investor can buy tokens. This requires 2 meta transactions:
@@ -299,13 +300,13 @@ contract CompanySetUpTest is Test {
 
         // sign request
         //bytes memory signature
-        (v, r, s) = vm.sign(investorPrivateKey, eip2612Data.dataHash);
+        (v, r, s) = vm.sign(INVESTOR_PRIVATE_KEY, eip2612Data.dataHash);
         require(ecrecover(eip2612Data.dataHash, v, r, s) == investor, "ERC20Permit: invalid _BIG signature");
 
         // check allowance is 0 before permit
         assertTrue(paymentToken.allowance(investor, address(crowdinvesting)) == 0);
 
-        vm.prank(platformHotWallet);
+        vm.prank(PLATFORM_HOT_WALLET);
         paymentToken.permit(investor, address(crowdinvesting), costInPaymentToken, block.timestamp + 1 hours, v, r, s);
 
         // check allowance is set after permit
@@ -345,30 +346,30 @@ contract CompanySetUpTest is Test {
 
         // sign request
         //bytes memory signature
-        (v, r, s) = vm.sign(investorPrivateKey, digest);
+        (v, r, s) = vm.sign(INVESTOR_PRIVATE_KEY, digest);
         signature = abi.encodePacked(r, s, v); // https://docs.openzeppelin.com/contracts/2.x/utilities
 
         require(digest.recover(signature) == investor, "FWD: signature mismatch");
 
         // investor has no tokens before
         assertEq(token.balanceOf(investorColdWallet), 0);
-        // platformFeeCollector has no tokens or currency before
-        assertEq(token.balanceOf(platformFeeCollector), 0);
-        assertEq(paymentToken.balanceOf(platformFeeCollector), 0);
-        // companyCurrencyReceiver has no currency before
-        assertEq(paymentToken.balanceOf(companyCurrencyReceiver), 0);
+        // PLATFORM_FEE_COLLECTOR has no tokens or currency before
+        assertEq(token.balanceOf(PLATFORM_FEE_COLLECTOR), 0);
+        assertEq(paymentToken.balanceOf(PLATFORM_FEE_COLLECTOR), 0);
+        // COMPANY_CURRENCY_RECEIVER has no currency before
+        assertEq(paymentToken.balanceOf(COMPANY_CURRENCY_RECEIVER), 0);
 
         // once the platform has received the signature, it can now execute the meta transaction.
-        vm.prank(platformHotWallet);
+        vm.prank(PLATFORM_HOT_WALLET);
         forwarder.execute(request, domainSeparator, requestType, suffixData, signature);
 
         // investor receives as many tokens as they paid for
         assertTrue(token.balanceOf(investorColdWallet) == tokenBuyAmount, "Investor has no tokens");
-        // platformFeeCollector receives the platform fees in token and currency
-        assertTrue(token.balanceOf(platformFeeCollector) > 0, "Platform fee in token not received");
-        assertTrue(paymentToken.balanceOf(platformFeeCollector) > 0, "Platform fee in currency not received");
-        // companyCurrencyReceiver receives the currency
-        assertTrue(paymentToken.balanceOf(companyCurrencyReceiver) > 0, "Company currency not received");
+        // PLATFORM_FEE_COLLECTOR receives the platform fees in token and currency
+        assertTrue(token.balanceOf(PLATFORM_FEE_COLLECTOR) > 0, "Platform fee in token not received");
+        assertTrue(paymentToken.balanceOf(PLATFORM_FEE_COLLECTOR) > 0, "Platform fee in currency not received");
+        // COMPANY_CURRENCY_RECEIVER receives the currency
+        assertTrue(paymentToken.balanceOf(COMPANY_CURRENCY_RECEIVER) > 0, "Company currency not received");
     }
 
     function launchCompanyAndInvestViaPrivateOffer(Forwarder forwarder) public {
@@ -379,7 +380,7 @@ contract CompanySetUpTest is Test {
 
         // just some calculations
         tokenBuyAmount = 5 * 10 ** token.decimals();
-        costInPaymentToken = (tokenBuyAmount * price) / 10 ** 18;
+        costInPaymentToken = (tokenBuyAmount * PRICE) / 10 ** 18;
         deadline = block.timestamp + 30 days;
 
         /*
@@ -387,7 +388,7 @@ contract CompanySetUpTest is Test {
          They will use a Private Offer to do so. The process is as follows:
          - The company founder decides on:
             a) the amount of tokens to offer
-            b) the price per token
+            b) the PRICE per token
             c) the deadline for the invite
             d) the address that will receive the currency
             e) the currency
@@ -406,7 +407,7 @@ contract CompanySetUpTest is Test {
             investorColdWallet,
             companyAdmin,
             tokenBuyAmount,
-            price,
+            PRICE,
             deadline,
             paymentToken,
             token,
@@ -440,7 +441,7 @@ contract CompanySetUpTest is Test {
         /* 
             The investor signs the transaction
         */
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(investorPrivateKey, eip2612Data.dataHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(INVESTOR_PRIVATE_KEY, eip2612Data.dataHash);
         require(ecrecover(eip2612Data.dataHash, v, r, s) == investor, "ERC20Permit: invalid _BIG signature");
 
         /*
@@ -455,7 +456,7 @@ contract CompanySetUpTest is Test {
         // check allowance is 0 before permit
         assertTrue(paymentToken.allowance(investor, privateOfferAddress) == 0);
 
-        vm.prank(platformHotWallet);
+        vm.prank(PLATFORM_HOT_WALLET);
         paymentToken.permit(investor, privateOfferAddress, costInPaymentToken, block.timestamp + 1 hours, v, r, s);
 
         // check allowance is set after permit
@@ -494,7 +495,7 @@ contract CompanySetUpTest is Test {
 
         // sign request. This would usually happen in the web app, which would present the companyAdmin with a request to sign the message. Metamask would come up and present the message to sign.
         // If EIP-712 is used properly, Metamask is able to show some information about the contents of the message, too.
-        (v, r, s) = vm.sign(companyAdminPrivateKey, digest);
+        (v, r, s) = vm.sign(COMPANY_ADMIN_PRIVATE_KEY, digest);
         bytes memory signature = abi.encodePacked(r, s, v); // https://docs.openzeppelin.com/contracts/2.x/utilities
 
         // check the signature is correct
@@ -505,7 +506,7 @@ contract CompanySetUpTest is Test {
         // check the privateOfferAddress has no allowance yet
         assertTrue(token.mintingAllowance(privateOfferAddress) == 0);
         // If the platform has received the signature, it can now execute the meta transaction.
-        vm.prank(platformHotWallet);
+        vm.prank(PLATFORM_HOT_WALLET);
         forwarder.execute(
             request,
             domainSeparator,
@@ -536,21 +537,21 @@ contract CompanySetUpTest is Test {
 
         // investor has no tokens before
         assertEq(token.balanceOf(investorColdWallet), 0);
-        // platformFeeCollector has no tokens or currency before
-        assertEq(token.balanceOf(platformFeeCollector), 0);
-        assertEq(paymentToken.balanceOf(platformFeeCollector), 0);
-        // companyCurrencyReceiver has no currency before
-        assertEq(paymentToken.balanceOf(companyCurrencyReceiver), 0);
+        // PLATFORM_FEE_COLLECTOR has no tokens or currency before
+        assertEq(token.balanceOf(PLATFORM_FEE_COLLECTOR), 0);
+        assertEq(paymentToken.balanceOf(PLATFORM_FEE_COLLECTOR), 0);
+        // COMPANY_CURRENCY_RECEIVER has no currency before
+        assertEq(paymentToken.balanceOf(COMPANY_CURRENCY_RECEIVER), 0);
 
-        vm.prank(platformHotWallet);
+        vm.prank(PLATFORM_HOT_WALLET);
         privateOfferFactory.deployPrivateOffer(salt, arguments);
 
         // investor receives as many tokens as they paid for
         assertTrue(token.balanceOf(investorColdWallet) == tokenBuyAmount, "Investor has no tokens");
-        // platformFeeCollector receives the platform fees in token and currency
-        assertTrue(token.balanceOf(platformFeeCollector) > 0, "Platform fee in token not received");
-        assertTrue(paymentToken.balanceOf(platformFeeCollector) > 0, "Platform fee in currency not received");
-        // companyCurrencyReceiver receives the currency
+        // PLATFORM_FEE_COLLECTOR receives the platform fees in token and currency
+        assertTrue(token.balanceOf(PLATFORM_FEE_COLLECTOR) > 0, "Platform fee in token not received");
+        assertTrue(paymentToken.balanceOf(PLATFORM_FEE_COLLECTOR) > 0, "Platform fee in currency not received");
+        // COMPANY_CURRENCY_RECEIVER receives the currency
         assertTrue(paymentToken.balanceOf(companyAdmin) > 0, "Company currency not received");
     }
 

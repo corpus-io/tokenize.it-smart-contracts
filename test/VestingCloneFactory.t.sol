@@ -60,7 +60,7 @@ contract VestingCloneFactoryTest is Test {
         vm.assume(_start != 0 && _start != 1);
         vm.assume(_cliff != 0 && _cliff != 1);
         vm.assume(_duration != 0 && _duration != 1);
-        vm.assume(_rawSalt != bytes32("a"));
+        vm.assume(_rawSalt != bytes32(0));
         Vesting _implementation = new Vesting(_trustedForwarder);
         VestingCloneFactory _factory = new VestingCloneFactory(address(_implementation));
 
@@ -93,7 +93,7 @@ contract VestingCloneFactoryTest is Test {
 
         // test changing the salt changes the address
         address changedAddress = _factory.predictCloneAddressWithLockupPlan(
-            bytes32("a"),
+            bytes32(0),
             _trustedForwarder,
             _owner,
             _token,

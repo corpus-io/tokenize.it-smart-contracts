@@ -77,10 +77,6 @@ contract CoinvestedPosition is TokenSwapBase {
     function initialize(CoinvestedPositionInitializerArguments memory _arguments) external initializer {
         _initializeBase(_arguments.owner, 0, _arguments.baseCurrency, _arguments.token, _arguments.receiver);
 
-        require(
-            _arguments.token.allowList().map(address(_arguments.baseCurrency)) == TRUSTED_CURRENCY,
-            "currency needs to be on the allowlist with TRUSTED_CURRENCY attribute"
-        );
         require(_arguments.leadInvestors.length > 0, "There must be at least one lead investor");
         uint64 carryFractionsSum = 0;
         for (uint256 i = 0; i < _arguments.leadInvestors.length; i++) {

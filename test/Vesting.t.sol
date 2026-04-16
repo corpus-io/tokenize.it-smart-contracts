@@ -62,7 +62,7 @@ contract VestingTest is Test {
         vm.assume(newOwner != address(0));
         vm.assume(newOwner != _owner);
         vm.assume(_owner != address(this));
-        Vesting vest = Vesting(factory.createVestingClone(bytes32("1"), trustedForwarder, _owner, address(token)));
+        Vesting vest = Vesting(factory.createVestingClone(bytes32(0), trustedForwarder, _owner, address(token)));
         assertEq(vest.owner(), _owner, "owner not set");
 
         vm.prank(_owner);
@@ -529,5 +529,59 @@ contract VestingTest is Test {
         vm.startPrank(beneficiary);
         vm.expectRevert(stdError.divisionError);
         vesting.release(id);
+    }
+
+    function testReleaseWithAmountLimit() public {
+        uint256 amount = 100e18;
+        uint64 start = 0;
+        uint64 duration = 100 days;
+
+        vm.prank(owner);
+        uint64 vestingId = vesting.createVesting(amount, beneficiary, start, 0, duration, false);
+        token.mint(address(vesting), amount);
+
+        vm.warp(50 days);
+
+        uint256 partialAmount = 10e18;
+        vm.prank(beneficiary);
+        vesting.release(vestingId, partialAmount);
+
+        assertEq(vesting.released(vestingId), partialAmount, "released amount is wrong");
+        assertEq(token.balanceOf(beneficiary), partialAmount, "beneficiary balance is wrong");
+    }
+
+    function testVestedAmountAtTimestamp() public {
+        uint256 amount = 100e18;
+        uint64 start = 0;
+        uint64 duration = 100 days;
+        uint64 cliff = 10 days;
+
+        vm.prank(owner);
+        uint64 vestingId = vesting.createVesting(amount, beneficiary, start, cliff, duration, false);
+
+        assertEq(vesting.vestedAmount(vestingId, uint64(cliff - 1)), 0, "before cliff: should be 0");
+        assertEq(vesting.vestedAmount(vestingId, uint64(50 days)), 50e18, "at 50%: should be 50e18");
+        assertEq(
+            vesting.vestedAmount(vestingId, uint64(duration + 1)),
+            amount,
+            "after duration: should be full amount"
+        );
+    }
+
+    function testNonManagerCannotStopVesting() public {
+        vm.prank(owner);
+        uint64 vestingId = vesting.createVesting(
+            exampleAmount,
+            beneficiary,
+            exampleStart,
+            exampleCliff,
+            exampleDuration,
+            false
+        );
+
+        address rando = address(99);
+        vm.prank(rando);
+        vm.expectRevert("Caller is not a manager");
+        vesting.stopVesting(vestingId, uint64(exampleStart + 1));
     }
 }

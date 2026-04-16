@@ -9,7 +9,7 @@ contract PriceLinearCloneFactoryTest is Test {
     PriceLinearCloneFactory factory;
     PriceLinear oracle;
 
-    address public constant companyAdmin = address(1);
+    address public constant COMPANY_ADMIN = address(1);
     address public trustedForwarder = address(2);
 
     function setUp() public {
@@ -85,7 +85,7 @@ contract PriceLinearCloneFactoryTest is Test {
         factory.createPriceLinearClone(
             bytes32(uint256(0)),
             _wrongTrustedForwarder,
-            companyAdmin,
+            COMPANY_ADMIN,
             1,
             1,
             uint64(block.timestamp + 1),
@@ -98,7 +98,7 @@ contract PriceLinearCloneFactoryTest is Test {
         factory.createPriceLinearClone(
             bytes32(uint256(2)),
             trustedForwarder,
-            companyAdmin,
+            COMPANY_ADMIN,
             1,
             1,
             uint64(block.timestamp + 1),

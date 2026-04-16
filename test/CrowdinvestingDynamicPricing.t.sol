@@ -12,7 +12,7 @@ import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
 import "./resources/CloneCreators.sol";
 
-/// fixture that always returns max price
+/// fixture that always returns max PRICE
 contract MaxPriceOracle is IPriceDynamic {
     uint256 nonsensePrice; // this only exists to silence compiler warnings
 
@@ -28,7 +28,7 @@ contract MaxPriceOracle is IPriceDynamic {
     }
 }
 
-/// fixture that always returns max price
+/// fixture that always returns max PRICE
 contract MinPriceOracle is IPriceDynamic {
     uint256 nonsensePrice; // this only exists to silence compiler warnings
 
@@ -50,7 +50,7 @@ contract CrowdinvestingDynamicPricingTest is Test {
     event MaxAmountPerBuyerChanged(uint256);
     event TokenPriceAndCurrencyChanged(uint256, IERC20 indexed);
     event MaxAmountOfTokenToBeSoldChanged(uint256);
-    event TokensBought(address indexed buyer, uint256 tokenAmount, uint256 currencyAmount);
+    event TokensBought(address indexed BUYER, uint256 tokenAmount, uint256 currencyAmount);
 
     CrowdinvestingCloneFactory factory;
     Crowdinvesting crowdinvesting;
@@ -62,63 +62,63 @@ contract CrowdinvestingDynamicPricingTest is Test {
     FakePaymentToken paymentToken;
     PriceLinearCloneFactory priceLinearCloneFactory;
 
-    address public constant companyAdmin = address(1);
-    address public constant buyer = address(2);
-    address public constant mintAllower = address(3);
-    address public constant minter = address(4);
-    address public constant owner = address(5);
-    address public constant receiver = address(6);
-    address public constant paymentTokenProvider = address(7);
-    address public constant trustedForwarder = address(8);
-    address public constant platformAdmin = address(9);
+    address public constant COMPANY_ADMIN = address(1);
+    address public constant BUYER = address(2);
+    address public constant MINT_ALLOWER = address(3);
+    address public constant MINTER = address(4);
+    address public constant OWNER = address(5);
+    address public constant RECEIVER = address(6);
+    address public constant PAYMENT_TOKEN_PROVIDER = address(7);
+    address public constant TRUSTED_FORWARDER = address(8);
+    address public constant PLATFORM_ADMIN = address(9);
 
-    uint8 public constant paymentTokenDecimals = 6;
-    uint256 public constant paymentTokenAmount = 1000 * 10 ** paymentTokenDecimals;
+    uint8 public constant PAYMENT_TOKEN_DECIMALS = 6;
+    uint256 public constant PAYMENT_TOKEN_AMOUNT = 1000 * 10 ** PAYMENT_TOKEN_DECIMALS;
 
-    uint256 public constant price = 7 * 10 ** paymentTokenDecimals; // 7 payment tokens per token
+    uint256 public constant PRICE = 7 * 10 ** PAYMENT_TOKEN_DECIMALS; // 7 payment tokens per token
 
-    uint256 public constant maxAmountOfTokenToBeSold = 20 * 10 ** 18; // 20 token
-    uint256 public constant maxAmountPerBuyer = maxAmountOfTokenToBeSold / 2; // 10 token
-    uint256 public constant minAmountPerBuyer = maxAmountOfTokenToBeSold / 200; // 0.1 token
+    uint256 public constant MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD = 20 * 10 ** 18; // 20 token
+    uint256 public constant MAX_AMOUNT_PER_BUYER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 2; // 10 token
+    uint256 public constant MIN_AMOUNT_PER_BUYER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 200; // 0.1 token
 
     function setUp() public {
         // set up currency
-        vm.prank(paymentTokenProvider);
-        paymentToken = new FakePaymentToken(paymentTokenAmount, paymentTokenDecimals); // 1000 tokens with 6 decimals
-        // transfer currency to buyer
-        vm.prank(paymentTokenProvider);
-        paymentToken.transfer(buyer, paymentTokenAmount);
-        assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
+        vm.prank(PAYMENT_TOKEN_PROVIDER);
+        paymentToken = new FakePaymentToken(PAYMENT_TOKEN_AMOUNT, PAYMENT_TOKEN_DECIMALS); // 1000 tokens with 6 decimals
+        // transfer currency to BUYER
+        vm.prank(PAYMENT_TOKEN_PROVIDER);
+        paymentToken.transfer(BUYER, PAYMENT_TOKEN_AMOUNT);
+        assertTrue(paymentToken.balanceOf(BUYER) == PAYMENT_TOKEN_AMOUNT);
 
         // set up platform
-        vm.prank(platformAdmin);
-        list = createAllowList(trustedForwarder, owner);
-        vm.prank(owner);
+        vm.prank(PLATFORM_ADMIN);
+        list = createAllowList(TRUSTED_FORWARDER, OWNER);
+        vm.prank(OWNER);
         list.set(address(paymentToken), TRUSTED_CURRENCY);
 
-        vm.startPrank(platformAdmin);
-        FeeSettings feeLogic = new FeeSettings(trustedForwarder);
+        vm.startPrank(PLATFORM_ADMIN);
+        FeeSettings feeLogic = new FeeSettings(TRUSTED_FORWARDER);
         FeeSettingsCloneFactory feeSettingsCloneFactory = new FeeSettingsCloneFactory(address(feeLogic));
         {
             FeeSettings.FeeTypeInit[] memory feeTypes = new FeeSettings.FeeTypeInit[](4);
-            feeTypes[0] = FeeSettings.FeeTypeInit(FeeTypes.TOKEN, 500, 100, platformAdmin);
-            feeTypes[1] = FeeSettings.FeeTypeInit(FeeTypes.CROWDINVESTING, 1000, 100, platformAdmin);
-            feeTypes[2] = FeeSettings.FeeTypeInit(FeeTypes.PRIVATE_OFFER, 500, 100, platformAdmin);
-            feeTypes[3] = FeeSettings.FeeTypeInit(FeeTypes.SECONDARY_MARKET, 500, 0, platformAdmin);
+            feeTypes[0] = FeeSettings.FeeTypeInit(FeeTypes.TOKEN, 500, 100, PLATFORM_ADMIN);
+            feeTypes[1] = FeeSettings.FeeTypeInit(FeeTypes.CROWDINVESTING, 1000, 100, PLATFORM_ADMIN);
+            feeTypes[2] = FeeSettings.FeeTypeInit(FeeTypes.PRIVATE_OFFER, 500, 100, PLATFORM_ADMIN);
+            feeTypes[3] = FeeSettings.FeeTypeInit(FeeTypes.SECONDARY_MARKET, 500, 0, PLATFORM_ADMIN);
             feeSettings = IFeeSettingsV2(
-                feeSettingsCloneFactory.createFeeSettingsClone(0, trustedForwarder, platformAdmin, feeTypes)
+                feeSettingsCloneFactory.createFeeSettingsClone(0, TRUSTED_FORWARDER, PLATFORM_ADMIN, feeTypes)
             );
         }
 
         // create token
-        address tokenLogicContract = address(new Token(trustedForwarder));
+        address tokenLogicContract = address(new Token(TRUSTED_FORWARDER));
         tokenCloneFactory = new TokenProxyFactory(tokenLogicContract);
         token = Token(
             tokenCloneFactory.createTokenProxy(
                 0,
-                trustedForwarder,
+                TRUSTED_FORWARDER,
                 feeSettings,
-                companyAdmin,
+                COMPANY_ADMIN,
                 list,
                 0x0,
                 "TESTTOKEN",
@@ -127,40 +127,40 @@ contract CrowdinvestingDynamicPricingTest is Test {
         );
 
         // create fundraising
-        factory = new CrowdinvestingCloneFactory(address(new Crowdinvesting(trustedForwarder)));
+        factory = new CrowdinvestingCloneFactory(address(new Crowdinvesting(TRUSTED_FORWARDER)));
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
-            companyAdmin,
-            payable(receiver),
-            minAmountPerBuyer,
-            maxAmountPerBuyer,
-            price,
-            price,
-            price,
-            maxAmountOfTokenToBeSold,
+            COMPANY_ADMIN,
+            payable(RECEIVER),
+            MIN_AMOUNT_PER_BUYER,
+            MAX_AMOUNT_PER_BUYER,
+            PRICE,
+            PRICE,
+            PRICE,
+            MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD,
             paymentToken,
             token,
             0,
             address(0),
             address(0)
         );
-        crowdinvesting = Crowdinvesting(factory.createCrowdinvestingClone(0, trustedForwarder, arguments));
+        crowdinvesting = Crowdinvesting(factory.createCrowdinvestingClone(0, TRUSTED_FORWARDER, arguments));
 
         vm.stopPrank();
 
         // allow crowdinvesting contract to mint
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
-        vm.prank(companyAdmin);
-        token.grantRole(roleMintAllower, mintAllower);
-        vm.prank(mintAllower);
-        token.increaseMintingAllowance(address(crowdinvesting), maxAmountOfTokenToBeSold);
+        vm.prank(COMPANY_ADMIN);
+        token.grantRole(roleMintAllower, MINT_ALLOWER);
+        vm.prank(MINT_ALLOWER);
+        token.increaseMintingAllowance(address(crowdinvesting), MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD);
 
         // give crowdinvesting contract allowance
-        vm.prank(buyer);
-        paymentToken.approve(address(crowdinvesting), paymentTokenAmount);
+        vm.prank(BUYER);
+        paymentToken.approve(address(crowdinvesting), PAYMENT_TOKEN_AMOUNT);
 
-        // set up price oracle factory
-        PriceLinear priceLinearLogicContract = new PriceLinear(trustedForwarder);
+        // set up PRICE oracle factory
+        PriceLinear priceLinearLogicContract = new PriceLinear(TRUSTED_FORWARDER);
         priceLinearCloneFactory = new PriceLinearCloneFactory(address(priceLinearLogicContract));
     }
 
@@ -169,14 +169,14 @@ contract CrowdinvestingDynamicPricingTest is Test {
         vm.warp(0);
         uint256 startTime = 1 days + 1;
 
-        vm.startPrank(companyAdmin);
+        vm.startPrank(COMPANY_ADMIN);
 
-        // set up price oracle to increase the price by 1 payment token per second
+        // set up PRICE oracle to increase the PRICE by 1 payment token per second
         PriceLinear priceOracle = PriceLinear(
             priceLinearCloneFactory.createPriceLinearClone(
                 0,
-                trustedForwarder,
-                companyAdmin,
+                TRUSTED_FORWARDER,
+                COMPANY_ADMIN,
                 1e6,
                 1,
                 uint64(startTime),
@@ -198,58 +198,58 @@ contract CrowdinvestingDynamicPricingTest is Test {
 
         vm.stopPrank();
 
-        // check time and price
+        // check time and PRICE
         console.log("Timestamp matches tomorrow: %s", block.timestamp == startTime);
         uint256 currentPrice = crowdinvesting.getPrice();
         console.log("Price: %s", currentPrice);
-        assertTrue(currentPrice == price, "Price should be equal to base price before start time");
+        assertTrue(currentPrice == PRICE, "Price should be equal to base PRICE before start time");
 
-        // check price 1 second later
+        // check PRICE 1 second later
         vm.warp(startTime + 1);
         currentPrice = crowdinvesting.getPrice();
         console.log("Price: %s", currentPrice);
-        assertTrue(currentPrice == price + 1e6, "Price should be equal to base price + 1 payment token");
+        assertTrue(currentPrice == PRICE + 1e6, "Price should be equal to base PRICE + 1 payment token");
 
-        // buy now and make sure this price was used
-        assertEq(token.balanceOf(buyer), 0, "Buyer should have 0 tokens before");
-        uint256 buyerPaymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
-        vm.prank(buyer);
-        crowdinvesting.buy(1e18, type(uint256).max, buyer);
-        assertTrue(token.balanceOf(buyer) == 1e18, "Buyer should have 1 token");
+        // buy now and make sure this PRICE was used
+        assertEq(token.balanceOf(BUYER), 0, "Buyer should have 0 tokens before");
+        uint256 buyerPaymentTokenBalanceBefore = paymentToken.balanceOf(BUYER);
+        vm.prank(BUYER);
+        crowdinvesting.buy(1e18, type(uint256).max, BUYER);
+        assertTrue(token.balanceOf(BUYER) == 1e18, "Buyer should have 1 token");
         assertEq(
-            paymentToken.balanceOf(buyer),
+            paymentToken.balanceOf(BUYER),
             buyerPaymentTokenBalanceBefore - currentPrice,
             "Buyer should have paid currentPrice"
         );
 
-        // check price 4 seconds later
+        // check PRICE 4 seconds later
         vm.warp(startTime + 4);
         currentPrice = crowdinvesting.getPrice();
         console.log("Price: %s", currentPrice);
-        assertTrue(currentPrice == price + 4 * 1e6, "Price should be equal to base price + 4 payment token");
+        assertTrue(currentPrice == PRICE + 4 * 1e6, "Price should be equal to base PRICE + 4 payment token");
 
-        // check price much later
+        // check PRICE much later
         vm.warp(startTime + 1 days);
         currentPrice = crowdinvesting.getPrice();
         console.log("Price: %s", currentPrice);
-        assertTrue(currentPrice == price * 2, "Price should be equal to max price");
+        assertTrue(currentPrice == PRICE * 2, "Price should be equal to max PRICE");
 
-        // check price timeShift later
+        // check PRICE timeShift later
         vm.warp(startTime + timeShift);
         currentPrice = crowdinvesting.getPrice();
         console.log("Price: %s", currentPrice);
-        assertTrue(currentPrice == price * 2, "Price should be equal to max price after timeShift");
+        assertTrue(currentPrice == PRICE * 2, "Price should be equal to max PRICE after timeShift");
     }
 
     function testMaxPrice(uint256 maxPrice) public {
-        vm.assume(maxPrice >= price);
+        vm.assume(maxPrice >= PRICE);
         vm.warp(0);
 
-        // deploy max price oracle
+        // deploy max PRICE oracle
         MaxPriceOracle maxPriceOracle = new MaxPriceOracle();
 
         // configure crowdinvesting to use oracle
-        vm.startPrank(companyAdmin);
+        vm.startPrank(COMPANY_ADMIN);
         crowdinvesting.pause();
         crowdinvesting.activateDynamicPricing(IPriceDynamic(maxPriceOracle), crowdinvesting.priceBase(), maxPrice);
         vm.warp(1 days + 1);
@@ -257,21 +257,21 @@ contract CrowdinvestingDynamicPricingTest is Test {
 
         vm.stopPrank();
 
-        // check price
+        // check PRICE
         uint256 currentPrice = crowdinvesting.getPrice();
         console.log("Price: %s", currentPrice);
-        assertTrue(currentPrice == maxPrice, "Price should be equal to max price");
+        assertTrue(currentPrice == maxPrice, "Price should be equal to max PRICE");
     }
 
     function testMinPrice(uint256 minPrice) public {
-        vm.assume(minPrice <= price);
+        vm.assume(minPrice <= PRICE);
         vm.warp(0);
 
-        // deploy max price oracle
+        // deploy max PRICE oracle
         MinPriceOracle maxPriceOracle = new MinPriceOracle();
 
         // configure crowdinvesting to use oracle
-        vm.startPrank(companyAdmin);
+        vm.startPrank(COMPANY_ADMIN);
         crowdinvesting.pause();
         crowdinvesting.activateDynamicPricing(IPriceDynamic(maxPriceOracle), minPrice, crowdinvesting.priceBase());
         vm.warp(1 days + 1);
@@ -279,9 +279,9 @@ contract CrowdinvestingDynamicPricingTest is Test {
 
         vm.stopPrank();
 
-        // check price
+        // check PRICE
         uint256 currentPrice = crowdinvesting.getPrice();
         console.log("Price: %s", currentPrice);
-        assertTrue(currentPrice == minPrice, "Price should be equal to min price");
+        assertTrue(currentPrice == minPrice, "Price should be equal to min PRICE");
     }
 }
