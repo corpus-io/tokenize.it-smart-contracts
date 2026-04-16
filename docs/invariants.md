@@ -151,16 +151,26 @@ The following statements about the smart contracts should always be true
 
 ## Distribution.sol
 
-- Payout per claim depends on token amount, price per token and fee.
-- The platform fee is deducted at claim time.
-- The currency must have the `TRUSTED_CURRENCY` attribute on the token's AllowList at initialization.
-- The snapshot must have a non-zero total token supply; initialization reverts otherwise to prevent funds being locked forever.
-- Only the owner can reassign eligible funds to another address or drain the contract.
-- Reassigning eligible funds can only be done after the `reassignOrDrainAfter` timestamp.
-- Draining the contract can only be done after the `reassignOrDrainAfter` timestamp.
-- Reassigning funds does not affect the total amount of eligible funds, the amount of currency that one token in the snapshot is entitled to claim (e.g. price).
-- After `reassign(from, to, amount)`, `eligible(from)` decreases by `amount` and `eligible(to)` increases by `amount`.
-- Every reassignment is emitted as a `Reassigned` event for auditability.
+- A Distribution contract distributes currency to token holders.
+- Eligibility is determined by token balances at a fixed snapshot; token transfers after the snapshot do not affect any holder's share.
+- Each holder's gross eligible amount is proportional to their snapshot balance scaled by the price, but can be increased or decreased through reassignments.
+- Reassignments leave the total eligible currency in the contract unchanged.
+- Reassigning funds reduces the source's remaining gross eligibility and increases the target's by the same amount.
+- Only the owner can do reassignments.
+- Reassigning funds can only be done after the lock period, except for reassignments applied during initialization itself.
+- An address's gross eligible amount minus a fee is that address's net eligible amount.
+- The fee is deducted from the payout at claim time.
+- The fee is calculated by the fee settings contract, if that contract has the expected interface.
+- If the fee settings contract does not expose the expected interface, the fee is set to 0.
+- Only trusted currencies can be used.
+- The snapshot must have a non-zero total token supply.
+- A claim always redeems the caller's entire eligible amount at once; partial claims are not possible.
+- Once an address has claimed, its share cannot be claimed again.
+- A claim reverts if the net payout would be below the caller-specified minimum.
+- The caller specifies the recipient address for the currency payout.
+- Only the owner can drain the remaining currency from the contract, and only after the lock period.
+- The lock period is configured at initialization.
+- Every reassignment is recorded on-chain for auditability.
 - All functions can be called directly or as meta transaction using EIP-2771. Both options yield equivalent results given equivalent inputs.
 
 ## Exit.sol
