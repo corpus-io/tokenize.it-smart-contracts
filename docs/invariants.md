@@ -222,13 +222,17 @@ The following statements about the smart contracts should always be true
 
 ## TimeLock.sol
 
-- Only the owner can drain an ERC20 token from the contract.
-- Draining any ERC20 token from the contract moves the entire balance at once.
-- Draining the tokens from the contract is only possible after the timelock period has passed.
-- If the owner is eligible for distribution proceeds, they can claim those proceeds regardless of the timelock period.
-- Claiming distribution proceeds does not move the tokens.
-- The only option for the owner to transfer the tokens out of the contract during the timelock period is through an Exit.
-- An Exit can only be used if it has been registered in the GlobalTokenExitRegistry.
+- The lock period is configured at initialization and must be set to a future timestamp.
+- Only the owner can drain tokens, claim distribution proceeds, or claim exit proceeds.
+- Draining moves the contract's full balance of a given ERC20 token to the recipient.
+- Draining is only possible after the lock period has passed.
+- The contract's distribution proceeds can be claimed and forwarded to any non-zero recipient regardless of the lock period.
+- Claiming distribution proceeds does not move the held tokens.
+- The held tokens can be exited through a registered Exit contract at any time, including during the lock period.
+- An exit claim is only possible if an exit has been registered for the token in the GlobalTokenExitRegistry.
+- Both distribution claims and exit claims have a minimum payout parameter; the operation reverts if proceeds fall below it.
+- The recipient address for any drain, distribution claim, or exit claim cannot be zero.
+- Every drain, distribution claim, and exit claim is recorded on-chain.
 - All functions can be called directly or as meta transaction using EIP-2771. Both options yield equivalent results given equivalent inputs.
 
 ## TokenSwap.sol
