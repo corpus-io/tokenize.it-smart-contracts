@@ -95,12 +95,7 @@ fee = amount * feeNumerator / feeDenominator
 
 ### Distribution contracts
 
-[Distribution](../contracts/Distribution.sol) and [Exit](../contracts/Exit.sol) both use `privateOfferFee` for fee calculation, but differ in _when_ the fee is collected:
-
-- **Distribution**: Fee is deducted **once at initialization** from `initialFundingAmount`. Only the net amount is stored and made claimable. Individual `claim()` calls are fee-free. This prevents partial extraction of funds before the full fee is paid.
-- **Exit**: Fee is deducted **per claim** at `claim()` time. The fee is proportional to each claim's currency amount, so late claimers pay the same rate as early ones.
-
-In both cases the fee is sent to `privateOfferFeeCollector` as determined by the token's FeeSettings contract.
+[Distribution](../contracts/Distribution.sol) and [Exit](../contracts/Exit.sol) can both collect fees. The Fee is deducted **per claim** at `claim()` time.
 
 [TokenSwap](../contracts/TokenSwap.sol) uses `privateOfferFee` per trade.
 
