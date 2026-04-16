@@ -1316,4 +1316,81 @@ contract FeeSettingsTest is Test {
         assertEq(freshFeeSettings.fee(feeType, amount, EXAMPLE_TOKEN_ADDRESS), expectedFee, "Fee calculation wrong");
         assertEq(freshFeeSettings.feeCollector(feeType, EXAMPLE_TOKEN_ADDRESS), collector, "Collector wrong");
     }
+
+    function testFeeTypeId() public {
+        assertEq(feeSettings.feeTypeId("TOKEN"), FeeTypes.TOKEN, "TOKEN id mismatch");
+        assertEq(feeSettings.feeTypeId("CROWDINVESTING"), FeeTypes.CROWDINVESTING, "CROWDINVESTING id mismatch");
+        assertEq(feeSettings.feeTypeId("PRIVATE_OFFER"), FeeTypes.PRIVATE_OFFER, "PRIVATE_OFFER id mismatch");
+    }
+
+    function testRegisterFeeTypeRevertsIfFeeTypeZero() public {
+        vm.prank(ADMIN);
+        vm.expectRevert("feeType cannot be 0");
+        feeSettings.registerFeeType(bytes32(0), 100, 50, ADMIN);
+    }
+
+    function testRegisterFeeTypeRevertsIfMaxNumeratorZero() public {
+        vm.prank(ADMIN);
+        vm.expectRevert("maxNumerator cannot be 0");
+        feeSettings.registerFeeType(keccak256("NEW_FEE_TYPE"), 0, 0, ADMIN);
+    }
+
+    function testRegisterFeeTypeRevertsIfAlreadyRegistered() public {
+        vm.prank(ADMIN);
+        vm.expectRevert("fee type already registered");
+        feeSettings.registerFeeType(FeeTypes.TOKEN, 100, 50, ADMIN);
+    }
+
+    function testPlanFeeChangeRevertsIfUnknownFeeType() public {
+        vm.prank(ADMIN);
+        vm.expectRevert("unknown fee type");
+        feeSettings.planFeeChange(keccak256("UNKNOWN_FEE_TYPE"), 1, uint64(block.timestamp + 1));
+    }
+
+    function testExecuteFeeChangeRevertsIfNoPendingChange() public {
+        vm.prank(ADMIN);
+        vm.expectRevert("no proposed fee change");
+        feeSettings.executeFeeChange(FeeTypes.TOKEN);
+    }
+
+    function testSetCustomFeeRevertsIfUnknownFeeType() public {
+        vm.prank(ADMIN);
+        vm.expectRevert("unknown fee type");
+        feeSettings.setCustomFee(
+            keccak256("UNKNOWN_FEE_TYPE"),
+            EXAMPLE_TOKEN_ADDRESS,
+            1,
+            uint64(block.timestamp + 1 days)
+        );
+    }
+
+    function testSetCustomFeeRevertsIfNumeratorExceedsMax() public {
+        vm.prank(ADMIN);
+        vm.expectRevert("numerator exceeds max");
+        feeSettings.setCustomFee(FeeTypes.TOKEN, EXAMPLE_TOKEN_ADDRESS, 501, uint64(block.timestamp + 1 days));
+    }
+
+    function testSetCustomFeeRevertsIfValidityDateInPast() public {
+        vm.prank(ADMIN);
+        vm.expectRevert("validity date must be in the future");
+        feeSettings.setCustomFee(FeeTypes.TOKEN, EXAMPLE_TOKEN_ADDRESS, 1, uint64(block.timestamp));
+    }
+
+    function testSetDefaultFeeCollectorRevertsIfUnknownFeeType() public {
+        vm.prank(ADMIN);
+        vm.expectRevert("unknown fee type");
+        feeSettings.setDefaultFeeCollector(keccak256("UNKNOWN_FEE_TYPE"), ADMIN);
+    }
+
+    function testSetCustomFeeCollectorRevertsIfUnknownFeeType() public {
+        vm.prank(ADMIN);
+        vm.expectRevert("unknown fee type");
+        feeSettings.setCustomFeeCollector(keccak256("UNKNOWN_FEE_TYPE"), EXAMPLE_TOKEN_ADDRESS, ADMIN);
+    }
+
+    function testSetCustomFeeCollectorRevertsIfTokenZero() public {
+        vm.prank(ADMIN);
+        vm.expectRevert("token cannot be 0x0");
+        feeSettings.setCustomFeeCollector(FeeTypes.TOKEN, address(0), ADMIN);
+    }
 }

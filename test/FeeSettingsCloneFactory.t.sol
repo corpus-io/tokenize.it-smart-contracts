@@ -4,6 +4,7 @@ pragma solidity 0.8.23;
 import "../lib/forge-std/src/Test.sol";
 import "../lib/forge-std/src/console.sol";
 import "../contracts/factories/FeeSettingsCloneFactory.sol";
+import "../contracts/factories/PrivateOfferFactory.sol";
 import "../contracts/common/IFeeSettings.sol";
 
 contract tokenTest is Test {
@@ -238,5 +239,25 @@ contract tokenTest is Test {
         assertEq(_tokenFeeNumerator, 1, "defaultTokenFeeNumerator not set");
         assertEq(_crowdinvestingFeeNumerator, 2, "defaultCrowdinvestingFeeNumerator not set");
         assertEq(_privateOfferFeeNumerator, 3, "defaultPrivateOfferFeeNumerator not set");
+    }
+
+    function testWrongForwarderReverts(address _wrongTrustedForwarder) public {
+        vm.assume(_wrongTrustedForwarder != EXAMPLE_TRUSTED_FORWARDER);
+        vm.assume(_wrongTrustedForwarder != address(0));
+
+        FeeSettings.FeeTypeInit[] memory feeTypes = _buildFeeTypesAllSame(
+            1,
+            2,
+            3,
+            EXAMPLE_TOKEN_FEE_COLLECTOR
+        );
+
+        vm.expectRevert("FeeSettingsCloneFactory: Unexpected trustedForwarder");
+        factory.createFeeSettingsClone(bytes32(0), _wrongTrustedForwarder, EXAMPLE_OWNER, feeTypes);
+    }
+
+    function testPrivateOfferFactoryRevertsIfTimeLockFactoryZero() public {
+        vm.expectRevert("TimeLockCloneFactory must not be 0");
+        new PrivateOfferFactory(TimeLockCloneFactory(address(0)));
     }
 }

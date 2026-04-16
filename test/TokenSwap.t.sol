@@ -12,6 +12,55 @@ import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
 import "./resources/CloneCreators.sol";
 
+/**
+ * @notice A minimal fee settings that supports IFeeSettingsV2 but NOT IFeeSettingsV3.
+ *         Used to exercise the V2 fallback path in TokenSwapBase._getFeeAndFeeReceiver().
+ */
+contract V2OnlyFeeSettings {
+    address public immutable collector;
+
+    uint256 public constant SOME_RANDOM_FIXED_FEE = 62648;
+
+    constructor(address _collector) {
+        collector = _collector;
+    }
+
+    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
+        if (interfaceId == 0x01ffc9a7) return true; // ERC165
+        if (interfaceId == 0xffffffff) return false; // ERC165 invalid
+        if (interfaceId == type(IFeeSettingsV2).interfaceId) return true;
+        return false; // does NOT support IFeeSettingsV3
+    }
+
+    function tokenFee(uint256, address) external pure returns (uint256) {
+        return SOME_RANDOM_FIXED_FEE;
+    }
+
+    function tokenFeeCollector(address) external view returns (address) {
+        return collector;
+    }
+
+    function crowdinvestingFee(uint256, address) external pure returns (uint256) {
+        return SOME_RANDOM_FIXED_FEE;
+    }
+
+    function crowdinvestingFeeCollector(address) external view returns (address) {
+        return collector;
+    }
+
+    function privateOfferFee(uint256, address) external pure returns (uint256) {
+        return SOME_RANDOM_FIXED_FEE;
+    }
+
+    function privateOfferFeeCollector(address) external view returns (address) {
+        return collector;
+    }
+
+    function owner() external pure returns (address) {
+        return address(0);
+    }
+}
+
 contract TokenSwapTest is Test {
     event ReceiverChanged(address indexed);
     event MinAmountPerTransactionChanged(uint256);
@@ -1163,6 +1212,35 @@ contract TokenSwapTest is Test {
         assertTrue(
             paymentToken.balanceOf(feeCollector) == feeCollectorBalanceBefore + totalFee,
             "fee collector should get 2 payment tokens"
+        );
+    }
+
+    /// Exercises the V2 fallback path in TokenSwapBase._getFeeAndFeeReceiver():
+    /// when feeSettings does not support IFeeSettingsV3, privateOfferFee/privateOfferFeeCollector are used.
+    function testV2FallbackFeePathOnBuy() public {
+        address feeCollectorAddress = address(0x1234);
+        V2OnlyFeeSettings v2Fee = new V2OnlyFeeSettings(feeCollectorAddress);
+
+        // Switch the token to use V2-only fee settings.
+        // suggestNewFeeSettings requires msg.sender == feeSettings.owner(); the test contract owns feeSettings.
+        token.suggestNewFeeSettings(IFeeSettingsV2(address(v2Fee)));
+        vm.prank(ADMIN);
+        token.acceptNewFeeSettings(IFeeSettingsV2(address(v2Fee)));
+
+        uint256 feeCollectorBalanceBefore = paymentToken.balanceOf(feeCollectorAddress);
+
+        // Run a buy on the existing tokenSwap — this triggers the V2 fallback in _getFeeAndFeeReceiver.
+        uint256 buyAmount = 1e18;
+        uint256 cost = Math.ceilDiv(buyAmount * tokenSwap.tokenPrice(), 10 ** token.decimals());
+        vm.prank(BUYER);
+        tokenSwap.buy(buyAmount, type(uint256).max, BUYER);
+
+        assertEq(token.balanceOf(BUYER), buyAmount, "BUYER should have received tokens via V2 fallback fee path");
+        assertTrue(paymentToken.balanceOf(BUYER) == PAYMENT_TOKEN_AMOUNT - cost, "BUYER payment token balance wrong");
+        assertEq(
+            paymentToken.balanceOf(feeCollectorAddress),
+            feeCollectorBalanceBefore + v2Fee.SOME_RANDOM_FIXED_FEE(),
+            "Wrong fee"
         );
     }
 }

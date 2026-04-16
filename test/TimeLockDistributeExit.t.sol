@@ -283,4 +283,73 @@ contract TimeLockDistributeExitTest is Test {
         assertEq(eurc.balanceOf(RECIPIENT), expectedPayout, "wrong payout");
         assertEq(token.balanceOf(address(timeLock)), 0, "timeLock should have no tokens");
     }
+
+    // ── TimeLock initialize revert cases ─────────────────────────────────────
+
+    function testInitializeRevertsIfOwnerZero() public {
+        TimeLock logic = new TimeLock(TRUSTED_FORWARDER);
+        TimeLockCloneFactory cloneFactory = new TimeLockCloneFactory(address(logic));
+        vm.expectRevert("owner can not be zero address");
+        cloneFactory.createTimeLockClone(bytes32(0), TRUSTED_FORWARDER, address(0), timeLockExpiry, tokenExitRegistry);
+    }
+
+    function testInitializeRevertsIfLockedUntilNotInFuture() public {
+        TimeLock logic = new TimeLock(TRUSTED_FORWARDER);
+        TimeLockCloneFactory cloneFactory = new TimeLockCloneFactory(address(logic));
+        vm.expectRevert("lockedUntil must be in the future");
+        cloneFactory.createTimeLockClone(
+            bytes32(0),
+            TRUSTED_FORWARDER,
+            OWNER,
+            uint64(block.timestamp),
+            tokenExitRegistry
+        );
+    }
+
+    function testInitializeRevertsIfRegistryZero() public {
+        TimeLock logic = new TimeLock(TRUSTED_FORWARDER);
+        TimeLockCloneFactory cloneFactory = new TimeLockCloneFactory(address(logic));
+        vm.expectRevert("tokenExitRegistry can not be zero address");
+        cloneFactory.createTimeLockClone(
+            bytes32(0),
+            TRUSTED_FORWARDER,
+            OWNER,
+            timeLockExpiry,
+            GlobalTokenExitRegistry(address(0))
+        );
+    }
+
+    function testTimeLockCloneFactoryWrongForwarderReverts() public {
+        address wrongForwarder = address(99);
+        TimeLock logic = new TimeLock(TRUSTED_FORWARDER);
+        TimeLockCloneFactory cloneFactory = new TimeLockCloneFactory(address(logic));
+        vm.expectRevert("TimeLockCloneFactory: Unexpected trustedForwarder");
+        cloneFactory.createTimeLockClone(bytes32(0), wrongForwarder, OWNER, timeLockExpiry, tokenExitRegistry);
+    }
+
+    // ── drain() revert cases ─────────────────────────────────────────────────
+
+    function testDrainRevertsIfRecipientZero() public {
+        vm.warp(timeLockExpiry);
+        vm.prank(OWNER);
+        vm.expectRevert("recipient can not be zero address");
+        timeLock.drain(IERC20(address(token)), address(0));
+    }
+
+    function testDrainRevertsIfNoTokens() public {
+        vm.warp(timeLockExpiry);
+        vm.prank(OWNER);
+        timeLock.drain(IERC20(address(token)), RECIPIENT);
+
+        vm.prank(OWNER);
+        vm.expectRevert("no tokens to drain");
+        timeLock.drain(IERC20(address(token)), RECIPIENT);
+    }
+
+    function testClaimDistributionRevertsIfRecipientZero() public {
+        FixedPayoutDistribution stub = new FixedPayoutDistribution(IERC20(address(eurc)), 0);
+        vm.prank(OWNER);
+        vm.expectRevert("recipient can not be zero address");
+        timeLock.claimDistribution(Distribution(address(stub)), address(0), 0);
+    }
 }

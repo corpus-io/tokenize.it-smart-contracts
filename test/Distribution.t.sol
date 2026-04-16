@@ -548,7 +548,11 @@ contract DistributionTest is Test {
         vm.prank(OWNER);
         dist.reassign(HOLDER_C, HOLDER_A, amountC); // A gets C's 20e6
 
-        assertEq(dist.eligible(HOLDER_A), 120e6 + 60e6 + 20e6, "HOLDER_A eligible should include all reassigned amounts");
+        assertEq(
+            dist.eligible(HOLDER_A),
+            120e6 + 60e6 + 20e6,
+            "HOLDER_A eligible should include all reassigned amounts"
+        );
         assertEq(dist.eligible(HOLDER_B), 0, "HOLDER_B eligible should be zero after full reassign");
         assertEq(dist.eligible(HOLDER_C), 0, "HOLDER_C eligible should be zero after full reassign");
 
@@ -594,7 +598,11 @@ contract DistributionTest is Test {
 
         vm.prank(OWNER);
         dist.reassign(HOLDER_A, HOLDER_B, aliceEligible / 2); // 60e6 to B
-        assertEq(dist.eligible(HOLDER_A), aliceEligible / 2, "HOLDER_A eligible should be halved after partial reassign");
+        assertEq(
+            dist.eligible(HOLDER_A),
+            aliceEligible / 2,
+            "HOLDER_A eligible should be halved after partial reassign"
+        );
         assertEq(dist.eligible(HOLDER_B), 60e6 + aliceEligible / 2, "HOLDER_B eligible should include reassigned half");
 
         uint256 aliceRemaining = dist.eligible(HOLDER_A);
@@ -1008,5 +1016,54 @@ contract DistributionTest is Test {
         vm.prank(OWNER);
         vm.expectRevert("ReentrancyGuard: reentrant call");
         distribution.drain(OWNER, IERC20(address(maliciousCurrency)));
+    }
+
+    function testInitializeWithInitialReassignments() public {
+        // HOLDER_A reassigns part of their currency-denominated share to RECIPIENT at init time
+        // grossEligible(HOLDER_A) = SUPPLY_A * PRICE_PER_TOKEN / 1e18 = 600e18 * 200_000 / 1e18 = 120e6
+        uint256 reassignAmount = 10e6; // 10 USDC — well within HOLDER_A's eligible share
+
+        Reassignment[] memory reassignments = new Reassignment[](1);
+        reassignments[0] = Reassignment({from: HOLDER_A, to: RECIPIENT, amount: reassignAmount});
+
+        DistributionInitializerArguments memory args = DistributionInitializerArguments({
+            owner: OWNER,
+            token: token,
+            snapshotId: snapshotId,
+            currency: IERC20(address(currency)),
+            pricePerToken: PRICE_PER_TOKEN,
+            lockedUntil: lockedUntil,
+            initialReassignments: reassignments
+        });
+
+        address cloneAddr = factory.predictCloneAddress(bytes32("reassign"), TRUSTED_FORWARDER, args);
+        currency.mint(CURRENCY_PROVIDER, TOTAL_CURRENCY);
+        vm.prank(CURRENCY_PROVIDER);
+        currency.approve(cloneAddr, TOTAL_CURRENCY);
+
+        Distribution distWithReassignment = Distribution(
+            factory.createDistributionClone(
+                bytes32("reassign"),
+                TRUSTED_FORWARDER,
+                CURRENCY_PROVIDER,
+                args,
+                TOTAL_CURRENCY
+            )
+        );
+
+        // RECIPIENT can now claim the reassigned currency amount directly
+        uint256 expectedRecipientCurrency = reassignAmount;
+        vm.warp(lockedUntil);
+        vm.prank(RECIPIENT);
+        distWithReassignment.claim(RECIPIENT, 0);
+
+        assertEq(currency.balanceOf(RECIPIENT), expectedRecipientCurrency, "RECIPIENT got wrong currency amount");
+
+        // ensure recipient cannot claim from original dist without reassignment
+        vm.prank(RECIPIENT);
+        vm.expectRevert("nothing to claim");
+        dist.claim(RECIPIENT, 0);
+
+        assertEq(currency.balanceOf(RECIPIENT), expectedRecipientCurrency, "RECIPIENT balance changed");
     }
 }

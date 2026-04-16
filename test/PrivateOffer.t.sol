@@ -286,6 +286,77 @@ contract PrivateOfferTest is Test {
         );
     }
 
+    function _buildBaseArguments() internal view returns (PrivateOfferArguments memory) {
+        return PrivateOfferArguments(
+            CURRENCY_PAYER,
+            TOKEN_RECEIVER,
+            CURRENCY_RECEIVER,
+            1e18,
+            PRICE,
+            block.timestamp + 1000,
+            currency,
+            token,
+            address(0)
+        );
+    }
+
+    function testRevertZeroCurrencyPayer() public {
+        PrivateOfferArguments memory args = _buildBaseArguments();
+        args.currencyPayer = address(0);
+        vm.expectRevert("_arguments.currencyPayer can not be zero address");
+        new PrivateOffer(args);
+    }
+
+    function testRevertZeroTokenReceiver() public {
+        PrivateOfferArguments memory args = _buildBaseArguments();
+        args.tokenReceiver = address(0);
+        vm.expectRevert("_arguments.tokenReceiver can not be zero address");
+        new PrivateOffer(args);
+    }
+
+    function testRevertZeroCurrencyReceiver() public {
+        PrivateOfferArguments memory args = _buildBaseArguments();
+        args.currencyReceiver = address(0);
+        vm.expectRevert("_arguments.currencyReceiver can not be zero address");
+        new PrivateOffer(args);
+    }
+
+    function testRevertZeroTokenPrice() public {
+        PrivateOfferArguments memory args = _buildBaseArguments();
+        args.tokenPrice = 0;
+        vm.expectRevert("_arguments.tokenPrice can not be zero");
+        new PrivateOffer(args);
+    }
+
+    function testRevertExpiredDeal() public {
+        vm.warp(1000);
+        PrivateOfferArguments memory args = _buildBaseArguments();
+        args.expiration = block.timestamp - 1;
+        vm.expectRevert("Deal expired");
+        new PrivateOffer(args);
+    }
+
+    function testRevertZeroToken() public {
+        PrivateOfferArguments memory args = _buildBaseArguments();
+        args.token = Token(address(0));
+        vm.expectRevert("_arguments.token can not be zero address");
+        new PrivateOffer(args);
+    }
+
+    function testRevertZeroCurrency() public {
+        PrivateOfferArguments memory args = _buildBaseArguments();
+        args.currency = IERC20(address(0));
+        vm.expectRevert("_arguments.currency can not be zero address");
+        new PrivateOffer(args);
+    }
+
+    function testRevertZeroTokenAmount() public {
+        PrivateOfferArguments memory args = _buildBaseArguments();
+        args.tokenAmount = 0;
+        vm.expectRevert("_arguments.tokenAmount can not be zero");
+        new PrivateOffer(args);
+    }
+
     function ensureCostIsRoundedUp(uint256 _tokenBuyAmount, uint256 _nominalPrice) public {
         console.log(
             "feeCollector currency balance: %s",

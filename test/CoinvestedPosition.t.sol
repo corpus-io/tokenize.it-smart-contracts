@@ -1404,4 +1404,68 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         vm.expectRevert("ReentrancyGuard: reentrant call");
         coinvestedPositionMalicious.buy(1e18, 1000e6, TOKEN_RECEIVER);
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // ── Section: Additional revert coverage ───────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────
+
+    function testInitZeroTokenExitRegistryReverts() public {
+        CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
+            owner: OWNER,
+            receiver: RECEIVER,
+            leadInvestors: _defaultLeadInvestors(),
+            basePrice: 100e6,
+            baseCurrency: IERC20(address(eurc)),
+            token: token,
+            lockedUntil: 0,
+            tokenExitRegistry: GlobalTokenExitRegistry(address(0))
+        });
+        vm.expectRevert("tokenExitRegistry can not be zero address");
+        factory.createCoinvestedPositionClone(bytes32(0), TRUSTED_FORWARDER, args);
+    }
+
+    function testUnpauseRevertsIfTimelockNotExpired() public {
+        uint64 futureUnlock = uint64(block.timestamp + 1000);
+        CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
+            owner: OWNER,
+            receiver: RECEIVER,
+            leadInvestors: _defaultLeadInvestors(),
+            basePrice: 100e6,
+            baseCurrency: IERC20(address(eurc)),
+            token: token,
+            lockedUntil: futureUnlock,
+            tokenExitRegistry: tokenExitRegistry
+        });
+        CoinvestedPosition locked = CoinvestedPosition(
+            factory.createCoinvestedPositionClone(bytes32("1"), TRUSTED_FORWARDER, args)
+        );
+
+        vm.prank(OWNER);
+        locked.setTokenPrice(200e6);
+
+        vm.prank(OWNER);
+        vm.expectRevert("timelock has not expired");
+        locked.unpause();
+    }
+
+    function testSetCurrencyRevertsIfZeroAddress() public {
+        vm.prank(OWNER);
+        vm.expectRevert("zero address");
+        coinvestedPosition.setCurrency(IERC20(address(0)), 1e6);
+    }
+
+    function testSetCurrencyRevertsIfBasePriceZero() public {
+        vm.prank(OWNER);
+        vm.expectRevert("altBasePrice must be > 0");
+        coinvestedPosition.setCurrency(IERC20(address(eure)), 0);
+    }
+
+    function testClaimExitRevertsIfNoExitSet() public {
+        vm.prank(ADMIN);
+        token.mint(address(coinvestedPosition), 100e18);
+
+        vm.prank(OWNER);
+        vm.expectRevert("no exit set in tokenExitRegistry");
+        coinvestedPosition.claimExit(0, 0);
+    }
 }

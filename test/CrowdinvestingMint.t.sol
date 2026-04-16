@@ -1430,4 +1430,36 @@ contract CrowdinvestingTest is Test {
             vm.stopPrank();
         }
     }
+
+    function testSetTokenHolder() public {
+        address newTokenHolder = address(42);
+        vm.prank(OWNER);
+        crowdinvesting.pause();
+
+        assertEq(crowdinvesting.tokenHolder(), address(0), "initial tokenHolder should be zero");
+
+        vm.prank(OWNER);
+        crowdinvesting.setTokenHolder(newTokenHolder);
+
+        assertEq(crowdinvesting.tokenHolder(), newTokenHolder, "tokenHolder not updated");
+    }
+
+    function testSetCurrencyAndTokenPriceRevertsIfCurrencyZero() public {
+        vm.prank(OWNER);
+        crowdinvesting.pause();
+
+        vm.prank(OWNER);
+        vm.expectRevert("currency can not be zero address");
+        crowdinvesting.setCurrencyAndTokenPrice(IERC20(address(0)), PRICE);
+    }
+
+    function testSetLastBuyDateRevertsIfInPast() public {
+        vm.warp(1000);
+        vm.prank(OWNER);
+        crowdinvesting.pause();
+
+        vm.prank(OWNER);
+        vm.expectRevert("lastBuyDate needs to be 0 or in the future");
+        crowdinvesting.setLastBuyDate(999);
+    }
 }

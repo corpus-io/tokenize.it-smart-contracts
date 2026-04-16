@@ -983,4 +983,30 @@ contract ExitTest is Test {
         assertEq(exitWithRate.referenceToExitRate(IERC20(address(refCurrency))), 1e6, "rate not stored correctly");
         assertEq(exitWithRate.referenceToExitRate(IERC20(address(currency))), 0, "exit currency should have no rate");
     }
+
+    /// referenceCurrency = address(0) must revert
+    function testReferenceZeroAddressReverts() public {
+        IERC20[] memory referenceCurrencies = new IERC20[](1);
+        referenceCurrencies[0] = IERC20(address(0));
+        uint256[] memory rates = new uint256[](1);
+        rates[0] = 1e6;
+
+        ExitInitializerArguments memory args = ExitInitializerArguments({
+            owner: OWNER,
+            token: token,
+            currency: IERC20(address(currency)),
+            pricePerToken: PRICE_PER_TOKEN,
+            claimStart: claimStart,
+            lockedUntil: lockedUntil,
+            referenceCurrencies: referenceCurrencies,
+            referenceToExitRates: rates
+        });
+        address cloneAddr = factory.predictCloneAddress(bytes32("1"), TRUSTED_FORWARDER, args);
+        currency.mint(CURRENCY_PROVIDER, TOTAL_CURRENCY);
+        vm.prank(CURRENCY_PROVIDER);
+        currency.approve(cloneAddr, TOTAL_CURRENCY);
+
+        vm.expectRevert("referenceCurrency can not be zero address");
+        factory.createExitClone(bytes32("1"), TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, TOTAL_CURRENCY);
+    }
 }
