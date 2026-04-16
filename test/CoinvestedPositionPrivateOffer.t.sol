@@ -147,13 +147,12 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
 
         // ── Execute ───────────────────────────────────────────────────────────
 
-        address coinvestedPositionAddress = privateOfferFactory
-            .deployPrivateOfferWithCoinvestedPosition(
-                rawSalt,
-                TRUSTED_FORWARDER,
-                privateOfferArgs,
-                coinvestedPositionArgs
-            );
+        address coinvestedPositionAddress = privateOfferFactory.deployPrivateOfferWithCoinvestedPosition(
+            rawSalt,
+            TRUSTED_FORWARDER,
+            privateOfferArgs,
+            coinvestedPositionArgs
+        );
 
         // ── Assert ────────────────────────────────────────────────────────────
 
