@@ -7,7 +7,9 @@ import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/factories/CoinvestedPositionCloneFactory.sol";
 import "../contracts/factories/PrivateOfferFactory.sol";
 import "../contracts/factories/TimeLockCloneFactory.sol";
+import "../contracts/factories/FeeSplitterCloneFactory.sol";
 import "../contracts/CoinvestedPosition.sol";
+import "../contracts/FeeSplitter.sol";
 import "../contracts/TimeLock.sol";
 import "../contracts/GlobalTokenExitRegistry.sol";
 import "./resources/CoinvestedPositionTestBase.sol";
@@ -20,10 +22,10 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
 
     // ── Test constants ────────────────────────────────────────────────────────
     uint64 public constant CARRY_5PCT = type(uint64).max / 20;
-    uint64 public constant ONE_TIME_FEE_2PCT = type(uint64).max / 50;
 
     // ── Shared state ──────────────────────────────────────────────────────────
-    CoinvestedPositionCloneFactory coinvestedPositionFactory;
+    CoinvestedPositionCloneFactory coinvestedPositionCloneFactory;
+    FeeSplitterCloneFactory feeSplitterCloneFactory;
     PrivateOfferFactory privateOfferFactory;
 
     function setUp() public {
@@ -48,56 +50,41 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
         tokenExitRegistry = new GlobalTokenExitRegistry(trustedForwarder);
 
         // Factories
-        CoinvestedPosition logic = new CoinvestedPosition(trustedForwarder);
-        coinvestedPositionFactory = new CoinvestedPositionCloneFactory(address(logic));
+        CoinvestedPosition coinvestedPositionLogic = new CoinvestedPosition(trustedForwarder);
+        coinvestedPositionCloneFactory = new CoinvestedPositionCloneFactory(address(coinvestedPositionLogic));
+
+        feeSplitterCloneFactory = new FeeSplitterCloneFactory(address(new FeeSplitter()));
 
         TimeLock timeLockLogic = new TimeLock(trustedForwarder);
         TimeLockCloneFactory timeLockCloneFactory = new TimeLockCloneFactory(address(timeLockLogic));
-        privateOfferFactory = new PrivateOfferFactory(timeLockCloneFactory);
+
+        privateOfferFactory = new PrivateOfferFactory(timeLockCloneFactory, coinvestedPositionCloneFactory);
     }
 
-    /**
-     * @notice Demonstrates the full one-transaction coinvested position opening flow:
-     *   1. Platform predicts both addresses
-     *   2. Token issuer grants minting allowance to predicted PrivateOffer address
-     *   3. Coinvestor approves predicted CoinvestedPosition address for investment + one-time fee
-     *   4. Anyone executes createCoinvestedPositionWithPrivateOffer — atomically:
-     *      - CoinvestedPosition is initialized
-     *      - One-time syndicate fee is pulled from coinvestor and split among lead investors
-     *      - PrivateOffer is deployed: investment flows to token issuer, tokens land in CoinvestedPosition
-     */
-    function testCreateCoinvestedPositionWithPrivateOffer() public {
-        uint256 tokenAmount = 1000e18;
-        uint256 tokenPrice = 100e6; // 100 EURc per token (6 decimals)
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
-        // investmentAmount: what coinvestor pays for the tokens (excluding one-time fee)
-        uint256 investmentAmount = Math.ceilDiv(tokenAmount * tokenPrice, 10 ** token.decimals());
-
-        // one-time fee: 2% of investmentAmount, computed with same formula as the contract
-        uint256 oneTimeFeeAmount = (uint256(ONE_TIME_FEE_2PCT) * investmentAmount) / type(uint64).max;
-
-        // ── Build arguments ───────────────────────────────────────────────────
-
-        LeadInvestor[] memory leadInvestors = new LeadInvestor[](2);
-        leadInvestors[0] = LeadInvestor({ account: leadA, carryFraction: CARRY_10PCT });
-        leadInvestors[1] = LeadInvestor({ account: leadB, carryFraction: CARRY_5PCT });
-
-        CoinvestedPositionInitializerArguments memory coinvestedPositionArgs = CoinvestedPositionInitializerArguments({
+    function _buildCoinvestedPositionArgs(
+        LeadInvestor[] memory leadInvestors
+    ) internal view returns (CoinvestedPositionInitializerArguments memory) {
+        return CoinvestedPositionInitializerArguments({
             owner: owner,
             receiver: receiver,
             leadInvestors: leadInvestors,
-            basePrice: 80e6, // base price at which coinvestor breaks even
+            basePrice: 80e6,
             baseCurrency: IERC20(address(eurc)),
             token: token,
             lockedUntil: 0,
             tokenExitRegistry: tokenExitRegistry
         });
+    }
 
-        // currencyPayer and tokenReceiver are placeholders; they are overridden to the
-        // CoinvestedPosition address by both predict and create functions.
-        PrivateOfferArguments memory privateOfferArgs = PrivateOfferArguments({
-            currencyPayer: address(0),
-            tokenReceiver: address(0),
+    function _buildPrivateOfferArgs(
+        uint256 tokenAmount,
+        uint256 tokenPrice
+    ) internal view returns (PrivateOfferArguments memory) {
+        return PrivateOfferArguments({
+            currencyPayer: receiver, // coinvestor pays PrivateOffer directly
+            tokenReceiver: address(0), // overridden by factory to CoinvestedPosition address
             currencyReceiver: currencyReceiver,
             tokenAmount: tokenAmount,
             tokenPrice: tokenPrice,
@@ -106,19 +93,43 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
             token: token,
             tokenHolder: address(0)
         });
+    }
 
-        bytes32 rawSalt = bytes32("coinvested-demo");
+    // ── Tests ─────────────────────────────────────────────────────────────────
+
+    /**
+     * @notice Demonstrates the PrivateOfferFactory flow for opening a coinvested position:
+     *   1. Platform predicts both addresses
+     *   2. Token issuer grants minting allowance to the predicted PrivateOffer address
+     *   3. Coinvestor approves the predicted PrivateOffer address for the investment amount
+     *   4. Anyone calls deployPrivateOfferWithCoinvestedPosition — atomically:
+     *      - CoinvestedPosition clone is deployed and initialized
+     *      - PrivateOffer is deployed: investment flows from coinvestor to token issuer,
+     *        tokens land in CoinvestedPosition
+     */
+    function testDeployPrivateOfferWithCoinvestedPosition() public {
+        uint256 tokenAmount = 1000e18;
+        uint256 tokenPrice = 100e6; // 100 EURc per token (6 decimals)
+        uint256 investmentAmount = Math.ceilDiv(tokenAmount * tokenPrice, 10 ** token.decimals());
+
+        LeadInvestor[] memory leadInvestors = new LeadInvestor[](1);
+        leadInvestors[0] = LeadInvestor({ account: leadA, carryFraction: CARRY_10PCT });
+
+        CoinvestedPositionInitializerArguments memory coinvestedPositionArgs = _buildCoinvestedPositionArgs(
+            leadInvestors
+        );
+        PrivateOfferArguments memory privateOfferArgs = _buildPrivateOfferArgs(tokenAmount, tokenPrice);
+
+        bytes32 rawSalt = bytes32(0);
 
         // ── Predict addresses ─────────────────────────────────────────────────
 
-        (address expectedCoinvestedPosition, address expectedPrivateOffer) = coinvestedPositionFactory
-            .predictCoinvestedPositionAndPrivateOfferAddress(
+        (address expectedPrivateOffer, address expectedCoinvestedPosition) = privateOfferFactory
+            .predictPrivateOfferAndCoinvestedPositionAddress(
                 rawSalt,
                 trustedForwarder,
-                coinvestedPositionArgs,
-                privateOfferFactory,
                 privateOfferArgs,
-                ONE_TIME_FEE_2PCT
+                coinvestedPositionArgs
             );
 
         // ── Set up approvals ──────────────────────────────────────────────────
@@ -127,48 +138,99 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
         vm.prank(admin);
         token.increaseMintingAllowance(expectedPrivateOffer, tokenAmount);
 
-        // Coinvestor approves the predicted CoinvestedPosition for investment + one-time fee (single approval)
-        eurc.mint(receiver, investmentAmount + oneTimeFeeAmount);
+        // Coinvestor approves the predicted PrivateOffer address for the investment amount
+        eurc.mint(receiver, investmentAmount);
         vm.prank(receiver);
-        eurc.approve(expectedCoinvestedPosition, investmentAmount + oneTimeFeeAmount);
+        eurc.approve(expectedPrivateOffer, investmentAmount);
 
-        // ── Execute: anyone can trigger (here: the platform) ─────────────────
+        // ── Execute ───────────────────────────────────────────────────────────
 
-        (address coinvestedPositionAddress, address privateOfferAddress) = coinvestedPositionFactory
-            .createCoinvestedPositionWithPrivateOffer(
+        (address privateOfferAddress, address coinvestedPositionAddress) = privateOfferFactory
+            .deployPrivateOfferWithCoinvestedPosition(
                 rawSalt,
                 trustedForwarder,
-                coinvestedPositionArgs,
-                privateOfferFactory,
                 privateOfferArgs,
-                ONE_TIME_FEE_2PCT
+                coinvestedPositionArgs
             );
 
-        // ── Assert: addresses match predictions ───────────────────────────────
+        // ── Assert ────────────────────────────────────────────────────────────
 
-        assertEq(coinvestedPositionAddress, expectedCoinvestedPosition, "CoinvestedPosition address mismatch");
         assertEq(privateOfferAddress, expectedPrivateOffer, "PrivateOffer address mismatch");
-
-        // ── Assert: tokens landed in CoinvestedPosition ───────────────────────
-
+        assertEq(coinvestedPositionAddress, expectedCoinvestedPosition, "CoinvestedPosition address mismatch");
         assertEq(token.balanceOf(coinvestedPositionAddress), tokenAmount, "token balance wrong");
-
-        // ── Assert: investment reached the token issuer ───────────────────────
-
         assertEq(eurc.balanceOf(currencyReceiver), investmentAmount, "currencyReceiver balance wrong");
+        assertEq(eurc.balanceOf(receiver), 0, "receiver should have spent all currency");
+    }
 
-        // ── Assert: one-time fee split proportionally among lead investors ─────
+    /**
+     * @notice Demonstrates the FeeSplitter flow for paying a one-time syndicate fee:
+     *   1. A CoinvestedPosition is deployed (provides the lead investor roster)
+     *   2. Platform predicts the FeeSplitter address
+     *   3. Fee payer approves the predicted FeeSplitter for the fee amount
+     *   4. Anyone calls createFeeSplitterClone — immediately:
+     *      - FeeSplitter pulls the fee from the payer
+     *      - Fee is split proportionally among lead investors by carry fraction
+     */
+    function testFeeSplitter() public {
+        uint256 tokenAmount = 1000e18;
+        uint256 tokenPrice = 100e6;
+        uint256 investmentAmount = Math.ceilDiv(tokenAmount * tokenPrice, 10 ** token.decimals());
+        uint64 oneTimeFee2Pct = type(uint64).max / 50;
+        uint256 feeAmount = (uint256(oneTimeFee2Pct) * investmentAmount) / type(uint64).max;
+
+        // Build a CoinvestedPosition with 2 lead investors as the fee roster source
+        LeadInvestor[] memory leadInvestors = new LeadInvestor[](2);
+        leadInvestors[0] = LeadInvestor({ account: leadA, carryFraction: CARRY_10PCT });
+        leadInvestors[1] = LeadInvestor({ account: leadB, carryFraction: CARRY_5PCT });
+
+        CoinvestedPositionInitializerArguments memory coinvestedPositionArgs = _buildCoinvestedPositionArgs(
+            leadInvestors
+        );
+        CoinvestedPosition coinvestedPositionInstance = CoinvestedPosition(
+            coinvestedPositionCloneFactory.createCoinvestedPositionClone(
+                bytes32(0),
+                trustedForwarder,
+                coinvestedPositionArgs
+            )
+        );
+
+        // ── Predict FeeSplitter address ───────────────────────────────────────
+
+        address expectedFeeSplitter = feeSplitterCloneFactory.predictCloneAddress(
+            bytes32("1"),
+            receiver,
+            IERC20(address(eurc)),
+            feeAmount,
+            coinvestedPositionInstance
+        );
+
+        // ── Set up approval ───────────────────────────────────────────────────
+
+        eurc.mint(receiver, feeAmount);
+        vm.prank(receiver);
+        eurc.approve(expectedFeeSplitter, feeAmount);
+
+        // ── Execute: deploy FeeSplitter, which immediately distributes the fee ─
+
+        address feeSplitterAddress = feeSplitterCloneFactory.createFeeSplitterClone(
+            bytes32("1"),
+            receiver,
+            IERC20(address(eurc)),
+            feeAmount,
+            coinvestedPositionInstance
+        );
+
+        // ── Assert ────────────────────────────────────────────────────────────
+
+        assertEq(feeSplitterAddress, expectedFeeSplitter, "FeeSplitter address mismatch");
 
         uint256 carryFractionsSum = uint256(CARRY_10PCT) + uint256(CARRY_5PCT);
-        uint256 leadAShare = (uint256(CARRY_10PCT) * oneTimeFeeAmount) / carryFractionsSum;
-        uint256 leadBShare = oneTimeFeeAmount - leadAShare; // last lead absorbs rounding dust
+        uint256 leadAShare = (uint256(CARRY_10PCT) * feeAmount) / carryFractionsSum;
+        uint256 leadBShare = feeAmount - leadAShare; // last lead absorbs rounding dust
 
         assertEq(eurc.balanceOf(leadA), leadAShare, "leadA fee share wrong");
         assertEq(eurc.balanceOf(leadB), leadBShare, "leadB fee share wrong");
-        assertEq(leadAShare + leadBShare, oneTimeFeeAmount, "fee shares do not sum to total fee");
-
-        // ── Assert: coinvestor paid exactly investment + fee, nothing left ─────
-
-        assertEq(eurc.balanceOf(receiver), 0, "receiver should have spent all approved currency");
+        assertEq(leadAShare + leadBShare, feeAmount, "fee shares do not sum to total fee");
+        assertEq(eurc.balanceOf(receiver), 0, "feePayer should have spent all fee currency");
     }
 }
