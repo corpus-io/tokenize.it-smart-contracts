@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/proxy/Clones.sol";
 
 import "../CoinvestedPosition.sol";
 import "./CloneFactory.sol";
-import "./PrivateOfferFactory.sol";
 
 /**
  * @title CoinvestedPositionCloneFactory
@@ -54,102 +53,6 @@ contract CoinvestedPositionCloneFactory is CloneFactory {
     }
 
     /**
-     * @notice Create a new CoinvestedPosition clone and immediately execute a PrivateOffer investment.
-     *      The coinvestor (receiver) must have pre-approved the predicted CoinvestedPosition address for
-     *      investmentAmount + oneTimeFeeAmount of baseCurrency. The token issuer must have pre-approved
-     *      the predicted PrivateOffer address for minting or transfer.
-     *      Use predictCoinvestedPositionAndPrivateOfferAddress to obtain both addresses beforehand.
-     *      The same _rawSalt is used for both contracts.
-     * @param _rawSalt influences the addresses of both contracts, but not the initialization
-     * @param _trustedForwarder can not be changed, but is checked for security
-     * @param _coinvestedPositionArgs struct with all base initialization parameters
-     * @param _privateOfferFactory factory used to deploy the PrivateOffer
-     * @param _privateOfferArguments arguments for the PrivateOffer; currencyPayer and tokenReceiver are overridden
-     * @param _oneTimeFee one-time fee as a fraction of the investment amount, divided by type(uint64).max; 0 = no fee
-     * @return coinvestedPositionAddress address of the deployed CoinvestedPosition clone
-     * @return privateOfferAddress address of the deployed PrivateOffer
-     */
-    function createCoinvestedPositionWithPrivateOffer(
-        bytes32 _rawSalt,
-        address _trustedForwarder,
-        CoinvestedPositionInitializerArguments memory _coinvestedPositionArgs,
-        PrivateOfferFactory _privateOfferFactory,
-        PrivateOfferArguments memory _privateOfferArguments,
-        uint64 _oneTimeFee
-    ) external returns (address coinvestedPositionAddress, address privateOfferAddress) {
-        bytes32 salt = _getCombinedSalt(
-            _rawSalt,
-            _trustedForwarder,
-            _coinvestedPositionArgs,
-            _privateOfferFactory,
-            _privateOfferArguments,
-            _oneTimeFee
-        );
-        CoinvestedPosition clone = CoinvestedPosition(Clones.cloneDeterministic(implementation, salt));
-        require(
-            clone.isTrustedForwarder(_trustedForwarder),
-            "CoinvestedPositionCloneFactory: Unexpected trustedForwarder"
-        );
-
-        // Override before passing to initializeWithPrivateOffer so the PrivateOffer address prediction
-        // inside the initializer matches the address prediction here.
-        _privateOfferArguments.currencyPayer = address(clone);
-        _privateOfferArguments.tokenReceiver = address(clone);
-
-        privateOfferAddress = _privateOfferFactory.predictPrivateOfferAddress(_rawSalt, _privateOfferArguments);
-
-        clone.initializeWithPrivateOffer(
-            _coinvestedPositionArgs,
-            _privateOfferFactory,
-            _rawSalt,
-            _privateOfferArguments,
-            _oneTimeFee
-        );
-        emit NewClone(address(clone));
-
-        return (address(clone), privateOfferAddress);
-    }
-
-    /**
-     * @notice Predicts the addresses of the CoinvestedPosition clone and the PrivateOffer that would be
-     *      deployed with the given parameters. Use these addresses to set up the required approvals before
-     *      calling createCoinvestedPositionWithPrivateOffer:
-     *        - coinvestor approves coinvestedPositionAddress for investmentAmount + oneTimeFeeAmount
-     *        - token issuer approves privateOfferAddress for minting or transfer
-     *      The same _rawSalt is used for both contracts.
-     * @param _rawSalt influences the addresses of both contracts, but not the initialization
-     * @param _trustedForwarder can not be changed, but is checked for security
-     * @param _coinvestedPositionArgs struct with all base initialization parameters
-     * @param _privateOfferFactory factory used to deploy the PrivateOffer
-     * @param _privateOfferArguments arguments for the PrivateOffer; currencyPayer and tokenReceiver are overridden
-     * @param _oneTimeFee one-time fee as a fraction of the investment amount, divided by type(uint64).max; 0 = no fee
-     * @return coinvestedPositionAddress predicted address of the CoinvestedPosition clone
-     * @return privateOfferAddress predicted address of the PrivateOffer
-     */
-    function predictCoinvestedPositionAndPrivateOfferAddress(
-        bytes32 _rawSalt,
-        address _trustedForwarder,
-        CoinvestedPositionInitializerArguments memory _coinvestedPositionArgs,
-        PrivateOfferFactory _privateOfferFactory,
-        PrivateOfferArguments memory _privateOfferArguments,
-        uint64 _oneTimeFee
-    ) external view returns (address coinvestedPositionAddress, address privateOfferAddress) {
-        bytes32 salt = _getCombinedSalt(
-            _rawSalt,
-            _trustedForwarder,
-            _coinvestedPositionArgs,
-            _privateOfferFactory,
-            _privateOfferArguments,
-            _oneTimeFee
-        );
-        coinvestedPositionAddress = Clones.predictDeterministicAddress(implementation, salt);
-
-        _privateOfferArguments.currencyPayer = coinvestedPositionAddress;
-        _privateOfferArguments.tokenReceiver = coinvestedPositionAddress;
-        privateOfferAddress = _privateOfferFactory.predictPrivateOfferAddress(_rawSalt, _privateOfferArguments);
-    }
-
-    /**
      * @notice generates a salt from all input parameters
      * @param _rawSalt The salt used to deterministically generate the clone address
      * @param _trustedForwarder The trustedForwarder that will be used to initialize the clone
@@ -162,30 +65,5 @@ contract CoinvestedPositionCloneFactory is CloneFactory {
         CoinvestedPositionInitializerArguments memory _arguments
     ) internal pure returns (bytes32) {
         return keccak256(abi.encode(_rawSalt, _trustedForwarder, _arguments));
-    }
-
-    /**
-     * @notice generates a salt incorporating all parameters, ensuring the clone address is unique
-     *      across all terms including PrivateOffer parameters and the one-time fee.
-     */
-    function _getCombinedSalt(
-        bytes32 _rawSalt,
-        address _trustedForwarder,
-        CoinvestedPositionInitializerArguments memory _coinvestedPositionArgs,
-        PrivateOfferFactory _privateOfferFactory,
-        PrivateOfferArguments memory _privateOfferArguments,
-        uint64 _oneTimeFee
-    ) internal pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encode(
-                    _rawSalt,
-                    _trustedForwarder,
-                    _coinvestedPositionArgs,
-                    _privateOfferFactory,
-                    _privateOfferArguments,
-                    _oneTimeFee
-                )
-            );
     }
 }
