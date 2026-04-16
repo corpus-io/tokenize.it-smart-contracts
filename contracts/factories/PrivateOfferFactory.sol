@@ -138,7 +138,6 @@ contract PrivateOfferFactory {
      * @param _arguments Arguments for the PrivateOffer contract; tokenReceiver is overridden to the
      *      CoinvestedPosition address.
      * @param _coinvestedPositionArgs Arguments for the CoinvestedPosition clone.
-     * @return privateOfferAddress The address of the deployed PrivateOffer contract.
      * @return coinvestedPositionAddress The address of the deployed CoinvestedPosition clone.
      */
     function deployPrivateOfferWithCoinvestedPosition(
@@ -146,7 +145,7 @@ contract PrivateOfferFactory {
         address _trustedForwarder,
         PrivateOfferArguments calldata _arguments,
         CoinvestedPositionInitializerArguments calldata _coinvestedPositionArgs
-    ) external returns (address privateOfferAddress, address coinvestedPositionAddress) {
+    ) external returns (address coinvestedPositionAddress) {
         // deploy the coinvested position clone
         coinvestedPositionAddress = coinvestedPositionCloneFactory.createCoinvestedPositionClone(
             _rawSalt,
@@ -159,7 +158,7 @@ contract PrivateOfferFactory {
         arguments.tokenReceiver = coinvestedPositionAddress;
 
         // deploy the private offer, which delivers tokens into the coinvested position
-        privateOfferAddress = _deployPrivateOffer(_rawSalt, arguments);
+        address privateOfferAddress = _deployPrivateOffer(_rawSalt, arguments);
 
         require(
             _arguments.token.balanceOf(coinvestedPositionAddress) == _arguments.tokenAmount,

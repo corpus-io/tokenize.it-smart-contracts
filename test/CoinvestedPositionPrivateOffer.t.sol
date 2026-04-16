@@ -147,7 +147,7 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
 
         // ── Execute ───────────────────────────────────────────────────────────
 
-        (address privateOfferAddress, address coinvestedPositionAddress) = privateOfferFactory
+        address coinvestedPositionAddress = privateOfferFactory
             .deployPrivateOfferWithCoinvestedPosition(
                 rawSalt,
                 TRUSTED_FORWARDER,
@@ -157,7 +157,6 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
 
         // ── Assert ────────────────────────────────────────────────────────────
 
-        assertEq(privateOfferAddress, expectedPrivateOffer, "PrivateOffer address mismatch");
         assertEq(coinvestedPositionAddress, expectedCoinvestedPosition, "CoinvestedPosition address mismatch");
         assertEq(token.balanceOf(coinvestedPositionAddress), tokenAmount, "token balance wrong");
         assertEq(eurc.balanceOf(currencyReceiver), investmentAmount, "currencyReceiver balance wrong");
