@@ -212,9 +212,13 @@ The following statements about the smart contracts should always be true
 
 ## GlobalTokenExitRegistry.sol
 
-- An exit can only be set for a token if the caller holds the token's `DEFAULT_ADMIN_ROLE` or is the token's `owner()`.
-- An exit address can only be set once per token.
-- Once an exit address has been set for a token, it cannot be changed again.
+- An exit can only be registered for a token by the tokens' admin.
+- The two most common admin types are supported: owner and default admin.
+- Neither the token address nor the exit address can be zero.
+- An exit can only be set once per token.
+- An an exit has been setf for a token, it cannot be changed or removed.
+- Every exit registration is recorded on-chain.
+- All functions can be called directly or as meta transaction using EIP-2771. Both options yield equivalent results given equivalent inputs.
 
 ## TimeLock.sol
 
