@@ -24,8 +24,7 @@ The following statements about the smart contracts should always be true
 - Any role can be granted to multiple addresses.
 - Any address can have multiple roles.
 - Any role can be renounced.
-- All functions can be called directly or as meta transaction using EIP-2771.
-- Calling a function directly or through EIP-2771 yield equivalent results given equivalent inputs.
+- All functions can be called directly or as meta transaction using EIP-2771. Both options yield equivalent results given equivalent inputs.
 - The token supports permit() as defined in EIP-2612.
 - Only the owner of feeSettings can suggest to change feeSettings to another address.
 - Only addresses with DEFAULT_ADMIN_ROLE can accept a new feeSettings contract.
@@ -37,8 +36,7 @@ The following statements about the smart contracts should always be true
 - As soon as a value has been set for an address, map(address) always returns this value until a new value is set or remove is called.
 - After remove has been called for an address, map(address) returns 0 until a new value is set.
 - Only the owner of AllowList can set or remove addresses.
-- All functions can be called directly or as meta transaction using EIP-2771.
-- Calling a function directly or through EIP-2771 yield equivalent results given equivalent inputs.
+- All functions can be called directly or as meta transaction using EIP-2771. Both options yield equivalent results given equivalent inputs.
 
 ## FeeSettings.sol
 
@@ -64,8 +62,7 @@ The following statements about the smart contracts should always be true
 - If a custom fee collector is set for a token, it is used instead of the type-level default.
 - Querying fees for token address 0 always returns the default fee.
 - Querying fee collectors for token address 0 always returns the default fee collector.
-- All functions can be called directly or as meta transaction using EIP-2771.
-- Calling a function directly or through EIP-2771 yield equivalent results given equivalent inputs.
+- All functions can be called directly or as meta transaction using EIP-2771. Both options yield equivalent results given equivalent inputs.
 
 ## PrivateOffer.sol
 
@@ -120,8 +117,8 @@ The following statements about the smart contracts should always be true
 - Only the contract owner can call pause, unpause, or the functions that update settings.
 - The contract will never sell tokens after the lastBuyDate has passed, unless lastBuyDate is 0.
 - In sum, the contract will never mint more tokens to the buyers than maxAmountOfTokenToBeSold at the time of minting. This does not take into account the tokens minted to feeCollector in Token.sol.
-- All functions can be called directly or as meta transaction using ERC2771.
-- Calling a function directly or through ERC2771 yield equivalent results given equivalent inputs.
+- All functions can be called directly or as meta transaction using EIP-2771. Both options yield equivalent results given equivalent inputs.
+
 - Initialization is only possible with a currency that has the TRUSTED_CURRENCY attribute on the AllowList.
 - Setting a new currency is only possible if the new currency has the TRUSTED_CURRENCY attribute on the AllowList.
 
@@ -150,6 +147,7 @@ The following statements about the smart contracts should always be true
 - Stopping a vesting plan and revoking a commitment to a vesting plan are equivalent with respect to the token amount the beneficiary can release and the time the beneficiary can release them.
 - A beneficiary can never mint or withdraw more tokens than the allocation of the vesting plan.
 - Third parties can not mint or withdraw tokens from a vesting plan.
+- All functions can be called directly or as meta transaction using EIP-2771. Both options yield equivalent results given equivalent inputs.
 
 ## Distribution.sol
 
@@ -163,7 +161,7 @@ The following statements about the smart contracts should always be true
 - Reassigning funds does not affect the total amount of eligible funds, the amount of currency that one token in the snapshot is entitled to claim (e.g. price).
 - After `reassign(from, to, amount)`, `eligible(from)` decreases by `amount` and `eligible(to)` increases by `amount`.
 - Every reassignment is emitted as a `Reassigned` event for auditability.
-- All functions can be called directly or as meta transaction using ERC-2771.
+- All functions can be called directly or as meta transaction using EIP-2771. Both options yield equivalent results given equivalent inputs.
 
 ## Exit.sol
 
@@ -176,7 +174,7 @@ The following statements about the smart contracts should always be true
 - After a lock period defined at contract setup, the unclaimed currency can be drained by the owner.
 - Exchange rates from reference currencies to the exit currency can be registered at initialization and are immutable afterwards.
 - All registered reference-to-exit exchange rates must be positive.
-- All functions can be called directly or as meta transaction using ERC-2771.
+- All functions can be called directly or as meta transaction using EIP-2771. Both options yield equivalent results given equivalent inputs.
 
 ## CoinvestedPosition.sol
 
@@ -188,23 +186,24 @@ The following statements about the smart contracts should always be true
 - The owner can unpause the contract when ready to sell.
 - The owner can change the currency used for selling tokens.
 - Only currency with both `TRUSTED_CURRENCY` and `EURO_CURRENCY` attributes can be used for selling tokens or claiming exits.
-- On `buy`: after fee deduction, lead investors get their share of the profit proportional to their `profitFraction`. The co-investor (receiver) receives all remaining proceeds.
+- During a token sale, after fee deduction, lead investors get their share of the profit proportional to their fraction. The co-investor (receiver) receives all remaining proceeds.
 - If net proceeds are less than the scaled base price payout, the co-investor receives all net proceeds and lead investors receive nothing.
 - During settlement of buy or claim, the contract's full remaining currency balance is swept to the receiver after lead investor shares, ensuring no dust is left in the contract.
-- `basePrice` is denominated in the smallest units of `baseCurrency` at initialization time and stored with `basePriceDecimals` for cross-currency scaling.
-- `setCurrency()` can only set a currency with both `TRUSTED_CURRENCY` and `EURO_CURRENCY` attributes. This must only be true for currencies where 1e(decimals) of base currency equals 1 euro.
-- When calculating carry, base price is scaled to the now-used currency's decimals. This leads to correct carry calculations for all trusted EURO currencies.
-- All proceeds from dividends are treated as carry.
-- Proceeds from exits are mathematically split into carry and base price portion. Only a fraction of the carry is distributed to the lead investors, everything else goes to the co-investor (receiver).
+- The sweeping of the contract funds during settlement includes any funds in the currency in use that may have been transferred to the contract.
+- Only trusted currencies can be used to sell the tokens.
+- When calculating profit, base price in the current currency is used.
+- If the currency currently used in the contract differs from the currency of an exit contract that should be used, the exit contract can provide exchange rates for the conversion of base price.
+- If the exit contract doesn't provide required exchange rates, a user-provided new base price is used.
+- During lockup, only an exit claim or a burn can transfer the tokens out.
 - An exit claim reverts if it receives less than the required minimum currency amount.
-- All functions can be called directly or as meta transaction using ERC-2771.
+- All proceeds from dividends are treated as profit.
+- All functions can be called directly or as meta transaction using EIP-2771. Both options yield equivalent results given equivalent inputs.
 
 ## GlobalTokenExitRegistry.sol
 
 - An exit can only be set for a token if the caller holds the token's `DEFAULT_ADMIN_ROLE` or is the token's `owner()`.
 - An exit address can only be set once per token.
 - Once an exit address has been set for a token, it cannot be changed again.
-- All functions can be called directly or as meta transaction using ERC-2771.
 
 ## TimeLock.sol
 
@@ -215,7 +214,7 @@ The following statements about the smart contracts should always be true
 - Claiming distribution proceeds does not move the tokens.
 - The only option for the owner to transfer the tokens out of the contract during the timelock period is through an Exit.
 - An Exit can only be used if it has been registered in the GlobalTokenExitRegistry.
-- All functions can be called directly or as meta transaction using ERC-2771.
+- All functions can be called directly or as meta transaction using EIP-2771. Both options yield equivalent results given equivalent inputs.
 
 ## TokenSwap.sol
 
@@ -251,6 +250,5 @@ The following statements about the smart contracts should always be true
 - The seller calling the sell function will receive no less than minCurrencyAmount, protecting them from frontrunning or other unexpected influences.
 - The buy function rounds up the currency amount, protecting the owner from loss.
 - The sell function rounds down the currency amount, protecting the owner from loss.
-- All functions can be called directly or as meta transaction using ERC2771.
-- Calling a function directly or through ERC2771 yield equivalent results given equivalent inputs.
 - It is possible to create a buy AND sell order using one TokenSwap contract, by granting allowances in token and currency. This is not an intended use case as it doesn't benefit the owner.
+- All functions can be called directly or as meta transaction using EIP-2771. Both options yield equivalent results given equivalent inputs.
