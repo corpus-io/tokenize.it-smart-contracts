@@ -182,7 +182,6 @@ contract CoinvestedPositionExitTest is Test {
             token: token,
             currency: IERC20(address(exitCurrency)),
             pricePerToken: pricePerToken,
-
             lockedUntil: lockedUntil,
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
@@ -206,7 +205,6 @@ contract CoinvestedPositionExitTest is Test {
             token: token,
             currency: IERC20(address(exitCurrency)),
             pricePerToken: pricePerToken,
-
             lockedUntil: lockedUntil,
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
@@ -288,7 +286,6 @@ contract CoinvestedPositionExitTest is Test {
         uint256 beforeB = eurc.balanceOf(LEAD_B);
         uint256 beforeR = eurc.balanceOf(RECEIVER);
 
-
         vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
         vm.prank(OWNER);
@@ -326,7 +323,6 @@ contract CoinvestedPositionExitTest is Test {
         uint256 beforeB = eurc.balanceOf(LEAD_B);
         uint256 beforeR = eurc.balanceOf(RECEIVER);
 
-
         vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
         vm.prank(OWNER);
@@ -355,7 +351,6 @@ contract CoinvestedPositionExitTest is Test {
         uint256 beforeA = eurc.balanceOf(LEAD_A);
         uint256 beforeB = eurc.balanceOf(LEAD_B);
         uint256 beforeR = eurc.balanceOf(RECEIVER);
-
 
         vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
@@ -390,7 +385,6 @@ contract CoinvestedPositionExitTest is Test {
         uint256 beforeB = eure.balanceOf(LEAD_B);
         uint256 beforeR = eure.balanceOf(RECEIVER);
         uint256 beforeEurc = eurc.balanceOf(address(coinvestedPosition));
-
 
         vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
@@ -438,7 +432,6 @@ contract CoinvestedPositionExitTest is Test {
         uint256 beforeB = eurc.balanceOf(LEAD_B);
         uint256 beforeR = eurc.balanceOf(RECEIVER);
 
-
         vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
         vm.prank(OWNER);
@@ -472,7 +465,6 @@ contract CoinvestedPositionExitTest is Test {
         // baseCurrency = EURc (6 dec), exit currency = EURc (6 dec)
         uint256 pricePerToken = 200e6;
         Exit exitContract = _deployExit(bytes32(0), eurc, pricePerToken, CP_TOKEN_AMOUNT);
-
 
         vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
@@ -523,7 +515,6 @@ contract CoinvestedPositionExitTest is Test {
         uint256 beforeB = eurc.balanceOf(LEAD_B);
         uint256 beforeC = eurc.balanceOf(LEAD_C);
         uint256 beforeR = eurc.balanceOf(RECEIVER);
-
 
         vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
@@ -580,7 +571,6 @@ contract CoinvestedPositionExitTest is Test {
 
         uint256 beforeA = eurc.balanceOf(LEAD_A);
         uint256 beforeR = eurc.balanceOf(RECEIVER);
-
 
         vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
@@ -658,7 +648,6 @@ contract CoinvestedPositionExitTest is Test {
             token: _token,
             currency: IERC20(address(eurc)),
             pricePerToken: 200e6,
-
             lockedUntil: lockedUntil,
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
@@ -681,7 +670,6 @@ contract CoinvestedPositionExitTest is Test {
         uint256 beforeA = eurc.balanceOf(LEAD_A);
         uint256 beforeB = eurc.balanceOf(LEAD_B);
         uint256 beforeR = eurc.balanceOf(RECEIVER);
-
 
         vm.prank(ADMIN);
         tokenExitRegistry.setExit(tokenWithFee, Exit(address(exitContract)));
@@ -719,7 +707,6 @@ contract CoinvestedPositionExitTest is Test {
         uint256 beforeB = eurc.balanceOf(LEAD_B);
         uint256 beforeR = eurc.balanceOf(RECEIVER);
 
-
         vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
         vm.prank(OWNER);
@@ -755,7 +742,6 @@ contract CoinvestedPositionExitTest is Test {
         eure.mint(address(coinvestedPosition), eureAmount);
 
         uint256 eureBalanceBefore = eure.balanceOf(address(coinvestedPosition));
-
 
         vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
@@ -797,7 +783,6 @@ contract CoinvestedPositionExitTest is Test {
         // Exact: 200 tokens × 200e6 = 40,000e6
         Exit exitContract = _deployExit(bytes32(0), eurc, pricePerToken, CP_TOKEN_AMOUNT);
 
-
         vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
         vm.prank(OWNER);
@@ -818,7 +803,6 @@ contract CoinvestedPositionExitTest is Test {
         Exit exitContract = _deployExit(bytes32(0), eurc, pricePerToken, CP_TOKEN_AMOUNT);
 
         assertEq(token.balanceOf(address(coinvestedPosition)), CP_TOKEN_AMOUNT, "VIII: wrong cp token balance before");
-
 
         vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
@@ -859,7 +843,6 @@ contract CoinvestedPositionExitTest is Test {
             token: token,
             currency: IERC20(address(eurc)),
             pricePerToken: uint256(pricePerToken),
-
             lockedUntil: lockedUntil,
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
@@ -875,7 +858,6 @@ contract CoinvestedPositionExitTest is Test {
         uint256 beforeA = eurc.balanceOf(LEAD_A);
         uint256 beforeB = eurc.balanceOf(LEAD_B);
         uint256 beforeR = eurc.balanceOf(RECEIVER);
-
 
         vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
@@ -905,7 +887,6 @@ contract CoinvestedPositionExitTest is Test {
         uint256 beforeA = eurc.balanceOf(LEAD_A);
         uint256 beforeB = eurc.balanceOf(LEAD_B);
         uint256 beforeR = eurc.balanceOf(RECEIVER);
-
 
         vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
@@ -966,7 +947,6 @@ contract CoinvestedPositionExitTest is Test {
             token: token,
             currency: IERC20(address(eurc)),
             pricePerToken: pricePerToken,
-
             lockedUntil: lockedUntil,
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
@@ -983,7 +963,6 @@ contract CoinvestedPositionExitTest is Test {
         uint256 beforeA = eurc.balanceOf(LEAD_A);
         uint256 beforeB = eurc.balanceOf(LEAD_B);
         uint256 beforeR = eurc.balanceOf(RECEIVER);
-
 
         vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
@@ -1019,7 +998,6 @@ contract CoinvestedPositionExitTest is Test {
     function testKeyInvariant_TokenBalanceZeroAfterExit() public {
         Exit exitContract = _deployExit(bytes32(0), eurc, 200e6, CP_TOKEN_AMOUNT);
 
-
         vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
         vm.prank(OWNER);
@@ -1052,7 +1030,6 @@ contract CoinvestedPositionExitTest is Test {
         uint256 totalCurrency = (CP_TOKEN_AMOUNT * pricePerToken) / (10 ** token.decimals()); // 40,000e6
         Exit exitContract = _deployExit(bytes32(0), eurc, pricePerToken, CP_TOKEN_AMOUNT);
 
-
         vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
         vm.prank(OWNER);
@@ -1065,7 +1042,6 @@ contract CoinvestedPositionExitTest is Test {
     function testXIC_ZeroMinCurrencyAmountAlwaysPasses() public {
         uint256 pricePerToken = 200e6;
         Exit exitContract = _deployExit(bytes32(0), eurc, pricePerToken, CP_TOKEN_AMOUNT);
-
 
         vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
@@ -1185,7 +1161,6 @@ contract CoinvestedPositionExitTest is Test {
         uint256 beforeB = trustedNonEuro.balanceOf(LEAD_B);
         uint256 beforeR = trustedNonEuro.balanceOf(RECEIVER);
 
-
         vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
         vm.prank(OWNER);
@@ -1229,7 +1204,6 @@ contract CoinvestedPositionExitTest is Test {
             token: token,
             currency: IERC20(address(exitCurrency)),
             pricePerToken: pricePerToken,
-
             lockedUntil: lockedUntil,
             referenceCurrencies: referenceCurrencies,
             referenceToExitRates: rates
@@ -1258,7 +1232,6 @@ contract CoinvestedPositionExitTest is Test {
         uint256 beforeA = eure.balanceOf(LEAD_A);
         uint256 beforeB = eure.balanceOf(LEAD_B);
         uint256 beforeR = eure.balanceOf(RECEIVER);
-
 
         vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
@@ -1304,7 +1277,6 @@ contract CoinvestedPositionExitTest is Test {
         uint256 beforeB = eurc.balanceOf(LEAD_B);
         uint256 beforeR = eurc.balanceOf(RECEIVER);
 
-
         vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
         vm.prank(OWNER);
@@ -1331,7 +1303,6 @@ contract CoinvestedPositionExitTest is Test {
             token: token,
             currency: IERC20(address(eure)),
             pricePerToken: 200e18,
-
             lockedUntil: lockedUntil,
             referenceCurrencies: referenceCurrencies,
             referenceToExitRates: rates
@@ -1361,7 +1332,6 @@ contract CoinvestedPositionExitTest is Test {
         // Exit in EURe with no reference rate for EURc
         Exit exitContract = _deployExit(bytes32(0), eure, 200e18, CP_TOKEN_AMOUNT);
 
-
         vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
 
@@ -1386,7 +1356,6 @@ contract CoinvestedPositionExitTest is Test {
             token: token,
             currency: IERC20(address(eure)),
             pricePerToken: 200e18,
-
             lockedUntil: lockedUntil,
             referenceCurrencies: referenceCurrencies,
             referenceToExitRates: rates
@@ -1408,7 +1377,6 @@ contract CoinvestedPositionExitTest is Test {
             token: token,
             currency: IERC20(address(eure)),
             pricePerToken: 200e18,
-
             lockedUntil: lockedUntil,
             referenceCurrencies: referenceCurrencies,
             referenceToExitRates: rates
