@@ -10,6 +10,7 @@ import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "../contracts/PrivateOffer.sol";
 import "../contracts/factories/PrivateOfferFactory.sol";
 import "../contracts/factories/TimeLockCloneFactory.sol";
+import "../contracts/factories/CoinvestedPositionCloneFactory.sol";
 import "../contracts/TimeLock.sol";
 import "./resources/CloneCreators.sol";
 import "./resources/ERC20Helper.sol";
@@ -80,7 +81,7 @@ contract MainnetCurrencies is Test {
 
         TimeLock timeLockImplementation = new TimeLock(TRUSTED_FORWARDER);
         TimeLockCloneFactory timeLockCloneFactory = new TimeLockCloneFactory(address(timeLockImplementation));
-        inviteFactory = new PrivateOfferFactory(timeLockCloneFactory);
+        inviteFactory = new PrivateOfferFactory(timeLockCloneFactory, CoinvestedPositionCloneFactory(address(1)));
         currencyCost = (AMOUNT_OF_TOKEN_TO_BUY * PRICE) / 10 ** token.decimals();
         currencyAmount = currencyCost * 2;
     }

@@ -8,6 +8,7 @@ import "../contracts/factories/CrowdinvestingCloneFactory.sol";
 import "./resources/CloneCreators.sol";
 import "../contracts/factories/PrivateOfferFactory.sol";
 import "../contracts/factories/TimeLockCloneFactory.sol";
+import "../contracts/factories/CoinvestedPositionCloneFactory.sol";
 import "../contracts/TimeLock.sol";
 import "./resources/FakePaymentToken.sol";
 import "./resources/ERC2771Helper.sol";
@@ -134,7 +135,7 @@ contract CompanySetUpTest is Test {
         // set up PrivateOfferFactory. Again, this is done here only because we need the forwarder address.
         TimeLock timeLockImplementation = new TimeLock(address(forwarder));
         TimeLockCloneFactory timeLockCloneFactory = new TimeLockCloneFactory(address(timeLockImplementation));
-        privateOfferFactory = new PrivateOfferFactory(timeLockCloneFactory);
+        privateOfferFactory = new PrivateOfferFactory(timeLockCloneFactory, CoinvestedPositionCloneFactory(address(1)));
 
         // launch the company token. The platform deploys the contract. There is no need to transfer ownership, because the token is never controlled by the address that deployed it.
         // Instead, it is immediately controlled by the address provided in the constructor, which is the companyAdmin in this case.

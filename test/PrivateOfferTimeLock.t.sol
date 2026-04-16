@@ -7,6 +7,7 @@ import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/PrivateOffer.sol";
 import "../contracts/factories/PrivateOfferFactory.sol";
 import "../contracts/factories/TimeLockCloneFactory.sol";
+import "../contracts/factories/CoinvestedPositionCloneFactory.sol";
 import "../contracts/TimeLock.sol";
 import "../contracts/GlobalTokenExitRegistry.sol";
 import "./resources/CloneCreators.sol";
@@ -39,7 +40,7 @@ contract PrivateOfferTimeLockTest is Test {
     function setUp() public {
         TimeLock timeLockImplementation = new TimeLock(TRUSTED_FORWARDER);
         TimeLockCloneFactory timeLockCloneFactory = new TimeLockCloneFactory(address(timeLockImplementation));
-        privateOfferFactory = new PrivateOfferFactory(timeLockCloneFactory);
+        privateOfferFactory = new PrivateOfferFactory(timeLockCloneFactory, CoinvestedPositionCloneFactory(address(1)));
 
         vm.prank(PAYMENT_TOKEN_PROVIDER);
         currency = new FakePaymentToken(0, 18);

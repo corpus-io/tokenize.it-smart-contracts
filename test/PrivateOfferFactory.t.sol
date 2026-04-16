@@ -8,6 +8,7 @@ import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/PrivateOffer.sol";
 import "../contracts/factories/PrivateOfferFactory.sol";
 import "../contracts/factories/TimeLockCloneFactory.sol";
+import "../contracts/factories/CoinvestedPositionCloneFactory.sol";
 import "../contracts/TimeLock.sol";
 import "../contracts/GlobalTokenExitRegistry.sol";
 import "./resources/CloneCreators.sol";
@@ -46,7 +47,7 @@ contract PrivateOfferFactoryTest is Test {
     function setUp() public {
         TimeLock timeLockImplementation = new TimeLock(TRUSTED_FORWARDER);
         TimeLockCloneFactory timeLockCloneFactory = new TimeLockCloneFactory(address(timeLockImplementation));
-        factory = new PrivateOfferFactory(timeLockCloneFactory);
+        factory = new PrivateOfferFactory(timeLockCloneFactory, CoinvestedPositionCloneFactory(address(1)));
         currency = new ERC20MintableByAnyone("currency", "CUR");
 
         list = createAllowList(TRUSTED_FORWARDER, OWNER);

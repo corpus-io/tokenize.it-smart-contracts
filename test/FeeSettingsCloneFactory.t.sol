@@ -5,6 +5,7 @@ import "../lib/forge-std/src/Test.sol";
 import "../lib/forge-std/src/console.sol";
 import "../contracts/factories/FeeSettingsCloneFactory.sol";
 import "../contracts/factories/PrivateOfferFactory.sol";
+import "../contracts/factories/CoinvestedPositionCloneFactory.sol";
 import "../contracts/common/IFeeSettings.sol";
 
 contract tokenTest is Test {
@@ -278,6 +279,6 @@ contract tokenTest is Test {
 
     function testPrivateOfferFactoryRevertsIfTimeLockFactoryZero() public {
         vm.expectRevert("TimeLockCloneFactory must not be 0");
-        new PrivateOfferFactory(TimeLockCloneFactory(address(0)));
+        new PrivateOfferFactory(TimeLockCloneFactory(address(0)), CoinvestedPositionCloneFactory(address(1)));
     }
 }
