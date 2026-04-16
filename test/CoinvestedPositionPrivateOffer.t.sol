@@ -66,33 +66,35 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
     function _buildCoinvestedPositionArgs(
         LeadInvestor[] memory leadInvestors
     ) internal view returns (CoinvestedPositionInitializerArguments memory) {
-        return CoinvestedPositionInitializerArguments({
-            owner: owner,
-            receiver: receiver,
-            leadInvestors: leadInvestors,
-            basePrice: 80e6,
-            baseCurrency: IERC20(address(eurc)),
-            token: token,
-            lockedUntil: 0,
-            tokenExitRegistry: tokenExitRegistry
-        });
+        return
+            CoinvestedPositionInitializerArguments({
+                owner: owner,
+                receiver: receiver,
+                leadInvestors: leadInvestors,
+                basePrice: 80e6,
+                baseCurrency: IERC20(address(eurc)),
+                token: token,
+                lockedUntil: 0,
+                tokenExitRegistry: tokenExitRegistry
+            });
     }
 
     function _buildPrivateOfferArgs(
         uint256 tokenAmount,
         uint256 tokenPrice
     ) internal view returns (PrivateOfferArguments memory) {
-        return PrivateOfferArguments({
-            currencyPayer: receiver, // coinvestor pays PrivateOffer directly
-            tokenReceiver: address(0), // overridden by factory to CoinvestedPosition address
-            currencyReceiver: currencyReceiver,
-            tokenAmount: tokenAmount,
-            tokenPrice: tokenPrice,
-            expiration: block.timestamp + 7 days,
-            currency: IERC20(address(eurc)),
-            token: token,
-            tokenHolder: address(0)
-        });
+        return
+            PrivateOfferArguments({
+                currencyPayer: receiver, // coinvestor pays PrivateOffer directly
+                tokenReceiver: address(0), // overridden by factory to CoinvestedPosition address
+                currencyReceiver: currencyReceiver,
+                tokenAmount: tokenAmount,
+                tokenPrice: tokenPrice,
+                expiration: block.timestamp + 7 days,
+                currency: IERC20(address(eurc)),
+                token: token,
+                tokenHolder: address(0)
+            });
     }
 
     // ── Tests ─────────────────────────────────────────────────────────────────
@@ -113,7 +115,7 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
         uint256 investmentAmount = Math.ceilDiv(tokenAmount * tokenPrice, 10 ** token.decimals());
 
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](1);
-        leadInvestors[0] = LeadInvestor({ account: leadA, carryFraction: CARRY_10PCT });
+        leadInvestors[0] = LeadInvestor({account: leadA, carryFraction: CARRY_10PCT});
 
         CoinvestedPositionInitializerArguments memory coinvestedPositionArgs = _buildCoinvestedPositionArgs(
             leadInvestors
@@ -180,8 +182,8 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
 
         // Build a CoinvestedPosition with 2 lead investors as the fee roster source
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](2);
-        leadInvestors[0] = LeadInvestor({ account: leadA, carryFraction: CARRY_10PCT });
-        leadInvestors[1] = LeadInvestor({ account: leadB, carryFraction: CARRY_5PCT });
+        leadInvestors[0] = LeadInvestor({account: leadA, carryFraction: CARRY_10PCT});
+        leadInvestors[1] = LeadInvestor({account: leadB, carryFraction: CARRY_5PCT});
 
         CoinvestedPositionInitializerArguments memory coinvestedPositionArgs = _buildCoinvestedPositionArgs(
             leadInvestors

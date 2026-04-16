@@ -88,7 +88,10 @@ contract FeeSettingsIntegrationTest is Test {
         crowdinvestingCloneFactory = new CrowdinvestingCloneFactory(address(crowdinvestingLogic));
 
         // using a fake vesting clone factory here because we don't need this functionality for this test
-        privateOfferFactory = new PrivateOfferFactory(TimeLockCloneFactory(address(294)), CoinvestedPositionCloneFactory(address(1)));
+        privateOfferFactory = new PrivateOfferFactory(
+            TimeLockCloneFactory(address(294)),
+            CoinvestedPositionCloneFactory(address(1))
+        );
     }
 
     function testMintUsesCustomFeeAndCollector(address _customFeeCollector) public {
