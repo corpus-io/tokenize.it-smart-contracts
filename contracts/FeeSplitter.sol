@@ -63,8 +63,9 @@ contract FeeSplitter {
                 remainingFee -= share;
             }
         }
+        // send the last leadInvestor's share along with any rounding dust
         if (remainingFee != 0) {
-            (address lastAccount, ) = coinvestedPosition.leadInvestors(0);
+            (address lastAccount, ) = coinvestedPosition.leadInvestors(investorCount - 1);
             currency.safeTransfer(lastAccount, remainingFee);
         }
 
