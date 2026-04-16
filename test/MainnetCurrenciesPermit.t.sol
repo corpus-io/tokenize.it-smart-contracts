@@ -40,7 +40,8 @@ contract MainnetCurrencies is Test {
 
     ERC20Helper helper = new ERC20Helper();
 
-    uint256 public constant TOKEN_OWNER_PRIVATE_KEY = 0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
+    uint256 public constant TOKEN_OWNER_PRIVATE_KEY =
+        0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
     address public tokenOwner = vm.addr(TOKEN_OWNER_PRIVATE_KEY); // = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
 
     address public constant RECEIVER = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;

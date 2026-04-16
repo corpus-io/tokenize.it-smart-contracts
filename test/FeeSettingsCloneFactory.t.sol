@@ -96,7 +96,12 @@ contract tokenTest is Test {
             EXAMPLE_PRIVATE_OFFER_FEE_COLLECTOR
         );
 
-        address base = factory.predictCloneAddress(exampleRawSalt, EXAMPLE_TRUSTED_FORWARDER, EXAMPLE_OWNER, baseFeeTypes);
+        address base = factory.predictCloneAddress(
+            exampleRawSalt,
+            EXAMPLE_TRUSTED_FORWARDER,
+            EXAMPLE_OWNER,
+            baseFeeTypes
+        );
 
         FeeSettings.FeeTypeInit[] memory changedFeeTypes;
 
@@ -119,7 +124,12 @@ contract tokenTest is Test {
             EXAMPLE_CROWDINVESTING_FEE_COLLECTOR,
             EXAMPLE_PRIVATE_OFFER_FEE_COLLECTOR
         );
-        changed = factory.predictCloneAddress(exampleRawSalt, EXAMPLE_TRUSTED_FORWARDER, EXAMPLE_OWNER, changedFeeTypes);
+        changed = factory.predictCloneAddress(
+            exampleRawSalt,
+            EXAMPLE_TRUSTED_FORWARDER,
+            EXAMPLE_OWNER,
+            changedFeeTypes
+        );
         assertTrue(base != changed, "addresses equal with fees changed");
 
         changedFeeTypes = _buildFeeTypes(
@@ -152,7 +162,12 @@ contract tokenTest is Test {
             EXAMPLE_CROWDINVESTING_FEE_COLLECTOR,
             EXAMPLE_PRIVATE_OFFER_FEE_COLLECTOR
         );
-        changed = factory.predictCloneAddress(exampleRawSalt, EXAMPLE_TRUSTED_FORWARDER, EXAMPLE_OWNER, changedFeeTypes);
+        changed = factory.predictCloneAddress(
+            exampleRawSalt,
+            EXAMPLE_TRUSTED_FORWARDER,
+            EXAMPLE_OWNER,
+            changedFeeTypes
+        );
         assertTrue(base != changed, "addresses equal with tokenFeeCollector changed");
 
         changedFeeTypes = _buildFeeTypes(
@@ -163,7 +178,12 @@ contract tokenTest is Test {
             someAddress,
             EXAMPLE_PRIVATE_OFFER_FEE_COLLECTOR
         );
-        changed = factory.predictCloneAddress(exampleRawSalt, EXAMPLE_TRUSTED_FORWARDER, EXAMPLE_OWNER, changedFeeTypes);
+        changed = factory.predictCloneAddress(
+            exampleRawSalt,
+            EXAMPLE_TRUSTED_FORWARDER,
+            EXAMPLE_OWNER,
+            changedFeeTypes
+        );
         assertTrue(base != changed, "addresses equal with crowdinvestingFeeCollector changed");
 
         changedFeeTypes = _buildFeeTypes(
@@ -174,7 +194,12 @@ contract tokenTest is Test {
             EXAMPLE_CROWDINVESTING_FEE_COLLECTOR,
             someAddress
         );
-        changed = factory.predictCloneAddress(exampleRawSalt, EXAMPLE_TRUSTED_FORWARDER, EXAMPLE_OWNER, changedFeeTypes);
+        changed = factory.predictCloneAddress(
+            exampleRawSalt,
+            EXAMPLE_TRUSTED_FORWARDER,
+            EXAMPLE_OWNER,
+            changedFeeTypes
+        );
         assertTrue(base != changed, "addresses equal with privateOfferFeeCollector changed");
     }
 
@@ -245,12 +270,7 @@ contract tokenTest is Test {
         vm.assume(_wrongTrustedForwarder != EXAMPLE_TRUSTED_FORWARDER);
         vm.assume(_wrongTrustedForwarder != address(0));
 
-        FeeSettings.FeeTypeInit[] memory feeTypes = _buildFeeTypesAllSame(
-            1,
-            2,
-            3,
-            EXAMPLE_TOKEN_FEE_COLLECTOR
-        );
+        FeeSettings.FeeTypeInit[] memory feeTypes = _buildFeeTypesAllSame(1, 2, 3, EXAMPLE_TOKEN_FEE_COLLECTOR);
 
         vm.expectRevert("FeeSettingsCloneFactory: Unexpected trustedForwarder");
         factory.createFeeSettingsClone(bytes32(0), _wrongTrustedForwarder, EXAMPLE_OWNER, feeTypes);

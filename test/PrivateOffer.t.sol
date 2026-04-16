@@ -287,17 +287,18 @@ contract PrivateOfferTest is Test {
     }
 
     function _buildBaseArguments() internal view returns (PrivateOfferArguments memory) {
-        return PrivateOfferArguments(
-            CURRENCY_PAYER,
-            TOKEN_RECEIVER,
-            CURRENCY_RECEIVER,
-            1e18,
-            PRICE,
-            block.timestamp + 1000,
-            currency,
-            token,
-            address(0)
-        );
+        return
+            PrivateOfferArguments(
+                CURRENCY_PAYER,
+                TOKEN_RECEIVER,
+                CURRENCY_RECEIVER,
+                1e18,
+                PRICE,
+                block.timestamp + 1000,
+                currency,
+                token,
+                address(0)
+            );
     }
 
     function testRevertZeroCurrencyPayer() public {

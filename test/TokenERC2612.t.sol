@@ -35,7 +35,8 @@ contract TokenERC2612Test is Test {
     address public constant TRUSTED_FORWARDER = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
 
     // DO NOT USE IN PRODUCTION! Key was generated online for testing only.
-    uint256 public constant TOKEN_OWNER_PRIVATE_KEY = 0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
+    uint256 public constant TOKEN_OWNER_PRIVATE_KEY =
+        0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
     address public tokenOwner; // = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
 
     address public companyAdmin = 0x38d6703d37988C644D6d31551e9af6dcB762E618;

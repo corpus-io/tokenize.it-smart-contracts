@@ -912,7 +912,11 @@ contract FeeSettingsTest is Test {
             "Should not be custom fee collector yet"
         );
 
-        assertEq(feeSettings.crowdinvestingFeeCollector(EXAMPLE_TOKEN_ADDRESS), ADMIN, "Fee collector not ADMIN address");
+        assertEq(
+            feeSettings.crowdinvestingFeeCollector(EXAMPLE_TOKEN_ADDRESS),
+            ADMIN,
+            "Fee collector not ADMIN address"
+        );
 
         vm.prank(ADMIN);
         feeSettings.setCustomFeeCollector(FeeTypes.CROWDINVESTING, EXAMPLE_TOKEN_ADDRESS, _feeCollector);
@@ -951,7 +955,11 @@ contract FeeSettingsTest is Test {
             "Should not be custom fee collector yet"
         );
 
-        assertEq(feeSettings.crowdinvestingFeeCollector(EXAMPLE_TOKEN_ADDRESS), ADMIN, "Fee collector not ADMIN address");
+        assertEq(
+            feeSettings.crowdinvestingFeeCollector(EXAMPLE_TOKEN_ADDRESS),
+            ADMIN,
+            "Fee collector not ADMIN address"
+        );
     }
 
     function testAddingCustomPrivateOfferFeeCollector(address _feeCollector) public {

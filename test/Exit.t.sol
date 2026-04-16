@@ -823,7 +823,11 @@ contract ExitTest is Test {
         feeExit.drain(OWNER, currency);
         assertEq(currency.balanceOf(OWNER), expected, "OWNER should receive remaining currency after drain");
         assertEq(currency.balanceOf(address(feeExit)), 0, "feeExit should be empty after drain");
-        assertEq(currency.balanceOf(FEE_COLLECTOR), fee, "FEE_COLLECTOR should not receive additional currency on drain");
+        assertEq(
+            currency.balanceOf(FEE_COLLECTOR),
+            fee,
+            "FEE_COLLECTOR should not receive additional currency on drain"
+        );
     }
 
     // ========== E_Reentrancy. Reentrancy protection ==========

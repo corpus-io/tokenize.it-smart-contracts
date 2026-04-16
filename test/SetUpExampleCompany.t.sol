@@ -54,7 +54,8 @@ contract CompanySetUpTest is Test {
     address public investorColdWallet = 0x5109709EcFA91a80626ff3989d68f67F5B1dD125;
 
     // DO NOT USE IN PRODUCTION! Key was generated online for testing only.
-    uint256 public constant COMPANY_ADMIN_PRIVATE_KEY = 0x8da4ef21b864d2cc526dbdb2a120bd2874c36c9d0a1fb7f8c63d7f7a8b41de8f;
+    uint256 public constant COMPANY_ADMIN_PRIVATE_KEY =
+        0x8da4ef21b864d2cc526dbdb2a120bd2874c36c9d0a1fb7f8c63d7f7a8b41de8f;
     address public companyAdmin; // = 0x63FaC9201494f0bd17B9892B9fae4d52fe3BD377;
 
     uint8 public constant PAYMENT_TOKEN_DECIMALS = 6;

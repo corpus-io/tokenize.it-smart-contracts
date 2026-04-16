@@ -27,7 +27,8 @@ contract TokenERC2771Test is Test {
     address public constant TRUSTED_FORWARDER = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
 
     // DO NOT USE IN PRODUCTION! Key was generated online for testing only.
-    uint256 public constant COMPANY_ADMIN_PRIVATE_KEY = 0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
+    uint256 public constant COMPANY_ADMIN_PRIVATE_KEY =
+        0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
     address public companyAdmin; // = 0x38d6703d37988C644D6d31551e9af6dcB762E618;
 
     uint256 public constant MINTER_PRIVATE_KEY = 0x1111254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff06621111;

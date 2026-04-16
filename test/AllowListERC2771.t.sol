@@ -17,7 +17,8 @@ contract FeeSettingERC2771Test is Test {
     ERC2771Helper ERC2771helper;
 
     // DO NOT USE IN PRODUCTION! Key was generated online for testing only.
-    uint256 public constant COMPANY_ADMIN_PRIVATE_KEY = 0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
+    uint256 public constant COMPANY_ADMIN_PRIVATE_KEY =
+        0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
     address public companyAdmin = vm.addr(COMPANY_ADMIN_PRIVATE_KEY); // = 0x38d6703d37988C644D6d31551e9af6dcB762E618;
 
     address public constant MINT_ALLOWER = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;

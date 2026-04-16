@@ -28,7 +28,8 @@ contract VestingERC2771Test is Test {
     uint256 public constant MANAGER_PRIVATE_KEY = 0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
     address public managerAddress = vm.addr(MANAGER_PRIVATE_KEY); // = 0x38d6703d37988C644D6d31551e9af6dcB762E618;
 
-    uint256 public constant BENEFICIARY_PRIVATE_KEY = 0x8da4ef21b864d2cc526dbdb2a120bd2874c36c9d0a1fb7f8c63d7f7a8b41de8f;
+    uint256 public constant BENEFICIARY_PRIVATE_KEY =
+        0x8da4ef21b864d2cc526dbdb2a120bd2874c36c9d0a1fb7f8c63d7f7a8b41de8f;
     address public beneficiaryAddress = vm.addr(BENEFICIARY_PRIVATE_KEY); // = 0x63FaC9201494f0bd17B9892B9fae4d52fe3BD377;
 
     address public constant RELAYER = 0xDFcEB49eD21aE199b33A76B726E2bea7A72127B0;

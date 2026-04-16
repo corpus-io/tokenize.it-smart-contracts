@@ -774,7 +774,11 @@ contract CoinvestedPositionDistributionTest is Test {
             uint256 bGot = eure.balanceOf(LEAD_B) - beforeB;
             uint256 rGot = eure.balanceOf(RECEIVER) - beforeR;
 
-            assertEq(aGot, _leadShare(CARRY_10PCT, coinvestedPositionEligibleEure), "DI-VIII: wrong LEAD_A EURe payout");
+            assertEq(
+                aGot,
+                _leadShare(CARRY_10PCT, coinvestedPositionEligibleEure),
+                "DI-VIII: wrong LEAD_A EURe payout"
+            );
             assertEq(bGot, _leadShare(CARRY_5PCT, coinvestedPositionEligibleEure), "DI-VIII: wrong LEAD_B EURe payout");
             assertEq(rGot, coinvestedPositionEligibleEure - aGot - bGot, "DI-VIII: wrong RECEIVER EURe payout");
 
@@ -1068,7 +1072,11 @@ contract CoinvestedPositionDistributionTest is Test {
                 lockedUntil: lockedUntil,
                 initialReassignments: new Reassignment[](0)
             });
-            address cloneAddr = distributionFactory.predictCloneAddress(bytes32(0), TRUSTED_FORWARDER, distributionArgs);
+            address cloneAddr = distributionFactory.predictCloneAddress(
+                bytes32(0),
+                TRUSTED_FORWARDER,
+                distributionArgs
+            );
             usdc.mint(CURRENCY_PROVIDER, initialFunding);
             vm.prank(CURRENCY_PROVIDER);
             usdc.approve(cloneAddr, initialFunding);

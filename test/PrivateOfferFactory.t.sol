@@ -189,7 +189,11 @@ contract PrivateOfferFactoryTest is Test {
         // check balances: tokens are held in the time lock, not yet accessible
         assertEq(currency.balanceOf(BUYER), 0, "Buyer has wrong currency balance after deployment");
         assertEq(token.balanceOf(BUYER), 0, "Buyer has wrong token balance after deployment");
-        assertEq(currency.balanceOf(CURRENCY_RECEIVER), CURRENCY_AMOUNT, "Currency receiver has wrong currency balance");
+        assertEq(
+            currency.balanceOf(CURRENCY_RECEIVER),
+            CURRENCY_AMOUNT,
+            "Currency receiver has wrong currency balance"
+        );
         assertEq(token.balanceOf(tokenReceiver), 0, "Token receiver has wrong token balance");
         assertEq(token.balanceOf(expectedTimeLock), TOKEN_AMOUNT, "TimeLock contract has wrong token balance");
 

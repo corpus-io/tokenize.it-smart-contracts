@@ -561,12 +561,23 @@ contract VestingTest is Test {
 
         assertEq(vesting.vestedAmount(vestingId, uint64(cliff - 1)), 0, "before cliff: should be 0");
         assertEq(vesting.vestedAmount(vestingId, uint64(50 days)), 50e18, "at 50%: should be 50e18");
-        assertEq(vesting.vestedAmount(vestingId, uint64(duration + 1)), amount, "after duration: should be full amount");
+        assertEq(
+            vesting.vestedAmount(vestingId, uint64(duration + 1)),
+            amount,
+            "after duration: should be full amount"
+        );
     }
 
     function testNonManagerCannotStopVesting() public {
         vm.prank(owner);
-        uint64 vestingId = vesting.createVesting(exampleAmount, beneficiary, exampleStart, exampleCliff, exampleDuration, false);
+        uint64 vestingId = vesting.createVesting(
+            exampleAmount,
+            beneficiary,
+            exampleStart,
+            exampleCliff,
+            exampleDuration,
+            false
+        );
 
         address rando = address(99);
         vm.prank(rando);

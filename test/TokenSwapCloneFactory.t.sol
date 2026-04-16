@@ -54,7 +54,12 @@ contract TokenSwapCloneFactoryTest is Test {
         {
             FeeSettings.FeeTypeInit[] memory feeTypes = new FeeSettings.FeeTypeInit[](4);
             feeTypes[0] = FeeSettings.FeeTypeInit(FeeTypes.TOKEN, 500, 100, FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
-            feeTypes[1] = FeeSettings.FeeTypeInit(FeeTypes.CROWDINVESTING, 1000, 100, FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
+            feeTypes[1] = FeeSettings.FeeTypeInit(
+                FeeTypes.CROWDINVESTING,
+                1000,
+                100,
+                FEE_SETTINGS_AND_ALLOW_LIST_OWNER
+            );
             feeTypes[2] = FeeSettings.FeeTypeInit(FeeTypes.PRIVATE_OFFER, 500, 100, FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
             feeTypes[3] = FeeSettings.FeeTypeInit(FeeTypes.SECONDARY_MARKET, 500, 0, FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
             feeSettings = FeeSettings(
@@ -128,7 +133,11 @@ contract TokenSwapCloneFactoryTest is Test {
             keccak256(abi.encode(EXAMPLE_RAW_SALT, EXAMPLE_TRUSTED_FORWARDER, arguments))
         );
 
-        address expected2 = tokenSwapFactory.predictCloneAddress(EXAMPLE_RAW_SALT, EXAMPLE_TRUSTED_FORWARDER, arguments);
+        address expected2 = tokenSwapFactory.predictCloneAddress(
+            EXAMPLE_RAW_SALT,
+            EXAMPLE_TRUSTED_FORWARDER,
+            arguments
+        );
 
         assertEq(expected1, expected2, "address prediction with salt and params not equal");
 

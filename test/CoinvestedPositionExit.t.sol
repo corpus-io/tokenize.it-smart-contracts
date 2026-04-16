@@ -218,7 +218,8 @@ contract CoinvestedPositionExitTest is Test {
         exitCurrency.mint(CURRENCY_PROVIDER, initialFundingAmount);
         vm.prank(CURRENCY_PROVIDER);
         exitCurrency.approve(cloneAddr, initialFundingAmount);
-        return Exit(exitFactory.createExitClone(salt, TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, initialFundingAmount));
+        return
+            Exit(exitFactory.createExitClone(salt, TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, initialFundingAmount));
     }
 
     /// @dev Invariant helper: assert sum of payouts equals received and token balance is 0
@@ -682,7 +683,9 @@ contract CoinvestedPositionExitTest is Test {
         vm.prank(CURRENCY_PROVIDER);
         eurc.approve(cloneAddr, totalCurrency);
         return
-            Exit(exitFactory.createExitClone(bytes32(0), TRUSTED_FORWARDER, CURRENCY_PROVIDER, exitArgs, totalCurrency));
+            Exit(
+                exitFactory.createExitClone(bytes32(0), TRUSTED_FORWARDER, CURRENCY_PROVIDER, exitArgs, totalCurrency)
+            );
     }
 
     /// V: claimExit does NOT apply fees — full received amount is distributed
