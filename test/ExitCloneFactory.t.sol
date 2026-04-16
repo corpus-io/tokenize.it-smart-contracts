@@ -18,7 +18,6 @@ contract ExitCloneFactoryTest is Test {
     bytes32 public constant EXAMPLE_SALT = bytes32(0);
     address public constant EXAMPLE_OWNER = address(0x1001);
     uint256 public constant EXAMPLE_PRICE = 2e6;
-    uint64 public constant EXAMPLE_CLAIM_START = 1000;
     uint64 public constant EXAMPLE_DRAIN_START = 2000;
     uint256 public constant EXAMPLE_TOTAL_CURRENCY = 100e6;
 
@@ -56,7 +55,6 @@ contract ExitCloneFactoryTest is Test {
                 token: token,
                 currency: IERC20(address(currency)),
                 pricePerToken: EXAMPLE_PRICE,
-                claimStart: EXAMPLE_CLAIM_START,
                 lockedUntil: EXAMPLE_DRAIN_START,
                 referenceCurrencies: new IERC20[](0),
                 referenceToExitRates: new uint256[](0)
@@ -158,14 +156,6 @@ contract ExitCloneFactoryTest is Test {
         assertFalse(addr1 == addr2);
     }
 
-    function testClaimStartChangesAddress() public {
-        ExitInitializerArguments memory args = _baseArgs();
-        address addr1 = factory.predictCloneAddress(EXAMPLE_SALT, TRUSTED_FORWARDER, args);
-        args.claimStart = EXAMPLE_CLAIM_START + 1;
-        address addr2 = factory.predictCloneAddress(EXAMPLE_SALT, TRUSTED_FORWARDER, args);
-        assertFalse(addr1 == addr2);
-    }
-
     function testDrainStartChangesAddress() public {
         ExitInitializerArguments memory args = _baseArgs();
         address addr1 = factory.predictCloneAddress(EXAMPLE_SALT, TRUSTED_FORWARDER, args);
@@ -241,7 +231,6 @@ contract ExitCloneFactoryTest is Test {
         assertEq(address(clone.token()), address(args.token));
         assertEq(address(clone.currency()), address(args.currency));
         assertEq(clone.pricePerToken(), args.pricePerToken);
-        assertEq(clone.claimStart(), args.claimStart);
         assertEq(clone.lockedUntil(), args.lockedUntil);
         assertEq(currency.balanceOf(address(clone)), EXAMPLE_TOTAL_CURRENCY);
         assertTrue(clone.isTrustedForwarder(TRUSTED_FORWARDER));

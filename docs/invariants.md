@@ -168,14 +168,14 @@ The following statements about the smart contracts should always be true
 ## Exit.sol
 
 - Tokens are transferred from the holder to the Exit contract during a claim.
-- Claims are only possible after `claimStart`.
 - Payout per claim depends on token amount, price per token and fee.
-- If the FeeSettings contract does not support `IFeeSettingsV3`, Fee is calculated per claim using `privateOfferFee` and sent to `privateOfferFeeCollector`.
-- If the FeeSettings contract supports `IFeeSettingsV3`, the fee is calculated using `fee(FeeTypes.EXIT, amount, address(token))` and sent to `feeCollector(FeeTypes.EXIT, address(token))`.
-- Currency must have `TRUSTED_CURRENCY` attribute on the token's AllowList.
-- `pricePerToken` can never be 0.
-- `drainStart` is always after `claimStart`.
-- The unclaimed currency can be drained by owner only after `drainStart`.
+- Fees can be deducted from the payment amount.
+- If the FeeSettings contract does not support the expected interface, no fee is deducted.
+- The currency used must be a trusted currency.
+- A claim reverts if the net payout would be below the caller-specified minimum.
+- After a lock period defined at contract setup, the unclaimed currency can be drained by the owner.
+- Exchange rates from reference currencies to the exit currency can be registered at initialization and are immutable afterwards.
+- All registered reference-to-exit exchange rates must be positive.
 - All functions can be called directly or as meta transaction using ERC-2771.
 
 ## CoinvestedPosition.sol

@@ -18,9 +18,7 @@ struct ExitInitializerArguments {
     IERC20 currency;
     /// @notice Currency amount (in smallest currency units) per 10**token.decimals() token units
     uint256 pricePerToken;
-    /// @notice Timestamp from which claims are valid
-    uint64 claimStart;
-    /// @notice Timestamp from which the owner can drain the contract
+    /// @notice Timestamp at which the owner can drain the contract
     uint64 lockedUntil;
     /// @notice Currencies that CoinvestedPositions may have been denominated in (parallel array with referenceToExitRates).
     ///         See referenceToExitRates for the rate convention.
@@ -42,14 +40,12 @@ struct ExitInitializerArguments {
  * @notice This contract implements the automated exit: token holders call the claim function,
  *  thus transferring their tokens to the contract and receiving exit proceeds in return.
  *  The price is fixed at deployment.
- *  Claims are only valid within the exit window set at initialization.
  *  Received tokens are held in this contract and can either be burned or extracted by the
- *  owner after the exit window closes.
+ *  owner after lockedUntil.
  */
 contract Exit is PayoutBase {
     using SafeERC20 for IERC20;
 
-    uint64 public claimStart;
     /// @notice Exchange rate from a reference currency to the exit currency.
     ///         Expressed as exit-currency bits per 10**referenceCurrency.decimals() reference-currency bits —
     ///         the same convention as tokenPrice (see docs/price.md):
@@ -79,8 +75,7 @@ contract Exit is PayoutBase {
         uint256 _initialFundingAmount
     ) external initializer {
         require(_arguments.pricePerToken > 0, "price must be positive");
-        require(_arguments.claimStart > 0, "claimStart must be set");
-        require(_arguments.lockedUntil > _arguments.claimStart, "lockedUntil must be after claimStart");
+        require(_arguments.lockedUntil > block.timestamp, "lockedUntil must be in the future");
         require(address(_arguments.currency) != address(_arguments.token), "currency and token must be different");
         require(
             _arguments.token.allowList().map(address(_arguments.currency)) == TRUSTED_CURRENCY,
@@ -93,7 +88,6 @@ contract Exit is PayoutBase {
             _arguments.pricePerToken,
             _arguments.lockedUntil
         );
-        claimStart = _arguments.claimStart;
         require(
             _arguments.referenceCurrencies.length == _arguments.referenceToExitRates.length,
             "referenceCurrencies and referenceToExitRates must have the same length"
@@ -131,7 +125,6 @@ contract Exit is PayoutBase {
      * @param _minPayout Minimum net payout required; reverts if not met
      */
     function claim(address _recipient, uint256 _minPayout) external override nonReentrant {
-        require(block.timestamp >= claimStart, "exit not yet started");
         uint256 tokenAmount = token.balanceOf(_msgSender());
         require(tokenAmount > 0, "nothing to claim");
         IERC20(address(token)).safeTransferFrom(_msgSender(), address(this), tokenAmount);
