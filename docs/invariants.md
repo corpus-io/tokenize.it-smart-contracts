@@ -188,25 +188,26 @@ The following statements about the smart contracts should always be true
 
 ## CoinvestedPosition.sol
 
-- The sum of all lead investors' carry fractions can never be more than 1.
+- The sum of all lead investors' profit fractions can never be more than 1.
 - There must be at least one lead investor.
 - No lead investor address can be the zero address.
-- No lead investor carry fraction can be zero.
-- The contract does not immediately start selling tokens.
-- The owner can unpause the contract when ready to sell.
-- The owner can change the currency used for selling tokens.
-- Only currency with both `TRUSTED_CURRENCY` and `EURO_CURRENCY` attributes can be used for selling tokens or claiming exits.
-- During a token sale, after fee deduction, lead investors get their share of the profit proportional to their fraction. The co-investor (receiver) receives all remaining proceeds.
-- If net proceeds are less than the scaled base price payout, the co-investor receives all net proceeds and lead investors receive nothing.
-- During settlement of buy or claim, the contract's full remaining currency balance is swept to the receiver after lead investor shares, ensuring no dust is left in the contract.
-- The sweeping of the contract funds during settlement includes any funds in the currency in use that may have been transferred to the contract.
-- Only trusted currencies can be used to sell the tokens.
-- When calculating profit, base price in the current currency is used.
-- If the currency currently used in the contract differs from the currency of an exit contract that should be used, the exit contract can provide exchange rates for the conversion of base price.
-- If the exit contract doesn't provide required exchange rates, a user-provided new base price is used.
-- During lockup, only an exit claim or a burn can transfer the tokens out.
-- An exit claim reverts if it receives less than the required minimum currency amount.
-- All proceeds from dividends are treated as profit.
+- No lead investor profit fraction can be zero.
+- The contract starts paused; no tokens can be sold until the owner unpauses it.
+- The owner can only unpause after the lock period has passed and a token price has been set.
+- The owner can change the currency, but only after the lock period has passed.
+- Only trusted currencies can be used for token sales, distribution claims, or currency changes.
+- The fee is deducted from gross proceeds before profit is calculated.
+- Profit is defined as net proceeds (after fee) exceeding the base price payout for the tokens sold or claimed.
+- Each lead investor receives their profit fraction of the profit.
+- If net proceeds do not exceed the base price payout, profit is zero and lead investors receive nothing.
+- The co-investor (receiver) receives all remaining proceeds after lead investor profit fractions are paid.
+- During settlement, the contract's full remaining balance of the settlement currency is swept to the receiver, including any currency that was accidentally sent to the contract.
+- Only the owner can claim distributions or exits on behalf of the contract.
+- All dividend proceeds are treated as profit and distributed accordingly.
+- An exit claim reverts if the net proceeds fall below the caller-specified minimum.
+- During the lock period, the buy function is blocked; tokens can only leave the contract through an exit claim.
+- When the exit currency matches the stored currency, the stored base price is used to calculate the base payout.
+- When the exit currency differs from the stored currency, the exit contract's exchange rate is used to convert the base price; if no rate is available, a caller-supplied base price is used instead.
 - All functions can be called directly or as meta transaction using EIP-2771. Both options yield equivalent results given equivalent inputs.
 
 ## GlobalTokenExitRegistry.sol
