@@ -12,12 +12,61 @@ import "./resources/FakePaymentToken.sol";
 import "./resources/MaliciousPaymentToken.sol";
 import "./resources/CloneCreators.sol";
 
+/**
+ * @notice A minimal fee settings that supports IFeeSettingsV2 but NOT IFeeSettingsV3.
+ *         Used to exercise the V2 fallback path in TokenSwapBase._getFeeAndFeeReceiver().
+ */
+contract V2OnlyFeeSettings {
+    address public immutable collector;
+
+    uint256 public constant SOME_RANDOM_FIXED_FEE = 62648;
+
+    constructor(address _collector) {
+        collector = _collector;
+    }
+
+    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
+        if (interfaceId == 0x01ffc9a7) return true; // ERC165
+        if (interfaceId == 0xffffffff) return false; // ERC165 invalid
+        if (interfaceId == type(IFeeSettingsV2).interfaceId) return true;
+        return false; // does NOT support IFeeSettingsV3
+    }
+
+    function tokenFee(uint256, address) external pure returns (uint256) {
+        return SOME_RANDOM_FIXED_FEE;
+    }
+
+    function tokenFeeCollector(address) external view returns (address) {
+        return collector;
+    }
+
+    function crowdinvestingFee(uint256, address) external pure returns (uint256) {
+        return SOME_RANDOM_FIXED_FEE;
+    }
+
+    function crowdinvestingFeeCollector(address) external view returns (address) {
+        return collector;
+    }
+
+    function privateOfferFee(uint256, address) external pure returns (uint256) {
+        return SOME_RANDOM_FIXED_FEE;
+    }
+
+    function privateOfferFeeCollector(address) external view returns (address) {
+        return collector;
+    }
+
+    function owner() external pure returns (address) {
+        return address(0);
+    }
+}
+
 contract TokenSwapTest is Test {
     event ReceiverChanged(address indexed);
     event MinAmountPerTransactionChanged(uint256);
     event TokenPriceChanged(uint256);
-    event TokensBought(address indexed buyer, uint256 tokenAmount, uint256 currencyAmount);
-    event TokensSold(address indexed seller, uint256 tokenAmount, uint256 currencyAmount);
+    event TokensBought(address indexed BUYER, uint256 TOKEN_AMOUNT, uint256 currencyAmount);
+    event TokensSold(address indexed SELLER, uint256 TOKEN_AMOUNT, uint256 currencyAmount);
 
     TokenSwapCloneFactory factory;
     TokenSwap tokenSwap;
@@ -32,79 +81,79 @@ contract TokenSwapTest is Test {
 
     MaliciousPaymentToken maliciousPaymentToken;
 
-    address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
-    address public constant buyer = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
-    address public constant seller = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
-    address public constant owner = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
-    address public constant receiver = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
-    address public constant holder = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
-    address public constant paymentTokenProvider = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
-    address public constant trustedForwarder = 0xa109709ecfA91A80626ff3989D68F67F5b1dD12a;
+    address public constant ADMIN = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
+    address public constant BUYER = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
+    address public constant SELLER = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
+    address public constant OWNER = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
+    address public constant RECEIVER = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
+    address public constant HOLDER = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
+    address public constant PAYMENT_TOKEN_PROVIDER = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
+    address public constant TRUSTED_FORWARDER = 0xa109709ecfA91A80626ff3989D68F67F5b1dD12a;
 
-    uint8 public constant paymentTokenDecimals = 6;
-    uint256 public constant paymentTokenAmount = 1000 * 10 ** paymentTokenDecimals;
-    uint256 public constant tokenAmount = 100 * 10 ** 18; // 100 tokens
+    uint8 public constant PAYMENT_TOKEN_DECIMALS = 6;
+    uint256 public constant PAYMENT_TOKEN_AMOUNT = 1000 * 10 ** PAYMENT_TOKEN_DECIMALS;
+    uint256 public constant TOKEN_AMOUNT = 100 * 10 ** 18; // 100 tokens
 
-    uint256 public constant price = 7 * 10 ** paymentTokenDecimals; // 7 payment tokens per token
+    uint256 public constant PRICE = 7 * 10 ** PAYMENT_TOKEN_DECIMALS; // 7 payment tokens per token
 
     function setUp() public {
-        vm.startPrank(paymentTokenProvider);
+        vm.startPrank(PAYMENT_TOKEN_PROVIDER);
         // set up currency
-        paymentToken = new FakePaymentToken(paymentTokenAmount * 10, paymentTokenDecimals);
-        // transfer currency to buyer
-        paymentToken.transfer(buyer, paymentTokenAmount);
-        assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
-        // transfer currency to holder for sell orders
-        paymentToken.transfer(holder, paymentTokenAmount * 2);
+        paymentToken = new FakePaymentToken(PAYMENT_TOKEN_AMOUNT * 10, PAYMENT_TOKEN_DECIMALS);
+        // transfer currency to BUYER
+        paymentToken.transfer(BUYER, PAYMENT_TOKEN_AMOUNT);
+        assertTrue(paymentToken.balanceOf(BUYER) == PAYMENT_TOKEN_AMOUNT);
+        // transfer currency to HOLDER for sell orders
+        paymentToken.transfer(HOLDER, PAYMENT_TOKEN_AMOUNT * 2);
         vm.stopPrank();
 
-        list = createAllowList(trustedForwarder, owner);
-        vm.prank(owner);
+        list = createAllowList(TRUSTED_FORWARDER, OWNER);
+        vm.prank(OWNER);
         list.set(address(paymentToken), TRUSTED_CURRENCY);
 
         feeSettings = createFeeSettings(
-            trustedForwarder,
+            TRUSTED_FORWARDER,
             address(this),
-            buildFeeTypes(100, 100, 100, wrongFeeReceiver, admin, wrongFeeReceiver)
+            buildFeeTypes(100, 100, 100, wrongFeeReceiver, ADMIN, wrongFeeReceiver)
         );
 
         // create token
-        address tokenLogicContract = address(new Token(trustedForwarder));
+        address tokenLogicContract = address(new Token(TRUSTED_FORWARDER));
         tokenCloneFactory = new TokenProxyFactory(tokenLogicContract);
         token = Token(
-            tokenCloneFactory.createTokenProxy(0, trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST")
+            tokenCloneFactory.createTokenProxy(0, TRUSTED_FORWARDER, feeSettings, ADMIN, list, 0x0, "TESTTOKEN", "TEST")
         );
 
-        // mint tokens to holder
+        // mint tokens to HOLDER
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
-        vm.prank(admin);
-        token.grantRole(roleMintAllower, admin);
-        vm.prank(admin);
-        token.mint(holder, tokenAmount);
+        vm.prank(ADMIN);
+        token.grantRole(roleMintAllower, ADMIN);
+        vm.prank(ADMIN);
+        token.mint(HOLDER, TOKEN_AMOUNT);
 
-        vm.prank(owner);
-        factory = new TokenSwapCloneFactory(address(new TokenSwap(trustedForwarder)));
+        vm.prank(OWNER);
+        factory = new TokenSwapCloneFactory(address(new TokenSwap(TRUSTED_FORWARDER)));
         TokenSwapInitializerArguments memory arguments = TokenSwapInitializerArguments(
-            owner,
-            payable(receiver),
-            holder,
-            price,
+            OWNER,
+            payable(RECEIVER),
+            HOLDER,
+            PRICE,
             paymentToken,
             token
         );
-        tokenSwap = TokenSwap(factory.createTokenSwapClone(0, trustedForwarder, arguments));
+        tokenSwap = TokenSwap(factory.createTokenSwapClone(0, TRUSTED_FORWARDER, arguments));
 
-        // grant tokenSwap an allowance for holder's tokens
-        vm.prank(holder);
-        token.approve(address(tokenSwap), tokenAmount);
+        // grant tokenSwap an allowance for HOLDER's tokens
+        vm.prank(HOLDER);
+        token.approve(address(tokenSwap), TOKEN_AMOUNT);
 
-        // grant tokenSwap an allowance to spend buyer's payment tokens
-        vm.prank(buyer);
-        paymentToken.approve(address(tokenSwap), paymentTokenAmount);
+        // grant tokenSwap an allowance to spend BUYER's payment tokens
+        vm.prank(BUYER);
+        paymentToken.approve(address(tokenSwap), PAYMENT_TOKEN_AMOUNT);
 
-        // grant tokenSwap an allowance to spend holder's payment tokens for sell transactions
-        vm.prank(holder);
-        paymentToken.approve(address(tokenSwap), paymentTokenAmount * 2);
+        // grant tokenSwap an allowance to spend HOLDER's payment tokens for sell transactions
+        vm.prank(HOLDER);
+        paymentToken.approve(address(tokenSwap), PAYMENT_TOKEN_AMOUNT * 2);
     }
 
     // Helper function to create a copy of TokenSwapInitializerArguments
@@ -130,11 +179,11 @@ contract TokenSwapTest is Test {
         // try to initialize
         vm.expectRevert("Initializable: contract is already initialized");
         _logic.initialize(
-            TokenSwapInitializerArguments(address(this), payable(receiver), holder, price, paymentToken, token)
+            TokenSwapInitializerArguments(address(this), payable(RECEIVER), HOLDER, PRICE, paymentToken, token)
         );
 
-        // owner and all settings are 0
-        assertTrue(_logic.owner() == address(0), "owner is not 0");
+        // OWNER and all settings are 0
+        assertTrue(_logic.owner() == address(0), "OWNER is not 0");
         assertTrue(_logic.receiver() == address(0));
         assertTrue(_logic.tokenPrice() == 0);
         assertTrue(address(_logic.currency()) == address(0));
@@ -145,19 +194,19 @@ contract TokenSwapTest is Test {
     function testConstructorHappyCase() public {
         TokenSwapInitializerArguments memory arguments = TokenSwapInitializerArguments(
             address(this),
-            payable(receiver),
-            holder,
-            price,
+            payable(RECEIVER),
+            HOLDER,
+            PRICE,
             paymentToken,
             token
         );
-        TokenSwap _tokenSwap = TokenSwap(factory.createTokenSwapClone(0, trustedForwarder, arguments));
+        TokenSwap _tokenSwap = TokenSwap(factory.createTokenSwapClone(0, TRUSTED_FORWARDER, arguments));
         assertTrue(_tokenSwap.owner() == address(this));
-        assertTrue(_tokenSwap.receiver() == receiver);
-        assertTrue(_tokenSwap.tokenPrice() == price);
+        assertTrue(_tokenSwap.receiver() == RECEIVER);
+        assertTrue(_tokenSwap.tokenPrice() == PRICE);
         assertTrue(_tokenSwap.currency() == paymentToken);
         assertTrue(_tokenSwap.token() == token);
-        assertTrue(_tokenSwap.holder() == holder);
+        assertTrue(_tokenSwap.holder() == HOLDER);
 
         // try to initialize again
         vm.expectRevert("Initializable: contract is already initialized");
@@ -167,9 +216,9 @@ contract TokenSwapTest is Test {
     function testConstructorWithBadArguments() public {
         TokenSwapInitializerArguments memory arguments = TokenSwapInitializerArguments(
             address(this),
-            payable(receiver),
-            holder,
-            price,
+            payable(RECEIVER),
+            HOLDER,
+            PRICE,
             paymentToken,
             token
         );
@@ -177,41 +226,41 @@ contract TokenSwapTest is Test {
         vm.expectRevert("TokenSwapCloneFactory: Unexpected trustedForwarder");
         TokenSwap(factory.createTokenSwapClone(0, address(0), arguments));
 
-        // owner 0
+        // OWNER 0
         TokenSwapInitializerArguments memory tempArgs = cloneTokenSwapInitializerArguments(arguments);
         tempArgs.owner = address(0);
         vm.expectRevert("owner can not be zero address");
-        factory.createTokenSwapClone(0, trustedForwarder, tempArgs);
+        factory.createTokenSwapClone(0, TRUSTED_FORWARDER, tempArgs);
 
-        // receiver 0
+        // RECEIVER 0
         tempArgs = cloneTokenSwapInitializerArguments(arguments);
         tempArgs.receiver = address(0);
         vm.expectRevert("receiver can not be zero address");
-        factory.createTokenSwapClone(0, trustedForwarder, tempArgs);
+        factory.createTokenSwapClone(0, TRUSTED_FORWARDER, tempArgs);
 
-        // holder 0
+        // HOLDER 0
         tempArgs = cloneTokenSwapInitializerArguments(arguments);
         tempArgs.holder = address(0);
         vm.expectRevert("holder can not be zero address");
-        factory.createTokenSwapClone(0, trustedForwarder, tempArgs);
+        factory.createTokenSwapClone(0, TRUSTED_FORWARDER, tempArgs);
 
-        // price 0
+        // PRICE 0
         tempArgs = cloneTokenSwapInitializerArguments(arguments);
         tempArgs.tokenPrice = 0;
         vm.expectRevert("_tokenPrice needs to be a non-zero amount");
-        factory.createTokenSwapClone(0, trustedForwarder, tempArgs);
+        factory.createTokenSwapClone(0, TRUSTED_FORWARDER, tempArgs);
 
         // currency 0
         tempArgs = cloneTokenSwapInitializerArguments(arguments);
         tempArgs.currency = IERC20(address(0));
         vm.expectRevert("currency can not be zero address");
-        factory.createTokenSwapClone(0, trustedForwarder, tempArgs);
+        factory.createTokenSwapClone(0, TRUSTED_FORWARDER, tempArgs);
 
         // token 0
         tempArgs = cloneTokenSwapInitializerArguments(arguments);
         tempArgs.token = Token(address(0));
         vm.expectRevert("token can not be zero address");
-        factory.createTokenSwapClone(0, trustedForwarder, tempArgs);
+        factory.createTokenSwapClone(0, TRUSTED_FORWARDER, tempArgs);
     }
 
     /*
@@ -223,13 +272,13 @@ contract TokenSwapTest is Test {
         uint256 _tokenAmount = 1000 * 10 ** 18;
         uint256 _paymentTokenAmount = 100000 * 10 ** _paymentTokenDecimals;
 
-        list = createAllowList(trustedForwarder, owner);
+        list = createAllowList(TRUSTED_FORWARDER, OWNER);
         Token _token = Token(
             tokenCloneFactory.createTokenProxy(
                 0,
-                trustedForwarder,
+                TRUSTED_FORWARDER,
                 feeSettings,
-                admin,
+                ADMIN,
                 list,
                 0x0,
                 "REENTRANCYTOKEN",
@@ -237,51 +286,51 @@ contract TokenSwapTest is Test {
             )
         );
 
-        // mint tokens to holder
+        // mint tokens to HOLDER
         bytes32 roleMintAllower = _token.MINTALLOWER_ROLE();
-        vm.prank(admin);
-        _token.grantRole(roleMintAllower, admin);
-        vm.prank(admin);
-        _token.mint(holder, _tokenAmount);
+        vm.prank(ADMIN);
+        _token.grantRole(roleMintAllower, ADMIN);
+        vm.prank(ADMIN);
+        _token.mint(HOLDER, _tokenAmount);
 
-        vm.prank(paymentTokenProvider);
+        vm.prank(PAYMENT_TOKEN_PROVIDER);
         maliciousPaymentToken = new MaliciousPaymentToken(_paymentTokenAmount);
-        vm.prank(owner);
+        vm.prank(OWNER);
         list.set(address(maliciousPaymentToken), TRUSTED_CURRENCY);
 
         TokenSwapInitializerArguments memory arguments = TokenSwapInitializerArguments(
             address(this),
-            payable(receiver),
-            holder,
+            payable(RECEIVER),
+            HOLDER,
             _price,
             maliciousPaymentToken,
             _token
         );
 
-        TokenSwap _tokenSwap = TokenSwap(factory.createTokenSwapClone(0, trustedForwarder, arguments));
+        TokenSwap _tokenSwap = TokenSwap(factory.createTokenSwapClone(0, TRUSTED_FORWARDER, arguments));
 
-        // grant tokenSwap an allowance for holder's tokens
-        vm.prank(holder);
+        // grant tokenSwap an allowance for HOLDER's tokens
+        vm.prank(HOLDER);
         _token.approve(address(_tokenSwap), _tokenAmount);
 
-        // mint _paymentToken for buyer
-        vm.prank(paymentTokenProvider);
-        maliciousPaymentToken.transfer(buyer, _paymentTokenAmount);
-        assertTrue(maliciousPaymentToken.balanceOf(buyer) == _paymentTokenAmount);
+        // mint _paymentToken for BUYER
+        vm.prank(PAYMENT_TOKEN_PROVIDER);
+        maliciousPaymentToken.transfer(BUYER, _paymentTokenAmount);
+        assertTrue(maliciousPaymentToken.balanceOf(BUYER) == _paymentTokenAmount);
 
         // set exploitTarget
         maliciousPaymentToken.setExploitTarget(address(_tokenSwap), 3, _tokenAmount / 200);
 
-        // grant tokenSwap an allowance to spend buyer's payment tokens
-        vm.prank(buyer);
+        // grant tokenSwap an allowance to spend BUYER's payment tokens
+        vm.prank(BUYER);
         maliciousPaymentToken.approve(address(_tokenSwap), _paymentTokenAmount);
 
         // run actual test
-        assertTrue(maliciousPaymentToken.balanceOf(buyer) == _paymentTokenAmount);
+        assertTrue(maliciousPaymentToken.balanceOf(BUYER) == _paymentTokenAmount);
         uint256 buyAmount = _tokenAmount / 100;
-        vm.prank(buyer);
+        vm.prank(BUYER);
         vm.expectRevert("ReentrancyGuard: reentrant call");
-        _tokenSwap.buy(buyAmount, type(uint256).max, buyer);
+        _tokenSwap.buy(buyAmount, type(uint256).max, BUYER);
     }
 
     function testReentrancyOnSell() public {
@@ -290,13 +339,13 @@ contract TokenSwapTest is Test {
         uint256 _tokenAmount = 1000 * 10 ** 18;
         uint256 _paymentTokenAmount = 100000 * 10 ** _paymentTokenDecimals;
 
-        list = createAllowList(trustedForwarder, owner);
+        list = createAllowList(TRUSTED_FORWARDER, OWNER);
         Token _token = Token(
             tokenCloneFactory.createTokenProxy(
                 0,
-                trustedForwarder,
+                TRUSTED_FORWARDER,
                 feeSettings,
-                admin,
+                ADMIN,
                 list,
                 0x0,
                 "REENTRANCYTOKEN",
@@ -304,83 +353,83 @@ contract TokenSwapTest is Test {
             )
         );
 
-        // mint tokens to seller
+        // mint tokens to SELLER
         bytes32 roleMintAllower = _token.MINTALLOWER_ROLE();
-        vm.prank(admin);
-        _token.grantRole(roleMintAllower, admin);
-        vm.prank(admin);
-        _token.mint(seller, _tokenAmount);
+        vm.prank(ADMIN);
+        _token.grantRole(roleMintAllower, ADMIN);
+        vm.prank(ADMIN);
+        _token.mint(SELLER, _tokenAmount);
 
-        vm.prank(paymentTokenProvider);
+        vm.prank(PAYMENT_TOKEN_PROVIDER);
         maliciousPaymentToken = new MaliciousPaymentToken(_paymentTokenAmount);
-        vm.prank(owner);
+        vm.prank(OWNER);
         list.set(address(maliciousPaymentToken), TRUSTED_CURRENCY);
 
-        // transfer malicious payment token to holder
-        vm.prank(paymentTokenProvider);
-        maliciousPaymentToken.transfer(holder, _paymentTokenAmount);
+        // transfer malicious payment token to HOLDER
+        vm.prank(PAYMENT_TOKEN_PROVIDER);
+        maliciousPaymentToken.transfer(HOLDER, _paymentTokenAmount);
 
         TokenSwapInitializerArguments memory arguments = TokenSwapInitializerArguments(
             address(this),
-            payable(receiver),
-            holder,
+            payable(RECEIVER),
+            HOLDER,
             _price,
             maliciousPaymentToken,
             _token
         );
 
-        TokenSwap _tokenSwap = TokenSwap(factory.createTokenSwapClone(0, trustedForwarder, arguments));
+        TokenSwap _tokenSwap = TokenSwap(factory.createTokenSwapClone(0, TRUSTED_FORWARDER, arguments));
 
-        // grant tokenSwap an allowance to spend holder's payment tokens
-        vm.prank(holder);
+        // grant tokenSwap an allowance to spend HOLDER's payment tokens
+        vm.prank(HOLDER);
         maliciousPaymentToken.approve(address(_tokenSwap), _paymentTokenAmount);
 
-        // set exploitTarget for sell (which transfers from holder to seller)
+        // set exploitTarget for sell (which transfers from HOLDER to SELLER)
         maliciousPaymentToken.setExploitTarget(address(_tokenSwap), 3, _tokenAmount / 200);
 
-        // grant tokenSwap an allowance for seller's tokens
-        vm.prank(seller);
+        // grant tokenSwap an allowance for SELLER's tokens
+        vm.prank(SELLER);
         _token.approve(address(_tokenSwap), _tokenAmount);
 
         // run actual test
         uint256 sellAmount = _tokenAmount / 100;
-        vm.prank(seller);
+        vm.prank(SELLER);
         vm.expectRevert("ReentrancyGuard: reentrant call");
-        _tokenSwap.sell(sellAmount, 0, seller);
+        _tokenSwap.sell(sellAmount, 0, SELLER);
     }
 
     function testBuyHappyCase(uint256 tokenBuyAmount) public {
         vm.assume(tokenBuyAmount >= 10 ** 18);
-        vm.assume(tokenBuyAmount <= tokenAmount);
+        vm.assume(tokenBuyAmount <= TOKEN_AMOUNT);
         uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * tokenSwap.tokenPrice(), 10 ** 18);
-        vm.assume(costInPaymentToken <= paymentToken.balanceOf(buyer));
+        vm.assume(costInPaymentToken <= paymentToken.balanceOf(BUYER));
 
-        uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
-        uint256 holderTokenBalanceBefore = token.balanceOf(holder);
+        uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(BUYER);
+        uint256 holderTokenBalanceBefore = token.balanceOf(HOLDER);
 
         uint256 expectedFee = token.feeSettings().privateOfferFee(costInPaymentToken, address(token));
 
-        vm.prank(buyer);
+        vm.prank(BUYER);
         vm.expectEmit(true, true, true, true, address(tokenSwap));
-        emit TokensBought(buyer, tokenBuyAmount, costInPaymentToken);
-        tokenSwap.buy(tokenBuyAmount, type(uint256).max, buyer);
+        emit TokensBought(BUYER, tokenBuyAmount, costInPaymentToken);
+        tokenSwap.buy(tokenBuyAmount, type(uint256).max, BUYER);
 
         assertTrue(
-            paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore - costInPaymentToken,
-            "buyer payment token balance should decrease by costInPaymentToken"
+            paymentToken.balanceOf(BUYER) == paymentTokenBalanceBefore - costInPaymentToken,
+            "BUYER payment token balance should decrease by costInPaymentToken"
         );
-        assertTrue(token.balanceOf(buyer) == tokenBuyAmount, "buyer token balance should equal tokenBuyAmount");
+        assertTrue(token.balanceOf(BUYER) == tokenBuyAmount, "BUYER token balance should equal tokenBuyAmount");
         assertTrue(
-            paymentToken.balanceOf(receiver) == costInPaymentToken - expectedFee,
-            "receiver payment token balance should equal costInPaymentToken minus expectedFee"
+            paymentToken.balanceOf(RECEIVER) == costInPaymentToken - expectedFee,
+            "RECEIVER payment token balance should equal costInPaymentToken minus expectedFee"
         );
         assertTrue(
             paymentToken.balanceOf(token.feeSettings().privateOfferFeeCollector(address(token))) == expectedFee,
             "fee collector payment token balance should equal expectedFee"
         );
         assertTrue(
-            token.balanceOf(holder) == holderTokenBalanceBefore - tokenBuyAmount,
-            "holder token balance should decrease by tokenBuyAmount"
+            token.balanceOf(HOLDER) == holderTokenBalanceBefore - tokenBuyAmount,
+            "HOLDER token balance should decrease by tokenBuyAmount"
         );
     }
 
@@ -393,35 +442,35 @@ contract TokenSwapTest is Test {
         vm.assume(tokenBuyAmount >= 10 ** 18);
         vm.assume(tokenBuyAmount <= tokenSellAmount);
 
-        // Mint tokens to seller for the sell transaction
+        // Mint tokens to SELLER for the sell transaction
         address seller2 = vm.addr(20);
         console.log("seller2 :", seller2);
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
-        vm.prank(admin);
-        token.grantRole(roleMintAllower, admin);
-        vm.prank(admin);
+        vm.prank(ADMIN);
+        token.grantRole(roleMintAllower, ADMIN);
+        vm.prank(ADMIN);
         token.mint(seller2, tokenSellAmount);
 
-        // Change receiver to holder so holder receives tokens when someone sells
-        vm.prank(owner);
+        // Change RECEIVER to HOLDER so HOLDER receives tokens when someone sells
+        vm.prank(OWNER);
         tokenSwap.pause();
-        vm.prank(owner);
-        tokenSwap.setReceiver(holder);
-        vm.prank(owner);
+        vm.prank(OWNER);
+        tokenSwap.setReceiver(HOLDER);
+        vm.prank(OWNER);
         tokenSwap.unpause();
 
-        // Step 1: Seller sells tokens to holder
-        // Seller gives tokens, holder (as receiver) receives tokens, holder (as currency provider) pays currency
+        // Step 1: Seller sells tokens to HOLDER
+        // Seller gives tokens, HOLDER (as RECEIVER) receives tokens, HOLDER (as currency provider) pays currency
         uint256 sellPayoutInPaymentToken = (tokenSellAmount * tokenSwap.tokenPrice()) / (10 ** 18);
         uint256 sellExpectedFee = token.feeSettings().privateOfferFee(sellPayoutInPaymentToken, address(token));
         uint256 sellExpectedPayout = sellPayoutInPaymentToken - sellExpectedFee;
 
-        // Give holder enough payment tokens to pay the seller
-        vm.prank(paymentTokenProvider);
-        paymentToken.mint(holder, sellPayoutInPaymentToken);
+        // Give HOLDER enough payment tokens to pay the SELLER
+        vm.prank(PAYMENT_TOKEN_PROVIDER);
+        paymentToken.mint(HOLDER, sellPayoutInPaymentToken);
 
-        uint256 holderPaymentTokenBalanceBefore = paymentToken.balanceOf(holder);
-        uint256 holderTokenBalanceBefore = token.balanceOf(holder);
+        uint256 holderPaymentTokenBalanceBefore = paymentToken.balanceOf(HOLDER);
+        uint256 holderTokenBalanceBefore = token.balanceOf(HOLDER);
 
         // Grant unlimited allowances
         // Seller2 approves tokenSwap to transfer their tokens
@@ -429,7 +478,7 @@ contract TokenSwapTest is Test {
         token.approve(address(tokenSwap), type(uint256).max);
 
         // Holder approves tokenSwap to spend their payment tokens (for sell transactions)
-        vm.prank(holder);
+        vm.prank(HOLDER);
         paymentToken.approve(address(tokenSwap), type(uint256).max);
 
         console.log("selling now");
@@ -439,26 +488,26 @@ contract TokenSwapTest is Test {
 
         console.log("sold");
 
-        // Verify sell: holder now has tokens, seller has currency
+        // Verify sell: HOLDER now has tokens, SELLER has currency
         assertTrue(
-            token.balanceOf(holder) == holderTokenBalanceBefore + tokenSellAmount,
-            "holder token balance should increase by tokenSellAmount after sell"
+            token.balanceOf(HOLDER) == holderTokenBalanceBefore + tokenSellAmount,
+            "HOLDER token balance should increase by tokenSellAmount after sell"
         );
         assertTrue(
-            paymentToken.balanceOf(holder) == holderPaymentTokenBalanceBefore - sellPayoutInPaymentToken,
-            "holder payment token balance should decrease by sellPayoutInPaymentToken after sell"
+            paymentToken.balanceOf(HOLDER) == holderPaymentTokenBalanceBefore - sellPayoutInPaymentToken,
+            "HOLDER payment token balance should decrease by sellPayoutInPaymentToken after sell"
         );
         assertTrue(
             paymentToken.balanceOf(seller2) == sellExpectedPayout,
-            "seller should receive expectedPayout in payment tokens"
+            "SELLER should receive expectedPayout in payment tokens"
         );
 
-        // Step 2: Different buyer buys tokens from holder
+        // Step 2: Different BUYER buys tokens from HOLDER
         address buyer2 = vm.addr(21);
 
         // Give buyer2 payment tokens
         uint256 buyCostInPaymentToken = Math.ceilDiv(tokenBuyAmount * tokenSwap.tokenPrice(), 10 ** 18);
-        vm.prank(paymentTokenProvider);
+        vm.prank(PAYMENT_TOKEN_PROVIDER);
         paymentToken.mint(buyer2, buyCostInPaymentToken);
 
         // Buyer2 grants unlimited payment token allowance
@@ -466,96 +515,96 @@ contract TokenSwapTest is Test {
         paymentToken.approve(address(tokenSwap), type(uint256).max);
 
         // Holder grants unlimited token allowance
-        vm.prank(holder);
+        vm.prank(HOLDER);
         token.approve(address(tokenSwap), type(uint256).max);
 
         uint256 buyExpectedFee = token.feeSettings().privateOfferFee(buyCostInPaymentToken, address(token));
 
-        uint256 holderTokenBalanceBeforeBuy = token.balanceOf(holder);
-        uint256 holderPaymentTokenBalanceBeforeBuy = paymentToken.balanceOf(holder);
+        uint256 holderTokenBalanceBeforeBuy = token.balanceOf(HOLDER);
+        uint256 holderPaymentTokenBalanceBeforeBuy = paymentToken.balanceOf(HOLDER);
 
         console.log("buying now");
         vm.prank(buyer2);
         tokenSwap.buy(tokenBuyAmount, type(uint256).max, buyer2);
         console.log("bought");
 
-        // Verify buy: buyer2 has tokens, holder has less tokens and more currency
+        // Verify buy: buyer2 has tokens, HOLDER has less tokens and more currency
         assertTrue(
             token.balanceOf(buyer2) == tokenBuyAmount,
             "buyer2 token balance should equal tokenBuyAmount after buy"
         );
         assertTrue(
-            token.balanceOf(holder) == holderTokenBalanceBeforeBuy - tokenBuyAmount,
-            "holder token balance should decrease by tokenBuyAmount after buy"
+            token.balanceOf(HOLDER) == holderTokenBalanceBeforeBuy - tokenBuyAmount,
+            "HOLDER token balance should decrease by tokenBuyAmount after buy"
         );
         assertTrue(
-            paymentToken.balanceOf(holder) ==
+            paymentToken.balanceOf(HOLDER) ==
                 holderPaymentTokenBalanceBeforeBuy + buyCostInPaymentToken - buyExpectedFee,
-            "holder payment token balance should increase by cost minus fee after buy"
+            "HOLDER payment token balance should increase by cost minus fee after buy"
         );
     }
 
     function testBuyWithMaxCurrencyAmount(uint256 tokenBuyAmount, uint256 maxCurrencyAmount) public {
         vm.assume(tokenBuyAmount >= 10 ** 18);
-        vm.assume(tokenBuyAmount <= tokenAmount);
+        vm.assume(tokenBuyAmount <= TOKEN_AMOUNT);
         uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * tokenSwap.tokenPrice(), 10 ** 18);
-        vm.assume(costInPaymentToken <= paymentToken.balanceOf(buyer));
+        vm.assume(costInPaymentToken <= paymentToken.balanceOf(BUYER));
 
-        uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
+        uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(BUYER);
 
         uint256 expectedFee = token.feeSettings().privateOfferFee(costInPaymentToken, address(token));
 
         if (maxCurrencyAmount >= costInPaymentToken) {
-            vm.prank(buyer);
+            vm.prank(BUYER);
             vm.expectEmit(true, true, true, true, address(tokenSwap));
-            emit TokensBought(buyer, tokenBuyAmount, costInPaymentToken);
-            tokenSwap.buy(tokenBuyAmount, maxCurrencyAmount, buyer);
+            emit TokensBought(BUYER, tokenBuyAmount, costInPaymentToken);
+            tokenSwap.buy(tokenBuyAmount, maxCurrencyAmount, BUYER);
             assertTrue(
-                paymentTokenBalanceBefore - paymentToken.balanceOf(buyer) <= maxCurrencyAmount,
-                "buyer should not pay more than maxCurrencyAmount"
+                paymentTokenBalanceBefore - paymentToken.balanceOf(BUYER) <= maxCurrencyAmount,
+                "BUYER should not pay more than maxCurrencyAmount"
             );
             assertTrue(
-                paymentToken.balanceOf(buyer) == paymentTokenBalanceBefore - costInPaymentToken,
-                "buyer payment token balance should decrease by costInPaymentToken"
+                paymentToken.balanceOf(BUYER) == paymentTokenBalanceBefore - costInPaymentToken,
+                "BUYER payment token balance should decrease by costInPaymentToken"
             );
-            assertTrue(token.balanceOf(buyer) == tokenBuyAmount, "buyer token balance should equal tokenBuyAmount");
+            assertTrue(token.balanceOf(BUYER) == tokenBuyAmount, "BUYER token balance should equal tokenBuyAmount");
             assertTrue(
-                paymentToken.balanceOf(receiver) == costInPaymentToken - expectedFee,
-                "receiver payment token balance should equal costInPaymentToken minus expectedFee"
+                paymentToken.balanceOf(RECEIVER) == costInPaymentToken - expectedFee,
+                "RECEIVER payment token balance should equal costInPaymentToken minus expectedFee"
             );
         } else {
-            vm.prank(buyer);
+            vm.prank(BUYER);
             vm.expectRevert("Purchase more expensive than _maxCurrencyAmount");
-            tokenSwap.buy(tokenBuyAmount, maxCurrencyAmount, buyer);
+            tokenSwap.buy(tokenBuyAmount, maxCurrencyAmount, BUYER);
         }
     }
 
     function testSellWithMinCurrencyAmount(uint256 tokenSellAmount, uint256 minCurrencyAmount) public {
-        // First, buyer needs to buy tokens
-        vm.prank(buyer);
-        tokenSwap.buy(tokenAmount / 2, type(uint256).max, buyer);
+        // First, BUYER needs to buy tokens
+        vm.prank(BUYER);
+        tokenSwap.buy(TOKEN_AMOUNT / 2, type(uint256).max, BUYER);
 
         vm.assume(tokenSellAmount >= 10 ** 18);
-        vm.assume(tokenSellAmount <= token.balanceOf(buyer));
+        vm.assume(tokenSellAmount <= token.balanceOf(BUYER));
         uint256 payoutInPaymentToken = (tokenSellAmount * tokenSwap.tokenPrice()) / (10 ** 18);
 
         uint256 expectedFee = token.feeSettings().privateOfferFee(payoutInPaymentToken, address(token));
         uint256 expectedPayout = payoutInPaymentToken - expectedFee;
 
-        vm.prank(buyer);
+        vm.prank(BUYER);
         token.approve(address(tokenSwap), tokenSellAmount);
 
         if (minCurrencyAmount <= expectedPayout) {
-            vm.prank(buyer);
-            tokenSwap.sell(tokenSellAmount, minCurrencyAmount, buyer);
+            vm.prank(BUYER);
+            tokenSwap.sell(tokenSellAmount, minCurrencyAmount, BUYER);
             assertTrue(
-                paymentToken.balanceOf(buyer) >= minCurrencyAmount,
-                "buyer payment token balance should be at least minCurrencyAmount"
+                paymentToken.balanceOf(BUYER) >= minCurrencyAmount,
+                "BUYER payment token balance should be at least minCurrencyAmount"
             );
         } else {
-            vm.prank(buyer);
+            vm.prank(BUYER);
             vm.expectRevert("Payout too low");
-            tokenSwap.sell(tokenSellAmount, minCurrencyAmount, buyer);
+            tokenSwap.sell(tokenSellAmount, minCurrencyAmount, BUYER);
         }
     }
 
@@ -563,13 +612,13 @@ contract TokenSwapTest is Test {
         address addressWithFunds = vm.addr(1);
         address addressForTokens = vm.addr(2);
 
-        uint256 availableBalance = paymentToken.balanceOf(buyer);
+        uint256 availableBalance = paymentToken.balanceOf(BUYER);
 
-        vm.prank(buyer);
+        vm.prank(BUYER);
         paymentToken.transfer(addressWithFunds, availableBalance / 2);
 
         vm.prank(addressWithFunds);
-        paymentToken.approve(address(tokenSwap), paymentTokenAmount);
+        paymentToken.approve(address(tokenSwap), PAYMENT_TOKEN_AMOUNT);
 
         // check state before
         assertTrue(
@@ -585,7 +634,7 @@ contract TokenSwapTest is Test {
 
         // execute buy, with addressForTokens as recipient
         vm.prank(addressWithFunds);
-        tokenSwap.buy(tokenAmount / 2, type(uint256).max, addressForTokens);
+        tokenSwap.buy(TOKEN_AMOUNT / 2, type(uint256).max, addressForTokens);
 
         // check state after
         assertTrue(
@@ -598,8 +647,8 @@ contract TokenSwapTest is Test {
             "addressForTokens payment token balance should be 0 after buy"
         );
         assertTrue(
-            token.balanceOf(addressForTokens) == tokenAmount / 2,
-            "addressForTokens token balance should equal tokenAmount / 2 after buy"
+            token.balanceOf(addressForTokens) == TOKEN_AMOUNT / 2,
+            "addressForTokens token balance should equal TOKEN_AMOUNT / 2 after buy"
         );
         assertTrue(token.balanceOf(addressWithFunds) == 0, "addressWithFunds token balance should be 0 after buy");
     }
@@ -609,8 +658,8 @@ contract TokenSwapTest is Test {
         address addressForCurrency = vm.addr(2);
 
         // First, buy tokens for addressWithTokens
-        uint256 buyAmount = tokenAmount / 2;
-        vm.prank(buyer);
+        uint256 buyAmount = TOKEN_AMOUNT / 2;
+        vm.prank(BUYER);
         tokenSwap.buy(buyAmount, type(uint256).max, addressWithTokens);
 
         // check state before sell
@@ -640,135 +689,135 @@ contract TokenSwapTest is Test {
     }
 
     function testBuy() public {
-        vm.prank(buyer);
-        tokenSwap.buy(10 ** 18, type(uint256).max, buyer);
+        vm.prank(BUYER);
+        tokenSwap.buy(10 ** 18, type(uint256).max, BUYER);
     }
 
     function testBuyFailsAfterHolderRemovesAllowance() public {
         // Holder removes their token allowance to tokenSwap
-        vm.prank(holder);
+        vm.prank(HOLDER);
         token.approve(address(tokenSwap), 0);
 
         // Attempt to buy should fail due to insufficient allowance
-        vm.prank(buyer);
+        vm.prank(BUYER);
         vm.expectRevert("ERC20: insufficient allowance");
-        tokenSwap.buy(10 ** 18, type(uint256).max, buyer);
+        tokenSwap.buy(10 ** 18, type(uint256).max, BUYER);
     }
 
     function testSell() public {
-        // Mint tokens to buyer so they have tokens to sell
+        // Mint tokens to BUYER so they have tokens to sell
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
-        vm.prank(admin);
-        token.grantRole(roleMintAllower, admin);
-        vm.prank(admin);
-        token.mint(buyer, 10 ** 18);
+        vm.prank(ADMIN);
+        token.grantRole(roleMintAllower, ADMIN);
+        vm.prank(ADMIN);
+        token.mint(BUYER, 10 ** 18);
 
         // Buyer approves tokenSwap to transfer their tokens
-        vm.prank(buyer);
+        vm.prank(BUYER);
         token.approve(address(tokenSwap), 10 ** 18);
 
         // Buyer sells tokens
-        vm.prank(buyer);
-        tokenSwap.sell(10 ** 18, 0, buyer);
+        vm.prank(BUYER);
+        tokenSwap.sell(10 ** 18, 0, BUYER);
     }
 
     function testSellFailsAfterHolderRemovesAllowance() public {
-        // Mint tokens to buyer so they have tokens to sell
+        // Mint tokens to BUYER so they have tokens to sell
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
-        vm.prank(admin);
-        token.grantRole(roleMintAllower, admin);
-        vm.prank(admin);
-        token.mint(buyer, 10 ** 18);
+        vm.prank(ADMIN);
+        token.grantRole(roleMintAllower, ADMIN);
+        vm.prank(ADMIN);
+        token.mint(BUYER, 10 ** 18);
 
         // Holder removes their payment token allowance to tokenSwap
-        vm.prank(holder);
+        vm.prank(HOLDER);
         paymentToken.approve(address(tokenSwap), 0);
 
         // Buyer approves tokenSwap to transfer their tokens
-        vm.prank(buyer);
+        vm.prank(BUYER);
         token.approve(address(tokenSwap), 10 ** 18);
 
-        // Attempt to sell should fail due to holder's insufficient payment token allowance
-        vm.prank(buyer);
+        // Attempt to sell should fail due to HOLDER's insufficient payment token allowance
+        vm.prank(BUYER);
         vm.expectRevert("ERC20: insufficient allowance");
-        tokenSwap.sell(10 ** 18, 0, buyer);
+        tokenSwap.sell(10 ** 18, 0, BUYER);
     }
 
     function testBuyWhilePaused() public {
-        vm.prank(owner);
+        vm.prank(OWNER);
         tokenSwap.pause();
-        vm.prank(buyer);
+        vm.prank(BUYER);
         vm.expectRevert("Pausable: paused");
-        tokenSwap.buy(10 ** 18, type(uint256).max, buyer);
+        tokenSwap.buy(10 ** 18, type(uint256).max, BUYER);
     }
 
     function testSellWhilePaused() public {
         // First buy some tokens
-        vm.prank(buyer);
-        tokenSwap.buy(tokenAmount / 2, type(uint256).max, buyer);
+        vm.prank(BUYER);
+        tokenSwap.buy(TOKEN_AMOUNT / 2, type(uint256).max, BUYER);
 
-        vm.prank(owner);
+        vm.prank(OWNER);
         tokenSwap.pause();
 
-        vm.prank(buyer);
+        vm.prank(BUYER);
         token.approve(address(tokenSwap), 10 ** 18);
 
-        vm.prank(buyer);
+        vm.prank(BUYER);
         vm.expectRevert("Pausable: paused");
-        tokenSwap.sell(10 ** 18, 0, buyer);
+        tokenSwap.sell(10 ** 18, 0, BUYER);
     }
 
     function testUpdateReceiver() public {
-        assertTrue(tokenSwap.receiver() == receiver);
-        vm.prank(owner);
+        assertTrue(tokenSwap.receiver() == RECEIVER);
+        vm.prank(OWNER);
         vm.expectEmit(true, true, true, true, address(tokenSwap));
-        emit ReceiverChanged(address(buyer));
-        tokenSwap.setReceiver(address(buyer));
-        assertTrue(tokenSwap.receiver() == address(buyer));
+        emit ReceiverChanged(address(BUYER));
+        tokenSwap.setReceiver(address(BUYER));
+        assertTrue(tokenSwap.receiver() == address(BUYER));
 
-        vm.prank(owner);
+        vm.prank(OWNER);
         vm.expectRevert("receiver can not be zero address");
         tokenSwap.setReceiver(address(0));
     }
 
     function testUpdatePrice(uint256 newPrice) public {
         vm.assume(newPrice > 0);
-        assertTrue(tokenSwap.tokenPrice() == price);
+        assertTrue(tokenSwap.tokenPrice() == PRICE);
 
-        vm.prank(owner);
+        vm.prank(OWNER);
         vm.expectEmit(true, true, true, true, address(tokenSwap));
         emit TokenPriceChanged(newPrice);
         tokenSwap.setTokenPrice(newPrice);
 
         assertTrue(tokenSwap.tokenPrice() == newPrice);
 
-        vm.prank(owner);
+        vm.prank(OWNER);
         vm.expectRevert("_tokenPrice needs to be a non-zero amount");
         tokenSwap.setTokenPrice(0);
     }
 
     function testPauseUnpause() public {
         assertFalse(tokenSwap.paused());
-        vm.prank(owner);
+        vm.prank(OWNER);
         tokenSwap.pause();
         assertTrue(tokenSwap.paused());
-        vm.prank(owner);
+        vm.prank(OWNER);
         tokenSwap.unpause();
         assertFalse(tokenSwap.paused());
     }
 
     function testOnlyOwnerCanPause(address rando) public {
-        vm.assume(rando != owner);
-        vm.assume(rando != trustedForwarder);
+        vm.assume(rando != OWNER);
+        vm.assume(rando != TRUSTED_FORWARDER);
         vm.prank(rando);
         vm.expectRevert("Ownable: caller is not the owner");
         tokenSwap.pause();
     }
 
     function testOnlyOwnerCanUnpause(address rando) public {
-        vm.assume(rando != owner);
-        vm.assume(rando != trustedForwarder);
-        vm.prank(owner);
+        vm.assume(rando != OWNER);
+        vm.assume(rando != TRUSTED_FORWARDER);
+        vm.prank(OWNER);
         tokenSwap.pause();
         vm.prank(rando);
         vm.expectRevert("Ownable: caller is not the owner");
@@ -779,18 +828,18 @@ contract TokenSwapTest is Test {
         vm.assume(_tokenBuyAmount > 0);
         vm.assume(_price > 0);
         vm.assume((UINT256_MAX - paymentToken.totalSupply()) / _price > _tokenBuyAmount);
-        vm.assume(_tokenBuyAmount <= tokenAmount);
+        vm.assume(_tokenBuyAmount <= TOKEN_AMOUNT);
 
         uint256 tokenDecimals = token.decimals();
         uint minCurrencyAmount = (_tokenBuyAmount * _price) / 10 ** tokenDecimals;
         uint maxCurrencyAmount = minCurrencyAmount + 1;
         console.log("funding wallet");
-        vm.prank(paymentTokenProvider);
-        paymentToken.mint(buyer, maxCurrencyAmount);
+        vm.prank(PAYMENT_TOKEN_PROVIDER);
+        paymentToken.mint(BUYER, maxCurrencyAmount);
         console.log("wallet funded");
 
-        // update price
-        vm.prank(owner);
+        // update PRICE
+        vm.prank(OWNER);
         tokenSwap.setTokenPrice(_price);
 
         // set fees to 0
@@ -807,18 +856,18 @@ contract TokenSwapTest is Test {
         }
 
         // approve
-        vm.prank(buyer);
+        vm.prank(BUYER);
         paymentToken.approve(address(tokenSwap), type(uint256).max);
 
-        uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
+        uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(BUYER);
 
-        vm.prank(buyer);
-        tokenSwap.buy(_tokenBuyAmount, type(uint256).max, buyer);
+        vm.prank(BUYER);
+        tokenSwap.buy(_tokenBuyAmount, type(uint256).max, BUYER);
 
-        // check that the buyer got the correct amount of tokens
-        assertTrue(token.balanceOf(buyer) == _tokenBuyAmount, "buyer token balance should equal _tokenBuyAmount");
+        // check that the BUYER got the correct amount of tokens
+        assertTrue(token.balanceOf(BUYER) == _tokenBuyAmount, "BUYER token balance should equal _tokenBuyAmount");
         // check rounding
-        uint256 realCostInPaymentToken = paymentTokenBalanceBefore - paymentToken.balanceOf(buyer);
+        uint256 realCostInPaymentToken = paymentTokenBalanceBefore - paymentToken.balanceOf(BUYER);
         assertTrue(realCostInPaymentToken <= type(uint256).max, "cost should be valid");
         assertTrue(realCostInPaymentToken >= minCurrencyAmount, "cost should be at least minCurrencyAmount");
         assertTrue(
@@ -831,25 +880,25 @@ contract TokenSwapTest is Test {
         vm.assume(_tokenSellAmount > 0);
         vm.assume(_price > 0);
         vm.assume((UINT256_MAX - paymentToken.totalSupply()) / _price > _tokenSellAmount);
-        vm.assume(_tokenSellAmount <= tokenAmount / 2);
+        vm.assume(_tokenSellAmount <= TOKEN_AMOUNT / 2);
 
-        // mint tokens to seller
+        // mint tokens to SELLER
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
-        vm.prank(admin);
-        token.grantRole(roleMintAllower, admin);
-        vm.prank(admin);
-        token.mint(buyer, tokenAmount);
+        vm.prank(ADMIN);
+        token.grantRole(roleMintAllower, ADMIN);
+        vm.prank(ADMIN);
+        token.mint(BUYER, TOKEN_AMOUNT);
 
         uint256 tokenDecimals = token.decimals();
         uint256 expectedPayout = (_tokenSellAmount * _price) / 10 ** tokenDecimals;
 
         console.log("funding wallet");
-        vm.prank(paymentTokenProvider);
-        paymentToken.mint(holder, expectedPayout);
+        vm.prank(PAYMENT_TOKEN_PROVIDER);
+        paymentToken.mint(HOLDER, expectedPayout);
         console.log("wallet funded");
 
-        // update tokenSwap price only
-        vm.prank(owner);
+        // update tokenSwap PRICE only
+        vm.prank(OWNER);
         tokenSwap.setTokenPrice(_price);
 
         // set fees to 0
@@ -865,85 +914,85 @@ contract TokenSwapTest is Test {
             _feeSettings.executeFeeChange(FeeTypes.SECONDARY_MARKET);
         }
 
-        // approve holder to spend payment token
-        vm.prank(holder);
+        // approve HOLDER to spend payment token
+        vm.prank(HOLDER);
         paymentToken.approve(address(tokenSwap), type(uint256).max);
 
-        // approve tokenSwap to transfer seller's tokens
-        vm.prank(buyer);
+        // approve tokenSwap to transfer SELLER's tokens
+        vm.prank(BUYER);
         token.approve(address(tokenSwap), _tokenSellAmount);
 
-        uint256 holderPaymentTokenBalanceBefore = paymentToken.balanceOf(holder);
-        uint256 buyerPaymentTokenBalanceBefore = paymentToken.balanceOf(buyer);
+        uint256 holderPaymentTokenBalanceBefore = paymentToken.balanceOf(HOLDER);
+        uint256 buyerPaymentTokenBalanceBefore = paymentToken.balanceOf(BUYER);
 
-        vm.prank(buyer);
-        tokenSwap.sell(_tokenSellAmount, 0, buyer);
+        vm.prank(BUYER);
+        tokenSwap.sell(_tokenSellAmount, 0, BUYER);
 
-        // check that the seller received payment (rounded down)
-        uint256 actualPayout = paymentToken.balanceOf(buyer) - buyerPaymentTokenBalanceBefore;
-        assertTrue(actualPayout == expectedPayout, "seller should receive exactly expectedPayout");
+        // check that the SELLER received payment (rounded down)
+        uint256 actualPayout = paymentToken.balanceOf(BUYER) - buyerPaymentTokenBalanceBefore;
+        assertTrue(actualPayout == expectedPayout, "SELLER should receive exactly expectedPayout");
         assertTrue(
-            holderPaymentTokenBalanceBefore - paymentToken.balanceOf(holder) == expectedPayout,
-            "holder payment token balance should decrease by exactly expectedPayout"
+            holderPaymentTokenBalanceBefore - paymentToken.balanceOf(HOLDER) == expectedPayout,
+            "HOLDER payment token balance should decrease by exactly expectedPayout"
         );
     }
 
     function testTransferOwnership(address newOwner) public {
         vm.assume(newOwner != address(0));
 
-        assertTrue(tokenSwap.owner() == owner, "wrong owner");
+        assertTrue(tokenSwap.owner() == OWNER, "wrong OWNER");
 
-        vm.prank(owner);
+        vm.prank(OWNER);
         tokenSwap.transferOwnership(newOwner);
 
-        assertTrue(tokenSwap.owner() == newOwner, "owner should be newOwner after acceptance");
+        assertTrue(tokenSwap.owner() == newOwner, "OWNER should be newOwner after acceptance");
     }
 
     function testBuyWithInsufficientHolderTokens() public {
-        // Give buyer more payment tokens to afford the purchase
-        uint256 costForDoubleAmount = Math.ceilDiv(tokenAmount * 2 * tokenSwap.tokenPrice(), 10 ** 18);
-        vm.prank(paymentTokenProvider);
-        paymentToken.transfer(buyer, costForDoubleAmount);
+        // Give BUYER more payment tokens to afford the purchase
+        uint256 costForDoubleAmount = Math.ceilDiv(TOKEN_AMOUNT * 2 * tokenSwap.tokenPrice(), 10 ** 18);
+        vm.prank(PAYMENT_TOKEN_PROVIDER);
+        paymentToken.transfer(BUYER, costForDoubleAmount);
 
         // Buyer approves payment tokens
-        vm.prank(buyer);
+        vm.prank(BUYER);
         paymentToken.approve(address(tokenSwap), costForDoubleAmount);
 
-        // Approve tokens even though holder doesn't have enough
-        vm.prank(holder);
-        token.approve(address(tokenSwap), tokenAmount * 2);
+        // Approve tokens even though HOLDER doesn't have enough
+        vm.prank(HOLDER);
+        token.approve(address(tokenSwap), TOKEN_AMOUNT * 2);
 
-        // Try to buy more tokens than holder has
-        vm.prank(buyer);
+        // Try to buy more tokens than HOLDER has
+        vm.prank(BUYER);
         vm.expectRevert("ERC20: transfer amount exceeds balance");
-        tokenSwap.buy(tokenAmount * 2, type(uint256).max, buyer);
+        tokenSwap.buy(TOKEN_AMOUNT * 2, type(uint256).max, BUYER);
     }
 
     function testSellWithInsufficientHolderCurrency() public {
         // First buy all available tokens
-        vm.prank(buyer);
-        tokenSwap.buy(tokenAmount, type(uint256).max, buyer);
+        vm.prank(BUYER);
+        tokenSwap.buy(TOKEN_AMOUNT, type(uint256).max, BUYER);
 
-        // Remove holder's payment tokens
-        uint256 holderBalance = paymentToken.balanceOf(holder);
-        vm.prank(holder);
-        paymentToken.transfer(paymentTokenProvider, holderBalance);
+        // Remove HOLDER's payment tokens
+        uint256 holderBalance = paymentToken.balanceOf(HOLDER);
+        vm.prank(HOLDER);
+        paymentToken.transfer(PAYMENT_TOKEN_PROVIDER, holderBalance);
 
         // Try to sell tokens back
-        vm.prank(buyer);
+        vm.prank(BUYER);
         token.approve(address(tokenSwap), 10 ** 18);
 
-        vm.prank(buyer);
+        vm.prank(BUYER);
         vm.expectRevert("ERC20: transfer amount exceeds balance");
-        tokenSwap.sell(10 ** 18, 0, buyer);
+        tokenSwap.sell(10 ** 18, 0, BUYER);
     }
 
     function testBuyWithoutApproval() public {
         address newBuyer = vm.addr(5);
 
-        // Give new buyer some payment tokens
-        vm.prank(paymentTokenProvider);
-        paymentToken.transfer(newBuyer, paymentTokenAmount);
+        // Give new BUYER some payment tokens
+        vm.prank(PAYMENT_TOKEN_PROVIDER);
+        paymentToken.transfer(newBuyer, PAYMENT_TOKEN_AMOUNT);
 
         // Try to buy without approval
         vm.prank(newBuyer);
@@ -954,8 +1003,8 @@ contract TokenSwapTest is Test {
     function testSellWithoutApproval() public {
         address newSeller = vm.addr(6);
 
-        // First, buy tokens for new seller
-        vm.prank(buyer);
+        // First, buy tokens for new SELLER
+        vm.prank(BUYER);
         tokenSwap.buy(10 ** 18, type(uint256).max, newSeller);
 
         // Try to sell without approval
@@ -970,14 +1019,14 @@ contract TokenSwapTest is Test {
         address trader2 = vm.addr(11);
 
         // Give traders payment tokens
-        vm.prank(paymentTokenProvider);
-        paymentToken.transfer(trader1, paymentTokenAmount);
-        vm.prank(paymentTokenProvider);
-        paymentToken.transfer(trader2, paymentTokenAmount);
+        vm.prank(PAYMENT_TOKEN_PROVIDER);
+        paymentToken.transfer(trader1, PAYMENT_TOKEN_AMOUNT);
+        vm.prank(PAYMENT_TOKEN_PROVIDER);
+        paymentToken.transfer(trader2, PAYMENT_TOKEN_AMOUNT);
 
         // Trader1 buys
         vm.prank(trader1);
-        paymentToken.approve(address(tokenSwap), paymentTokenAmount);
+        paymentToken.approve(address(tokenSwap), PAYMENT_TOKEN_AMOUNT);
         vm.prank(trader1);
         tokenSwap.buy(10 * 10 ** 18, type(uint256).max, trader1);
 
@@ -986,7 +1035,7 @@ contract TokenSwapTest is Test {
 
         // Trader2 buys
         vm.prank(trader2);
-        paymentToken.approve(address(tokenSwap), paymentTokenAmount);
+        paymentToken.approve(address(tokenSwap), PAYMENT_TOKEN_AMOUNT);
         vm.prank(trader2);
         tokenSwap.buy(15 * 10 ** 18, type(uint256).max, trader2);
 
@@ -1024,10 +1073,10 @@ contract TokenSwapTest is Test {
     function testPriceAndFeeCalculationsAreCorrectDuringBuy() public {
         // Set up: 1 token costs 100 payment tokens, 2% fee
         uint256 buyAmount = 1 * 10 ** 18; // 1 token (18 decimals)
-        uint256 pricePerToken = 100 * 10 ** paymentTokenDecimals; // 100 payment tokens per token
+        uint256 pricePerToken = 100 * 10 ** PAYMENT_TOKEN_DECIMALS; // 100 payment tokens per token
         uint256 totalCost = pricePerToken;
-        uint256 totalFee = 2 * 10 ** paymentTokenDecimals; // 2 payment tokens
-        uint256 earningAfterFee = 98 * 10 ** paymentTokenDecimals; // 98 payment tokens
+        uint256 totalFee = 2 * 10 ** PAYMENT_TOKEN_DECIMALS; // 2 payment tokens
+        uint256 earningAfterFee = 98 * 10 ** PAYMENT_TOKEN_DECIMALS; // 98 payment tokens
         uint32 feePercentage = 200; // 2%
 
         // Update fee settings to 2% secondary market fee
@@ -1038,48 +1087,48 @@ contract TokenSwapTest is Test {
         _feeSettings.executeFeeChange(FeeTypes.SECONDARY_MARKET);
         assertTrue(_feeSettings.fee(FeeTypes.SECONDARY_MARKET, 100 * 10 ** 10, address(token)) == 2 * 10 ** 10);
 
-        // Update token price
-        vm.prank(owner);
+        // Update token PRICE
+        vm.prank(OWNER);
         tokenSwap.setTokenPrice(pricePerToken);
 
-        // Fund buyer with enough payment tokens (100)
-        vm.prank(paymentTokenProvider);
-        paymentToken.mint(buyer, totalCost);
+        // Fund BUYER with enough payment tokens (100)
+        vm.prank(PAYMENT_TOKEN_PROVIDER);
+        paymentToken.mint(BUYER, totalCost);
 
-        // Approve tokenSwap to spend buyer's payment tokens
-        vm.prank(buyer);
+        // Approve tokenSwap to spend BUYER's payment tokens
+        vm.prank(BUYER);
         paymentToken.approve(address(tokenSwap), totalCost);
 
         // Get fee collector address
         address feeCollector = token.feeSettings().privateOfferFeeCollector(address(token));
 
         // Record balances before buy
-        uint256 buyerBalanceBefore = paymentToken.balanceOf(buyer);
-        uint256 holderTokenBalanceBefore = token.balanceOf(holder);
-        uint256 receiverBalanceBefore = paymentToken.balanceOf(receiver);
+        uint256 buyerBalanceBefore = paymentToken.balanceOf(BUYER);
+        uint256 holderTokenBalanceBefore = token.balanceOf(HOLDER);
+        uint256 receiverBalanceBefore = paymentToken.balanceOf(RECEIVER);
         uint256 feeCollectorBalanceBefore = paymentToken.balanceOf(feeCollector);
 
         // Execute buy with event assertion
-        vm.prank(buyer);
+        vm.prank(BUYER);
         vm.expectEmit(true, true, true, true, address(tokenSwap));
-        emit TokensBought(buyer, buyAmount, totalCost);
-        tokenSwap.buy(buyAmount, totalCost, buyer);
+        emit TokensBought(BUYER, buyAmount, totalCost);
+        tokenSwap.buy(buyAmount, totalCost, BUYER);
 
-        // Assert: 1 token is transferred to buyer
-        assertTrue(token.balanceOf(buyer) == buyAmount, "buyer should receive 1 token");
+        // Assert: 1 token is transferred to BUYER
+        assertTrue(token.balanceOf(BUYER) == buyAmount, "BUYER should receive 1 token");
 
-        assertTrue(token.balanceOf(holder) == holderTokenBalanceBefore - buyAmount, "holder should lose 1 token");
+        assertTrue(token.balanceOf(HOLDER) == holderTokenBalanceBefore - buyAmount, "HOLDER should lose 1 token");
 
-        // Assert: buyer has 100 payment tokens less
+        // Assert: BUYER has 100 payment tokens less
         assertTrue(
-            paymentToken.balanceOf(buyer) == buyerBalanceBefore - totalCost,
-            "buyer should spend 100 payment tokens"
+            paymentToken.balanceOf(BUYER) == buyerBalanceBefore - totalCost,
+            "BUYER should spend 100 payment tokens"
         );
 
-        // Assert: receiver gets 98 payment tokens (100 - 2 fee)
+        // Assert: RECEIVER gets 98 payment tokens (100 - 2 fee)
         assertTrue(
-            paymentToken.balanceOf(receiver) == receiverBalanceBefore + earningAfterFee,
-            "receiver should get 98 payment tokens"
+            paymentToken.balanceOf(RECEIVER) == receiverBalanceBefore + earningAfterFee,
+            "RECEIVER should get 98 payment tokens"
         );
 
         // Assert: fee collector gets 2 payment tokens (2% fee)
@@ -1092,10 +1141,10 @@ contract TokenSwapTest is Test {
     function testPriceAndFeeCalculationsAreCorrectDuringSell() public {
         // Set up: 1 token costs 100 payment tokens, 2% fee
         uint256 sellAmount = 1 * 10 ** 18; // 1 token (18 decimals)
-        uint256 pricePerToken = 100 * 10 ** paymentTokenDecimals; // 100 payment tokens per token
+        uint256 pricePerToken = 100 * 10 ** PAYMENT_TOKEN_DECIMALS; // 100 payment tokens per token
         uint256 totalPayout = pricePerToken;
-        uint256 totalFee = 2 * 10 ** paymentTokenDecimals; // 2 payment tokens
-        uint256 payoutAfterFee = 98 * 10 ** paymentTokenDecimals; // 98 payment tokens
+        uint256 totalFee = 2 * 10 ** PAYMENT_TOKEN_DECIMALS; // 2 payment tokens
+        uint256 payoutAfterFee = 98 * 10 ** PAYMENT_TOKEN_DECIMALS; // 98 payment tokens
         uint32 feePercentage = 200; // 2%
 
         // Update fee settings to 2% secondary market fee
@@ -1106,63 +1155,92 @@ contract TokenSwapTest is Test {
         _feeSettings.executeFeeChange(FeeTypes.SECONDARY_MARKET);
         assertTrue(_feeSettings.fee(FeeTypes.SECONDARY_MARKET, 100 * 10 ** 10, address(token)) == 2 * 10 ** 10);
 
-        // Update token price
-        vm.prank(owner);
+        // Update token PRICE
+        vm.prank(OWNER);
         tokenSwap.setTokenPrice(pricePerToken);
 
-        // Fund seller (buyer) with 1 token
-        vm.prank(paymentTokenProvider);
-        paymentToken.mint(buyer, pricePerToken);
+        // Fund SELLER (BUYER) with 1 token
+        vm.prank(PAYMENT_TOKEN_PROVIDER);
+        paymentToken.mint(BUYER, pricePerToken);
 
-        vm.prank(buyer);
+        vm.prank(BUYER);
         paymentToken.approve(address(tokenSwap), pricePerToken);
 
-        vm.prank(buyer);
-        tokenSwap.buy(sellAmount, type(uint256).max, buyer);
+        vm.prank(BUYER);
+        tokenSwap.buy(sellAmount, type(uint256).max, BUYER);
 
-        // Fund holder with enough payment tokens to pay the seller
-        vm.prank(paymentTokenProvider);
-        paymentToken.mint(holder, totalPayout);
+        // Fund HOLDER with enough payment tokens to pay the SELLER
+        vm.prank(PAYMENT_TOKEN_PROVIDER);
+        paymentToken.mint(HOLDER, totalPayout);
 
-        // Approve tokenSwap to spend holder's payment tokens
-        vm.prank(holder);
+        // Approve tokenSwap to spend HOLDER's payment tokens
+        vm.prank(HOLDER);
         paymentToken.approve(address(tokenSwap), totalPayout);
 
-        // Approve tokenSwap to transfer seller's tokens
-        vm.prank(buyer);
+        // Approve tokenSwap to transfer SELLER's tokens
+        vm.prank(BUYER);
         token.approve(address(tokenSwap), sellAmount);
 
         // Get fee collector address
         address feeCollector = token.feeSettings().privateOfferFeeCollector(address(token));
 
         // Record balances before sell
-        uint256 sellerBalanceBefore = paymentToken.balanceOf(buyer);
+        uint256 sellerBalanceBefore = paymentToken.balanceOf(BUYER);
         uint256 feeCollectorBalanceBefore = paymentToken.balanceOf(feeCollector);
-        uint256 sellerTokenBalanceBefore = token.balanceOf(buyer);
-        uint256 receiverTokenBalanceBefore = token.balanceOf(receiver);
+        uint256 sellerTokenBalanceBefore = token.balanceOf(BUYER);
+        uint256 receiverTokenBalanceBefore = token.balanceOf(RECEIVER);
 
         // Execute sell with event assertion
-        vm.prank(buyer);
+        vm.prank(BUYER);
         vm.expectEmit(true, true, true, true, address(tokenSwap));
-        emit TokensSold(buyer, sellAmount, totalPayout);
-        tokenSwap.sell(sellAmount, 0, buyer);
+        emit TokensSold(BUYER, sellAmount, totalPayout);
+        tokenSwap.sell(sellAmount, 0, BUYER);
 
-        // Assert: 1 token is transferred from seller
-        assertTrue(token.balanceOf(buyer) == sellerTokenBalanceBefore - sellAmount, "seller should lose 1 token");
+        // Assert: 1 token is transferred from SELLER
+        assertTrue(token.balanceOf(BUYER) == sellerTokenBalanceBefore - sellAmount, "SELLER should lose 1 token");
 
-        // Assert: seller receives 98 payment tokens (100 - 2 fee)
+        // Assert: SELLER receives 98 payment tokens (100 - 2 fee)
         assertTrue(
-            paymentToken.balanceOf(buyer) == sellerBalanceBefore + payoutAfterFee,
-            "seller should receive 98 payment tokens"
+            paymentToken.balanceOf(BUYER) == sellerBalanceBefore + payoutAfterFee,
+            "SELLER should receive 98 payment tokens"
         );
 
-        // Assert: receiver gets 1 token (the sold token)
-        assertTrue(token.balanceOf(receiver) == receiverTokenBalanceBefore + sellAmount, "receiver should get 1 token");
+        // Assert: RECEIVER gets 1 token (the sold token)
+        assertTrue(token.balanceOf(RECEIVER) == receiverTokenBalanceBefore + sellAmount, "RECEIVER should get 1 token");
 
         // Assert: fee collector gets 2 payment tokens (2% fee)
         assertTrue(
             paymentToken.balanceOf(feeCollector) == feeCollectorBalanceBefore + totalFee,
             "fee collector should get 2 payment tokens"
+        );
+    }
+
+    /// Exercises the V2 fallback path in TokenSwapBase._getFeeAndFeeReceiver():
+    /// when feeSettings does not support IFeeSettingsV3, privateOfferFee/privateOfferFeeCollector are used.
+    function testV2FallbackFeePathOnBuy() public {
+        address feeCollectorAddress = address(0x1234);
+        V2OnlyFeeSettings v2Fee = new V2OnlyFeeSettings(feeCollectorAddress);
+
+        // Switch the token to use V2-only fee settings.
+        // suggestNewFeeSettings requires msg.sender == feeSettings.owner(); the test contract owns feeSettings.
+        token.suggestNewFeeSettings(IFeeSettingsV2(address(v2Fee)));
+        vm.prank(ADMIN);
+        token.acceptNewFeeSettings(IFeeSettingsV2(address(v2Fee)));
+
+        uint256 feeCollectorBalanceBefore = paymentToken.balanceOf(feeCollectorAddress);
+
+        // Run a buy on the existing tokenSwap — this triggers the V2 fallback in _getFeeAndFeeReceiver.
+        uint256 buyAmount = 1e18;
+        uint256 cost = Math.ceilDiv(buyAmount * tokenSwap.tokenPrice(), 10 ** token.decimals());
+        vm.prank(BUYER);
+        tokenSwap.buy(buyAmount, type(uint256).max, BUYER);
+
+        assertEq(token.balanceOf(BUYER), buyAmount, "BUYER should have received tokens via V2 fallback fee path");
+        assertTrue(paymentToken.balanceOf(BUYER) == PAYMENT_TOKEN_AMOUNT - cost, "BUYER payment token balance wrong");
+        assertEq(
+            paymentToken.balanceOf(feeCollectorAddress),
+            feeCollectorBalanceBefore + v2Fee.SOME_RANDOM_FIXED_FEE(),
+            "Wrong fee"
         );
     }
 }

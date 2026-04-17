@@ -17,44 +17,44 @@ contract PrivateOfferOffchainPaymentTimeLockTest is Test {
 
     uint256 MAX_INT = type(uint256).max;
 
-    address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
-    address public constant tokenReceiver = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
-    address public constant mintAllower = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
-    address public constant currencyPayer = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
-    address public constant owner = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
-    address public constant currencyReceiver = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
-    address public constant paymentTokenProvider = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
-    address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
+    address public constant ADMIN = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
+    address public constant TOKEN_RECEIVER = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
+    address public constant MINT_ALLOWER = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
+    address public constant CURRENCY_PAYER = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
+    address public constant OWNER = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
+    address public constant CURRENCY_RECEIVER = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
+    address public constant PAYMENT_TOKEN_PROVIDER = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
+    address public constant TRUSTED_FORWARDER = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
 
-    uint256 public constant price = 10000000;
+    uint256 public constant PRICE = 10000000;
 
     uint256 requirements = 92785934;
 
     function setUp() public {
-        Vesting vestingImplementation = new Vesting(trustedForwarder);
+        Vesting vestingImplementation = new Vesting(TRUSTED_FORWARDER);
         vestingCloneFactory = new VestingCloneFactory(address(vestingImplementation));
 
-        vm.prank(paymentTokenProvider);
+        vm.prank(PAYMENT_TOKEN_PROVIDER);
         currency = new FakePaymentToken(0, 18);
 
-        list = createAllowList(trustedForwarder, address(this));
-        list.set(tokenReceiver, requirements);
+        list = createAllowList(TRUSTED_FORWARDER, address(this));
+        list.set(TOKEN_RECEIVER, requirements);
         list.set(address(currency), TRUSTED_CURRENCY);
 
         feeSettings = createFeeSettings(
-            trustedForwarder,
+            TRUSTED_FORWARDER,
             address(this),
-            buildFeeTypes(100, 100, 100, admin, admin, admin)
+            buildFeeTypes(100, 100, 100, ADMIN, ADMIN, ADMIN)
         );
 
-        Token implementation = new Token(trustedForwarder);
+        Token implementation = new Token(TRUSTED_FORWARDER);
         TokenProxyFactory tokenCloneFactory = new TokenProxyFactory(address(implementation));
         token = Token(
             tokenCloneFactory.createTokenProxy(
                 0,
-                trustedForwarder,
+                TRUSTED_FORWARDER,
                 feeSettings,
-                admin,
+                ADMIN,
                 list,
                 requirements,
                 "token",
@@ -96,11 +96,11 @@ contract PrivateOfferOffchainPaymentTimeLockTest is Test {
         // predict addresses
         address expectedTimeLockAddress = vestingCloneFactory.predictCloneAddressWithLockupPlan(
             salt,
-            trustedForwarder,
-            address(0), // no owner
+            TRUSTED_FORWARDER,
+            address(0), // no OWNER
             address(token),
             tokenAmount,
-            tokenReceiver,
+            TOKEN_RECEIVER,
             releaseStartTime,
             releaseDuration,
             releaseDuration
@@ -108,7 +108,7 @@ contract PrivateOfferOffchainPaymentTimeLockTest is Test {
 
         // add time lock and token receiver to the allow list
         list.set(expectedTimeLockAddress, requirements);
-        list.set(tokenReceiver, requirements);
+        list.set(TOKEN_RECEIVER, requirements);
 
         // make sure balances are as expected before deployment
         assertEq(token.balanceOf(expectedTimeLockAddress), 0, "timeLock wrong token balance before deployment");
@@ -117,17 +117,17 @@ contract PrivateOfferOffchainPaymentTimeLockTest is Test {
         Vesting timeLock = Vesting(
             vestingCloneFactory.createVestingCloneWithLockupPlan(
                 salt,
-                trustedForwarder,
-                address(0), // no owner
+                TRUSTED_FORWARDER,
+                address(0), // no OWNER
                 address(token),
                 tokenAmount,
-                tokenReceiver,
+                TOKEN_RECEIVER,
                 releaseStartTime,
                 releaseDuration,
                 releaseDuration
             )
         );
-        vm.prank(admin);
+        vm.prank(ADMIN);
         token.mint(address(timeLock), tokenAmount);
 
         // check vesting contract
@@ -145,23 +145,23 @@ contract PrivateOfferOffchainPaymentTimeLockTest is Test {
          * PrivateOffer worked properly, now test the time lock
          */
         // immediate release should not work
-        assertEq(token.balanceOf(tokenReceiver), 0, "investor vault should have no tokens");
-        vm.prank(tokenReceiver);
+        assertEq(token.balanceOf(TOKEN_RECEIVER), 0, "investor vault should have no tokens");
+        vm.prank(TOKEN_RECEIVER);
         timeLock.release(uint64(1));
-        assertEq(token.balanceOf(tokenReceiver), 0, "investor vault should still have no tokens");
+        assertEq(token.balanceOf(TOKEN_RECEIVER), 0, "investor vault should still have no tokens");
 
         // too early release should not work
         vm.warp(attemptTime);
-        vm.prank(tokenReceiver);
+        vm.prank(TOKEN_RECEIVER);
         timeLock.release(uint64(1));
-        assertEq(token.balanceOf(tokenReceiver), 0, "investor vault should still be empty");
+        assertEq(token.balanceOf(TOKEN_RECEIVER), 0, "investor vault should still be empty");
 
         // not testing the linear release time here because it's already tested in the vesting wallet tests
 
         // release all tokens after release duration has passed
         vm.warp(releaseStartTime + releaseDuration + 1);
-        vm.prank(tokenReceiver);
+        vm.prank(TOKEN_RECEIVER);
         timeLock.release(uint64(1));
-        assertEq(token.balanceOf(tokenReceiver), tokenAmount, "investor vault should have all tokens");
+        assertEq(token.balanceOf(TOKEN_RECEIVER), tokenAmount, "investor vault should have all tokens");
     }
 }

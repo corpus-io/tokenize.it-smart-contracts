@@ -88,7 +88,7 @@ The CoinvestedPosition contract handles the case where a group of investors co-i
 **Parties involved:**
 
 - **Co-investor (receiver)**: The co-investor whose capital bought the tokens. Receives at least `basePrice` (a EURO reference price) per token across any proceeds.
-- **Lead investors**: Each has a `carryFraction` (a share of `uint64.max`). Lead investors receive their carry — the proceeds above the co-investor's `basePrice` — split according to their fractions.
+- **Lead investors**: Each has a `profitFraction` (a share of `uint64.max`). Lead investors receive their profit — the proceeds above the co-investor's `basePrice` — split according to their fractions.
 
 **Three payout paths:**
 
@@ -107,9 +107,9 @@ After a company earns revenue or undergoes a liquidation event, it can distribut
 **Workflow:**
 
 1. The token admin takes a snapshot of current token balances by calling `snapshot()` on the Token contract. The snapshot captures every holder's balance at that moment.
-2. The company (or platform on its behalf) clones a Distribution contract, funding it with the total payout amount in currency. A platform fee (using `privateOfferFee`) is deducted from the funded amount at initialization.
-3. Token holders call `claim()` to receive their proportional share: `totalCurrencyAmount * balanceAtSnapshot / totalSupplyAtSnapshot`.
-4. If a holder cannot claim (e.g. lost key, or a smart contract), the contract owner can call `reassign()` after the configured `reassignAfter` timestamp to redirect that share to another address. All reassignments are recorded on-chain for auditability.
+2. The company (or platform on its behalf) clones a Distribution contract, optionally funding it at initialization.
+3. Token holders call `claim()` to receive their proportional share: `balanceAtSnapshot * pricePerToken / 10**decimals`, minus a distribution fee.
+4. If a holder cannot claim (e.g. lost key, or a smart contract), the contract owner can call `reassign()` after the configured `lockedUntil` timestamp to redirect that share to another address to make it available to the holder. All reassignments are recorded on-chain for auditability.
 
 ### Exit proceeds
 
@@ -117,10 +117,10 @@ When a company exits (e.g. acquisition or winding down), it can set up an automa
 
 **Workflow:**
 
-1. The company deploys an Exit contract, specifying: the token, the exit currency (must be a trusted EURO currency), a fixed `pricePerToken`, and a claim window (`claimStart` to `drainStart`).
+1. The company deploys an Exit contract, specifying: the token, the exit currency (must have `TRUSTED_CURRENCY` on the AllowList), a fixed `pricePerToken`, and a `lockedUntil` timestamp after which unclaimed funds can be drained.
 2. The Exit contract is funded with the total payout amount at initialization.
-3. From `claimStart` onwards, any token holder can call `claim()` to exchange their tokens for currency. The tokens are transferred to the Exit contract (held there, not burned) and the holder receives `tokenAmount * pricePerToken / 10**decimals` currency minus a platform fee.
-4. After `drainStart`, the company can call `drain()` to recover any unclaimed funds.
+3. Any token holder can call `claim()` at any time to exchange their entire token balance for currency. The tokens are transferred to the Exit contract (held there, not burned) and the holder receives `tokenBalance * pricePerToken / 10**decimals` currency minus a platform fee.
+4. After `lockedUntil`, the company can call `drain()` to recover any unclaimed funds and collected tokens.
 
 Unlike Distribution, Exit does not use snapshots. The holder's token balance at claim time determines the payout.
 

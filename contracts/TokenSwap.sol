@@ -63,7 +63,6 @@ contract TokenSwap is TokenSwapBase {
      * @notice unpause the contract
      */
     function unpause() external override onlyOwner {
-        require(tokenPrice != 0, "tokenPrice must be set before unpausing");
         _unpause();
     }
 

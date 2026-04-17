@@ -4,16 +4,16 @@ pragma solidity 0.8.23;
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
+import "./Distribution.sol";
+import "./Exit.sol";
 import "./GlobalTokenExitRegistry.sol";
 import "./common/TokenSwapBase.sol";
-import "./common/IDistribution.sol";
-import "./common/IExit.sol";
 
 struct LeadInvestor {
     /// lead investor address that receives carry
     address account;
-    /// carry percentage, divided by uint64.max
-    uint64 carryFraction;
+    /// profit fraction this lead investor receives, divided by uint64.max
+    uint64 profitFraction;
 }
 
 struct CoinvestedPositionInitializerArguments {
@@ -41,8 +41,8 @@ struct CoinvestedPositionInitializerArguments {
  * @notice This contract holds tokens and sells them at a preset price, distributing proceeds
  *      between a coinvestor (receiver) and lead investors.
  *      The coinvestor (receiver) receives basePrice per token sold.
- *      Any remaining proceeds after fees and coinvestor payout are split between coinvestor and
- *      lead investors according to their carry percentages.
+ *      Any remaining proceeds after fees and coinvestor payout are the profit. Each lead investor
+ *      receives their carry (profitFraction); the remainder goes to the coinvestor.
  *      If the sale price minus fees is less than the base price, all proceeds go to the coinvestor.
  *      Any trusted currency may be used for exits and dividends; when a currency different from the stored
  *      currency is used, the coinvestor provides an altBasePrice expressing the base price in that
@@ -77,16 +77,12 @@ contract CoinvestedPosition is TokenSwapBase {
     function initialize(CoinvestedPositionInitializerArguments memory _arguments) external initializer {
         _initializeBase(_arguments.owner, 0, _arguments.baseCurrency, _arguments.token, _arguments.receiver);
 
-        require(
-            _arguments.token.allowList().map(address(_arguments.baseCurrency)) == TRUSTED_CURRENCY,
-            "currency needs to be on the allowlist with TRUSTED_CURRENCY attribute"
-        );
         require(_arguments.leadInvestors.length > 0, "There must be at least one lead investor");
-        uint64 carryFractionsSum = 0;
+        uint64 profitFractionsSum = 0;
         for (uint256 i = 0; i < _arguments.leadInvestors.length; i++) {
             require(_arguments.leadInvestors[i].account != address(0), "lead investor can not be zero address");
-            require(_arguments.leadInvestors[i].carryFraction > 0, "lead investor carry fraction can not be zero");
-            carryFractionsSum += _arguments.leadInvestors[i].carryFraction; // reverts on overflow, thus avoiding carryFractionsSum > 100%
+            require(_arguments.leadInvestors[i].profitFraction > 0, "lead investor profit fraction can not be zero");
+            profitFractionsSum += _arguments.leadInvestors[i].profitFraction; // reverts on overflow, thus avoiding profitFractionsSum > 100%
             leadInvestors.push(_arguments.leadInvestors[i]);
         }
         require(address(_arguments.tokenExitRegistry) != address(0), "tokenExitRegistry can not be zero address");
@@ -152,11 +148,11 @@ contract CoinvestedPosition is TokenSwapBase {
 
         uint256 remaining = currencyAmount - fee;
 
-        // calculate carry: surplus above base price. If remaining <= base price, carry is 0 and receiver gets everything.
+        // calculate profit: surplus above base price. If remaining <= base price, profit is 0 and receiver gets everything.
         uint256 payoutCoinvestor = (basePrice * _tokenAmount) / (10 ** token.decimals());
-        uint256 carry = payoutCoinvestor < remaining ? remaining - payoutCoinvestor : 0;
+        uint256 profit = payoutCoinvestor < remaining ? remaining - payoutCoinvestor : 0;
 
-        _settle(carry, currency);
+        _settle(profit, currency);
 
         // transfer tokens from this contract to the buyer's receiver
         token.transfer(_tokenReceiver, _tokenAmount);
@@ -165,20 +161,20 @@ contract CoinvestedPosition is TokenSwapBase {
     }
 
     /**
-     * @notice Distributes `carry` among lead investors by carryFraction, then sweeps the contract's
-     *      full remaining balance of `_currency` to receiver. This even includes currency accidentally
-     *      sent to the contract.
-     * @dev The sweep covers the base price portion and any rounding dust. Pass carry=0 when there is
+     * @notice Distributes carry (each lead investor's share of `profit`) among lead investors by profitFraction,
+     *      then sweeps the contract's full remaining balance of `_currency` to receiver. This even includes
+     *      currency accidentally sent to the contract.
+     * @dev The sweep covers the base price portion and any rounding dust. Pass profit=0 when there is
      *      no surplus above base price; the loop produces no transfers and the full balance goes to receiver.
-     * @param carry surplus above base price to split among lead investors
+     * @param profit surplus above base price to split among lead investors (as carry) and receiver
      * @param _currency the ERC20 token to use as currency for the settlement
      */
-    function _settle(uint256 carry, IERC20 _currency) internal {
+    function _settle(uint256 profit, IERC20 _currency) internal {
         require(address(_currency) != address(token), "currency cannot be the held token");
         for (uint256 i = 0; i < leadInvestors.length; i++) {
-            uint256 share = (uint256(leadInvestors[i].carryFraction) * carry) / type(uint64).max;
-            if (share != 0) {
-                _currency.safeTransfer(leadInvestors[i].account, share);
+            uint256 carryFraction = (uint256(leadInvestors[i].profitFraction) * profit) / type(uint64).max;
+            if (carryFraction != 0) {
+                _currency.safeTransfer(leadInvestors[i].account, carryFraction);
             }
         }
         _currency.safeTransfer(receiver, _currency.balanceOf(address(this)));
@@ -186,12 +182,12 @@ contract CoinvestedPosition is TokenSwapBase {
 
     /**
      * @notice Claim this contract's eligible dividend share from `_dist` and split it among lead investors.
-     * @dev The full received amount is treated as carry and split among lead investors by carryFraction;
-     *      remainder goes to receiver. Any trusted currency may be used.
+     * @dev The full received amount is treated as profit. Each lead investor receives their carry (profitFraction
+     *      of profit); remainder goes to receiver. Any trusted currency may be used.
      * @param _dist the Distribution (dividend) contract to claim from
      * @param _minPayout minimum currency the call must receive; passed through to the distribution
      */
-    function claimDistribution(IDistribution _dist, uint256 _minPayout) external onlyOwner nonReentrant {
+    function claimDistribution(Distribution _dist, uint256 _minPayout) external onlyOwner nonReentrant {
         IERC20 dividendCurrency = _dist.currency();
         require(
             token.allowList().map(address(dividendCurrency)) == TRUSTED_CURRENCY,
@@ -199,22 +195,23 @@ contract CoinvestedPosition is TokenSwapBase {
         );
         uint256 before = dividendCurrency.balanceOf(address(this));
         _dist.claim(address(this), _minPayout);
-        uint256 received = dividendCurrency.balanceOf(address(this)) - before;
-        _settle(received, dividendCurrency);
+        uint256 profit = dividendCurrency.balanceOf(address(this)) - before;
+        _settle(profit, dividendCurrency);
     }
 
     /**
      * @notice Claim exit proceeds for this contract's full token balance and split them among the receiver and lead investors.
      * @dev Requires tokenExitRegistry.exit() to be set; that also acts as the unlock signal.
      *      If proceeds < base, receiver gets everything.
-     *      Carry is split among lead investors by carryFraction; remainder goes to receiver.
+     *      Profit (proceeds minus base price payout) is split: each lead investor receives their carry
+     *      (profitFraction of profit); remainder goes to receiver.
      *      Any currency may be used. When the exit currency differs from the stored currency, provide
      *      _basePrice expressing the base price in the exit currency's units.
      * @param _minCurrencyAmount minimum currency the call must receive; passed through to the exit contract.
      * @param _basePrice base price in exit currency's units; ignored when exit currency matches stored currency
      */
     function claimExit(uint256 _minCurrencyAmount, uint256 _basePrice) external onlyOwner nonReentrant {
-        IExit _exit = tokenExitRegistry.exits(token);
+        Exit _exit = tokenExitRegistry.exits(token);
         require(address(_exit) != address(0), "no exit set in tokenExitRegistry");
         uint256 tokenBalance = token.balanceOf(address(this));
         require(tokenBalance > 0, "no tokens to claim");
@@ -237,10 +234,10 @@ contract CoinvestedPosition is TokenSwapBase {
 
         IERC20(address(token)).approve(address(_exit), tokenBalance);
         uint256 before = exitCurrency.balanceOf(address(this));
-        _exit.claim(tokenBalance, address(this), _minCurrencyAmount);
+        _exit.claim(address(this), _minCurrencyAmount);
         uint256 received = exitCurrency.balanceOf(address(this)) - before;
-        uint256 carry = basePayout < received ? received - basePayout : 0;
-        _settle(carry, exitCurrency);
+        uint256 profit = basePayout < received ? received - basePayout : 0;
+        _settle(profit, exitCurrency);
     }
 
     /**

@@ -37,7 +37,9 @@ There are 2 investment contracts:
 
 This is a personal investment invite allowing a particular investor (represented by their ethereum address) to buy newly issued tokens at a fixed price. The contract is deployed using CREATE2, and the investment is executed during deployment. [Read this](./using_the_contracts.md#personal-invites) for more information.
 
-Lockup periods can be realized through the combination of [PrivateOffer.sol](../contracts/PrivateOffer.sol) and [Vesting.sol](../contracts/Vesting.sol) through the [PrivateOfferFactory.sol](../contracts/factories/PrivateOfferFactory.sol).
+Lockup periods can be realized by combining [PrivateOffer.sol](../contracts/PrivateOffer.sol) with a [TimeLock.sol](../contracts/TimeLock.sol) or a CoinvestedPosition. The use of [Vesting.sol](../contracts/Vesting.sol) for simple timelocking has been abandoned as of v7.
+
+The [PrivateOfferFactory.sol](../contracts/factories/PrivateOfferFactory.sol) can deploy either combination in a single transaction, minting the tokens directly into the lockup contract.
 
 ### 2. Crowdinvesting (Crowdinvesting.sol)
 
@@ -64,15 +66,13 @@ Furthermore, this contract can be paused by the owner to change the parameters. 
 
 The TokenSwap contract enables secondary market trading where investors can buy or sell existing tokens between each other. Unlike the primary market contracts (PrivateOffer and Crowdinvesting) which mint new tokens, TokenSwap facilitates peer-to-peer transfers of already-issued tokens.
 
-**Note:** This contract has been developed by simplifying Crowdinvesting and IS NOT AUDITED YET (2025-11-06). It is intended to be used for limited liquidity and limited time, thus limited risk. The idea is to decide whether to audit it or switch to Uniswap soon.
-
 **Key features:**
 
 - **No minting**: Transfers existing tokens rather than minting new ones
 - **Reusable**: Can be used multiple times as a standing buy or sell order
 - **Dual functionality**: Can act as either a buy order or sell order depending on who grants allowances
 - **Pausable**: Owner can pause to update price, currency, or holder settings
-- **Fee collection**: Charges crowdinvesting fees according to FeeSettings, similar to primary market contracts
+- **Fee collection**: Charges a `SECONDARY_MARKET` fee (via IFeeSettingsV3), falling back to `privateOfferFee` on older fee settings deployments that do not support V3
 
 **Setup:**
 
@@ -103,10 +103,10 @@ Distributes a fixed pot of currency to token holders proportional to a prior sna
 
 **Key details:**
 
-- At initialization, the contract pulls `totalCurrencyAmount` from `_currencyProvider` and deducts a platform fee using `privateOfferFee`. Only the net amount after fees is actually available for claims.
-- `eligible(address)` returns a holder's unclaimed amount: `totalCurrencyAmount * balanceOfAt(snapshotId) / totalSupplyAt(snapshotId) + extraCredit - paidOut`.
-- `claim(address recipient)` transfers the caller's eligible amount, marked via `paidOut`.
-- `reassign(from, to, amount)` lets the owner redirect unclaimed funds (e.g. for a holder who lost their key, or a non-mintable vesting contract or similar), available only after `reassignAfter`. Emits `Reassigned` for on-chain auditability.
+- At initialization, the contract optionally pulls `initialFundingAmount` from `_currencyProvider` into the contract. No fee is deducted at initialization; fees are deducted per claim.
+- `eligible(address)` returns a holder's net claimable amount: `balanceOfAt(snapshotId) * pricePerToken / 10**decimals + extraCredit - paidOut`, minus a distribution fee.
+- `claim(address recipient, uint256 minPayout)` transfers the caller's entire eligible amount, deducting the distribution fee. Reverts if net payout falls below `minPayout`.
+- `reassign(from, to, amount)` lets the owner redirect unclaimed funds (e.g. for a holder who lost their key, or a non-mintable vesting contract or similar), available only after `lockedUntil`. Emits `Reassigned` for on-chain auditability.
 - Currency must have `TRUSTED_CURRENCY` attribute on the token's AllowList.
 
 ### Exit (Exit.sol)
@@ -115,10 +115,10 @@ Automated exit redemption: holders send tokens and receive a fixed currency payo
 
 **Key details:**
 
-- At initialization, the contract is funded with the full payout amount in currency (no fee deducted at init; per-claim fee is deducted at `claim()` time using `privateOfferFee`).
-- Currency must have both `TRUSTED_CURRENCY` and `EURO_CURRENCY` attributes on the token's AllowList.
-- `claim(tokenAmount, recipient)` is valid only between `claimStart` and `drainStart`. It transfers tokens from the caller to the Exit contract (tokens are held, not burned) and sends `tokenAmount * pricePerToken / 10**token.decimals() - fee` currency to the recipient.
-- `drain(recipient)` can be called by the owner after `drainStart` to recover unclaimed currency.
+- At initialization, the contract is funded with the full payout amount in currency (no fee deducted at init; per-claim exit fee is deducted at `claim()` time).
+- Currency must have the `TRUSTED_CURRENCY` attribute on the token's AllowList.
+- `claim(recipient, minPayout)` always redeems the caller's entire token balance. It transfers the tokens to the Exit contract (where it is held, not burned) and sends `tokenBalance * pricePerToken / 10**token.decimals() - fee` currency to the recipient. Reverts if net payout falls below `minPayout`.
+- `drain(recipient)` can be called by the owner after `lockedUntil` to recover unclaimed currency, or tokens, or any other ERC20.
 
 ### CoinvestedPosition (CoinvestedPosition.sol)
 
@@ -126,10 +126,12 @@ Extends `TokenSwapBase`. Holds tokens for a co-investor and manages carry distri
 
 **Key details:**
 
-- Initialized paused; the owner unpauses when ready to sell (allowing `buy()` price to be set first).
+- Initialized paused; the owner unpauses when ready to sell, but only after `lockedUntil` has passed and a non-zero `tokenPrice` has been set.
 - `basePrice` is set in the smallest units of `baseCurrency` at initialization.
-- `leadInvestors`: array of `{account, carryFraction}`. `carryFraction` documents who is eligible to how much of the carry. The fractions are scaled with uint64max, so uint64max == 1 == 100% of carry.
-- `setCurrency(currency, basePrice)` lets the owner switch the reference currency after the timelock has expired; the caller must supply the new `basePrice` expressed in the new currency's units.
+- `leadInvestors`: array of `{account, profitFraction}`. `profitFraction` documents who is eligible to how much of the carry. The fractions are scaled with uint64max, so uint64max == 1 == 100% of carry.
+- `lockedUntil` blocks both `unpause()` and `setCurrency()` until the timestamp has passed. During the lock period, tokens can only leave the contract through `claimExit()`.
+- `tokenExitRegistry`: the GlobalTokenExitRegistry consulted by `claimExit()`. An exit registered there acts as the unlock signal — the contract redeems its full token balance via the registered exit regardless of `lockedUntil`.
+- `setCurrency(currency, basePrice)` lets the owner switch the reference currency after `lockedUntil` has passed; the caller must supply the new `basePrice` expressed in the new currency's units.
 
 **Effective base price in `claimExit()`**
 
@@ -153,6 +155,28 @@ Two distinct base price values appear here:
   2. `claimDistribution(dist, minPayout)`: claims from a `Distribution` contract; all received currency treated as carry.
   3. `claimExit(minCurrencyAmount, basePrice)`: redeems full token balance via an `Exit` contract, carry is calculated from proceeds, tokenAmount and basePrice.
 - `_settle()` sweeps the contract's full balance of `_currency` to `receiver` after lead investor shares are distributed, covering both the base price portion and any rounding dust, as well currency the contract may have held before settlement.
+
+### TimeLock (TimeLock.sol)
+
+Holds ERC20 tokens on behalf of an owner and blocks withdrawals until a configured timestamp. The typical use case is locking up tokens received through a private offer — the PrivateOfferFactory can deploy both contracts in one transaction, minting directly into the TimeLock.
+
+**Key details:**
+
+- `lockedUntil` blocks `drain()` until the timestamp has passed. Unlike some lockup schemes, distribution and exit claims are available at any time — a holder should not miss a dividend or a company exit just because their tokens happen to be locked.
+- `drain(token, recipient)` transfers the contract's full balance of any ERC20 token to the recipient. Blocked until `lockedUntil`.
+- `claimDistribution(dist, recipient, minPayout)` claims the contract's eligible share from a Distribution contract and forwards the proceeds to the recipient. Available during the lock period.
+- `claimExit(token, recipient, minPayout)` looks up the registered Exit for `token` in `tokenExitRegistry`, approves it, and redeems the full token balance. Also available during the lock period.
+- `tokenExitRegistry`: the GlobalTokenExitRegistry that `claimExit()` consults to find the authorized exit for a token. If no exit is registered, the call reverts.
+
+### FeeSplitter (FeeSplitter.sol)
+
+A one-shot helper that collects an upfront syndication fee from the co-investor and distributes it proportionally among the lead investors of a CoinvestedPosition.
+
+**Key details:**
+
+- `payFee(feePayer, currency, feeAmount, coinvestedPosition)` pulls `feeAmount` of `currency` from `feePayer` (which must have pre-approved this contract) and splits it among the lead investors in proportion to their `profitFraction`. The last investor absorbs any rounding dust so the full amount is always distributed.
+- Each clone is safe to use once. After the feePayer's allowance is consumed, it task is done. Reusing it to split fees for the same or other coinvestors and lead investors is only safe if the new approval is granted and used in the same transaction (frontrunning risk).
+- The contract holds no state of its own — it reads the lead investor list directly from the CoinvestedPosition at call time.
 
 ## Employee participation
 

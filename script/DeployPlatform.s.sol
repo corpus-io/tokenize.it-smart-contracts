@@ -14,6 +14,8 @@ import "../contracts/factories/TokenSwapCloneFactory.sol";
 import "@opengsn/contracts/src/forwarder/Forwarder.sol";
 
 contract DeployPlatform is Script {
+    bytes32 constant TOKEN_SWAP_SALT = "0x1";
+
     function setUp() public {}
 
     function run() public {
@@ -187,7 +189,7 @@ contract DeployPlatform is Script {
             Token(0xaCB976B126d3bD67454b7418E0EF24099D2EBAa0) // A Token
         );
 
-        address tokenSwap = tokenSwapCloneFactory.createTokenSwapClone(bytes32("0x1"), trustedForwarder, arguments);
+        address tokenSwap = tokenSwapCloneFactory.createTokenSwapClone(TOKEN_SWAP_SALT, trustedForwarder, arguments);
         console.log("TokenSwap deployed at: ", tokenSwap);
 
         vm.stopBroadcast();

@@ -14,7 +14,7 @@ contract FixedPayoutExit {
         payout = _payout;
     }
 
-    function claim(uint256, address _recipient, uint256) external {
+    function claim(address _recipient, uint256) external {
         if (payout > 0) currency.transfer(_recipient, payout);
     }
 

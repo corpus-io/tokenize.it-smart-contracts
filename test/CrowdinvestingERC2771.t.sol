@@ -21,32 +21,32 @@ contract CrowdinvestingTest is Test {
 
     Token token;
     FakePaymentToken paymentToken;
-    //Forwarder trustedForwarder;
+    //Forwarder TRUSTED_FORWARDER;
     ERC2771Helper ERC2771helper;
 
     CrowdinvestingInitializerArguments arguments;
 
-    address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
-    address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
-    address public constant mintAllower = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
-    address public constant minter = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
-    address public constant owner = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
-    address public constant receiver = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
-    address public constant paymentTokenProvider = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
-    address public constant sender = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
+    address public constant TRUSTED_FORWARDER = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
+    address public constant ADMIN = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
+    address public constant MINT_ALLOWER = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
+    address public constant MINTER = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
+    address public constant OWNER = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
+    address public constant RECEIVER = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
+    address public constant PAYMENT_TOKEN_PROVIDER = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
+    address public constant SENDER = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
 
     // DO NOT USE IN PRODUCTION! Key was generated online for testing only.
-    uint256 public constant buyerPrivateKey = 0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
+    uint256 public constant BUYER_PRIVATE_KEY = 0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
     address public buyer; // = 0x38d6703d37988C644D6d31551e9af6dcB762E618;
 
-    uint8 public constant paymentTokenDecimals = 6;
-    uint256 public constant paymentTokenAmount = 1000 * 10 ** paymentTokenDecimals;
+    uint8 public constant PAYMENT_TOKEN_DECIMALS = 6;
+    uint256 public constant PAYMENT_TOKEN_AMOUNT = 1000 * 10 ** PAYMENT_TOKEN_DECIMALS;
 
-    uint256 public constant price = 7 * 10 ** paymentTokenDecimals; // 7 payment tokens per token
+    uint256 public constant PRICE = 7 * 10 ** PAYMENT_TOKEN_DECIMALS; // 7 payment tokens per token
 
-    uint256 public constant maxAmountOfTokenToBeSold = 20 * 10 ** 18; // 20 token
-    uint256 public constant maxAmountPerBuyer = maxAmountOfTokenToBeSold / 2; // 10 token
-    uint256 public constant minAmountPerBuyer = maxAmountOfTokenToBeSold / 200; // 0.1 token
+    uint256 public constant MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD = 20 * 10 ** 18; // 20 token
+    uint256 public constant MAX_AMOUNT_PER_BUYER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 2; // 10 token
+    uint256 public constant MIN_AMOUNT_PER_BUYER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 200; // 0.1 token
 
     uint256 tokenBuyAmount;
     uint256 costInPaymentToken;
@@ -55,45 +55,45 @@ contract CrowdinvestingTest is Test {
     uint32 paymentTokenFeeNumerator = 200;
 
     function setUp() public {
-        buyer = vm.addr(buyerPrivateKey);
+        buyer = vm.addr(BUYER_PRIVATE_KEY);
         // set up currency
-        vm.prank(paymentTokenProvider);
-        paymentToken = new FakePaymentToken(paymentTokenAmount, paymentTokenDecimals); // 1000 tokens with 6 decimals
+        vm.prank(PAYMENT_TOKEN_PROVIDER);
+        paymentToken = new FakePaymentToken(PAYMENT_TOKEN_AMOUNT, PAYMENT_TOKEN_DECIMALS); // 1000 tokens with 6 decimals
         // transfer currency to buyer
-        vm.prank(paymentTokenProvider);
-        paymentToken.transfer(buyer, paymentTokenAmount);
-        assertTrue(paymentToken.balanceOf(buyer) == paymentTokenAmount);
+        vm.prank(PAYMENT_TOKEN_PROVIDER);
+        paymentToken.transfer(buyer, PAYMENT_TOKEN_AMOUNT);
+        assertTrue(paymentToken.balanceOf(buyer) == PAYMENT_TOKEN_AMOUNT);
 
-        list = createAllowList(trustedForwarder, owner);
-        vm.prank(owner);
+        list = createAllowList(TRUSTED_FORWARDER, OWNER);
+        vm.prank(OWNER);
         list.set(address(paymentToken), TRUSTED_CURRENCY);
 
         feeSettings = createFeeSettings(
-            trustedForwarder,
+            TRUSTED_FORWARDER,
             address(this),
-            buildFeeTypes(tokenFeeNumerator, paymentTokenFeeNumerator, paymentTokenFeeNumerator, admin, admin, admin)
+            buildFeeTypes(tokenFeeNumerator, paymentTokenFeeNumerator, paymentTokenFeeNumerator, ADMIN, ADMIN, ADMIN)
         );
 
-        Token implementation = new Token(trustedForwarder);
+        Token implementation = new Token(TRUSTED_FORWARDER);
         TokenProxyFactory tokenFactory = new TokenProxyFactory(address(implementation));
         token = Token(
-            tokenFactory.createTokenProxy(0, trustedForwarder, feeSettings, admin, list, 0x0, "TESTTOKEN", "TEST")
+            tokenFactory.createTokenProxy(0, TRUSTED_FORWARDER, feeSettings, ADMIN, list, 0x0, "TESTTOKEN", "TEST")
         );
 
         ERC2771helper = new ERC2771Helper();
 
         tokenBuyAmount = 5 * 10 ** token.decimals();
-        costInPaymentToken = (tokenBuyAmount * price) / 10 ** 18;
+        costInPaymentToken = (tokenBuyAmount * PRICE) / 10 ** 18;
 
         arguments = CrowdinvestingInitializerArguments(
-            owner,
-            payable(receiver),
-            minAmountPerBuyer,
-            maxAmountPerBuyer,
-            price,
-            price,
-            price,
-            maxAmountOfTokenToBeSold,
+            OWNER,
+            payable(RECEIVER),
+            MIN_AMOUNT_PER_BUYER,
+            MAX_AMOUNT_PER_BUYER,
+            PRICE,
+            PRICE,
+            PRICE,
+            MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD,
             paymentToken,
             token,
             0,
@@ -103,7 +103,7 @@ contract CrowdinvestingTest is Test {
     }
 
     function buyWithERC2771(Forwarder forwarder) public {
-        vm.prank(owner);
+        vm.prank(OWNER);
         fundraisingFactory = new CrowdinvestingCloneFactory(address(new Crowdinvesting(address(forwarder))));
 
         crowdinvesting = Crowdinvesting(fundraisingFactory.createCrowdinvestingClone(0, address(forwarder), arguments));
@@ -111,16 +111,16 @@ contract CrowdinvestingTest is Test {
         // allow crowdinvesting contract to mint
         bytes32 roleMintAllower = token.MINTALLOWER_ROLE();
 
-        vm.prank(admin);
-        token.grantRole(roleMintAllower, mintAllower);
-        vm.prank(mintAllower);
-        token.increaseMintingAllowance(address(crowdinvesting), maxAmountOfTokenToBeSold);
+        vm.prank(ADMIN);
+        token.grantRole(roleMintAllower, MINT_ALLOWER);
+        vm.prank(MINT_ALLOWER);
+        token.increaseMintingAllowance(address(crowdinvesting), MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD);
 
         // give crowdinvesting contract allowance
         vm.prank(buyer);
-        paymentToken.approve(address(crowdinvesting), paymentTokenAmount);
+        paymentToken.approve(address(crowdinvesting), PAYMENT_TOKEN_AMOUNT);
 
-        assert(costInPaymentToken == 35 * 10 ** paymentTokenDecimals); // 35 payment tokens, manually calculated
+        assert(costInPaymentToken == 35 * 10 ** PAYMENT_TOKEN_DECIMALS); // 35 payment tokens, manually calculated
 
         // register domain and request type
         bytes32 domainSeparator = ERC2771helper.registerDomain(
@@ -171,7 +171,7 @@ contract CrowdinvestingTest is Test {
 
         // sign request
         //bytes memory signature
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(buyerPrivateKey, digest);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(BUYER_PRIVATE_KEY, digest);
         bytes memory signature = abi.encodePacked(r, s, v); // https://docs.openzeppelin.com/contracts/2.x/utilities
 
         require(digest.recover(signature) == request.from, "FWD: signature mismatch");
@@ -184,10 +184,10 @@ contract CrowdinvestingTest is Test {
         */
         vm.prank(buyer);
         assertEq(token.balanceOf(buyer), 0, "buyer has tokens before");
-        assertEq(paymentToken.balanceOf(receiver), 0, "receiver has payment tokens before");
+        assertEq(paymentToken.balanceOf(RECEIVER), 0, "RECEIVER has payment tokens before");
         assertEq(paymentToken.balanceOf(address(crowdinvesting)), 0, "crowdinvesting has payment tokens before");
         assertEq(token.balanceOf(address(crowdinvesting)), 0, "crowdinvesting has tokens before");
-        assertEq(token.balanceOf(receiver), 0, "receiver has tokens before");
+        assertEq(token.balanceOf(RECEIVER), 0, "RECEIVER has tokens before");
         assertEq(token.balanceOf(address(forwarder)), 0, "forwarder has tokens before");
         assertTrue(crowdinvesting.tokensSold() == 0, "tokens sold before");
         assertTrue(crowdinvesting.tokensBought(buyer) == 0, "tokens bought before");
@@ -211,11 +211,11 @@ contract CrowdinvestingTest is Test {
             "fee collector has tokens after"
         );
 
-        // receiver receives payment tokens after fee has been deducted
+        // RECEIVER receives payment tokens after fee has been deducted
         assertEq(
-            paymentToken.balanceOf(receiver),
+            paymentToken.balanceOf(RECEIVER),
             costInPaymentToken - (costInPaymentToken * paymentTokenFeeNumerator) / feeSettings.FEE_DENOMINATOR(),
-            "receiver has payment tokens after"
+            "RECEIVER has payment tokens after"
         );
         // fee collector receives fee in payment tokens
         assertEq(
@@ -226,13 +226,13 @@ contract CrowdinvestingTest is Test {
 
         assertEq(paymentToken.balanceOf(address(crowdinvesting)), 0, "crowdinvesting has payment tokens after");
         assertEq(token.balanceOf(address(crowdinvesting)), 0, "crowdinvesting has tokens after");
-        assertEq(token.balanceOf(receiver), 0, "receiver has tokens after");
+        assertEq(token.balanceOf(RECEIVER), 0, "RECEIVER has tokens after");
         assertEq(token.balanceOf(address(forwarder)), 0, "forwarder has tokens after");
         assertTrue(crowdinvesting.tokensSold() == tokenBuyAmount, "tokens sold after");
         assertTrue(crowdinvesting.tokensBought(buyer) == tokenBuyAmount, "tokens bought after");
         //assertTrue(vm.getNonce(buyer) == 0);
 
-        console.log("paymentToken balance of receiver after: ", paymentToken.balanceOf(receiver));
+        console.log("paymentToken balance of RECEIVER after: ", paymentToken.balanceOf(RECEIVER));
         console.log("Token balance of buyer after: ", token.balanceOf(buyer));
 
         /*

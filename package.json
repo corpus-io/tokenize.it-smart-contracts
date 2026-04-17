@@ -83,8 +83,7 @@
   "dependencies": {
     "@opengsn/contracts": "2.2.5",
     "@openzeppelin/contracts": "4.9.6",
-    "@openzeppelin/contracts-upgradeable": "4.9.6",
-    "@safe-global/safe-contracts": "^1.4.1-2"
+    "@openzeppelin/contracts-upgradeable": "4.9.6"
   },
   "scripts": {
     "prepack": "yarn npmignore --auto && yarn test && yarn build ",
@@ -92,7 +91,7 @@
     "test": "forge test --no-match-test Mainnet",
     "test-backwards-compatibility": "make test-backwards-compatibility",
     "test-mainnet": "forge test --match-test Mainnet",
-    "coverage": "forge coverage --report lcov && genhtml lcov.info --branch-coverage --output-directory=./coverage",
+    "coverage": "forge coverage --no-match-test Mainnet --report lcov && genhtml lcov.info --branch-coverage --output-directory=./coverage",
     "clean": "yarn hardhat clean && forge clean && rm -rf ./dist ./coverage ./cache",
     "prettier": "prettier --write 'contracts/**/*.sol' 'test/**/*.sol' '**/*.md'"
   },

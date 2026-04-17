@@ -21,54 +21,55 @@ contract TokenERC2771Test is Test {
     TokenProxyFactory factory;
     Token token;
     FakePaymentToken paymentToken;
-    //Forwarder trustedForwarder;
+    //Forwarder TRUSTED_FORWARDER;
     ERC2771Helper ERC2771helper;
 
-    address public constant trustedForwarder = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
+    address public constant TRUSTED_FORWARDER = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
 
     // DO NOT USE IN PRODUCTION! Key was generated online for testing only.
-    uint256 public constant companyAdminPrivateKey = 0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
+    uint256 public constant COMPANY_ADMIN_PRIVATE_KEY =
+        0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
     address public companyAdmin; // = 0x38d6703d37988C644D6d31551e9af6dcB762E618;
 
-    uint256 public constant minterPrivateKey = 0x1111254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff06621111;
+    uint256 public constant MINTER_PRIVATE_KEY = 0x1111254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff06621111;
     address public minter;
 
-    address public constant investor = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
+    address public constant INVESTOR = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
 
-    address public constant receiver = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
-    address public constant platformHotWallet = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
-    address public constant sender = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
+    address public constant RECEIVER = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
+    address public constant PLATFORM_HOT_WALLET = 0x8109709ecfa91a80626fF3989d68f67F5B1dD128;
+    address public constant SENDER = 0x9109709EcFA91A80626FF3989D68f67F5B1dD129;
 
-    address public constant platformAdmin = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
-    address public constant feeCollector = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
+    address public constant PLATFORM_ADMIN = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
+    address public constant FEE_COLLECTOR = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
 
-    uint32 public constant tokenFeeNumerator = 100;
-    uint32 public constant crowdinvestingFeeNumerator = 200;
-    uint32 public constant privateOfferFeeNumerator = 150;
+    uint32 public constant TOKEN_FEE_NUMERATOR = 100;
+    uint32 public constant CROWDINVESTING_FEE_NUMERATOR = 200;
+    uint32 public constant PRIVATE_OFFER_FEE_NUMERATOR = 150;
 
     bytes32 domainSeparator;
     bytes32 requestType;
 
     function setUp() public {
         // calculate address
-        companyAdmin = vm.addr(companyAdminPrivateKey);
-        minter = vm.addr(minterPrivateKey);
+        companyAdmin = vm.addr(COMPANY_ADMIN_PRIVATE_KEY);
+        minter = vm.addr(MINTER_PRIVATE_KEY);
 
         // deploy allow list
-        allowList = createAllowList(trustedForwarder, platformAdmin);
+        allowList = createAllowList(TRUSTED_FORWARDER, PLATFORM_ADMIN);
 
         // deploy fee settings
-        vm.prank(platformAdmin);
+        vm.prank(PLATFORM_ADMIN);
         feeSettings = createFeeSettings(
-            trustedForwarder,
-            platformAdmin,
+            TRUSTED_FORWARDER,
+            PLATFORM_ADMIN,
             buildFeeTypes(
-                tokenFeeNumerator,
-                crowdinvestingFeeNumerator,
-                privateOfferFeeNumerator,
-                feeCollector,
-                feeCollector,
-                feeCollector
+                TOKEN_FEE_NUMERATOR,
+                CROWDINVESTING_FEE_NUMERATOR,
+                PRIVATE_OFFER_FEE_NUMERATOR,
+                FEE_COLLECTOR,
+                FEE_COLLECTOR,
+                FEE_COLLECTOR
             )
         );
 
@@ -107,12 +108,12 @@ contract TokenERC2771Test is Test {
         );
 
         // add payment token to allow list
-        vm.prank(platformAdmin);
+        vm.prank(PLATFORM_ADMIN);
         allowList.set(address(paymentToken), TRUSTED_CURRENCY);
 
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments({
             owner: companyAdmin,
-            currencyReceiver: receiver,
+            currencyReceiver: RECEIVER,
             minAmountPerBuyer: 1000 * 10 ** 18,
             maxAmountPerBuyer: 2000 * 10 ** 18,
             tokenPrice: 688,
@@ -170,7 +171,7 @@ contract TokenERC2771Test is Test {
         );
 
         // 3. sign request
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(companyAdminPrivateKey, digest);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(COMPANY_ADMIN_PRIVATE_KEY, digest);
         bytes memory signature = abi.encodePacked(r, s, v); // https://docs.openzeppelin.com/contracts/2.x/utilities
 
         require(digest.recover(signature) == request.from, "FWD: signature mismatch");
@@ -178,7 +179,7 @@ contract TokenERC2771Test is Test {
         assertEq(token.mintingAllowance(minter), 0, "Minting allowance is not 0");
 
         // 4.  execute request
-        vm.prank(platformHotWallet);
+        vm.prank(PLATFORM_HOT_WALLET);
         forwarder.execute(request, domainSeparator, requestType, suffixData, signature);
 
         assertEq(token.mintingAllowance(minter), _tokenMintAmount, "Minting allowance is not tokenMintAmount");
@@ -188,7 +189,7 @@ contract TokenERC2771Test is Test {
          */
 
         // 1. build request
-        payload = abi.encodeWithSelector(token.mint.selector, investor, _tokenMintAmount);
+        payload = abi.encodeWithSelector(token.mint.selector, INVESTOR, _tokenMintAmount);
 
         request = IForwarder.ForwardRequest({
             from: minter,
@@ -210,24 +211,24 @@ contract TokenERC2771Test is Test {
         );
 
         // 3. sign request
-        (v, r, s) = vm.sign(minterPrivateKey, digest);
+        (v, r, s) = vm.sign(MINTER_PRIVATE_KEY, digest);
         signature = abi.encodePacked(r, s, v); // https://docs.openzeppelin.com/contracts/2.x/utilities
 
         require(digest.recover(signature) == request.from, "FWD: signature mismatch");
 
         // 4.  execute request
         assertEq(token.mintingAllowance(minter), _tokenMintAmount, "Minting allowance is wrong");
-        assertEq(token.balanceOf(investor), 0, "Investor has tokens before mint");
-        assertEq(token.balanceOf(feeCollector), 0, "FeeCollector has tokens before mint");
+        assertEq(token.balanceOf(INVESTOR), 0, "Investor has tokens before mint");
+        assertEq(token.balanceOf(FEE_COLLECTOR), 0, "FeeCollector has tokens before mint");
 
         // send call through forwarder contract
-        vm.prank(platformHotWallet);
+        vm.prank(PLATFORM_HOT_WALLET);
         forwarder.execute(request, domainSeparator, requestType, suffixData, signature);
 
-        assertEq(token.balanceOf(investor), _tokenMintAmount, "Investor received wrong token amount");
+        assertEq(token.balanceOf(INVESTOR), _tokenMintAmount, "Investor received wrong token amount");
         assertEq(token.mintingAllowance(minter), 0, "Minting allowance is not 0 after mint");
         assertEq(
-            token.balanceOf(feeCollector),
+            token.balanceOf(FEE_COLLECTOR),
             feeSettings.tokenFee(_tokenMintAmount),
             "FeeCollector received wrong token amount"
         );
@@ -262,7 +263,7 @@ contract TokenERC2771Test is Test {
 
         // sign request
         //bytes memory signature
-        (v, r, s) = vm.sign(companyAdminPrivateKey, digest);
+        (v, r, s) = vm.sign(COMPANY_ADMIN_PRIVATE_KEY, digest);
         signature = abi.encodePacked(r, s, v); // https://docs.openzeppelin.com/contracts/2.x/utilities
 
         require(digest.recover(signature) == request.from, "FWD: signature mismatch");

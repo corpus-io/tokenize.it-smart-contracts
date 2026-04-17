@@ -99,4 +99,28 @@ contract AllowListCloneFactoryTest is Test {
         assertTrue(list.map(address(x)) == attributesX, "x not set");
         assertTrue(list.map(address(y)) == attributesY, "y not set");
     }
+
+    function testWrongForwarderFailsWithAddressesOverload(address _wrongTrustedForwarder) public {
+        vm.assume(_wrongTrustedForwarder != trustedForwarder);
+        vm.assume(_wrongTrustedForwarder != address(0));
+
+        address[] memory addresses = new address[](0);
+        uint256[] memory attributes = new uint256[](0);
+
+        vm.expectRevert("AllowListCloneFactory: Unexpected trustedForwarder");
+        factory.createAllowListClone(bytes32(uint256(1)), _wrongTrustedForwarder, companyAdmin, addresses, attributes);
+    }
+
+    function testFactoryRevertsIfImplementationZero() public {
+        vm.expectRevert("Factory: implementation can not be zero");
+        new AllowListCloneFactory(address(0));
+    }
+
+    function testOwnerZeroRevertsInAddressesOverload() public {
+        address[] memory addresses = new address[](0);
+        uint256[] memory attributes = new uint256[](0);
+
+        vm.expectRevert("owner can not be zero address");
+        factory.createAllowListClone(bytes32(uint256(0)), trustedForwarder, address(0), addresses, attributes);
+    }
 }

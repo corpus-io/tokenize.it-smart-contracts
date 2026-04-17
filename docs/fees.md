@@ -40,15 +40,11 @@ It is, however, possible to interpret the fees as paid by the investor. In this 
 
 The minimum fee is 0.
 
-Maximum fees are:
-
-- 5% of tokens minted
-- 5% of currency paid when using PrivateOffer
-- 10% of currency paid when using Crowdinvesting
+Maximum fees are defined for each FeeType at initialization.
 
 ## Fee collectors
 
-The three fee types can be collected by different addresses, the fee collectors. The fee collectors are set by tokenize.it and can be changed by tokenize.it.
+Each fee type has its own fee collector address. The fee collectors are set by tokenize.it and can be changed by tokenize.it.
 
 ### Splitting fees
 
@@ -62,18 +58,11 @@ The PaymentSplitter contract will be removed in Openzeppelin contracts 5.0, but 
 
 ### Fee settings
 
-Tokenize.it will deploy and manage at least one [fee settings contract](../contracts/FeeSettings.sol). This contract implements the IFeeSettingsV2 interface and thus can be queried for:
+Tokenize.it will deploy and manage at least one [fee settings contract](../contracts/FeeSettings.sol). The current implementation supports IFeeSettingsV3, which is generic and extensible: any fee type can be queried with `fee(bytes32 feeType, uint256 amount, address token)` and `feeCollector(bytes32 feeType, address token)`. Fee type identifiers are keccak256 hashes of their names; the `feeTypeId(string)` helper on FeeSettings returns the bytes32 for any name.
 
-- fee calculation:
-  - `tokenFee(uint256 tokenBuyAmount)`
-  - `crowdinvestingFee(uint256 paymentAmount)`
-  - `privateOfferFee(uint256 paymentAmount)`
-- feeCollector addresses
-  - `tokenFeeCollector()`
-  - `crowdinvestingFeeCollector()`
-  - `privateOfferFeeCollector()`
+The named V2 wrappers (`tokenFee`, `crowdinvestingFee`, `privateOfferFee`, etc.) are still available for backward compatibility with older contracts that detect V2 only.
 
-These values can be changed by tokenize.it. Fee increases are subject to a delay of at least 12 weeks.
+Default fees can be changed by tokenize.it. Fee increases are subject to a delay of at least 12 weeks.
 
 All fees are calculated as follows:
 
@@ -95,28 +84,23 @@ fee = amount * feeNumerator / feeDenominator
 
 ### Distribution contracts
 
-[Distribution](../contracts/Distribution.sol) and [Exit](../contracts/Exit.sol) both use `privateOfferFee` for fee calculation, but differ in _when_ the fee is collected:
+[Distribution](../contracts/Distribution.sol) and [Exit](../contracts/Exit.sol) can both collect fees. The Fee is deducted **per claim** at `claim()` time.
 
-- **Distribution**: Fee is deducted **once at initialization** from `totalCurrencyAmount`. Only the net amount is stored and made claimable. Individual `claim()` calls are fee-free. This prevents partial extraction of funds before the full fee is paid.
-- **Exit**: Fee is deducted **per claim** at `claim()` time. The fee is proportional to each claim's currency amount, so late claimers pay the same rate as early ones.
-
-In both cases the fee is sent to `privateOfferFeeCollector` as determined by the token's FeeSettings contract.
-
-[TokenSwap](../contracts/TokenSwap.sol) uses `privateOfferFee` per trade.
+[TokenSwap](../contracts/TokenSwap.sol) uses the `SECONDARY_MARKET` fee type (via IFeeSettingsV3). On older deployments where the fee settings contract does not support V3, it falls back to `privateOfferFee`.
 
 ## Discounts
 
-Fee discounts can be realized in two ways, which will be explained in the next paragraphs.
+### Per-token custom fees
 
-### On-chain discounts
+The most direct way to give a specific token a reduced fee is a custom fee set by a manager. Managers are appointed by the platform owner and can call `setCustomFee(feeType, token, numerator, validityDate)` to register a time-limited discount for any token. When a custom fee is active and lower than the current default, it takes precedence — custom fees can only discount, never increase. A matching `setCustomFeeCollector()` can redirect the fee proceeds for that token to a different collector address.
 
-The platform can deploy a new FeeSettings contract for a founder or a group of founders. If a new token is deployed, it can use the new FeeSettings contract straight away. Existing tokens can switch to the new FeeSettings contract when the platform proposes the switch and the founder accepts it.
+This mechanism works without any action from the token's owner and without deploying a new contract.
 
-The new FeeSettings contract can provide reduced fees, for example 0.5% instead of 1%.
+### Separate FeeSettings contract
 
-If the discount should only be valid for a certain duration, the platform can update the parameters of the FeeSettings contract after the discount period has ended. The new parameters can be the same as those of the old FeeSettings contract. In this case, the founders would not benefit from a discount anymore.
+For cases where an entire group of tokens should share reduced rates, or where a more visible on-chain record of the discount is desirable, the platform can deploy a dedicated FeeSettings contract with lower defaults and connect tokens to it. Existing tokens can switch to a new FeeSettings contract when the platform proposes the change and the token's DEFAULT_ADMIN_ROLE holder accepts it.
 
-If the platform wants to encourage the founders to switch back to the old FeeSettings contract, it can do so by increasing the fees in the new contract beyond the settings in the old one and proposing a switch back to the old contract. The founders can then accept the switch back to the old contract and benefit from the standard fees instead of increased fees.
+If the discount should only be valid for a certain duration, the platform can raise the fees in the new contract after the discount period ends, or propose a switch back to the standard contract.
 
 ### Off-chain discounts
 

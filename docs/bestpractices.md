@@ -35,7 +35,7 @@
 - Immutable trusted forwarder: set in constructor, never changed afterwards
 - Two-step ownership transfers (`Ownable2Step`) for all ownable contracts
 - Use `AccessControlUpgradeable` for role-based access; do not mix with `Ownable` in the same contract
-- Document all invariants in `docs/specification.md`
+- Document all invariants in `docs/invariants.md`
 
 ### Deployment
 

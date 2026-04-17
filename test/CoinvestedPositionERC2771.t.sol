@@ -9,8 +9,8 @@ contract CoinvestedPositionERC2771Test is CoinvestedPositionTestBase {
     using ECDSA for bytes32;
 
     // DO NOT USE IN PRODUCTION! Key was generated online for testing only.
-    uint256 public constant buyerPrivateKey = 0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
-    address public buyer; // derived from buyerPrivateKey
+    uint256 public constant BUYER_PRIVATE_KEY = 0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
+    address public buyer; // derived from BUYER_PRIVATE_KEY
 
     uint256 public constant TOKEN_PRICE = 200e6; // 200 EURc per token
     uint256 public constant BASE_PRICE = 100e6; // 100 EURc per token
@@ -18,27 +18,27 @@ contract CoinvestedPositionERC2771Test is CoinvestedPositionTestBase {
     ERC2771Helper erc2771Helper;
 
     function setUp() public {
-        buyer = vm.addr(buyerPrivateKey);
+        buyer = vm.addr(BUYER_PRIVATE_KEY);
 
-        allowList = createAllowList(trustedForwarder, admin);
-        feeSettings = createFeeSettings(trustedForwarder, admin, buildFeeTypes(0, 0, 0, admin, admin, admin));
+        allowList = createAllowList(TRUSTED_FORWARDER, ADMIN);
+        feeSettings = createFeeSettings(TRUSTED_FORWARDER, ADMIN, buildFeeTypes(0, 0, 0, ADMIN, ADMIN, ADMIN));
 
         eurc = new FakePaymentToken(0, 6);
-        vm.prank(admin);
+        vm.prank(ADMIN);
         allowList.set(address(eurc), TRUSTED_CURRENCY);
 
-        address tokenLogic = address(new Token(trustedForwarder));
+        address tokenLogic = address(new Token(TRUSTED_FORWARDER));
         tokenFactory = new TokenProxyFactory(tokenLogic);
         token = Token(
-            tokenFactory.createTokenProxy(0, trustedForwarder, feeSettings, admin, allowList, 0, "TestToken", "TTK")
+            tokenFactory.createTokenProxy(0, TRUSTED_FORWARDER, feeSettings, ADMIN, allowList, 0, "TestToken", "TTK")
         );
-        vm.startPrank(admin);
-        token.grantRole(token.MINTALLOWER_ROLE(), admin);
+        vm.startPrank(ADMIN);
+        token.grantRole(token.MINTALLOWER_ROLE(), ADMIN);
         vm.stopPrank();
 
-        tokenExitRegistry = new GlobalTokenExitRegistry(trustedForwarder);
+        tokenExitRegistry = new GlobalTokenExitRegistry(TRUSTED_FORWARDER);
 
-        coinvestedPosition = _deployCoinvestedPosition(trustedForwarder);
+        coinvestedPosition = _deployCoinvestedPosition(TRUSTED_FORWARDER);
 
         erc2771Helper = new ERC2771Helper();
     }
@@ -52,11 +52,11 @@ contract CoinvestedPositionERC2771Test is CoinvestedPositionTestBase {
         CoinvestedPositionCloneFactory freshFactory = new CoinvestedPositionCloneFactory(address(freshLogic));
 
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](1);
-        leadInvestors[0] = LeadInvestor({account: leadA, carryFraction: CARRY_10PCT});
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT});
 
         CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
-            owner: owner,
-            receiver: receiver,
+            owner: OWNER,
+            receiver: RECEIVER,
             leadInvestors: leadInvestors,
             basePrice: BASE_PRICE,
             baseCurrency: IERC20(address(eurc)),
@@ -80,19 +80,19 @@ contract CoinvestedPositionERC2771Test is CoinvestedPositionTestBase {
         // Buyer identified correctly: paid from buyer's account
         assertEq(eurc.balanceOf(buyer), 0, "buyer currency not fully spent");
 
-        // Tokens delivered to tokenReceiver (not buyer, not forwarder)
-        assertEq(token.balanceOf(tokenReceiver), tokenBuyAmount, "tokenReceiver did not receive tokens");
+        // Tokens delivered to TOKEN_RECEIVER (not buyer, not forwarder)
+        assertEq(token.balanceOf(TOKEN_RECEIVER), tokenBuyAmount, "TOKEN_RECEIVER did not receive tokens");
         assertEq(token.balanceOf(buyer), 0, "buyer received tokens unexpectedly");
         assertEq(token.balanceOf(forwarderAddr), 0, "forwarder received tokens");
 
         // Currency fully distributed — nothing left on the coinvestedPosition
         assertEq(eurc.balanceOf(coinvestedPositionAddr), 0, "currency left on coinvestedPosition");
 
-        // Carry split: 2 tokens * (200e6 - 100e6) = 200e6 carry; 10% to leadA
+        // Carry split: 2 tokens * (200e6 - 100e6) = 200e6 carry; 10% to LEAD_A
         uint256 carry = (tokenBuyAmount * (TOKEN_PRICE - BASE_PRICE)) / 1e18;
         uint256 expectedLeadA = (uint256(CARRY_10PCT) * carry) / type(uint64).max;
-        assertEq(eurc.balanceOf(leadA), expectedLeadA, "leadA carry wrong");
-        assertEq(eurc.balanceOf(receiver), currencyAmount - expectedLeadA, "receiver payout wrong");
+        assertEq(eurc.balanceOf(LEAD_A), expectedLeadA, "LEAD_A carry wrong");
+        assertEq(eurc.balanceOf(RECEIVER), currencyAmount - expectedLeadA, "RECEIVER payout wrong");
 
         // Replay must fail
         vm.expectRevert("FWD: nonce mismatch");
@@ -104,11 +104,11 @@ contract CoinvestedPositionERC2771Test is CoinvestedPositionTestBase {
         CoinvestedPosition coinvestedPosition = _deployCoinvestedPosition(address(forwarder));
 
         // Mint tokens into coinvestedPosition and enable buying
-        vm.prank(admin);
+        vm.prank(ADMIN);
         token.mint(address(coinvestedPosition), 10e18);
-        vm.prank(owner);
+        vm.prank(OWNER);
         coinvestedPosition.setTokenPrice(TOKEN_PRICE);
-        vm.prank(owner);
+        vm.prank(OWNER);
         coinvestedPosition.unpause();
 
         // Fund buyer and approve coinvestedPosition
@@ -126,7 +126,7 @@ contract CoinvestedPositionERC2771Test is CoinvestedPositionTestBase {
         bytes32 requestType = erc2771Helper.registerRequestType(
             forwarder,
             "buy",
-            "uint256 tokenAmount,uint256 maxCurrencyAmount,address tokenReceiver"
+            "uint256 tokenAmount,uint256 maxCurrencyAmount,address TOKEN_RECEIVER"
         );
 
         // ── Build and sign the forward request ────────────────────────────────
@@ -141,7 +141,7 @@ contract CoinvestedPositionERC2771Test is CoinvestedPositionTestBase {
                 CoinvestedPosition.buy.selector,
                 tokenBuyAmount,
                 type(uint256).max,
-                tokenReceiver
+                TOKEN_RECEIVER
             ),
             validUntil: 0
         });
@@ -154,15 +154,15 @@ contract CoinvestedPositionERC2771Test is CoinvestedPositionTestBase {
                 keccak256(forwarder._getEncoded(request, requestType, suffixData))
             )
         );
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(buyerPrivateKey, digest);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(BUYER_PRIVATE_KEY, digest);
         bytes memory signature = abi.encodePacked(r, s, v);
         require(digest.recover(signature) == request.from, "FWD: signature mismatch");
 
         // ── Pre-conditions ────────────────────────────────────────────────────
-        assertEq(token.balanceOf(tokenReceiver), 0, "tokenReceiver has tokens before buy");
+        assertEq(token.balanceOf(TOKEN_RECEIVER), 0, "TOKEN_RECEIVER has tokens before buy");
         assertEq(eurc.balanceOf(buyer), currencyAmount, "buyer missing currency before buy");
-        assertEq(eurc.balanceOf(leadA), 0, "leadA has currency before buy");
-        assertEq(eurc.balanceOf(receiver), 0, "receiver has currency before buy");
+        assertEq(eurc.balanceOf(LEAD_A), 0, "LEAD_A has currency before buy");
+        assertEq(eurc.balanceOf(RECEIVER), 0, "RECEIVER has currency before buy");
 
         // ── Execute via forwarder ─────────────────────────────────────────────
         forwarder.execute(request, domainSeparator, requestType, suffixData, signature);
@@ -194,13 +194,13 @@ contract CoinvestedPositionERC2771Test is CoinvestedPositionTestBase {
 
         // Encode the call as a trusted forwarder would: calldata + buyer address appended
         bytes memory callData = abi.encodePacked(
-            abi.encodeWithSelector(CoinvestedPosition.buy.selector, uint256(1e18), uint256(400e6), tokenReceiver),
+            abi.encodeWithSelector(CoinvestedPosition.buy.selector, uint256(1e18), uint256(400e6), TOKEN_RECEIVER),
             buyer
         );
-        vm.prank(trustedForwarder);
+        vm.prank(TRUSTED_FORWARDER);
         (bool success, ) = address(coinvestedPosition).call(callData);
         assertTrue(success, "ERC2771 buy failed");
-        assertEq(token.balanceOf(tokenReceiver), 1e18, "tokens transferred");
+        assertEq(token.balanceOf(TOKEN_RECEIVER), 1e18, "tokens transferred");
     }
 
     function testUntrustedForwarderCannotSpoofSender() public {
@@ -212,7 +212,7 @@ contract CoinvestedPositionERC2771Test is CoinvestedPositionTestBase {
 
         // Untrusted tries to append buyer as sender
         bytes memory callData = abi.encodePacked(
-            abi.encodeWithSelector(CoinvestedPosition.buy.selector, uint256(1e18), uint256(400e6), tokenReceiver),
+            abi.encodeWithSelector(CoinvestedPosition.buy.selector, uint256(1e18), uint256(400e6), TOKEN_RECEIVER),
             buyer // spoof buyer
         );
         // When called by untrusted forwarder, _msgSender() returns msg.sender (untrusted),

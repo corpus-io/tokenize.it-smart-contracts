@@ -9,7 +9,7 @@ contract PriceLinearTest is Test {
     PriceLinearCloneFactory priceLinearCloneFactory;
     PriceLinear oracle;
 
-    address public constant companyAdmin = address(1);
+    address public constant COMPANY_ADMIN = address(1);
     address public trustedForwarder = address(2);
 
     function setUp() public {
@@ -21,7 +21,7 @@ contract PriceLinearTest is Test {
             priceLinearCloneFactory.createPriceLinearClone(
                 bytes32(uint256(0)),
                 trustedForwarder,
-                companyAdmin,
+                COMPANY_ADMIN,
                 1,
                 1,
                 uint64(block.timestamp + 1),
@@ -44,7 +44,7 @@ contract PriceLinearTest is Test {
             priceLinearCloneFactory.createPriceLinearClone(
                 bytes32(uint256(0)),
                 trustedForwarder,
-                companyAdmin,
+                COMPANY_ADMIN,
                 1,
                 1,
                 uint64(startTime),
@@ -86,7 +86,7 @@ contract PriceLinearTest is Test {
             priceLinearCloneFactory.createPriceLinearClone(
                 bytes32(uint256(0)),
                 trustedForwarder,
-                companyAdmin,
+                COMPANY_ADMIN,
                 increasePerStep,
                 stepWidth,
                 uint64(startTime),
@@ -130,7 +130,7 @@ contract PriceLinearTest is Test {
             priceLinearCloneFactory.createPriceLinearClone(
                 bytes32(uint256(0)),
                 trustedForwarder,
-                companyAdmin,
+                COMPANY_ADMIN,
                 decreasePerStep,
                 stepWidth,
                 uint64(startTime),
@@ -177,7 +177,7 @@ contract PriceLinearTest is Test {
             priceLinearCloneFactory.createPriceLinearClone(
                 bytes32(uint256(0)),
                 trustedForwarder,
-                companyAdmin,
+                COMPANY_ADMIN,
                 decreasePerStep,
                 stepWidth,
                 uint64(startBlock),
@@ -235,7 +235,7 @@ contract PriceLinearTest is Test {
         assertEq(oracle.coolDownStart(), 0, "coolDownStart should be 0");
 
         // update parameters
-        vm.prank(companyAdmin);
+        vm.prank(COMPANY_ADMIN);
         oracle.updateParameters(
             _slopeEnumerator,
             _slopeDenominator,
@@ -265,7 +265,7 @@ contract PriceLinearTest is Test {
     }
 
     function testOnlyOwnerCanUpdateParameters(address rando) public {
-        vm.assume(rando != companyAdmin);
+        vm.assume(rando != COMPANY_ADMIN);
         vm.assume(rando != address(0));
         vm.assume(rando != trustedForwarder);
         vm.prank(rando);
@@ -277,7 +277,7 @@ contract PriceLinearTest is Test {
         vm.warp(1 days);
         testDelay = testDelay % 1 hours; // test delay is less than 1 hour
 
-        vm.prank(companyAdmin);
+        vm.prank(COMPANY_ADMIN);
         oracle.updateParameters(1, 1, uint64(block.timestamp + 1), 1, false, true);
 
         vm.warp(block.timestamp + testDelay);
@@ -311,7 +311,7 @@ contract PriceLinearTest is Test {
             priceLinearCloneFactory.createPriceLinearClone(
                 bytes32(uint256(0)),
                 trustedForwarder,
-                companyAdmin,
+                COMPANY_ADMIN,
                 0,
                 1,
                 uint64(block.timestamp + 1),
@@ -327,7 +327,7 @@ contract PriceLinearTest is Test {
             priceLinearCloneFactory.createPriceLinearClone(
                 bytes32(uint256(0)),
                 trustedForwarder,
-                companyAdmin,
+                COMPANY_ADMIN,
                 1,
                 0,
                 uint64(block.timestamp + 1),
@@ -343,7 +343,7 @@ contract PriceLinearTest is Test {
             priceLinearCloneFactory.createPriceLinearClone(
                 bytes32(uint256(0)),
                 trustedForwarder,
-                companyAdmin,
+                COMPANY_ADMIN,
                 1,
                 1,
                 uint64(block.timestamp + 1),
@@ -366,7 +366,7 @@ contract PriceLinearTest is Test {
                 priceLinearCloneFactory.createPriceLinearClone(
                     bytes32(uint256(734)),
                     trustedForwarder,
-                    companyAdmin,
+                    COMPANY_ADMIN,
                     1,
                     1,
                     _start,
@@ -381,7 +381,7 @@ contract PriceLinearTest is Test {
                 priceLinearCloneFactory.createPriceLinearClone(
                     bytes32(uint256(734)),
                     trustedForwarder,
-                    companyAdmin,
+                    COMPANY_ADMIN,
                     1,
                     1,
                     _start,
@@ -400,7 +400,7 @@ contract PriceLinearTest is Test {
                 priceLinearCloneFactory.createPriceLinearClone(
                     bytes32(uint256(734)),
                     trustedForwarder,
-                    companyAdmin,
+                    COMPANY_ADMIN,
                     1,
                     1,
                     _start,
@@ -415,7 +415,7 @@ contract PriceLinearTest is Test {
                 priceLinearCloneFactory.createPriceLinearClone(
                     bytes32(uint256(734)),
                     trustedForwarder,
-                    companyAdmin,
+                    COMPANY_ADMIN,
                     1,
                     1,
                     _start,

@@ -12,12 +12,12 @@ import "./CloneCreators.sol";
 
 abstract contract CoinvestedPositionTestBase is Test {
     // ── Well-known addresses ──────────────────────────────────────────────────
-    address public constant admin = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
-    address public constant owner = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
-    address public constant receiver = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
-    address public constant leadA = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
-    address public constant trustedForwarder = 0xa109709ecfA91A80626ff3989D68F67F5b1dD12a;
-    address public constant tokenReceiver = 0x5109709EcFA91a80626ff3989d68f67F5B1dD125;
+    address public constant ADMIN = 0x0109709eCFa91a80626FF3989D68f67f5b1dD120;
+    address public constant OWNER = 0x6109709EcFA91A80626FF3989d68f67F5b1dd126;
+    address public constant RECEIVER = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
+    address public constant LEAD_A = 0x2109709EcFa91a80626Ff3989d68F67F5B1Dd122;
+    address public constant TRUSTED_FORWARDER = 0xa109709ecfA91A80626ff3989D68F67F5b1dD12a;
+    address public constant TOKEN_RECEIVER = 0x5109709EcFA91a80626ff3989d68f67F5B1dD125;
 
     // ── Test constants ────────────────────────────────────────────────────────
     // 10% of uint64.max (floor)
@@ -38,11 +38,11 @@ abstract contract CoinvestedPositionTestBase is Test {
 
     /// Mint tokens to coinvestedPosition then set price and unpause
     function _setupBuy(uint256 tokenAmount, uint256 tokenPrice) internal {
-        vm.prank(admin);
+        vm.prank(ADMIN);
         token.mint(address(coinvestedPosition), tokenAmount);
-        vm.prank(owner);
+        vm.prank(OWNER);
         coinvestedPosition.setTokenPrice(tokenPrice);
-        vm.prank(owner);
+        vm.prank(OWNER);
         coinvestedPosition.unpause();
     }
 }

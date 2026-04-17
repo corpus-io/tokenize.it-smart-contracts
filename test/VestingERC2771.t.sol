@@ -22,28 +22,29 @@ contract VestingERC2771Test is Test {
     FakePaymentToken token;
 
     // DO NOT USE THESE KEYS IN PRODUCTION! They were generated and stored very unsafely.
-    uint256 public constant adminPrivateKey = 0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a;
-    address public adminAddress = vm.addr(adminPrivateKey); // = 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC;
+    uint256 public constant ADMIN_PRIVATE_KEY = 0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a;
+    address public adminAddress = vm.addr(ADMIN_PRIVATE_KEY); // = 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC;
 
-    uint256 public constant managerPrivateKey = 0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
-    address public managerAddress = vm.addr(managerPrivateKey); // = 0x38d6703d37988C644D6d31551e9af6dcB762E618;
+    uint256 public constant MANAGER_PRIVATE_KEY = 0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
+    address public managerAddress = vm.addr(MANAGER_PRIVATE_KEY); // = 0x38d6703d37988C644D6d31551e9af6dcB762E618;
 
-    uint256 public constant beneficiaryPrivateKey = 0x8da4ef21b864d2cc526dbdb2a120bd2874c36c9d0a1fb7f8c63d7f7a8b41de8f;
-    address public beneficiaryAddress = vm.addr(beneficiaryPrivateKey); // = 0x63FaC9201494f0bd17B9892B9fae4d52fe3BD377;
+    uint256 public constant BENEFICIARY_PRIVATE_KEY =
+        0x8da4ef21b864d2cc526dbdb2a120bd2874c36c9d0a1fb7f8c63d7f7a8b41de8f;
+    address public beneficiaryAddress = vm.addr(BENEFICIARY_PRIVATE_KEY); // = 0x63FaC9201494f0bd17B9892B9fae4d52fe3BD377;
 
-    address public constant relayer = 0xDFcEB49eD21aE199b33A76B726E2bea7A72127B0;
+    address public constant RELAYER = 0xDFcEB49eD21aE199b33A76B726E2bea7A72127B0;
 
-    uint256 public constant allocation = 100e18;
-    uint64 public constant start = 1e9; // round amount of seconds is easily debuggable, this is around 32 years
-    uint64 public constant cliff = 1e6;
-    uint64 public constant duration = 4e6;
-    bool public constant isMintable = false; // the vesting plan we create holds the funds in the vesting contract itself
+    uint256 public constant ALLOCATION = 100e18;
+    uint64 public constant START = 1e9; // round amount of seconds is easily debuggable, this is around 32 years
+    uint64 public constant CLIFF = 1e6;
+    uint64 public constant DURATION = 4e6;
+    bool public constant IS_MINTABLE = false; // the vesting plan we create holds the funds in the vesting contract itself
 
     function setUp() public {
         vm.warp(1e9 - 365 days);
 
         // set up token
-        token = new FakePaymentToken(allocation, 18);
+        token = new FakePaymentToken(ALLOCATION, 18);
 
         // init vesting contracts
         factory = new VestingCloneFactory(address(logic));
@@ -54,7 +55,7 @@ contract VestingERC2771Test is Test {
         vesting.addManager(managerAddress);
 
         // fund vesting contract
-        token.transfer(address(vesting), allocation);
+        token.transfer(address(vesting), ALLOCATION);
 
         // register domain separator with forwarder. Since the forwarder does not check the domain separator, we can use any string as domain name.
         vm.recordLogs();
@@ -76,18 +77,18 @@ contract VestingERC2771Test is Test {
     }
 
     /**
-     * @notice Create a new vest as ward using a meta tx that is sent by relayer
+     * @notice Create a new vest as ward using a meta tx that is sent by RELAYER
      */
     function testInitERC2771() public {
         // build request
         bytes memory payload = abi.encodeWithSelector(
             vesting.createVesting.selector,
-            allocation,
+            ALLOCATION,
             beneficiaryAddress,
-            start,
-            cliff,
-            duration,
-            isMintable
+            START,
+            CLIFF,
+            DURATION,
+            IS_MINTABLE
         );
 
         IForwarder.ForwardRequest memory request = IForwarder.ForwardRequest({
@@ -112,39 +113,39 @@ contract VestingERC2771Test is Test {
         );
 
         // sign request.
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(adminPrivateKey, digest);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(ADMIN_PRIVATE_KEY, digest);
         bytes memory signature = abi.encodePacked(r, s, v); // https://docs.openzeppelin.com/contracts/2.x/utilities
 
         require(address(this) != adminAddress, "sender is the admin");
-        vm.prank(relayer);
+        vm.prank(RELAYER);
         forwarder.execute(request, domainSeparator, requestType, suffixData, signature);
 
         //vm.prank(adminAddress);
-        //vesting.createVesting(allocation, beneficiaryAddress, start, cliff, duration, true);
+        //vesting.createVesting(ALLOCATION, beneficiaryAddress, START, CLIFF, DURATION, true);
 
         console.log("signing address: ", request.from);
 
         uint64 id = 1;
 
         // confirm vesting plan was created with proper values
-        assertEq(vesting.allocation(id), allocation, "total is wrong");
+        assertEq(vesting.allocation(id), ALLOCATION, "total is wrong");
         assertEq(vesting.released(id), 0, "released is wrong");
         assertEq(vesting.beneficiary(id), beneficiaryAddress, "beneficiary is wrong");
-        assertEq(vesting.start(id), start, "start is wrong");
-        assertEq(vesting.cliff(id), cliff, "cliff is wrong");
-        assertEq(vesting.duration(id), duration, "duration is wrong");
-        assertEq(vesting.isMintable(id), isMintable, "mintable is wrong");
+        assertEq(vesting.start(id), START, "START is wrong");
+        assertEq(vesting.cliff(id), CLIFF, "CLIFF is wrong");
+        assertEq(vesting.duration(id), DURATION, "DURATION is wrong");
+        assertEq(vesting.isMintable(id), IS_MINTABLE, "mintable is wrong");
     }
 
     /**
-     * @notice Trigger payout as user using a meta tx that is sent by relayer
+     * @notice Trigger payout as user using a meta tx that is sent by RELAYER
      * @dev Many local variables had to be removed to avoid stack too deep error
      */
     function testVestERC2771() public {
         vm.prank(adminAddress);
-        uint64 id = vesting.createVesting(allocation, beneficiaryAddress, start, cliff, duration, isMintable);
+        uint64 id = vesting.createVesting(ALLOCATION, beneficiaryAddress, START, CLIFF, DURATION, IS_MINTABLE);
 
-        vm.warp(start + duration);
+        vm.warp(START + DURATION);
 
         // prepare
         IForwarder.ForwardRequest memory request = IForwarder.ForwardRequest({
@@ -159,7 +160,7 @@ contract VestingERC2771Test is Test {
 
         // sign request.
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
-            beneficiaryPrivateKey,
+            BENEFICIARY_PRIVATE_KEY,
             keccak256(
                 abi.encodePacked(
                     "\x19\x01",
@@ -171,37 +172,37 @@ contract VestingERC2771Test is Test {
 
         assertEq(token.balanceOf(beneficiaryAddress), 0, "beneficiary balance is wrong before release");
 
-        vm.prank(relayer);
+        vm.prank(RELAYER);
         forwarder.execute(request, domainSeparator, requestType, "0", abi.encodePacked(r, s, v));
 
         // confirm vesting plan was created with proper values
-        assertEq(vesting.allocation(id), allocation, "total is wrong");
-        assertEq(vesting.released(id), allocation, "released is wrong");
+        assertEq(vesting.allocation(id), ALLOCATION, "total is wrong");
+        assertEq(vesting.released(id), ALLOCATION, "released is wrong");
         assertEq(vesting.beneficiary(id), beneficiaryAddress, "beneficiary is wrong");
-        assertEq(vesting.start(id), start, "start is wrong");
-        assertEq(vesting.cliff(id), cliff, "cliff is wrong");
-        assertEq(vesting.duration(id), duration, "duration is wrong");
-        assertEq(vesting.isMintable(id), isMintable, "mintable is wrong");
+        assertEq(vesting.start(id), START, "START is wrong");
+        assertEq(vesting.cliff(id), CLIFF, "CLIFF is wrong");
+        assertEq(vesting.duration(id), DURATION, "DURATION is wrong");
+        assertEq(vesting.isMintable(id), IS_MINTABLE, "mintable is wrong");
 
-        assertEq(token.balanceOf(beneficiaryAddress), allocation, "beneficiary balance is wrong after release");
+        assertEq(token.balanceOf(beneficiaryAddress), ALLOCATION, "beneficiary balance is wrong after release");
     }
 
     /**
-     * @notice Yank a vesting contract as manager using a meta tx that is sent by relayer.
+     * @notice Yank a vesting contract as manager using a meta tx that is sent by RELAYER.
      */
     function testStopAfterReleaseERC2771() public {
         // Test case where yanked is called after a partial vest
         vm.prank(adminAddress);
-        uint64 id = vesting.createVesting(allocation, beneficiaryAddress, start, cliff, duration, isMintable);
-        vm.warp(start + duration / 2);
-        assertEq(vesting.releasable(id), allocation / 2);
+        uint64 id = vesting.createVesting(ALLOCATION, beneficiaryAddress, START, CLIFF, DURATION, IS_MINTABLE);
+        vm.warp(START + DURATION / 2);
+        assertEq(vesting.releasable(id), ALLOCATION / 2);
 
         // usr collects some of their value
         vm.prank(beneficiaryAddress);
         vesting.release(id); // collect some now
-        assertEq(token.balanceOf(beneficiaryAddress), allocation / 2);
+        assertEq(token.balanceOf(beneficiaryAddress), ALLOCATION / 2);
 
-        uint64 stopTime = start + (duration * 3) / 4;
+        uint64 stopTime = START + (DURATION * 3) / 4;
 
         // prepare meta-tx to yank as mgr
         bytes memory payload = abi.encodeWithSelector(vesting.stopVesting.selector, id, stopTime);
@@ -228,22 +229,22 @@ contract VestingERC2771Test is Test {
         );
 
         // sign request.
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(managerPrivateKey, digest);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(MANAGER_PRIVATE_KEY, digest);
         bytes memory signature = abi.encodePacked(r, s, v); // https://docs.openzeppelin.com/contracts/2.x/utilities
 
-        vm.prank(relayer);
+        vm.prank(RELAYER);
         forwarder.execute(request, domainSeparator, requestType, suffixData, signature);
 
-        vm.warp(start + duration);
+        vm.warp(START + DURATION);
 
         // confirm vesting plan was created with proper values
-        assertEq(vesting.allocation(id), (allocation * 3) / 4, "total is wrong");
-        assertEq(vesting.released(id), allocation / 2, "released is wrong");
+        assertEq(vesting.allocation(id), (ALLOCATION * 3) / 4, "total is wrong");
+        assertEq(vesting.released(id), ALLOCATION / 2, "released is wrong");
         assertEq(vesting.beneficiary(id), beneficiaryAddress, "beneficiary is wrong");
-        assertEq(vesting.start(id), start, "start is wrong");
-        assertEq(vesting.cliff(id), cliff, "cliff is wrong");
-        assertEq(vesting.duration(id), (duration * 3) / 4, "duration is wrong");
-        assertEq(vesting.isMintable(id), isMintable, "mintable is wrong");
-        assertEq(vesting.releasable(id), allocation / 4, "releasable is wrong");
+        assertEq(vesting.start(id), START, "START is wrong");
+        assertEq(vesting.cliff(id), CLIFF, "CLIFF is wrong");
+        assertEq(vesting.duration(id), (DURATION * 3) / 4, "DURATION is wrong");
+        assertEq(vesting.isMintable(id), IS_MINTABLE, "mintable is wrong");
+        assertEq(vesting.releasable(id), ALLOCATION / 4, "releasable is wrong");
     }
 }

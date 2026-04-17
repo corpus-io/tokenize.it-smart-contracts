@@ -40,10 +40,11 @@ contract MainnetCurrencies is Test {
 
     ERC20Helper helper = new ERC20Helper();
 
-    uint256 public constant tokenOwnerPrivateKey = 0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
-    address public tokenOwner = vm.addr(tokenOwnerPrivateKey); // = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
+    uint256 public constant TOKEN_OWNER_PRIVATE_KEY =
+        0x3c69254ad72222e3ddf37667b8173dd773bdbdfd93d4af1d192815ff0662de5f;
+    address public tokenOwner = vm.addr(TOKEN_OWNER_PRIVATE_KEY); // = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
 
-    address public constant receiver = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
+    address public constant RECEIVER = 0x7109709eCfa91A80626Ff3989D68f67f5b1dD127;
 
     // global variable because I am running out of local ones
     uint256 nonce;
@@ -124,11 +125,11 @@ contract MainnetCurrencies is Test {
     }
 
     function testPermitMainnetEUROC() public {
-        permitERC2612(ERC20Permit(address(EUROC)), 200, 123, tokenOwnerPrivateKey, receiver);
+        permitERC2612(ERC20Permit(address(EUROC)), 200, 123, TOKEN_OWNER_PRIVATE_KEY, RECEIVER);
     }
 
     function testPermitMainnetUSDC() public {
-        permitERC2612(ERC20Permit(address(USDC)), 200, 190, tokenOwnerPrivateKey, receiver);
+        permitERC2612(ERC20Permit(address(USDC)), 200, 190, TOKEN_OWNER_PRIVATE_KEY, RECEIVER);
     }
 
     /**
@@ -138,11 +139,11 @@ contract MainnetCurrencies is Test {
         DaiLike token = DaiLike(address(DAI));
         uint256 _tokenPermitAmount = 200;
         uint256 _tokenTransferAmount = 70;
-        tokenOwner = vm.addr(tokenOwnerPrivateKey);
-        address tokenSpender = receiver;
+        tokenOwner = vm.addr(TOKEN_OWNER_PRIVATE_KEY);
+        address tokenSpender = RECEIVER;
 
         vm.assume(_tokenTransferAmount <= _tokenPermitAmount);
-        tokenOwner = vm.addr(tokenOwnerPrivateKey);
+        tokenOwner = vm.addr(TOKEN_OWNER_PRIVATE_KEY);
         helper.writeERC20Balance(tokenOwner, address(token), _tokenPermitAmount);
 
         // permit spender to spend ALL OF the owner's tokens. This is the special case for DAI.
@@ -156,7 +157,7 @@ contract MainnetCurrencies is Test {
 
         bytes32 hash = ECDSA.toTypedDataHash(DOMAIN_SEPARATOR, structHash);
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(tokenOwnerPrivateKey, hash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(TOKEN_OWNER_PRIVATE_KEY, hash);
 
         // verify signature
         require(tokenOwner == ECDSA.recover(hash, v, r, s), "invalid signature");

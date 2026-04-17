@@ -4,6 +4,7 @@ pragma solidity 0.8.23;
 import "@openzeppelin/contracts/utils/Create2.sol";
 import "../PrivateOffer.sol";
 import "../GlobalTokenExitRegistry.sol";
+import "./CoinvestedPositionCloneFactory.sol";
 import "./TimeLockCloneFactory.sol";
 
 /**
@@ -16,12 +17,19 @@ import "./TimeLockCloneFactory.sol";
 contract PrivateOfferFactory {
     event Deploy(address indexed privateOffer);
     event NewPrivateOfferWithTimeLock(address privateOffer, address timeLock);
+    event NewPrivateOfferWithCoinvestedPosition(address privateOffer, address coinvestedPosition);
 
     TimeLockCloneFactory public immutable timeLockCloneFactory;
+    CoinvestedPositionCloneFactory public immutable coinvestedPositionCloneFactory;
 
-    constructor(TimeLockCloneFactory _timeLockCloneFactory) {
+    constructor(
+        TimeLockCloneFactory _timeLockCloneFactory,
+        CoinvestedPositionCloneFactory _coinvestedPositionCloneFactory
+    ) {
         require(address(_timeLockCloneFactory) != address(0), "TimeLockCloneFactory must not be 0");
+        require(address(_coinvestedPositionCloneFactory) != address(0), "CoinvestedPositionCloneFactory must not be 0");
         timeLockCloneFactory = _timeLockCloneFactory;
+        coinvestedPositionCloneFactory = _coinvestedPositionCloneFactory;
     }
 
     /**
@@ -119,6 +127,70 @@ contract PrivateOfferFactory {
     ) public view returns (address) {
         bytes memory bytecode = _getBytecode(_arguments);
         return Create2.computeAddress(_salt, keccak256(bytecode));
+    }
+
+    /**
+     * @notice Deploys a CoinvestedPosition clone and a PrivateOffer in one transaction. Tokens are
+     *      delivered directly into the CoinvestedPosition.
+     *      Use predictPrivateOfferAndCoinvestedPositionAddress to obtain both addresses beforehand.
+     * @param _rawSalt Value influencing the addresses of the deployed contracts, but nothing else.
+     * @param _trustedForwarder Trusted forwarder for the CoinvestedPosition clone; checked for security.
+     * @param _arguments Arguments for the PrivateOffer contract; tokenReceiver is overridden to the
+     *      CoinvestedPosition address.
+     * @param _coinvestedPositionArgs Arguments for the CoinvestedPosition clone.
+     * @return coinvestedPositionAddress The address of the deployed CoinvestedPosition clone.
+     */
+    function deployPrivateOfferWithCoinvestedPosition(
+        bytes32 _rawSalt,
+        address _trustedForwarder,
+        PrivateOfferArguments calldata _arguments,
+        CoinvestedPositionInitializerArguments calldata _coinvestedPositionArgs
+    ) external returns (address coinvestedPositionAddress) {
+        // deploy the coinvested position clone
+        coinvestedPositionAddress = coinvestedPositionCloneFactory.createCoinvestedPositionClone(
+            _rawSalt,
+            _trustedForwarder,
+            _coinvestedPositionArgs
+        );
+
+        // route token delivery to the coinvested position
+        PrivateOfferArguments memory arguments = _arguments;
+        arguments.tokenReceiver = coinvestedPositionAddress;
+
+        // deploy the private offer, which delivers tokens into the coinvested position
+        address privateOfferAddress = _deployPrivateOffer(_rawSalt, arguments);
+
+        require(
+            _arguments.token.balanceOf(coinvestedPositionAddress) == _arguments.tokenAmount,
+            "token delivery failed"
+        );
+        emit NewPrivateOfferWithCoinvestedPosition(privateOfferAddress, coinvestedPositionAddress);
+    }
+
+    /**
+     * @notice Predicts the addresses of the PrivateOffer and CoinvestedPosition contracts that would be
+     *      deployed with the given parameters.
+     * @param _rawSalt Value influencing the addresses of the deployed contracts, but nothing else.
+     * @param _trustedForwarder Trusted forwarder for the CoinvestedPosition clone.
+     * @param _arguments Arguments for the PrivateOffer contract.
+     * @param _coinvestedPositionArgs Arguments for the CoinvestedPosition clone.
+     * @return privateOfferAddress The address of the PrivateOffer contract that would be deployed.
+     * @return coinvestedPositionAddress The address of the CoinvestedPosition clone that would be deployed.
+     */
+    function predictPrivateOfferAndCoinvestedPositionAddress(
+        bytes32 _rawSalt,
+        address _trustedForwarder,
+        PrivateOfferArguments memory _arguments,
+        CoinvestedPositionInitializerArguments memory _coinvestedPositionArgs
+    ) public view returns (address privateOfferAddress, address coinvestedPositionAddress) {
+        coinvestedPositionAddress = coinvestedPositionCloneFactory.predictCloneAddress(
+            _rawSalt,
+            _trustedForwarder,
+            _coinvestedPositionArgs
+        );
+
+        _arguments.tokenReceiver = coinvestedPositionAddress;
+        privateOfferAddress = predictPrivateOfferAddress(_rawSalt, _arguments);
     }
 
     /**

@@ -14,13 +14,17 @@ By giving each lockup its own contract, the token balance of that contract _is_ 
 
 ---
 
-## MasterUnlock: Centralized Unlock Signal for Lockups
+## GlobalTokenExitRegistry: Centralized Exit Signal for Lockups
 
-**Decision:** A dedicated `MasterUnlock` contract is deployed and referenced by all lockup contracts. Triggering it unlocks all connected lockups simultaneously.
+**Decision:** A single global `GlobalTokenExitRegistry` contract maps each token to its authorized `Exit` contract. `CoinvestedPosition` and `TimeLock` contracts consult this registry to determine whether an exit is in progress, and if so, allow beneficiaries to claim their proceeds regardless of any remaining lock period.
 
-**Rationale:** In an exit scenario, the company must be able to immediately unlock all tokens so that beneficiaries can claim their exit proceeds. The cleanest signal point would be the Token contract itself, since all lockups already reference it. However, that would require changes to the token contract — which is not possible for legacy v4 tokens, of which several are in active use.
+**Rationale:** In an exit scenario, beneficiaries must be able to receive their exit proceeds even if their tokens are still subject to a time lock or vesting schedule. The registry does not unlock tokens — it signals that an exit has been authorized for a given token, which is a distinct concept. Lockup contracts read this signal and bypass their time constraints only when routing proceeds to the exit contract, not when releasing tokens freely.
 
-A standalone `MasterUnlock` contract solves this without touching the token contract: it is connected to all lockups of a specific Token at deployment time, and a single call to it unlocks everything centrally.
+A single global registry is preferable to per-token or per-lockup registries because it requires no coordination at lockup deployment time: any lockup contract can look up the exit for its token at claim time without needing to know the exit address in advance.
+
+The mapping is write-once: once an exit is registered for a token it cannot be changed. This prevents a compromised or reassigned admin from redirecting exit proceeds after beneficiaries have already begun to rely on the registered exit.
+
+The authorization check accepts either the token's `DEFAULT_ADMIN_ROLE` holder or its `owner()`, wrapped in try/catch, so the registry works with both OZ `AccessControl`-based tokens (including the current `Token` contract) and simpler `Ownable`-only tokens without requiring changes to either.
 
 ---
 
