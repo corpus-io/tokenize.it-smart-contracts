@@ -38,7 +38,7 @@ contract DistributionCloneFactory is CloneFactory {
     ) external returns (address) {
         bytes32 salt = _getSalt(_rawSalt, _trustedForwarder, _arguments);
         Distribution clone = Distribution(Clones.cloneDeterministic(implementation, salt));
-        require(clone.isTrustedForwarder(_trustedForwarder), "DistributionCloneFactory: Unexpected trustedForwarder");
+        require(clone.isTrustedForwarder(_trustedForwarder), UnexpectedTrustedForwarder());
         clone.initialize(_arguments, _currencyProvider, _initialFundingAmount);
         emit NewClone(address(clone));
         return address(clone);

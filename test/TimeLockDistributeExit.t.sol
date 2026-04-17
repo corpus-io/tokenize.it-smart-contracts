@@ -315,7 +315,7 @@ contract TimeLockDistributeExitTest is Test {
         address wrongForwarder = address(99);
         TimeLock logic = new TimeLock(TRUSTED_FORWARDER);
         TimeLockCloneFactory cloneFactory = new TimeLockCloneFactory(address(logic));
-        vm.expectRevert("TimeLockCloneFactory: Unexpected trustedForwarder");
+        vm.expectRevert(Factory.UnexpectedTrustedForwarder.selector);
         cloneFactory.createTimeLockClone(bytes32(0), wrongForwarder, OWNER, timeLockExpiry, tokenExitRegistry);
     }
 

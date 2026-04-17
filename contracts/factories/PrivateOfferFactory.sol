@@ -15,6 +15,15 @@ import "./TimeLockCloneFactory.sol";
  * @dev One deployment of this contract can be used for deployment of any number of PrivateOffers using create2.
  */
 contract PrivateOfferFactory {
+    /// @notice Reverted when the TimeLockCloneFactory address passed to the constructor is zero.
+    error ZeroTimeLockCloneFactoryAddress();
+
+    /// @notice Reverted when the CoinvestedPositionCloneFactory address passed to the constructor is zero.
+    error ZeroCoinvestedPositionCloneFactoryAddress();
+
+    /// @notice Reverted when the token balance of the destination contract does not match the expected amount after deployment.
+    error TokenDeliveryFailed();
+
     event Deploy(address indexed privateOffer);
     event NewPrivateOfferWithTimeLock(address privateOffer, address timeLock);
     event NewPrivateOfferWithCoinvestedPosition(address privateOffer, address coinvestedPosition);
@@ -26,8 +35,8 @@ contract PrivateOfferFactory {
         TimeLockCloneFactory _timeLockCloneFactory,
         CoinvestedPositionCloneFactory _coinvestedPositionCloneFactory
     ) {
-        require(address(_timeLockCloneFactory) != address(0), "TimeLockCloneFactory must not be 0");
-        require(address(_coinvestedPositionCloneFactory) != address(0), "CoinvestedPositionCloneFactory must not be 0");
+        require(address(_timeLockCloneFactory) != address(0), ZeroTimeLockCloneFactoryAddress());
+        require(address(_coinvestedPositionCloneFactory) != address(0), ZeroCoinvestedPositionCloneFactoryAddress());
         timeLockCloneFactory = _timeLockCloneFactory;
         coinvestedPositionCloneFactory = _coinvestedPositionCloneFactory;
     }
@@ -79,7 +88,7 @@ contract PrivateOfferFactory {
         // deploy the private offer, which mints tokens directly into the time lock
         address privateOffer = _deployPrivateOffer(_rawSalt, arguments);
 
-        require(_arguments.token.balanceOf(address(timeLock)) == _arguments.tokenAmount, "Execution failed");
+        require(_arguments.token.balanceOf(address(timeLock)) == _arguments.tokenAmount, TokenDeliveryFailed());
         emit NewPrivateOfferWithTimeLock(privateOffer, address(timeLock));
         return address(timeLock);
     }
@@ -160,10 +169,7 @@ contract PrivateOfferFactory {
         // deploy the private offer, which delivers tokens into the coinvested position
         address privateOfferAddress = _deployPrivateOffer(_rawSalt, arguments);
 
-        require(
-            _arguments.token.balanceOf(coinvestedPositionAddress) == _arguments.tokenAmount,
-            "token delivery failed"
-        );
+        require(_arguments.token.balanceOf(coinvestedPositionAddress) == _arguments.tokenAmount, TokenDeliveryFailed());
         emit NewPrivateOfferWithCoinvestedPosition(privateOfferAddress, coinvestedPositionAddress);
     }
 

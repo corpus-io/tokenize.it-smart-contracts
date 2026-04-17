@@ -223,7 +223,7 @@ contract TokenSwapTest is Test {
             token
         );
 
-        vm.expectRevert("TokenSwapCloneFactory: Unexpected trustedForwarder");
+        vm.expectRevert(Factory.UnexpectedTrustedForwarder.selector);
         TokenSwap(factory.createTokenSwapClone(0, address(0), arguments));
 
         // OWNER 0

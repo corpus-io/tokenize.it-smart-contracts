@@ -52,7 +52,7 @@ contract TokenProxyFactory is Factory {
         address proxyAddress = Create2.deploy(0, salt, getBytecode());
         ERC1967Proxy proxy = ERC1967Proxy(payable(proxyAddress));
         Token cloneToken = Token(address(proxy));
-        require(cloneToken.isTrustedForwarder(_trustedForwarder), "TokenProxyFactory: Unexpected trustedForwarder");
+        require(cloneToken.isTrustedForwarder(_trustedForwarder), UnexpectedTrustedForwarder());
         cloneToken.initialize(_feeSettings, _admin, _allowList, _requirements, _name, _symbol);
         emit NewProxy(address(proxy));
         return address(proxy);

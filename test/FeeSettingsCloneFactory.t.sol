@@ -278,7 +278,7 @@ contract tokenTest is Test {
     }
 
     function testPrivateOfferFactoryRevertsIfTimeLockFactoryZero() public {
-        vm.expectRevert("TimeLockCloneFactory must not be 0");
+        vm.expectRevert(PrivateOfferFactory.ZeroTimeLockCloneFactoryAddress.selector);
         new PrivateOfferFactory(TimeLockCloneFactory(address(0)), CoinvestedPositionCloneFactory(address(1)));
     }
 }

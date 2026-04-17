@@ -33,7 +33,7 @@ contract TimeLockCloneFactory is CloneFactory {
     ) external returns (address) {
         bytes32 salt = _getSalt(_rawSalt, _trustedForwarder, _owner, _lockedUntil, _tokenExitRegistry);
         TimeLock clone = TimeLock(Clones.cloneDeterministic(implementation, salt));
-        require(clone.isTrustedForwarder(_trustedForwarder), "TimeLockCloneFactory: Unexpected trustedForwarder");
+        require(clone.isTrustedForwarder(_trustedForwarder), UnexpectedTrustedForwarder());
         clone.initialize(_owner, _lockedUntil, _tokenExitRegistry);
         emit NewClone(address(clone));
         return address(clone);

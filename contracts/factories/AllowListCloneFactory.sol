@@ -28,10 +28,7 @@ contract AllowListCloneFactory is CloneFactory {
         bytes32 salt = _generateSalt(_rawSalt, _trustedForwarder, _owner);
         address clone = Clones.cloneDeterministic(implementation, salt);
         AllowList cloneAllowList = AllowList(clone);
-        require(
-            cloneAllowList.isTrustedForwarder(_trustedForwarder),
-            "AllowListCloneFactory: Unexpected trustedForwarder"
-        );
+        require(cloneAllowList.isTrustedForwarder(_trustedForwarder), UnexpectedTrustedForwarder());
         cloneAllowList.initialize(_owner);
         emit NewClone(clone);
         return clone;
@@ -55,10 +52,7 @@ contract AllowListCloneFactory is CloneFactory {
         bytes32 salt = _generateSalt(_rawSalt, _trustedForwarder, _owner);
         address clone = Clones.cloneDeterministic(implementation, salt);
         AllowList cloneAllowList = AllowList(clone);
-        require(
-            cloneAllowList.isTrustedForwarder(_trustedForwarder),
-            "AllowListCloneFactory: Unexpected trustedForwarder"
-        );
+        require(cloneAllowList.isTrustedForwarder(_trustedForwarder), UnexpectedTrustedForwarder());
         cloneAllowList.initialize(_owner, _addresses, _attributes);
         emit NewClone(clone);
         return clone;

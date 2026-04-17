@@ -36,7 +36,7 @@ contract AllowListCloneFactoryTest is Test {
         vm.assume(_wrongTrustedForwarder != address(0));
 
         // using a different trustedForwarder should fail
-        vm.expectRevert("AllowListCloneFactory: Unexpected trustedForwarder");
+        vm.expectRevert(Factory.UnexpectedTrustedForwarder.selector);
         factory.createAllowListClone(bytes32(uint256(0)), _wrongTrustedForwarder, companyAdmin);
 
         // using the correct trustedForwarder should succeed
@@ -107,7 +107,7 @@ contract AllowListCloneFactoryTest is Test {
         address[] memory addresses = new address[](0);
         uint256[] memory attributes = new uint256[](0);
 
-        vm.expectRevert("AllowListCloneFactory: Unexpected trustedForwarder");
+        vm.expectRevert(Factory.UnexpectedTrustedForwarder.selector);
         factory.createAllowListClone(bytes32(uint256(1)), _wrongTrustedForwarder, companyAdmin, addresses, attributes);
     }
 

@@ -136,7 +136,7 @@ contract tokenProxyFactoryTest is Test {
         vm.assume(_wrongForwarder != address(0));
 
         // using a different TRUSTED_FORWARDER should fail
-        vm.expectRevert("TokenProxyFactory: Unexpected trustedForwarder");
+        vm.expectRevert(Factory.UnexpectedTrustedForwarder.selector);
         factory.createTokenProxy(
             bytes32(uint256(0)),
             _wrongForwarder,

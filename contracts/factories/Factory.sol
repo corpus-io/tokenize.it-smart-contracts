@@ -14,6 +14,9 @@ abstract contract Factory {
     /// @notice Reverted when the implementation address passed to the constructor is zero.
     error ZeroImplementationAddress();
 
+    /// @notice Reverted when the clone's trusted forwarder does not match the expected one.
+    error UnexpectedTrustedForwarder();
+
     /// The address of the implementation contract
     address public immutable implementation;
 

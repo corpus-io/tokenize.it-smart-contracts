@@ -37,7 +37,7 @@ contract ExitCloneFactory is CloneFactory {
     ) external returns (address) {
         bytes32 salt = _getSalt(_rawSalt, _trustedForwarder, _arguments);
         Exit clone = Exit(Clones.cloneDeterministic(implementation, salt));
-        require(clone.isTrustedForwarder(_trustedForwarder), "ExitCloneFactory: Unexpected trustedForwarder");
+        require(clone.isTrustedForwarder(_trustedForwarder), UnexpectedTrustedForwarder());
         clone.initialize(_arguments, _currencyProvider, _initialFundingAmount);
         emit NewClone(address(clone));
         return address(clone);
