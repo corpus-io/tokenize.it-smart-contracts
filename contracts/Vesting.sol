@@ -2,7 +2,7 @@
 // derived from OpenZeppelin Contracts (last updated v4.9.0) (finance/VestingWallet.sol)
 /// @author cjentzsch, malteish
 
-pragma solidity 0.8.23;
+pragma solidity 0.8.34;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol";
