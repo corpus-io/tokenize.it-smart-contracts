@@ -18,6 +18,12 @@ import "./common/Errors.sol";
 contract FeeSplitter {
     using SafeERC20 for IERC20;
 
+    /// @notice Reverted when the feePayer address argument is zero.
+    error ZeroFeePayerAddress();
+
+    /// @notice Reverted when the coinvestedPosition address argument is zero.
+    error ZeroCoinvestedPositionAddress();
+
     /// @notice Reverted when the lead investor list of the CoinvestedPosition is empty.
     error NoLeadInvestors();
 
@@ -40,10 +46,10 @@ contract FeeSplitter {
         uint256 feeAmount,
         CoinvestedPosition coinvestedPosition
     ) external {
-        require(feePayer != address(0), ZeroAddress());
-        require(address(currency) != address(0), ZeroAddress());
+        require(feePayer != address(0), ZeroFeePayerAddress());
+        require(address(currency) != address(0), ZeroCurrencyAddress());
         require(feeAmount != 0, ZeroAmount());
-        require(address(coinvestedPosition) != address(0), ZeroAddress());
+        require(address(coinvestedPosition) != address(0), ZeroCoinvestedPositionAddress());
 
         uint256 investorCount = coinvestedPosition.getLeadInvestorsCount();
         require(investorCount > 0, NoLeadInvestors());

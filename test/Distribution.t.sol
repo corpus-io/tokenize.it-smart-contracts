@@ -411,7 +411,7 @@ contract DistributionTest is Test {
     }
 
     function testDrainBeforeDeadlineReverts() public {
-        vm.expectRevert("drain not yet available");
+        vm.expectRevert(DrainNotYetAvailable.selector);
         vm.prank(OWNER);
         dist.drain(OWNER, currency);
     }
@@ -441,7 +441,7 @@ contract DistributionTest is Test {
         vm.assume(warpTo >= block.timestamp);
         vm.warp(warpTo);
         if (warpTo < lockedUntil) {
-            vm.expectRevert("drain not yet available");
+            vm.expectRevert(DrainNotYetAvailable.selector);
             vm.prank(OWNER);
             dist.drain(OWNER, currency);
         } else {

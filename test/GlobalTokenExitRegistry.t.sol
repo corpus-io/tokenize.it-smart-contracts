@@ -94,7 +94,7 @@ contract GlobalTokenExitRegistryTest is Test {
         address fakeExit = makeAddr("fakeExit");
 
         vm.prank(NON_ADMIN);
-        vm.expectRevert("caller is not token admin or owner");
+        vm.expectRevert(GlobalTokenExitRegistry.NotTokenAdminOrOwner.selector);
         registry.setExit(token, Exit(address(fakeExit)));
     }
 
@@ -102,13 +102,13 @@ contract GlobalTokenExitRegistryTest is Test {
         address fakeExit = makeAddr("fakeExit");
 
         vm.prank(ADMIN);
-        vm.expectRevert("token can not be zero address");
+        vm.expectRevert(ZeroTokenAddress.selector);
         registry.setExit(Token(address(0)), Exit(address(fakeExit)));
     }
 
     function testSetExitRevertsIfExitIsZeroAddress() public {
         vm.prank(ADMIN);
-        vm.expectRevert("exit can not be zero address");
+        vm.expectRevert(GlobalTokenExitRegistry.ZeroExitAddress.selector);
         registry.setExit(token, Exit(address(0)));
     }
 
@@ -120,7 +120,7 @@ contract GlobalTokenExitRegistryTest is Test {
         registry.setExit(token, Exit(address(fakeExit1)));
 
         vm.prank(ADMIN);
-        vm.expectRevert("exit has already been set");
+        vm.expectRevert(GlobalTokenExitRegistry.ExitAlreadySet.selector);
         registry.setExit(token, Exit(address(fakeExit2)));
     }
 
@@ -155,7 +155,7 @@ contract GlobalTokenExitRegistryTest is Test {
         address fakeExit = makeAddr("fakeExit");
 
         vm.prank(NON_ADMIN);
-        vm.expectRevert("caller is not token admin or owner");
+        vm.expectRevert(GlobalTokenExitRegistry.NotTokenAdminOrOwner.selector);
         registry.setExit(Token(address(ownableToken)), Exit(address(fakeExit)));
     }
 
@@ -194,7 +194,7 @@ contract GlobalTokenExitRegistryTest is Test {
         vm.assume(!token.hasRole(token.DEFAULT_ADMIN_ROLE(), caller));
         address fakeExit = makeAddr("fakeExit");
         vm.prank(caller);
-        vm.expectRevert("caller is not token admin or owner");
+        vm.expectRevert(GlobalTokenExitRegistry.NotTokenAdminOrOwner.selector);
         registry.setExit(token, Exit(address(fakeExit)));
     }
 

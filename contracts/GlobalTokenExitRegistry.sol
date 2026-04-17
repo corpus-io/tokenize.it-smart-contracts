@@ -5,6 +5,7 @@ import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol
 
 import "./Exit.sol";
 import "./Token.sol";
+import "./common/Errors.sol";
 
 interface IOwnable {
     function owner() external view returns (address);
@@ -18,6 +19,15 @@ interface IOwnable {
  *         Once set, an exit cannot be changed.
  */
 contract GlobalTokenExitRegistry is ERC2771ContextUpgradeable {
+    /// @notice Reverted when the exit address argument is zero.
+    error ZeroExitAddress();
+
+    /// @notice Reverted when the caller holds neither DEFAULT_ADMIN_ROLE nor owner() on the token.
+    error NotTokenAdminOrOwner();
+
+    /// @notice Reverted when an exit has already been set for the token and a second set is attempted.
+    error ExitAlreadySet();
+
     /// @notice The authorized exit contract per token.
     mapping(Token => Exit) public exits;
 
@@ -37,10 +47,10 @@ contract GlobalTokenExitRegistry is ERC2771ContextUpgradeable {
      * @param _exit the exit contract to authorize; must not be zero address
      */
     function setExit(Token _token, Exit _exit) external {
-        require(address(_token) != address(0), "token can not be zero address");
-        require(address(_exit) != address(0), "exit can not be zero address");
-        require(address(exits[_token]) == address(0), "exit has already been set");
-        require(_isTokenAdminOrOwner(_token, _msgSender()), "caller is not token admin or owner");
+        require(address(_token) != address(0), ZeroTokenAddress());
+        require(address(_exit) != address(0), ZeroExitAddress());
+        require(address(exits[_token]) == address(0), ExitAlreadySet());
+        require(_isTokenAdminOrOwner(_token, _msgSender()), NotTokenAdminOrOwner());
         exits[_token] = _exit;
         emit ExitSet(_token, _exit);
     }

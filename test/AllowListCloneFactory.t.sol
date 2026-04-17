@@ -47,7 +47,7 @@ contract AllowListCloneFactoryTest is Test {
         vm.assume(_owner != address(0));
 
         // using a different owner should fail
-        vm.expectRevert("owner can not be zero address");
+        vm.expectRevert(ZeroOwnerAddress.selector);
         factory.createAllowListClone(bytes32(uint256(0)), trustedForwarder, address(0));
 
         // using the correct owner should succeed
@@ -112,7 +112,7 @@ contract AllowListCloneFactoryTest is Test {
     }
 
     function testFactoryRevertsIfImplementationZero() public {
-        vm.expectRevert("Factory: implementation can not be zero");
+        vm.expectRevert(Factory.ZeroImplementationAddress.selector);
         new AllowListCloneFactory(address(0));
     }
 
@@ -120,7 +120,7 @@ contract AllowListCloneFactoryTest is Test {
         address[] memory addresses = new address[](0);
         uint256[] memory attributes = new uint256[](0);
 
-        vm.expectRevert("owner can not be zero address");
+        vm.expectRevert(ZeroOwnerAddress.selector);
         factory.createAllowListClone(bytes32(uint256(0)), trustedForwarder, address(0), addresses, attributes);
     }
 }

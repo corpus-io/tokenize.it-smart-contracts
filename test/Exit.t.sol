@@ -361,7 +361,7 @@ contract ExitTest is Test {
         vm.assume(timestamp < type(uint64).max - 1);
         vm.warp(timestamp);
         if (timestamp < lockedUntil) {
-            vm.expectRevert("drain not yet available");
+            vm.expectRevert(DrainNotYetAvailable.selector);
             vm.prank(OWNER);
             exitContract.drain(RECIPIENT, currency);
         } else {

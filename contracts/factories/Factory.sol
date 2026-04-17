@@ -2,6 +2,8 @@
 
 pragma solidity 0.8.34;
 
+import "../common/Errors.sol";
+
 /**
  * @title Factory
  * @author malteish
@@ -9,11 +11,14 @@ pragma solidity 0.8.34;
  */
 
 abstract contract Factory {
+    /// @notice Reverted when the implementation address passed to the constructor is zero.
+    error ZeroImplementationAddress();
+
     /// The address of the implementation contract
     address public immutable implementation;
 
     constructor(address _implementation) {
-        require(_implementation != address(0), "Factory: implementation can not be zero");
+        require(_implementation != address(0), ZeroImplementationAddress());
         implementation = _implementation;
     }
 }

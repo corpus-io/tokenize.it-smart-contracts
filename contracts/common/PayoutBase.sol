@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../Token.sol";
 import "./IFeeSettings.sol";
+import "./Errors.sol";
 
 /**
  * @title tokenize.it PayoutBase
@@ -18,6 +19,9 @@ import "./IFeeSettings.sol";
  *      Provides common state (token, currency, pricePerToken, lockedUntil), fee computation,
  *      and the drain function.
  */
+/// @notice Reverted when drain() is called before lockedUntil has elapsed.
+error DrainNotYetAvailable();
+
 abstract contract PayoutBase is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, ReentrancyGuardUpgradeable {
     using SafeERC20 for IERC20;
 
@@ -88,7 +92,7 @@ abstract contract PayoutBase is ERC2771ContextUpgradeable, Ownable2StepUpgradeab
      * @param _erc20 ERC20 token to recover
      */
     function drain(address _recipient, IERC20 _erc20) external onlyOwner nonReentrant {
-        require(block.timestamp >= lockedUntil, "drain not yet available");
+        require(block.timestamp >= lockedUntil, DrainNotYetAvailable());
         _erc20.safeTransfer(_recipient, _erc20.balanceOf(address(this)));
     }
 

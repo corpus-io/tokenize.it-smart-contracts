@@ -141,13 +141,13 @@ contract FeeSplitterTest is Test {
 
     function testPayFeeZeroFeePayerReverts() public {
         mockPosition.addLeadInvestor(LEAD_A, CARRY_10PCT);
-        vm.expectRevert(ZeroAddress.selector);
+        vm.expectRevert(FeeSplitter.ZeroFeePayerAddress.selector);
         feeSplitter.payFee(address(0), usdc, FEE_AMOUNT, CoinvestedPosition(address(mockPosition)));
     }
 
     function testPayFeeZeroCurrencyReverts() public {
         mockPosition.addLeadInvestor(LEAD_A, CARRY_10PCT);
-        vm.expectRevert(ZeroAddress.selector);
+        vm.expectRevert(ZeroCurrencyAddress.selector);
         feeSplitter.payFee(FEE_PAYER, IERC20(address(0)), FEE_AMOUNT, CoinvestedPosition(address(mockPosition)));
     }
 
@@ -158,7 +158,7 @@ contract FeeSplitterTest is Test {
     }
 
     function testPayFeeZeroCoinvestedPositionReverts() public {
-        vm.expectRevert(ZeroAddress.selector);
+        vm.expectRevert(FeeSplitter.ZeroCoinvestedPositionAddress.selector);
         feeSplitter.payFee(FEE_PAYER, usdc, FEE_AMOUNT, CoinvestedPosition(address(0)));
     }
 
