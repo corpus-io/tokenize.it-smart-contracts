@@ -36,6 +36,7 @@
 - **Generic errors** (e.g. `ZeroAddress`, `ZeroAmount`) are declared as top-level file-level errors in `contracts/common/Errors.sol` and imported where needed.
 - **Contract-specific errors** are declared inside the contract that uses them.
 - Do not declare errors in interfaces.
+- Only add arguments to a custom error when they give the caller information they could not already derive from the call context (e.g. the function arguments or their own address). Redundant arguments add gas cost and noise.
 - In tests, match custom errors by selector; for errors with parameters also encode the argument values:
   ```solidity
   // parameter-less error
