@@ -26,7 +26,7 @@ Token holders can receive dividend payouts proportional to their token balance a
 
 ### CoinvestedPosition integration
 
-A `CoinvestedPosition` contract holding tokens at snapshot time can claim its share via `distributeDividends(dist, currency)`. The received dividend is then split: lead investors receive carry shares, the co-investor (receiver) receives the remainder.
+A `CoinvestedPosition` contract holding tokens at snapshot time can claim its share via `claimDistribution(dist, minPayout)`. The received dividend is then split: lead investors receive carry shares, the co-investor (receiver) receives the remainder.
 
 ---
 
@@ -61,7 +61,9 @@ There is no on-chain enforcement that `initialFundingAmount` equals `totalTokenS
 
 ### CoinvestedPosition integration
 
-A `CoinvestedPosition` can participate in an exit via `distributeExit(exit, currency, minAmount)`. It redeems its full token balance, then splits proceeds: carry (proceeds above base price) goes to lead investors, everything else to the co-investor (receiver).
+A `CoinvestedPosition` can participate in an exit via `claimExit(minCurrencyAmount, basePrice)`. It looks up the exit contract for its token in the `GlobalTokenExitRegistry` and reverts if none is registered. It then redeems its full token balance and splits proceeds: carry (proceeds above base price) goes to lead investors, everything else to the co-investor (receiver).
+
+When the exit currency differs from the position's stored currency, `claimExit` converts the stored `basePrice` using the exchange rate the exit contract provides for that currency pair. If no rate is available, the caller must supply a `basePrice` expressed in the exit currency's units.
 
 ---
 

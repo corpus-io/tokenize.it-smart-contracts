@@ -5,6 +5,10 @@ These smart contracts implement [tokenize.it](https://tokenize.it/)'s tokenized 
 - generate tokens that grant economical rights to the token holder
 - sell these tokens to investors either publicly or privately
 - distribute tokens to employees or partners, either directly or through a vesting contract
+- distribute proceeds (e.g. dividends) to token holders based on a snapshot
+- enable token exits, allowing holders to redeem their tokens for currency
+- hold tokens in a timelock that can participate in distributions and exits before unlocking
+- coinvest with trusted lead investors. The coinvestor gets the chance to access deal terms that might otherwise not be available to them, and the lead investors get the chance to share in the profits of the coinvestor.
 
 # Getting Started
 
@@ -55,6 +59,15 @@ More dev information can be found here:
 4. Secondary market trading between investors:
    - investors can trade existing tokens between each other using the [TokenSwap.sol](contracts/TokenSwap.sol) contract
    - unlike PrivateOffer and Crowdinvesting which mint new tokens, TokenSwap facilitates the exchange of already-issued tokens between parties at a preset price
+5. Distributing proceeds to token holders:
+   - dividends or other proceeds can be distributed proportionally based on a token snapshot using [Distribution.sol](contracts/Distribution.sol)
+6. Token exits:
+   - a company can set up an exit contract [Exit.sol](contracts/Exit.sol), allowing token holders to redeem their tokens for currency at a fixed price
+   - the exit for a given token is registered in the global [GlobalTokenExitRegistry.sol](contracts/GlobalTokenExitRegistry.sol), which is the authoritative source for which exit contract is valid
+7. Timelock:
+   - tokens can be held in a [TimeLock.sol](contracts/TimeLock.sol) that blocks withdrawals until a configured timestamp, while still allowing the holder to claim distribution proceeds and exit proceeds
+8. Co-invested positions:
+   - [CoinvestedPosition.sol](contracts/CoinvestedPosition.sol) holds tokens on behalf of a co-investor and distributes sale proceeds between lead investors (carry) and the co-investor
 
 The requirements for an address to send or receive tokens are checked against the [AllowList.sol](contracts/AllowList.sol) contract. Fees are collected according to the settings in [FeeSettings.sol](./contracts/FeeSettings.sol). Tokenize.it will deploy and manage at least one AllowList and one FeeSettings contract.
 
@@ -70,7 +83,7 @@ It is possible to directly use all smart contracts in this project, without goin
 In order to improve UX, though, a frontend will be offered. In order to improve UX even more, the user will not have to pay gas when using this frontend. This is achieved through three approaches:
 
 1. the platform executes transactions like contract deployments that do not require the user's signature
-2. actions concerning our own contracts that require the user's approval are executed as meta-transactions, using EIP-2711
+2. actions concerning our own contracts that require the user's approval are executed as meta-transactions, using EIP-2771
 3. granting allowances on external currencies is possible through EIP-2612 (ERC20Permit), which is widely adopted. This is not in the scope of this documentation though.
 
 Several of the contracts implement [EIP-2771](https://eips.ethereum.org/EIPS/eip-2771), and therefore use a trusted forwarder. The forwarder will be set in the constructor and there is no way to change it after deployment. The forwarder used will be the openGSN v2 forwarder deployed on mainnet. Some information about this contract:

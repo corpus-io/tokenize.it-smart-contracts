@@ -83,7 +83,9 @@ Unlike PrivateOffer and Crowdinvesting contracts, TokenSwap does not mint new to
 
 ### Co-investments / Syndicates
 
-The CoinvestedPosition contract handles the case where a group of investors co-invest in a company alongside one or more lead investors. It holds tokens on behalf of the co-investor and manages the distribution of proceeds according to a carry agreement.
+Co-investments allow a co-investor to access deal terms that might otherwise not be available to them, by investing alongside one or more lead investors. In return, the lead investors receive a share of the profits (carry) — giving them economic upside without deploying all the capital themselves.
+
+The CoinvestedPosition contract implements this arrangement. It holds tokens on behalf of the co-investor and manages the distribution of proceeds according to a carry agreement.
 
 **Parties involved:**
 
@@ -92,11 +94,11 @@ The CoinvestedPosition contract handles the case where a group of investors co-i
 
 **Three payout paths:**
 
-1. **Token sale (`buy()`)**: A buyer purchases tokens from the contract at `tokenPrice`. After fees, the co-investor receives the base price portion and lead investors split any surplus (carry). Starts paused; owner unpauses when ready to sell.
-2. **Dividends (`claimDistribution()`)**: The contract owner claims a dividend Distribution on behalf of the contract, then settles the received currency among lead investors (all dividend proceeds treated as carry) with remainder to the co-investor receiver.
-3. **Exit (`claimExit()`)**: The contract owner participates in an Exit contract by redeeming the full token balance, then splits proceeds: lead investors receive carry above the base price, co-investor receives everything else.
+1. **Token sale**: A buyer purchases tokens from the contract at the set price. After fees, the co-investor receives the base price portion and lead investors split any surplus (carry). Starts paused; owner unpauses when ready to sell.
+2. **Dividends**: The contract owner claims a dividend Distribution on behalf of the contract, then settles the received currency among lead investors (all dividend proceeds treated as carry) with remainder to the co-investor receiver.
+3. **Exit**: The contract owner participates in an Exit contract by redeeming the full token balance, then splits proceeds: lead investors receive carry above the base price, co-investor receives everything else.
 
-**Currency flexibility**: `basePrice` is fixed in the base currency's bits at initialization. After the timelock has expired, the owner can switch to a different trusted ERC-20 currency by calling `setCurrency(currency, basePrice)`, supplying the base price re-expressed in the new currency's units.
+**Currency flexibility**: The base price is fixed at initialization. After the timelock has expired, the owner can switch to a different trusted ERC-20 currency, supplying the base price re-expressed in the new currency, or just update the base price.
 
 ## Distributions
 
@@ -106,10 +108,10 @@ After a company earns revenue or undergoes a liquidation event, it can distribut
 
 **Workflow:**
 
-1. The token admin takes a snapshot of current token balances by calling `snapshot()` on the Token contract. The snapshot captures every holder's balance at that moment.
+1. The token admin takes a snapshot of current token balances by creating a snapshot on the Token contract. The snapshot captures every holder's balance at that moment.
 2. The company (or platform on its behalf) clones a Distribution contract, optionally funding it at initialization.
-3. Token holders call `claim()` to receive their proportional share: `balanceAtSnapshot * pricePerToken / 10**decimals`, minus a distribution fee.
-4. If a holder cannot claim (e.g. lost key, or a smart contract), the contract owner can call `reassign()` after the configured `lockedUntil` timestamp to redirect that share to another address to make it available to the holder. All reassignments are recorded on-chain for auditability.
+3. Token holders claim their proportional share.
+4. If a holder cannot claim (e.g. lost key, or a smart contract), the contract owner can reassign if after the configured locktime, making it available to the holder at another address. All reassignments are recorded on-chain for auditability.
 
 ### Exit proceeds
 
@@ -117,10 +119,10 @@ When a company exits (e.g. acquisition or winding down), it can set up an automa
 
 **Workflow:**
 
-1. The company deploys an Exit contract, specifying: the token, the exit currency (must have `TRUSTED_CURRENCY` on the AllowList), a fixed `pricePerToken`, and a `lockedUntil` timestamp after which unclaimed funds can be drained.
-2. The Exit contract is funded with the total payout amount at initialization.
-3. Any token holder can call `claim()` at any time to exchange their entire token balance for currency. The tokens are transferred to the Exit contract (held there, not burned) and the holder receives `tokenBalance * pricePerToken / 10**decimals` currency minus a platform fee.
-4. After `lockedUntil`, the company can call `drain()` to recover any unclaimed funds and collected tokens.
+1. The company deploys an Exit contract.
+2. The Exit contract can be funded with currency at initialization, but can also be funded later.
+3. Any token holder can exchange their entire token balance for currency at any time. The tokens are pulled in by the contract (held there, not burned) and the holder receives their share of the exit proceeds. **Nobody should ever send tokens to the contract address!** For proper use, just an approval is needed.
+4. After the locktime, the company can drain any unclaimed funds and collected tokens.
 
 Unlike Distribution, Exit does not use snapshots. The holder's token balance at claim time determines the payout.
 
@@ -133,7 +135,7 @@ While tokenize.it does not provide legal council, it will provide templates for 
 ## Transaction fees
 
 The platform will pay all ethereum transaction fees for deployments and other transactions performed through it's web app. This is made possible through the use of [meta transactions (EIP-2771) and trustless deployment procedures](../README.md#eip-2771).
-Note that, independent of ethereum transaction fees, the platform charges [fees for token minting and investments](fees.md)!
+Note that, independent of ethereum transaction fees, the platform charges [fees for token minting, investments, and other operations](fees.md)!
 
 ## Investor and company pool
 
