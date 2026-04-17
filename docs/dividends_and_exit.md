@@ -13,16 +13,16 @@ Token holders can receive dividend payouts proportional to their token balance a
    - `token` and `snapshotId`
    - `currency`: the ERC-20 token used for payouts (must have `TRUSTED_CURRENCY` on the AllowList)
    - `pricePerToken`: currency payout in smallest currency units per full token unit (same unit convention as `tokenPrice` in TokenSwap)
-   - `reassignOrDrainAfter`: timestamp from which unclaimed funds can be redirected or drained
+   - `lockedUntil`: timestamp from which unclaimed funds can be redirected or drained
    - `initialReassignments` (optional): reassignments applied immediately at initialization, bypassing the time restriction
 
    Optionally, the contract can be funded at initialization by providing a `_currencyProvider` and `_initialFundingAmount`.
 
 3. **Holders claim**: Any holder at snapshot time calls `Distribution.claim(recipient, minPayout)`. Their gross share is `balanceAtSnapshot * pricePerToken / 10**token.decimals()`. The platform fee (`distributionFee`) is deducted per claim, and the net remainder is sent to `recipient`. Smart contract holders (e.g. CoinvestedPosition) can call `claim()` directly or have the owner use `reassign()` to redirect their share.
 
-4. **Reassignment** (recovery): If a holder cannot claim (lost key, broken smart contract), the owner can call `reassign(from, to, amount)` after `reassignOrDrainAfter` to redirect that share. Every reassignment is recorded on-chain via the `Reassigned` event.
+4. **Reassignment** (recovery): If a holder cannot claim (lost key, broken smart contract), the owner can call `reassign(from, to, amount)` after `lockedUntil` to redirect that share. Every reassignment is recorded on-chain via the `Reassigned` event.
 
-5. **Drain**: After `reassignOrDrainAfter`, the owner can call `drain(recipient, token)` to recover any ERC-20 tokens held by the contract (including unclaimed currency).
+5. **Drain**: After `lockedUntil`, the owner can call `drain(recipient, token)` to recover any ERC-20 tokens held by the contract (including unclaimed currency).
 
 ### CoinvestedPosition integration
 
@@ -41,19 +41,19 @@ When a company is acquired or wound down, it can set up an automated exit contra
    - `token`: the token to be redeemed
    - `currency`: the payout currency (must have `TRUSTED_CURRENCY` on the AllowList — typically EURe)
    - `pricePerToken`: currency payout in smallest currency units per full token unit (same unit convention as `tokenPrice` in TokenSwap)
-   - `claimStart` / `drainStart`: the exit window
+   - `lockedUntil`: timestamp after which the owner can drain unclaimed funds
    - `referenceCurrencies` / `referenceToExitRates` (optional): exchange rates from reference currencies to the exit currency, used by CoinvestedPosition to convert carry when the position currency differs from the exit currency
 
    The full `_initialFundingAmount` is transferred from the funder to the Exit contract at initialization (no fee is taken here).
 
-2. **Holders claim**: From `claimStart` onwards, any holder calls `claim(tokenAmount, recipient, minPayout)`. The contract:
+2. **Holders claim**: Any holder calls `claim(recipient, minPayout)`. The contract always redeems the caller's entire token balance. It:
 
-   - Transfers `tokenAmount` tokens from the caller to itself (tokens are held, not burned)
-   - Calculates gross payout: `tokenAmount * pricePerToken / 10**token.decimals()`
+   - Transfers the caller's full token balance to itself (tokens are held, not burned)
+   - Calculates gross payout: `tokenBalance * pricePerToken / 10**token.decimals()`
    - Deducts `exitFee` and sends it to the fee collector
    - Sends net payout to `recipient`; reverts if net payout is below `minPayout`
 
-3. **Drain**: After `drainStart`, the company can call `drain(recipient, token)` to recover any ERC-20 tokens held by the contract (unclaimed currency, accumulated exit tokens, etc.).
+3. **Drain**: After `lockedUntil`, the company can call `drain(recipient, token)` to recover any ERC-20 tokens held by the contract (unclaimed currency, accumulated exit tokens, etc.).
 
 ### Security considerations
 
@@ -65,13 +65,22 @@ A `CoinvestedPosition` can participate in an exit via `distributeExit(exit, curr
 
 ---
 
-## Summary
+## GlobalTokenExitRegistry
 
-| Feature              | Distribution                      | Exit                            |
-| -------------------- | --------------------------------- | ------------------------------- |
-| Price determination  | Fixed price per token             | Fixed price per token           |
-| Snapshot required    | Yes                               | No                              |
-| Token fate           | Held by token holder throughout   | Transferred to Exit contract    |
-| Fee timing           | Per claim                         | Per claim                       |
-| Recovery mechanism   | `reassign()` by owner after delay | `drain()` by owner after window |
-| Currency requirement | `TRUSTED_CURRENCY`                | `TRUSTED_CURRENCY`              |
+The [GlobalTokenExitRegistry.sol](../contracts/GlobalTokenExitRegistry.sol) is a singleton contract that maps each token to its authorized `Exit` contract. It allows lockup contracts such as `TimeLock` and `CoinvestedPosition` to look up the exit for a given token at claim time, without needing to know the exit address at deployment.
+
+- Only a token's `DEFAULT_ADMIN_ROLE` holder or its `owner()` can register an exit for that token.
+- Once set, the mapping is immutable: the exit cannot be replaced or removed.
+- The registry emits an `ExitSet` event for every registration, providing an on-chain audit trail.
+
+Lockup contracts consult the registry when processing an exit claim. If no exit is registered for the token, the claim reverts.
+
+---
+
+## Summary of differences
+
+| Feature                          | Distribution                      | Exit                         |
+| -------------------------------- | --------------------------------- | ---------------------------- |
+| Snapshot required                | Yes                               | No                           |
+| Token fate                       | Held by token holder throughout   | Transferred to Exit contract |
+| Recovery mechanism to help users | `reassign()` by owner after delay | mint & burn                  |
