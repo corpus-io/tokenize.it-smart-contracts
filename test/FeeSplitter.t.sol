@@ -5,6 +5,7 @@ import "../lib/forge-std/src/Test.sol";
 
 import "../contracts/FeeSplitter.sol";
 import "../contracts/CoinvestedPosition.sol";
+import "../contracts/common/Errors.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/factories/CoinvestedPositionCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
@@ -140,31 +141,31 @@ contract FeeSplitterTest is Test {
 
     function testPayFeeZeroFeePayerReverts() public {
         mockPosition.addLeadInvestor(LEAD_A, CARRY_10PCT);
-        vm.expectRevert("feePayer can not be zero address");
+        vm.expectRevert(ZeroAddress.selector);
         feeSplitter.payFee(address(0), usdc, FEE_AMOUNT, CoinvestedPosition(address(mockPosition)));
     }
 
     function testPayFeeZeroCurrencyReverts() public {
         mockPosition.addLeadInvestor(LEAD_A, CARRY_10PCT);
-        vm.expectRevert("currency can not be zero address");
+        vm.expectRevert(ZeroAddress.selector);
         feeSplitter.payFee(FEE_PAYER, IERC20(address(0)), FEE_AMOUNT, CoinvestedPosition(address(mockPosition)));
     }
 
     function testPayFeeZeroAmountReverts() public {
         mockPosition.addLeadInvestor(LEAD_A, CARRY_10PCT);
-        vm.expectRevert("feeAmount can not be zero");
+        vm.expectRevert(ZeroAmount.selector);
         feeSplitter.payFee(FEE_PAYER, usdc, 0, CoinvestedPosition(address(mockPosition)));
     }
 
     function testPayFeeZeroCoinvestedPositionReverts() public {
-        vm.expectRevert("coinvestedPosition can not be zero address");
+        vm.expectRevert(ZeroAddress.selector);
         feeSplitter.payFee(FEE_PAYER, usdc, FEE_AMOUNT, CoinvestedPosition(address(0)));
     }
 
     function testPayFeeNoLeadInvestorsReverts() public {
         // mockPosition has zero investors (never called addLeadInvestor)
         _approveFeeSplitter(FEE_AMOUNT);
-        vm.expectRevert("no lead investors");
+        vm.expectRevert(FeeSplitter.NoLeadInvestors.selector);
         feeSplitter.payFee(FEE_PAYER, usdc, FEE_AMOUNT, CoinvestedPosition(address(mockPosition)));
     }
 

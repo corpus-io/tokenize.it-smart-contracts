@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./CoinvestedPosition.sol";
+import "./common/Errors.sol";
 
 /**
  * @title FeeSplitter
@@ -16,6 +17,9 @@ import "./CoinvestedPosition.sol";
  */
 contract FeeSplitter {
     using SafeERC20 for IERC20;
+
+    /// @notice Reverted when the lead investor list of the CoinvestedPosition is empty.
+    error NoLeadInvestors();
 
     /// @notice Emitted once when the fee has been pulled and distributed.
     event FeeDistributed(address indexed feePayer, address indexed currency, uint256 feeAmount);
@@ -36,13 +40,13 @@ contract FeeSplitter {
         uint256 feeAmount,
         CoinvestedPosition coinvestedPosition
     ) external {
-        require(feePayer != address(0), "feePayer can not be zero address");
-        require(address(currency) != address(0), "currency can not be zero address");
-        require(feeAmount != 0, "feeAmount can not be zero");
-        require(address(coinvestedPosition) != address(0), "coinvestedPosition can not be zero address");
+        require(feePayer != address(0), ZeroAddress());
+        require(address(currency) != address(0), ZeroAddress());
+        require(feeAmount != 0, ZeroAmount());
+        require(address(coinvestedPosition) != address(0), ZeroAddress());
 
         uint256 investorCount = coinvestedPosition.getLeadInvestorsCount();
-        require(investorCount > 0, "no lead investors");
+        require(investorCount > 0, NoLeadInvestors());
 
         currency.safeTransferFrom(feePayer, address(this), feeAmount);
 
