@@ -39,6 +39,14 @@ struct DistributionInitializerArguments {
  *      based on a snapshot of Token.sol
  */
 contract Distribution is PayoutBase {
+    /// @notice Reverted when the snapshot has no tokens (totalSupply == 0).
+    error EmptySnapshot();
+
+    /// @notice Reverted when the reassignment amount exceeds the sender's gross eligible amount.
+    error ReassignmentExceedsEligible();
+
+    /// @notice Reverted when reassign() is called before lockedUntil has elapsed.
+    error ReassignmentNotYetAvailable();
     using SafeERC20 for IERC20;
 
     uint256 public snapshotId;
@@ -67,11 +75,11 @@ contract Distribution is PayoutBase {
         address _currencyProvider,
         uint256 _initialFundingAmount
     ) external initializer {
-        require(_arguments.pricePerToken > 0, "price must be positive");
-        require(address(_arguments.currency) != address(_arguments.token), "currency and token must be different");
+        require(_arguments.pricePerToken > 0, ZeroPrice());
+        require(address(_arguments.currency) != address(_arguments.token), CurrencyEqualsToken());
         require(
             _arguments.token.allowList().map(address(_arguments.currency)) == TRUSTED_CURRENCY,
-            "currency needs to be on the allowlist with TRUSTED_CURRENCY attribute"
+            UntrustedCurrency()
         );
         __PayoutBase_init(
             _arguments.owner,
@@ -82,7 +90,7 @@ contract Distribution is PayoutBase {
         );
         snapshotId = _arguments.snapshotId;
         // totalSupply 0 would make every claim revert
-        require(token.totalSupplyAt(snapshotId) > 0, "snapshot has no tokens");
+        require(token.totalSupplyAt(snapshotId) > 0, EmptySnapshot());
         if (_initialFundingAmount > 0) {
             _arguments.currency.safeTransferFrom(_currencyProvider, address(this), _initialFundingAmount);
         }
@@ -130,7 +138,7 @@ contract Distribution is PayoutBase {
      * @param _amount amount of currency to reassign; must not exceed eligible(_from)
      */
     function reassign(address _from, address _to, uint256 _amount) external onlyOwner {
-        require(block.timestamp >= lockedUntil, "reassignment not yet available");
+        require(block.timestamp >= lockedUntil, ReassignmentNotYetAvailable());
         _reassign(_from, _to, _amount);
     }
 
@@ -141,9 +149,9 @@ contract Distribution is PayoutBase {
      * @param _amount Amount of currency to reassign
      */
     function _reassign(address _from, address _to, uint256 _amount) internal {
-        require(_to != address(0), "to can not be zero address");
-        require(_amount > 0, "amount must be positive");
-        require(_amount <= _grossEligible(_from), "amount exceeds eligible");
+        require(_to != address(0), ZeroReceiverAddress());
+        require(_amount > 0, ZeroAmount());
+        require(_amount <= _grossEligible(_from), ReassignmentExceedsEligible());
         paidOut[_from] += _amount;
         extraCredit[_to] += _amount;
         emit Reassigned(_from, _to, _amount);
@@ -156,11 +164,11 @@ contract Distribution is PayoutBase {
      */
     function claim(address _recipient, uint256 _minPayout) external override nonReentrant {
         uint256 gross = _grossEligible(_msgSender());
-        require(gross > 0, "nothing to claim");
+        require(gross > 0, NothingToClaim());
         paidOut[_msgSender()] += gross;
         (uint256 fee, address feeCollector) = _feeInfo(FeeTypes.DISTRIBUTION, gross);
         uint256 net = gross - fee;
-        require(net >= _minPayout, "payout below minimum");
+        require(net >= _minPayout, PayoutBelowMinimum());
         if (fee != 0) {
             currency.safeTransfer(feeCollector, fee);
         }

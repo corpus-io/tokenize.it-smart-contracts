@@ -583,7 +583,7 @@ contract CrowdinvestingTest is Test {
         vm.stopPrank();
 
         vm.prank(BUYER);
-        vm.expectRevert("MintingAllowance too low");
+        vm.expectRevert(Token.MintingAllowanceTooLow.selector);
         crowdinvesting.buy(MAX_AMOUNT_PER_BUYER, type(uint256).max, BUYER); //+ 10**token.decimals());
         assertTrue(token.balanceOf(BUYER) == 0);
         assertTrue(paymentToken.balanceOf(RECEIVER) == 0);

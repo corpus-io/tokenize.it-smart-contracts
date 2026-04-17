@@ -350,7 +350,7 @@ contract TokenSwapCloneFactoryTest is Test {
             exampleToken
         );
 
-        vm.expectRevert("currency needs to be on the allowlist with TRUSTED_CURRENCY attribute");
+        vm.expectRevert(UntrustedCurrency.selector);
         tokenSwapFactory.createTokenSwapClone("salt", TRUSTED_FORWARDER, arguments);
 
         // test deployment succeeds with trusted currency

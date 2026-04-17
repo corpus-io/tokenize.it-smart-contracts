@@ -200,7 +200,7 @@ contract PrivateOfferFactoryTest is Test {
 
         // try to drain before lock expires — must revert
         vm.prank(timeLockOwner);
-        vm.expectRevert("timelock has not expired");
+        vm.expectRevert(TimeLock.TimeLockNotExpired.selector);
         timeLockContract.drain(IERC20(address(token)), tokenReceiver);
 
         // drain after lock expires

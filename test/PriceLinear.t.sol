@@ -281,7 +281,7 @@ contract PriceLinearTest is Test {
         oracle.updateParameters(1, 1, uint64(block.timestamp + 1), 1, false, true);
 
         vm.warp(block.timestamp + testDelay);
-        vm.expectRevert("PriceLinear: cool down period not over yet");
+        vm.expectRevert(PriceLinear.CoolDownNotOver.selector);
         oracle.getPrice(7e18);
 
         vm.warp(block.timestamp + testDelay + 1 hours + 1); // this is definitely after the cool down period
@@ -290,7 +290,7 @@ contract PriceLinearTest is Test {
 
     function testCreateWithParameters0() public {
         // owner 0
-        vm.expectRevert("owner can not be zero address");
+        vm.expectRevert(ZeroOwnerAddress.selector);
         PriceLinear(
             priceLinearCloneFactory.createPriceLinearClone(
                 bytes32(uint256(0)),
@@ -306,7 +306,7 @@ contract PriceLinearTest is Test {
         );
 
         // slopeEnumerator 0
-        vm.expectRevert("slopeEnumerator can not be zero");
+        vm.expectRevert(PriceLinear.ZeroSlopeEnumerator.selector);
         PriceLinear(
             priceLinearCloneFactory.createPriceLinearClone(
                 bytes32(uint256(0)),
@@ -322,7 +322,7 @@ contract PriceLinearTest is Test {
         );
 
         // slopeDenominator 0
-        vm.expectRevert("slopeDenominator can not be zero");
+        vm.expectRevert(PriceLinear.ZeroSlopeDenominator.selector);
         PriceLinear(
             priceLinearCloneFactory.createPriceLinearClone(
                 bytes32(uint256(0)),
@@ -338,7 +338,7 @@ contract PriceLinearTest is Test {
         );
 
         // stepDuration 0
-        vm.expectRevert("stepDuration can not be zero");
+        vm.expectRevert(PriceLinear.ZeroStepDuration.selector);
         PriceLinear(
             priceLinearCloneFactory.createPriceLinearClone(
                 bytes32(uint256(0)),
@@ -361,7 +361,7 @@ contract PriceLinearTest is Test {
         // check time-based start
         if (_start <= _currentTime) {
             console.log("time based start must revert");
-            vm.expectRevert("start must be in the future");
+            vm.expectRevert(PriceLinear.StartNotInFuture.selector);
             PriceLinear(
                 priceLinearCloneFactory.createPriceLinearClone(
                     bytes32(uint256(734)),
@@ -395,7 +395,7 @@ contract PriceLinearTest is Test {
         // check block-based start
         if (_start <= _currentBlock) {
             console.log("block based start must revert");
-            vm.expectRevert("start must be in the future");
+            vm.expectRevert(PriceLinear.StartNotInFuture.selector);
             PriceLinear(
                 priceLinearCloneFactory.createPriceLinearClone(
                     bytes32(uint256(734)),

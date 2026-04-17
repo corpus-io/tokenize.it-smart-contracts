@@ -48,7 +48,7 @@ contract VestingBlindTest is Test {
         vm.assume(noOwner != trustedForwarder);
         vm.assume(vesting.managers(noOwner) == false);
         vm.assume(hash != bytes32(0));
-        vm.expectRevert("Caller is not a manager");
+        vm.expectRevert(Vesting.CallerNotManager.selector);
         vm.prank(noOwner);
         vesting.commit(hash);
     }
@@ -84,7 +84,7 @@ contract VestingBlindTest is Test {
 
         assertTrue(vesting.commitments(hash) == type(uint64).max, "commitment does not exist");
         vm.prank(noOwner);
-        vm.expectRevert("Caller is not a manager");
+        vm.expectRevert(Vesting.CallerNotManager.selector);
         vesting.revoke(hash, uint64(block.timestamp));
         assertEq(vesting.commitments(hash), type(uint64).max, "commitment has been revoked");
     }
@@ -128,7 +128,7 @@ contract VestingBlindTest is Test {
         assertTrue(vesting.commitments(hash) == 0, "commitment still exists");
 
         // make sure a second creation fails
-        vm.expectRevert("invalid-hash");
+        vm.expectRevert(Vesting.InvalidHash.selector);
         vm.prank(_rando);
         vesting.reveal(hash, _allocation, _beneficiary, _start, _cliff, _duration, _isMintable, _salt);
     }
@@ -187,7 +187,7 @@ contract VestingBlindTest is Test {
         assertTrue(vesting.commitments(hash) == 0, "commitment still exists");
 
         // make sure a second creation fails
-        vm.expectRevert("invalid-hash");
+        vm.expectRevert(Vesting.InvalidHash.selector);
         vm.prank(_rando);
         vesting.reveal(hash, _allocation, _beneficiary, _start, _cliff, _duration, _isMintable, _salt);
     }
@@ -242,7 +242,7 @@ contract VestingBlindTest is Test {
         assertTrue(vesting.commitments(hash) == 0, "commitment still exists");
 
         // make sure a second creation fails
-        vm.expectRevert("invalid-hash");
+        vm.expectRevert(Vesting.InvalidHash.selector);
         vesting.reveal(hash, commitmentAllocation, beneficiary, _start, _cliff, _duration, _isMintable, _salt);
 
         // vest everything
@@ -287,7 +287,7 @@ contract VestingBlindTest is Test {
         vesting.revoke(hash, uint64(end));
 
         // claim
-        vm.expectRevert("commitment revoked before cliff ended");
+        vm.expectRevert(Vesting.CommitmentRevokedBeforeCliff.selector);
         vesting.reveal(hash, _allocation, _beneficiary, _start, _cliff, _duration, isMintable, _salt);
 
         // make sure nothing changed
@@ -567,10 +567,10 @@ contract VestingBlindTest is Test {
         assertTrue(vesting.commitments(hash) == type(uint64).max, "commitment does not exist");
 
         // claim
-        vm.expectRevert("invalid-hash");
+        vm.expectRevert(Vesting.InvalidHash.selector);
         vesting.reveal(hash, _allocation, _beneficiary2, _start, _cliff, _duration, isMintable, _salt);
 
-        vm.expectRevert("invalid-hash");
+        vm.expectRevert(Vesting.InvalidHash.selector);
         vesting.reveal(hash, _allocation2, _beneficiary, _start, _cliff, _duration, isMintable, _salt);
     }
 

@@ -287,7 +287,7 @@ contract ExitCloneFactoryTest is Test {
         // not on allowList → 0 attributes
         ExitInitializerArguments memory args = _baseArgs();
         args.currency = IERC20(address(badCurrency));
-        vm.expectRevert("currency needs to be on the allowlist with TRUSTED_CURRENCY attribute");
+        vm.expectRevert(UntrustedCurrency.selector);
         factory.createExitClone(bytes32(0), TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, 0);
     }
 

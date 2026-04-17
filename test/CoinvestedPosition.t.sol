@@ -230,7 +230,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             lockedUntil: 0,
             tokenExitRegistry: tokenExitRegistry
         });
-        vm.expectRevert("currency needs to be on the allowlist with TRUSTED_CURRENCY attribute");
+        vm.expectRevert(UntrustedCurrency.selector);
         factory.createCoinvestedPositionClone(bytes32(0), TRUSTED_FORWARDER, args);
     }
 
@@ -417,7 +417,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
     function testSetTokenPriceZeroReverts() public {
         vm.prank(OWNER);
-        vm.expectRevert("_tokenPrice needs to be a non-zero amount");
+        vm.expectRevert(ZeroPrice.selector);
         coinvestedPosition.setTokenPrice(0);
     }
 
@@ -451,7 +451,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
     function testSetReceiverZeroAddressReverts() public {
         vm.prank(OWNER);
-        vm.expectRevert("receiver can not be zero address");
+        vm.expectRevert(ZeroReceiverAddress.selector);
         coinvestedPosition.setReceiver(address(0));
     }
 

@@ -20,6 +20,20 @@ import "./GlobalTokenExitRegistry.sol";
  * @dev Uses clone/proxy pattern. Constructor disables initializers, separate initialize().
  */
 contract TimeLock is Initializable, OwnableUpgradeable, ERC2771ContextUpgradeable, ReentrancyGuardUpgradeable {
+    /// @notice Reverted when the tokenExitRegistry address argument is zero.
+    error ZeroTokenExitRegistryAddress();
+
+    /// @notice Reverted when claimExit() is called but no exit is set in tokenExitRegistry for the token.
+    error NoExitSet();
+
+    /// @notice Reverted when claimExit() is called but this contract holds no tokens.
+    error NoTokensToExit();
+
+    /// @notice Reverted when drain() is called before lockedUntil has elapsed.
+    error TimeLockNotExpired();
+
+    /// @notice Reverted when drain() is called but this contract holds no tokens.
+    error NoTokensToDrain();
     using SafeERC20 for IERC20;
 
     /// unix timestamp before which drain() is blocked
@@ -51,9 +65,9 @@ contract TimeLock is Initializable, OwnableUpgradeable, ERC2771ContextUpgradeabl
         uint64 _lockedUntil,
         GlobalTokenExitRegistry _tokenExitRegistry
     ) public initializer {
-        require(_owner != address(0), "owner can not be zero address");
-        require(_lockedUntil > block.timestamp, "lockedUntil must be in the future");
-        require(address(_tokenExitRegistry) != address(0), "tokenExitRegistry can not be zero address");
+        require(_owner != address(0), ZeroOwnerAddress());
+        require(_lockedUntil > block.timestamp, LockedUntilNotInFuture());
+        require(address(_tokenExitRegistry) != address(0), ZeroTokenExitRegistryAddress());
         __Ownable_init();
         __ReentrancyGuard_init();
         _transferOwnership(_owner);
@@ -71,7 +85,7 @@ contract TimeLock is Initializable, OwnableUpgradeable, ERC2771ContextUpgradeabl
         address _recipient,
         uint256 _minPayout
     ) external onlyOwner nonReentrant {
-        require(_recipient != address(0), "recipient can not be zero address");
+        require(_recipient != address(0), ZeroReceiverAddress());
         _dist.claim(_recipient, _minPayout);
         emit DividendsDistributed(_dist, _recipient);
     }
@@ -85,10 +99,10 @@ contract TimeLock is Initializable, OwnableUpgradeable, ERC2771ContextUpgradeabl
      */
     function claimExit(Token _token, address _recipient, uint256 _minPayout) external onlyOwner nonReentrant {
         Exit exit = tokenExitRegistry.exits(_token);
-        require(address(exit) != address(0), "no exit set in tokenExitRegistry");
-        require(_recipient != address(0), "recipient can not be zero address");
+        require(address(exit) != address(0), NoExitSet());
+        require(_recipient != address(0), ZeroReceiverAddress());
         uint256 tokenBalance = _token.balanceOf(address(this));
-        require(tokenBalance > 0, "no tokens to exit");
+        require(tokenBalance > 0, NoTokensToExit());
         IERC20(address(_token)).approve(address(exit), tokenBalance);
         exit.claim(_recipient, _minPayout);
         emit ExitDistributed(exit, _recipient, tokenBalance);
@@ -100,10 +114,10 @@ contract TimeLock is Initializable, OwnableUpgradeable, ERC2771ContextUpgradeabl
      * @param _recipient address to send the tokens to
      */
     function drain(IERC20 _token, address _recipient) external onlyOwner {
-        require(block.timestamp >= lockedUntil, "timelock has not expired");
-        require(_recipient != address(0), "recipient can not be zero address");
+        require(block.timestamp >= lockedUntil, TimeLockNotExpired());
+        require(_recipient != address(0), ZeroReceiverAddress());
         uint256 balance = _token.balanceOf(address(this));
-        require(balance > 0, "no tokens to drain");
+        require(balance > 0, NoTokensToDrain());
         _token.safeTransfer(_recipient, balance);
         emit Drained(_token, _recipient, balance);
     }

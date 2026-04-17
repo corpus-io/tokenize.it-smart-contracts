@@ -47,6 +47,24 @@ contract Token is
     /// @notice The role that can create snapshots of the token balances
     bytes32 public constant SNAPSHOTCREATOR_ROLE = keccak256("SNAPSHOTCREATOR_ROLE");
 
+    /// @notice Reverted when the AllowList address argument is zero.
+    error ZeroAllowListAddress();
+
+    /// @notice Reverted when someone other than the feeSettings owner tries to suggest a fee settings update.
+    error OnlyFeeSettingsOwner();
+
+    /// @notice Reverted when acceptNewFeeSettings is called with a contract other than the current suggestion.
+    error OnlySuggestedFeeSettings();
+
+    /// @notice Reverted when mint() is called with an amount exceeding the caller's mintingAllowance.
+    error MintingAllowanceTooLow();
+
+    /// @notice Reverted when a transfer involves an address that does not meet the token's requirements.
+    error NotAllowedToTransact();
+
+    /// @notice Reverted when a feeSettings contract does not implement the required interface.
+    error FeeSettingsInterfaceNotSupported();
+
     /**
      * @dev This empty reserved space is put in place to allow future versions to inherit
      * from contracts that need storage. This mimics openzeppelin's approach.
@@ -165,7 +183,7 @@ contract Token is
         feeSettings = _feeSettings;
 
         // set up allowList
-        require(address(_allowList) != address(0), "AllowList must not be zero address");
+        require(address(_allowList) != address(0), ZeroAllowListAddress());
         allowList = _allowList;
 
         // set requirements (can be 0 to allow everyone to send and receive tokens)
@@ -195,7 +213,7 @@ contract Token is
      * @param _allowList new AllowList contract
      */
     function setAllowList(AllowList _allowList) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(address(_allowList) != address(0), "AllowList must not be zero address");
+        require(address(_allowList) != address(0), ZeroAllowListAddress());
         allowList = _allowList;
         emit AllowListChanged(_allowList);
     }
@@ -217,7 +235,7 @@ contract Token is
      * @param _feeSettings the new feeSettings contract
      */
     function suggestNewFeeSettings(IFeeSettingsV2 _feeSettings) external {
-        require(_msgSender() == feeSettings.owner(), "Only fee settings owner can suggest fee settings update");
+        require(_msgSender() == feeSettings.owner(), OnlyFeeSettingsOwner());
         _checkIfFeeSettingsImplementsInterface(_feeSettings);
         suggestedFeeSettings = _feeSettings;
         emit NewFeeSettingsSuggested(_feeSettings);
@@ -235,7 +253,7 @@ contract Token is
         // Checking that the suggestedFeeSettings is not 0x0 would work, too, but this check is used in other places, too.
         _checkIfFeeSettingsImplementsInterface(_feeSettings);
 
-        require(_feeSettings == suggestedFeeSettings, "Only suggested fee settings can be accepted");
+        require(_feeSettings == suggestedFeeSettings, OnlySuggestedFeeSettings());
         feeSettings = suggestedFeeSettings;
         emit FeeSettingsChanged(_feeSettings);
     }
@@ -274,7 +292,7 @@ contract Token is
      */
     function mint(address _to, uint256 _amount) external {
         if (!hasRole(MINTALLOWER_ROLE, _msgSender())) {
-            require(mintingAllowance[_msgSender()] >= _amount, "MintingAllowance too low");
+            require(mintingAllowance[_msgSender()] >= _amount, MintingAllowanceTooLow());
             mintingAllowance[_msgSender()] -= _amount;
         }
         // this check is executed here, because later minting of the buy amount can not be differentiated from minting of the fee amount
@@ -344,7 +362,7 @@ contract Token is
             requirements == 0 ||
                 hasRole(TRANSFERER_ROLE, _address) ||
                 allowList.map(_address) & requirements == requirements,
-            "Sender or Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
+            NotAllowedToTransact()
         );
     }
 
@@ -356,15 +374,12 @@ contract Token is
      */
     function _checkIfFeeSettingsImplementsInterface(IFeeSettingsV2 _feeSettings) internal view {
         // step 1: needs to return true if EIP165 is supported
-        require(_feeSettings.supportsInterface(0x01ffc9a7) == true, "FeeSettings must implement IFeeSettingsV2");
+        require(_feeSettings.supportsInterface(0x01ffc9a7) == true, FeeSettingsInterfaceNotSupported());
         // step 2: needs to return false if EIP165 is supported
-        require(_feeSettings.supportsInterface(0xffffffff) == false, "FeeSettings must implement IFeeSettingsV2");
+        require(_feeSettings.supportsInterface(0xffffffff) == false, FeeSettingsInterfaceNotSupported());
         // now we know EIP165 is supported
         // step 3: needs to return true if IFeeSettingsV2 is supported
-        require(
-            _feeSettings.supportsInterface(type(IFeeSettingsV2).interfaceId),
-            "FeeSettings must implement IFeeSettingsV2"
-        );
+        require(_feeSettings.supportsInterface(type(IFeeSettingsV2).interfaceId), FeeSettingsInterfaceNotSupported());
     }
 
     /**

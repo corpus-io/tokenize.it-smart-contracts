@@ -286,7 +286,7 @@ contract CoinvestedPositionCloneFactoryTest is Test {
         // not on allowList → 0 attributes, no TRUSTED_CURRENCY bit
         CoinvestedPositionInitializerArguments memory args = _baseArgs();
         args.baseCurrency = IERC20(address(badCurrency));
-        vm.expectRevert("currency needs to be on the allowlist with TRUSTED_CURRENCY attribute");
+        vm.expectRevert(UntrustedCurrency.selector);
         factory.createCoinvestedPositionClone(bytes32(0), TRUSTED_FORWARDER, args);
     }
 

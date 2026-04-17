@@ -229,37 +229,37 @@ contract TokenSwapTest is Test {
         // OWNER 0
         TokenSwapInitializerArguments memory tempArgs = cloneTokenSwapInitializerArguments(arguments);
         tempArgs.owner = address(0);
-        vm.expectRevert("owner can not be zero address");
+        vm.expectRevert(ZeroOwnerAddress.selector);
         factory.createTokenSwapClone(0, TRUSTED_FORWARDER, tempArgs);
 
         // RECEIVER 0
         tempArgs = cloneTokenSwapInitializerArguments(arguments);
         tempArgs.receiver = address(0);
-        vm.expectRevert("receiver can not be zero address");
+        vm.expectRevert(ZeroReceiverAddress.selector);
         factory.createTokenSwapClone(0, TRUSTED_FORWARDER, tempArgs);
 
         // HOLDER 0
         tempArgs = cloneTokenSwapInitializerArguments(arguments);
         tempArgs.holder = address(0);
-        vm.expectRevert("holder can not be zero address");
+        vm.expectRevert(TokenSwap.ZeroHolderAddress.selector);
         factory.createTokenSwapClone(0, TRUSTED_FORWARDER, tempArgs);
 
         // PRICE 0
         tempArgs = cloneTokenSwapInitializerArguments(arguments);
         tempArgs.tokenPrice = 0;
-        vm.expectRevert("_tokenPrice needs to be a non-zero amount");
+        vm.expectRevert(ZeroPrice.selector);
         factory.createTokenSwapClone(0, TRUSTED_FORWARDER, tempArgs);
 
         // currency 0
         tempArgs = cloneTokenSwapInitializerArguments(arguments);
         tempArgs.currency = IERC20(address(0));
-        vm.expectRevert("currency can not be zero address");
+        vm.expectRevert(ZeroCurrencyAddress.selector);
         factory.createTokenSwapClone(0, TRUSTED_FORWARDER, tempArgs);
 
         // token 0
         tempArgs = cloneTokenSwapInitializerArguments(arguments);
         tempArgs.token = Token(address(0));
-        vm.expectRevert("token can not be zero address");
+        vm.expectRevert(ZeroTokenAddress.selector);
         factory.createTokenSwapClone(0, TRUSTED_FORWARDER, tempArgs);
     }
 
@@ -574,7 +574,7 @@ contract TokenSwapTest is Test {
             );
         } else {
             vm.prank(BUYER);
-            vm.expectRevert("Purchase more expensive than _maxCurrencyAmount");
+            vm.expectRevert(TokenSwap.PurchaseTooExpensive.selector);
             tokenSwap.buy(tokenBuyAmount, maxCurrencyAmount, BUYER);
         }
     }
@@ -603,7 +603,7 @@ contract TokenSwapTest is Test {
             );
         } else {
             vm.prank(BUYER);
-            vm.expectRevert("Payout too low");
+            vm.expectRevert(TokenSwap.PayoutTooLow.selector);
             tokenSwap.sell(tokenSellAmount, minCurrencyAmount, BUYER);
         }
     }
@@ -776,7 +776,7 @@ contract TokenSwapTest is Test {
         assertTrue(tokenSwap.receiver() == address(BUYER));
 
         vm.prank(OWNER);
-        vm.expectRevert("receiver can not be zero address");
+        vm.expectRevert(ZeroReceiverAddress.selector);
         tokenSwap.setReceiver(address(0));
     }
 
@@ -792,7 +792,7 @@ contract TokenSwapTest is Test {
         assertTrue(tokenSwap.tokenPrice() == newPrice);
 
         vm.prank(OWNER);
-        vm.expectRevert("_tokenPrice needs to be a non-zero amount");
+        vm.expectRevert(ZeroPrice.selector);
         tokenSwap.setTokenPrice(0);
     }
 

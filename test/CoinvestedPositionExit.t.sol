@@ -1020,7 +1020,7 @@ contract CoinvestedPositionExitTest is Test {
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
 
         vm.prank(OWNER);
-        vm.expectRevert("payout below minimum");
+        vm.expectRevert(PayoutBelowMinimum.selector);
         coinvestedPosition.claimExit(totalCurrency + 1, 0);
     }
 
@@ -1093,7 +1093,7 @@ contract CoinvestedPositionExitTest is Test {
 
         vm.prank(OWNER);
         if (uint256(minCurrencyAmount) > received) {
-            vm.expectRevert("payout below minimum");
+            vm.expectRevert(PayoutBelowMinimum.selector);
         }
         coinvestedPositionFuzz.claimExit(uint256(minCurrencyAmount), 0);
     }
@@ -1360,7 +1360,7 @@ contract CoinvestedPositionExitTest is Test {
             referenceCurrencies: referenceCurrencies,
             referenceToExitRates: rates
         });
-        vm.expectRevert("referenceCurrencies and referenceToExitRates must have the same length");
+        vm.expectRevert(ArrayLengthMismatch.selector);
         exitFactory.createExitClone(bytes32(0), TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, 0);
     }
 
@@ -1385,7 +1385,7 @@ contract CoinvestedPositionExitTest is Test {
         eure.mint(CURRENCY_PROVIDER, totalCurrency);
         vm.prank(CURRENCY_PROVIDER);
         eure.approve(cloneAddr, totalCurrency);
-        vm.expectRevert("referenceToExitRate must be positive");
+        vm.expectRevert(ZeroPrice.selector);
         exitFactory.createExitClone(bytes32(0), TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, totalCurrency);
     }
 

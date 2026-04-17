@@ -84,7 +84,7 @@ contract tokenTest is Test {
     }
 
     function testUpdateAllowList0() public {
-        vm.expectRevert("AllowList must not be zero address");
+        vm.expectRevert(Token.ZeroAllowListAddress.selector);
         vm.prank(ADMIN);
         token.setAllowList(AllowList(address(0)));
     }
@@ -97,7 +97,7 @@ contract tokenTest is Test {
             buildFeeTypes(0, 0, 0, PAUSER, PAUSER, PAUSER)
         );
         vm.prank(wrongUpdater);
-        vm.expectRevert("Only fee settings owner can suggest fee settings update");
+        vm.expectRevert(Token.OnlyFeeSettingsOwner.selector);
         token.suggestNewFeeSettings(newFeeSettings);
     }
 
@@ -108,7 +108,7 @@ contract tokenTest is Test {
             buildFeeTypes(0, 0, 0, PAUSER, PAUSER, PAUSER)
         );
         vm.prank(feeSettings.feeCollector());
-        vm.expectRevert("Only fee settings owner can suggest fee settings update");
+        vm.expectRevert(Token.OnlyFeeSettingsOwner.selector);
         token.suggestNewFeeSettings(newFeeSettings);
     }
 
@@ -256,7 +256,7 @@ contract tokenTest is Test {
             console.log("Suggested fee settings: ", address(realNewFeeSettings));
 
             // ADMIN thinks he is accepting a, but suggestion is b
-            vm.expectRevert("Only suggested fee settings can be accepted");
+            vm.expectRevert(Token.OnlySuggestedFeeSettings.selector);
             vm.prank(ADMIN);
             token.acceptNewFeeSettings(fakeNewFeeSettings);
         }
@@ -346,9 +346,7 @@ contract tokenTest is Test {
 
         // mint tokens for feeCollector
         vm.startPrank(localMinter);
-        vm.expectRevert(
-            "Sender or Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
-        );
+        vm.expectRevert(Token.NotAllowedToTransact.selector);
         token.mint(feeCollector, _amount);
         vm.stopPrank();
     }
@@ -362,7 +360,7 @@ contract tokenTest is Test {
         vm.startPrank(feeSettings.owner());
         // cycle through the fake contracts and make sure each one triggers a revert
         for (uint i = 0; i < feeSettingsArray.length; i++) {
-            vm.expectRevert("FeeSettings must implement IFeeSettingsV2");
+            vm.expectRevert(Token.FeeSettingsInterfaceNotSupported.selector);
             token.suggestNewFeeSettings(feeSettingsArray[i]);
         }
         vm.stopPrank();

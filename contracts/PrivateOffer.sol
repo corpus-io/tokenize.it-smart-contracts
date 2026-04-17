@@ -4,6 +4,7 @@ pragma solidity 0.8.34;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./Token.sol";
+import "./common/Errors.sol";
 /**
  * @notice Contains all information necessary to execute a PrivateOffer.
  */
@@ -50,6 +51,17 @@ struct PrivateOfferArguments {
  *     minted tokens will be transferred to the buyer and the currency will be transferred to the company's receiver address.
  */
 contract PrivateOffer {
+    /// @notice Reverted when the currencyPayer address argument is zero.
+    error ZeroCurrencyPayerAddress();
+
+    /// @notice Reverted when the tokenReceiver address argument is zero.
+    error ZeroTokenReceiverAddress();
+
+    /// @notice Reverted when the currencyReceiver address argument is zero.
+    error ZeroCurrencyReceiverAddress();
+
+    /// @notice Reverted when the offer has expired (block.timestamp > expiration).
+    error DealExpired();
     using SafeERC20 for IERC20;
 
     /**
@@ -72,17 +84,17 @@ contract PrivateOffer {
     );
 
     constructor(PrivateOfferArguments memory _arguments) {
-        require(_arguments.currencyPayer != address(0), "_arguments.currencyPayer can not be zero address");
-        require(_arguments.tokenReceiver != address(0), "_arguments.tokenReceiver can not be zero address");
-        require(_arguments.currencyReceiver != address(0), "_arguments.currencyReceiver can not be zero address");
-        require(_arguments.tokenPrice != 0, "_arguments.tokenPrice can not be zero"); // a simple mint from the token contract will do in that case
-        require(block.timestamp <= _arguments.expiration, "Deal expired");
-        require(_arguments.token != Token(address(0)), "_arguments.token can not be zero address");
-        require(_arguments.currency != IERC20(address(0)), "_arguments.currency can not be zero address");
-        require(_arguments.tokenAmount != 0, "_arguments.tokenAmount can not be zero");
+        require(_arguments.currencyPayer != address(0), ZeroCurrencyPayerAddress());
+        require(_arguments.tokenReceiver != address(0), ZeroTokenReceiverAddress());
+        require(_arguments.currencyReceiver != address(0), ZeroCurrencyReceiverAddress());
+        require(_arguments.tokenPrice != 0, ZeroPrice()); // a simple mint from the token contract will do in that case
+        require(block.timestamp <= _arguments.expiration, DealExpired());
+        require(_arguments.token != Token(address(0)), ZeroTokenAddress());
+        require(_arguments.currency != IERC20(address(0)), ZeroCurrencyAddress());
+        require(_arguments.tokenAmount != 0, ZeroAmount());
         require(
             _arguments.token.allowList().map(address(_arguments.currency)) == TRUSTED_CURRENCY,
-            "currency needs to be on the allowlist with TRUSTED_CURRENCY attribute"
+            UntrustedCurrency()
         );
 
         // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.

@@ -151,7 +151,7 @@ contract TimeLockDistributeExitTest is Test {
     function testDrainStillBlockedBeforeLockedUntil() public {
         // No exit is set — drain must be blocked
         vm.prank(OWNER);
-        vm.expectRevert("timelock has not expired");
+        vm.expectRevert(TimeLock.TimeLockNotExpired.selector);
         timeLock.drain(IERC20(address(token)), RECIPIENT);
     }
 
@@ -163,7 +163,7 @@ contract TimeLockDistributeExitTest is Test {
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
 
         vm.prank(OWNER);
-        vm.expectRevert("timelock has not expired");
+        vm.expectRevert(TimeLock.TimeLockNotExpired.selector);
         timeLock.drain(IERC20(address(token)), RECIPIENT);
     }
 
@@ -172,7 +172,7 @@ contract TimeLockDistributeExitTest is Test {
     /// Reverts when no exit is set in tokenExitRegistry
     function testDistributeExitRevertsIfNoExitRegistered() public {
         vm.prank(OWNER);
-        vm.expectRevert("no exit set in tokenExitRegistry");
+        vm.expectRevert(TimeLock.NoExitSet.selector);
         timeLock.claimExit(token, RECIPIENT, 0);
     }
 
@@ -183,7 +183,7 @@ contract TimeLockDistributeExitTest is Test {
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
 
         vm.prank(OWNER);
-        vm.expectRevert("recipient can not be zero address");
+        vm.expectRevert(ZeroReceiverAddress.selector);
         timeLock.claimExit(token, address(0), 0);
     }
 
@@ -214,7 +214,7 @@ contract TimeLockDistributeExitTest is Test {
 
         vm.warp(timeLockExpiry + 1 days);
         vm.prank(OWNER);
-        vm.expectRevert("no tokens to exit");
+        vm.expectRevert(TimeLock.NoTokensToExit.selector);
         timeLock.claimExit(token, RECIPIENT, 0);
     }
 
@@ -281,14 +281,14 @@ contract TimeLockDistributeExitTest is Test {
     function testInitializeRevertsIfOwnerZero() public {
         TimeLock logic = new TimeLock(TRUSTED_FORWARDER);
         TimeLockCloneFactory cloneFactory = new TimeLockCloneFactory(address(logic));
-        vm.expectRevert("owner can not be zero address");
+        vm.expectRevert(ZeroOwnerAddress.selector);
         cloneFactory.createTimeLockClone(bytes32(0), TRUSTED_FORWARDER, address(0), timeLockExpiry, tokenExitRegistry);
     }
 
     function testInitializeRevertsIfLockedUntilNotInFuture() public {
         TimeLock logic = new TimeLock(TRUSTED_FORWARDER);
         TimeLockCloneFactory cloneFactory = new TimeLockCloneFactory(address(logic));
-        vm.expectRevert("lockedUntil must be in the future");
+        vm.expectRevert(LockedUntilNotInFuture.selector);
         cloneFactory.createTimeLockClone(
             bytes32(0),
             TRUSTED_FORWARDER,
@@ -301,7 +301,7 @@ contract TimeLockDistributeExitTest is Test {
     function testInitializeRevertsIfRegistryZero() public {
         TimeLock logic = new TimeLock(TRUSTED_FORWARDER);
         TimeLockCloneFactory cloneFactory = new TimeLockCloneFactory(address(logic));
-        vm.expectRevert("tokenExitRegistry can not be zero address");
+        vm.expectRevert(TimeLock.ZeroTokenExitRegistryAddress.selector);
         cloneFactory.createTimeLockClone(
             bytes32(0),
             TRUSTED_FORWARDER,
@@ -324,7 +324,7 @@ contract TimeLockDistributeExitTest is Test {
     function testDrainRevertsIfRecipientZero() public {
         vm.warp(timeLockExpiry);
         vm.prank(OWNER);
-        vm.expectRevert("recipient can not be zero address");
+        vm.expectRevert(ZeroReceiverAddress.selector);
         timeLock.drain(IERC20(address(token)), address(0));
     }
 
@@ -334,14 +334,14 @@ contract TimeLockDistributeExitTest is Test {
         timeLock.drain(IERC20(address(token)), RECIPIENT);
 
         vm.prank(OWNER);
-        vm.expectRevert("no tokens to drain");
+        vm.expectRevert(TimeLock.NoTokensToDrain.selector);
         timeLock.drain(IERC20(address(token)), RECIPIENT);
     }
 
     function testClaimDistributionRevertsIfRecipientZero() public {
         FixedPayoutDistribution stub = new FixedPayoutDistribution(IERC20(address(eurc)), 0);
         vm.prank(OWNER);
-        vm.expectRevert("recipient can not be zero address");
+        vm.expectRevert(ZeroReceiverAddress.selector);
         timeLock.claimDistribution(Distribution(address(stub)), address(0), 0);
     }
 }

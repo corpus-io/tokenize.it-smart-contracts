@@ -9,6 +9,7 @@ import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "./common/Errors.sol";
 
 /**
  * @dev a token must implement this interface to be used with the Vesting contract and mintable vestings
@@ -46,6 +47,16 @@ struct VestingPlan {
  * must happen before the tokens can be released.
  */
 contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
+    error ZeroHash();
+    error InvalidHash();
+    error CommitmentRevokedBeforeCliff();
+    error EndTimeAfterVestingEnd();
+    error EndTimeNotInFuture();
+    error NewStartTimeNotAfterEndTime();
+    error OnlyBeneficiary();
+    error NotAllowedToChangeBeneficiary();
+    error CallerNotManager();
+
     event Commit(bytes32 hash);
     event ERC20Released(uint64 id, uint256 amount);
     event Revoke(bytes32 hash, uint64 endVestingTime);
@@ -82,8 +93,8 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
      * @param _token address of the token to be vested
      */
     function initialize(address _owner, address _token) public initializer {
-        require(_owner != address(0), "Owner must not be zero address");
-        require(_token != address(0), "Token must not be zero address");
+        require(_owner != address(0), ZeroOwnerAddress());
+        require(_token != address(0), ZeroTokenAddress());
         __Ownable_init();
         transferOwnership(_owner);
         managers[_owner] = true;
@@ -165,7 +176,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
      * @param _hash commitment hash
      */
     function commit(bytes32 _hash) external onlyManager {
-        require(_hash != bytes32(0), "hash must not be zero");
+        require(_hash != bytes32(0), ZeroHash());
         // the value is interpreted as maximum end date of the vesting
         // for real world use cases, type(uint64).max is "unlimited"
         commitments[_hash] = type(uint64).max;
@@ -178,7 +189,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
      * @param _end new latest end date
      */
     function revoke(bytes32 _hash, uint64 _end) external onlyManager {
-        require(commitments[_hash] != 0, "invalid-hash");
+        require(commitments[_hash] != 0, InvalidHash());
         // already vested tokens can not be taken away (except of burning in the token contract itself)
         _end = uint64(block.timestamp) > _end ? uint64(block.timestamp) : _end;
         commitments[_hash] = _end;
@@ -209,12 +220,12 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         require(
             _hash ==
                 keccak256(abi.encodePacked(_allocation, _beneficiary, _start, _cliff, _duration, _isMintable, _salt)),
-            "invalid-hash"
+            InvalidHash()
         );
         uint64 maxEndDate = commitments[_hash];
-        require(maxEndDate > 0, "invalid-hash");
+        require(maxEndDate > 0, InvalidHash());
         // if a commitment has been revoked with end date before cliff, it can never be revealed
-        require(_start + _cliff <= maxEndDate, "commitment revoked before cliff ended");
+        require(_start + _cliff <= maxEndDate, CommitmentRevokedBeforeCliff());
 
         if (_start + _duration <= maxEndDate) {
             // the commitment has not been revoked, or the end date of the commitment is after the end of the vesting
@@ -296,8 +307,8 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         uint64 _duration,
         bool _isMintable
     ) internal returns (uint64 id) {
-        require(_allocation > 0, "Allocation must be greater than zero");
-        require(_beneficiary != address(0), "Beneficiary must not be zero address");
+        require(_allocation > 0, ZeroAmount());
+        require(_beneficiary != address(0), ZeroReceiverAddress());
 
         // cliff longer than duration is not valid and can only happen by mistake.
         // We heal this by extending the duration to match the cliff, thus balancing
@@ -327,7 +338,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     function stopVesting(uint64 _id, uint64 _endTime) public onlyManager {
         // already vested tokens can not be taken away (except of burning in the token contract itself)
         _endTime = _endTime < uint64(block.timestamp) ? uint64(block.timestamp) : _endTime;
-        require(_endTime < start(_id) + duration(_id), "endTime must be before vesting end");
+        require(_endTime < start(_id) + duration(_id), EndTimeAfterVestingEnd());
 
         if (start(_id) + cliff(_id) > _endTime) {
             delete vestings[_id];
@@ -351,9 +362,9 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         uint64 _endTime,
         uint64 _newStartTime
     ) external onlyManager returns (uint64 newId) {
-        require(_endTime > uint64(block.timestamp), "endTime must be in the future");
-        require(_endTime < start(_id) + duration(_id), "endTime must be before vesting end");
-        require(_newStartTime > _endTime, "newStartTime must be after endTime");
+        require(_endTime > uint64(block.timestamp), EndTimeNotInFuture());
+        require(_endTime < start(_id) + duration(_id), EndTimeAfterVestingEnd());
+        require(_newStartTime > _endTime, NewStartTimeNotAfterEndTime());
 
         uint256 allocationRemainder = allocation(_id) - vestedAmount(_id, _endTime);
         uint64 timeVested = _endTime - start(_id);
@@ -388,7 +399,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
      * @param _amount maximum amount of tokens to be released
      */
     function release(uint64 _id, uint256 _amount) public nonReentrant {
-        require(_msgSender() == beneficiary(_id), "Only beneficiary can release tokens");
+        require(_msgSender() == beneficiary(_id), OnlyBeneficiary());
         _amount = releasable(_id) < _amount ? releasable(_id) : _amount;
         vestings[_id].released += _amount;
         if (isMintable(_id)) {
@@ -430,9 +441,9 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         require(
             _msgSender() == beneficiary(_id) ||
                 ((_msgSender() == owner()) && uint64(block.timestamp) > start(_id) + duration(_id) + 365 days),
-            "Only beneficiary can change beneficiary, or owner 1 year after vesting end"
+            NotAllowedToChangeBeneficiary()
         );
-        require(_newBeneficiary != address(0), "Beneficiary must not be zero address");
+        require(_newBeneficiary != address(0), ZeroReceiverAddress());
         vestings[_id].beneficiary = _newBeneficiary;
         emit BeneficiaryChanged(_id, _newBeneficiary);
     }
@@ -459,7 +470,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
      * @dev Throws if called by an account that is not a manager.
      */
     modifier onlyManager() {
-        require(managers[_msgSender()], "Caller is not a manager");
+        require(managers[_msgSender()], CallerNotManager());
         _;
     }
 

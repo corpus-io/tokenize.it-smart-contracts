@@ -80,7 +80,7 @@ contract VestingTest is Test {
 
         // rando cannot commit
         vm.prank(rando);
-        vm.expectRevert("Caller is not a manager");
+        vm.expectRevert(Vesting.CallerNotManager.selector);
         vest.commit(hash);
 
         // owner can commit
@@ -103,7 +103,7 @@ contract VestingTest is Test {
 
         // rando cannot create
         vm.prank(_rando);
-        vm.expectRevert("Caller is not a manager");
+        vm.expectRevert(Vesting.CallerNotManager.selector);
         vest.createVesting(100, address(7), 1, 20 days, 40 days, false);
 
         // owner can create
@@ -136,7 +136,7 @@ contract VestingTest is Test {
         // rando can not release tokens
         vm.warp(10 days);
         vm.prank(rando);
-        vm.expectRevert("Only beneficiary can release tokens");
+        vm.expectRevert(Vesting.OnlyBeneficiary.selector);
         vesting.release(id);
 
         // beneficiary can release tokens
@@ -178,7 +178,7 @@ contract VestingTest is Test {
         // rando can not release tokens
         vm.warp(10 days);
         vm.prank(rando);
-        vm.expectRevert("Only beneficiary can release tokens");
+        vm.expectRevert(Vesting.OnlyBeneficiary.selector);
         vesting.release(id);
 
         // beneficiary can release tokens
@@ -395,13 +395,13 @@ contract VestingTest is Test {
         vm.warp(exampleStart + changeAfter);
         // rando can never change beneficiary
         vm.prank(rando);
-        vm.expectRevert("Only beneficiary can change beneficiary, or owner 1 year after vesting end");
+        vm.expectRevert(Vesting.NotAllowedToChangeBeneficiary.selector);
         vesting.changeBeneficiary(id, rando);
         assertEq(vesting.beneficiary(id), beneficiary, "rando changed beneficiary");
 
         // even beneficiary can never set beneficiary to 0
         vm.prank(beneficiary);
-        vm.expectRevert("Beneficiary must not be zero address");
+        vm.expectRevert(ZeroReceiverAddress.selector);
         vesting.changeBeneficiary(id, address(0));
         assertEq(vesting.beneficiary(id), beneficiary, "beneficiary should not have changed!");
 
@@ -420,7 +420,7 @@ contract VestingTest is Test {
         } else {
             // owner can not change beneficiary before 1 year
             vm.prank(owner);
-            vm.expectRevert("Only beneficiary can change beneficiary, or owner 1 year after vesting end");
+            vm.expectRevert(Vesting.NotAllowedToChangeBeneficiary.selector);
             vesting.changeBeneficiary(id, beneficiary);
             assertEq(vesting.beneficiary(id), rando, "owner changed beneficiary too early");
         }
@@ -445,28 +445,28 @@ contract VestingTest is Test {
 
     function testInitializingWith0() public {
         // owner 0
-        vm.expectRevert("Owner must not be zero address");
+        vm.expectRevert(ZeroOwnerAddress.selector);
         Vesting vest = Vesting(factory.createVestingClone(0, trustedForwarder, address(0), address(token)));
 
         // token 0
-        vm.expectRevert("Token must not be zero address");
+        vm.expectRevert(ZeroTokenAddress.selector);
         vest = Vesting(factory.createVestingClone(0, trustedForwarder, owner, address(0)));
     }
 
     function testCommit0() public {
-        vm.expectRevert("hash must not be zero");
+        vm.expectRevert(Vesting.ZeroHash.selector);
         vm.prank(owner);
         vesting.commit(bytes32(0));
     }
 
     function testRevoke0() public {
-        vm.expectRevert("invalid-hash");
+        vm.expectRevert(Vesting.InvalidHash.selector);
         vm.prank(owner);
         vesting.revoke(bytes32(0), 20 days);
     }
 
     function testBeneficiary0() public {
-        vm.expectRevert("Beneficiary must not be zero address");
+        vm.expectRevert(ZeroReceiverAddress.selector);
         vm.prank(owner);
         vesting.createVesting(100, address(0), 1, 20 days, 40 days, false);
     }
@@ -484,7 +484,7 @@ contract VestingTest is Test {
         vm.stopPrank();
 
         vm.prank(owner);
-        vm.expectRevert("endTime must be before vesting end");
+        vm.expectRevert(Vesting.EndTimeAfterVestingEnd.selector);
         vesting.stopVesting(id, exampleStart + exampleDuration + 1);
     }
 
@@ -502,15 +502,15 @@ contract VestingTest is Test {
         vm.warp(exampleStart + exampleCliff);
 
         // end time in past
-        vm.expectRevert("endTime must be in the future");
+        vm.expectRevert(Vesting.EndTimeNotInFuture.selector);
         vesting.pauseVesting(id, exampleStart, exampleStart + 2 * exampleDuration);
 
         // end time is vesting end
-        vm.expectRevert("endTime must be before vesting end");
+        vm.expectRevert(Vesting.EndTimeAfterVestingEnd.selector);
         vesting.pauseVesting(id, exampleStart + exampleDuration, exampleStart + 2 * exampleDuration);
 
         // new start before end
-        vm.expectRevert("newStartTime must be after endTime");
+        vm.expectRevert(Vesting.NewStartTimeNotAfterEndTime.selector);
         vesting.pauseVesting(id, exampleStart + exampleCliff + 1, exampleStart + exampleCliff / 2);
     }
 
@@ -581,7 +581,7 @@ contract VestingTest is Test {
 
         address rando = address(99);
         vm.prank(rando);
-        vm.expectRevert("Caller is not a manager");
+        vm.expectRevert(Vesting.CallerNotManager.selector);
         vesting.stopVesting(vestingId, uint64(exampleStart + 1));
     }
 }

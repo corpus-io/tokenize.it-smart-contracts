@@ -22,6 +22,12 @@ import "./Errors.sol";
 /// @notice Reverted when drain() is called before lockedUntil has elapsed.
 error DrainNotYetAvailable();
 
+/// @notice Reverted when claim() is called but the caller has nothing to claim.
+error NothingToClaim();
+
+/// @notice Reverted when the net payout after fees is below the caller's minimum.
+error PayoutBelowMinimum();
+
 abstract contract PayoutBase is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, ReentrancyGuardUpgradeable {
     using SafeERC20 for IERC20;
 
