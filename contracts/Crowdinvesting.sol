@@ -175,10 +175,7 @@ contract Crowdinvesting is
         require(_arguments.currencyReceiver != address(0), ZeroReceiverAddress());
         require(address(_arguments.currency) != address(0), ZeroCurrencyAddress());
         require(address(_arguments.token) != address(0), ZeroTokenAddress());
-        require(
-            _arguments.minAmountPerBuyer <= _arguments.maxAmountPerBuyer,
-            MinAmountExceedsMaxAmount()
-        );
+        require(_arguments.minAmountPerBuyer <= _arguments.maxAmountPerBuyer, MinAmountExceedsMaxAmount());
         require(_arguments.minAmountPerBuyer != 0, ZeroAmount());
         require(_arguments.tokenPrice != 0, ZeroPrice());
         require(_arguments.maxAmountOfTokenToBeSold != 0, ZeroAmount());
@@ -273,10 +270,7 @@ contract Crowdinvesting is
     function _checkAndDeliver(uint256 _amount, address _tokenReceiver) internal {
         require(tokensSold + _amount <= maxAmountOfTokenToBeSold, MaxAmountOfTokenToBeSoldExceeded());
         require(tokensBought[_tokenReceiver] + _amount >= minAmountPerBuyer, MinAmountPerBuyerNotReached());
-        require(
-            tokensBought[_tokenReceiver] + _amount <= maxAmountPerBuyer,
-            MaxAmountPerBuyerExceeded()
-        );
+        require(tokensBought[_tokenReceiver] + _amount <= maxAmountPerBuyer, MaxAmountPerBuyerExceeded());
 
         if (lastBuyDate != 0 && block.timestamp > lastBuyDate) {
             revert LastBuyDatePassed();
@@ -286,7 +280,7 @@ contract Crowdinvesting is
         tokensBought[_tokenReceiver] += _amount;
 
         if (tokenHolder != address(0)) {
-            token.transferFrom(tokenHolder, _tokenReceiver, _amount);
+            IERC20(address(token)).safeTransferFrom(tokenHolder, _tokenReceiver, _amount);
         } else {
             token.mint(_tokenReceiver, _amount);
         }
@@ -429,10 +423,7 @@ contract Crowdinvesting is
     function setCurrencyAndTokenPrice(IERC20 _currency, uint256 _tokenPrice) external onlyOwner whenPaused {
         require(address(_currency) != address(0), ZeroCurrencyAddress());
         require(_tokenPrice != 0, ZeroPrice());
-        require(
-            token.allowList().map(address(_currency)) == TRUSTED_CURRENCY,
-            UntrustedCurrency()
-        );
+        require(token.allowList().map(address(_currency)) == TRUSTED_CURRENCY, UntrustedCurrency());
 
         priceOracle = IPriceDynamic(address(0)); // deactivate dynamic pricing because price changed, so min and max need to be updated
         priceBase = _tokenPrice;

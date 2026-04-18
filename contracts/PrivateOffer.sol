@@ -119,7 +119,11 @@ contract PrivateOffer {
         );
 
         if (_arguments.tokenHolder != address(0)) {
-            _arguments.token.transferFrom(_arguments.tokenHolder, _arguments.tokenReceiver, _arguments.tokenAmount);
+            IERC20(address(_arguments.token)).safeTransferFrom(
+                _arguments.tokenHolder,
+                _arguments.tokenReceiver,
+                _arguments.tokenAmount
+            );
         } else {
             _arguments.token.mint(_arguments.tokenReceiver, _arguments.tokenAmount);
         }

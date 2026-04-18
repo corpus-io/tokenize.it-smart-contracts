@@ -116,10 +116,7 @@ contract CoinvestedPosition is TokenSwapBase {
         require(address(_currency) != address(0), ZeroCurrencyAddress());
         require(address(_currency) != address(token), CurrencyEqualsToken());
         require(_basePrice > 0, ZeroPrice());
-        require(
-            token.allowList().map(address(_currency)) == TRUSTED_CURRENCY,
-            UntrustedCurrency()
-        );
+        require(token.allowList().map(address(_currency)) == TRUSTED_CURRENCY, UntrustedCurrency());
         basePrice = _basePrice;
         currency = _currency;
     }
@@ -158,7 +155,7 @@ contract CoinvestedPosition is TokenSwapBase {
         _settle(profit, currency);
 
         // transfer tokens from this contract to the buyer's receiver
-        token.transfer(_tokenReceiver, _tokenAmount);
+        IERC20(address(token)).safeTransfer(_tokenReceiver, _tokenAmount);
 
         emit TokensBought(_msgSender(), _tokenAmount, currencyAmount);
     }
@@ -192,10 +189,7 @@ contract CoinvestedPosition is TokenSwapBase {
      */
     function claimDistribution(Distribution _dist, uint256 _minPayout) external onlyOwner nonReentrant {
         IERC20 dividendCurrency = _dist.currency();
-        require(
-            token.allowList().map(address(dividendCurrency)) == TRUSTED_CURRENCY,
-            UntrustedCurrency()
-        );
+        require(token.allowList().map(address(dividendCurrency)) == TRUSTED_CURRENCY, UntrustedCurrency());
         uint256 before = dividendCurrency.balanceOf(address(this));
         _dist.claim(address(this), _minPayout);
         uint256 profit = dividendCurrency.balanceOf(address(this)) - before;

@@ -111,7 +111,7 @@ contract TokenSwap is TokenSwapBase {
         }
 
         currency.safeTransferFrom(_msgSender(), receiver, currencyAmount - fee);
-        token.transferFrom(holder, _tokenReceiver, _tokenAmount);
+        IERC20(address(token)).safeTransferFrom(holder, _tokenReceiver, _tokenAmount);
 
         emit TokensBought(_msgSender(), _tokenAmount, currencyAmount);
     }
@@ -142,7 +142,7 @@ contract TokenSwap is TokenSwapBase {
         currency.safeTransferFrom(holder, _currencyReceiver, currencyAmount - fee);
 
         // get the tokens the caller just sold to us
-        token.transferFrom(_msgSender(), receiver, _tokenAmount);
+        IERC20(address(token)).safeTransferFrom(_msgSender(), receiver, _tokenAmount);
 
         emit TokensSold(_msgSender(), _tokenAmount, currencyAmount);
     }
