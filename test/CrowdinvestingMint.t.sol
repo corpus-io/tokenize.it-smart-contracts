@@ -193,68 +193,68 @@ contract CrowdinvestingTest is Test {
             address(0),
             address(0)
         );
-        vm.expectRevert("CrowdinvestingCloneFactory: Unexpected trustedForwarder");
+        vm.expectRevert(Factory.UnexpectedTrustedForwarder.selector);
         Crowdinvesting(factory.createCrowdinvestingClone(0, address(0), arguments));
 
         // OWNER 0
         CrowdinvestingInitializerArguments memory tempArgs = cloneCrowdinvestingInitializerArguments(arguments);
         tempArgs.owner = address(0);
-        vm.expectRevert("owner can not be zero address");
+        vm.expectRevert(ZeroOwnerAddress.selector);
         factory.createCrowdinvestingClone(0, TRUSTED_FORWARDER, tempArgs);
 
         // RECEIVER 0
         tempArgs = cloneCrowdinvestingInitializerArguments(arguments);
         tempArgs.currencyReceiver = address(0);
-        vm.expectRevert("currencyReceiver can not be zero address");
+        vm.expectRevert(ZeroReceiverAddress.selector);
         factory.createCrowdinvestingClone(0, TRUSTED_FORWARDER, tempArgs);
 
         // token minAmount > MAX_AMOUNT_PER_BUYER
         tempArgs = cloneCrowdinvestingInitializerArguments(arguments);
         tempArgs.minAmountPerBuyer = MAX_AMOUNT_PER_BUYER + 1;
-        vm.expectRevert("_minAmountPerBuyer needs to be smaller or equal to _maxAmountPerBuyer");
+        vm.expectRevert(Crowdinvesting.MinAmountExceedsMaxAmount.selector);
         factory.createCrowdinvestingClone(0, TRUSTED_FORWARDER, tempArgs);
 
         // token minAmount 0
         tempArgs = cloneCrowdinvestingInitializerArguments(arguments);
         tempArgs.minAmountPerBuyer = 0;
-        vm.expectRevert("_minAmountPerBuyer needs to be larger than zero");
+        vm.expectRevert(ZeroAmount.selector);
         factory.createCrowdinvestingClone(0, TRUSTED_FORWARDER, tempArgs);
 
         // PRICE 0
         tempArgs = cloneCrowdinvestingInitializerArguments(arguments);
         tempArgs.tokenPrice = 0;
-        vm.expectRevert("_tokenPrice needs to be a non-zero amount");
+        vm.expectRevert(ZeroPrice.selector);
         factory.createCrowdinvestingClone(0, TRUSTED_FORWARDER, tempArgs);
 
         // max PRICE 0
         tempArgs = cloneCrowdinvestingInitializerArguments(arguments);
         tempArgs.priceMax = 0;
         tempArgs.priceOracle = address(3);
-        vm.expectRevert("priceMax needs to be larger or equal to priceBase");
+        vm.expectRevert(Crowdinvesting.PriceMaxBelowPriceBase.selector);
         factory.createCrowdinvestingClone(0, TRUSTED_FORWARDER, tempArgs);
 
         // min PRICE too high
         tempArgs.priceMax = PRICE;
         tempArgs.priceMin = PRICE + 1;
-        vm.expectRevert("priceMin needs to be smaller or equal to priceBase");
+        vm.expectRevert(Crowdinvesting.PriceMinExceedsPriceBase.selector);
         factory.createCrowdinvestingClone(0, TRUSTED_FORWARDER, tempArgs);
 
         // token maxAmountToBeSold 0
         tempArgs = cloneCrowdinvestingInitializerArguments(arguments);
         tempArgs.maxAmountOfTokenToBeSold = 0;
-        vm.expectRevert("_maxAmountOfTokenToBeSold needs to be larger than zero");
+        vm.expectRevert(ZeroAmount.selector);
         factory.createCrowdinvestingClone(0, TRUSTED_FORWARDER, tempArgs);
 
         // currency 0
         tempArgs = cloneCrowdinvestingInitializerArguments(arguments);
         tempArgs.currency = IERC20(address(0));
-        vm.expectRevert("currency can not be zero address");
+        vm.expectRevert(ZeroCurrencyAddress.selector);
         factory.createCrowdinvestingClone(0, TRUSTED_FORWARDER, tempArgs);
 
         // token 0
         tempArgs = cloneCrowdinvestingInitializerArguments(arguments);
         tempArgs.token = Token(address(0));
-        vm.expectRevert("token can not be zero address");
+        vm.expectRevert(ZeroTokenAddress.selector);
         factory.createCrowdinvestingClone(0, TRUSTED_FORWARDER, tempArgs);
     }
 
@@ -428,7 +428,7 @@ contract CrowdinvestingTest is Test {
             assertTrue(crowdinvesting.tokensBought(BUYER) == tokenBuyAmount, "crowdinvesting has sold tokens to BUYER");
         } else {
             vm.prank(BUYER);
-            vm.expectRevert("Purchase more expensive than _maxCurrencyAmount");
+            vm.expectRevert(Crowdinvesting.PurchaseTooExpensive.selector);
             crowdinvesting.buy(tokenBuyAmount, maxCurrencyAmount, BUYER);
         }
     }
@@ -437,7 +437,7 @@ contract CrowdinvestingTest is Test {
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(BUYER);
 
         vm.prank(BUYER);
-        vm.expectRevert("Total amount of bought tokens needs to be lower than or equal to maxAmount");
+        vm.expectRevert(Crowdinvesting.MaxAmountPerBuyerExceeded.selector);
         crowdinvesting.buy(MAX_AMOUNT_PER_BUYER + 10 ** 18, type(uint256).max, BUYER); //+ 10**token.decimals());
         assertTrue(paymentToken.balanceOf(BUYER) == paymentTokenBalanceBefore);
         assertTrue(token.balanceOf(BUYER) == 0);
@@ -505,7 +505,7 @@ contract CrowdinvestingTest is Test {
         vm.prank(person1);
         crowdinvesting.buy(MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 2, type(uint256).max, person1);
         vm.prank(person2);
-        vm.expectRevert("Not enough tokens to sell left");
+        vm.expectRevert(Crowdinvesting.MaxAmountOfTokenToBeSoldExceeded.selector);
         crowdinvesting.buy(10 ** 18, type(uint256).max, person2);
     }
 
@@ -529,7 +529,7 @@ contract CrowdinvestingTest is Test {
         vm.prank(BUYER);
         crowdinvesting.buy(MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 2, type(uint256).max, BUYER);
         vm.prank(person1);
-        vm.expectRevert("Total amount of bought tokens needs to be lower than or equal to maxAmount");
+        vm.expectRevert(Crowdinvesting.MaxAmountPerBuyerExceeded.selector);
         crowdinvesting.buy(MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 2, type(uint256).max, BUYER);
     }
 
@@ -600,7 +600,7 @@ contract CrowdinvestingTest is Test {
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(BUYER);
 
         vm.prank(BUYER);
-        vm.expectRevert("Buyer needs to buy at least minAmount");
+        vm.expectRevert(Crowdinvesting.MinAmountPerBuyerNotReached.selector);
         crowdinvesting.buy(MIN_AMOUNT_PER_BUYER / 2, type(uint256).max, BUYER);
         assertTrue(paymentToken.balanceOf(BUYER) == paymentTokenBalanceBefore);
         assertTrue(token.balanceOf(BUYER) == 0);
@@ -709,7 +709,7 @@ contract CrowdinvestingTest is Test {
     */
     function testBuyMoreThanMaxAmountPerBuyer() public {
         vm.prank(BUYER);
-        vm.expectRevert("Total amount of bought tokens needs to be lower than or equal to maxAmount");
+        vm.expectRevert(Crowdinvesting.MaxAmountPerBuyerExceeded.selector);
         crowdinvesting.buy(MAX_AMOUNT_PER_BUYER + 1, type(uint256).max, BUYER);
     }
 
@@ -718,7 +718,7 @@ contract CrowdinvestingTest is Test {
     */
     function testBuyLessThanMinAmountPerBuyer() public {
         vm.prank(BUYER);
-        vm.expectRevert("Buyer needs to buy at least minAmount");
+        vm.expectRevert(Crowdinvesting.MinAmountPerBuyerNotReached.selector);
         crowdinvesting.buy(MIN_AMOUNT_PER_BUYER - 1, type(uint256).max, BUYER);
     }
 
@@ -756,7 +756,7 @@ contract CrowdinvestingTest is Test {
         assertTrue(crowdinvesting.currencyReceiver() == address(BUYER));
 
         vm.prank(OWNER);
-        vm.expectRevert("receiver can not be zero address");
+        vm.expectRevert(ZeroReceiverAddress.selector);
         crowdinvesting.setCurrencyReceiver(address(0));
     }
 
@@ -785,11 +785,11 @@ contract CrowdinvestingTest is Test {
         assertTrue(crowdinvesting.minAmountPerBuyer() == newMinAmountPerBuyer);
 
         uint256 _maxAmountPerBuyer = crowdinvesting.maxAmountPerBuyer();
-        vm.expectRevert("_minAmount needs to be smaller or equal to maxAmount");
+        vm.expectRevert(Crowdinvesting.MinAmountExceedsMaxAmount.selector);
         vm.prank(OWNER);
         crowdinvesting.setMinAmountPerBuyer(_maxAmountPerBuyer + 1); //crowdinvesting.maxAmountPerBuyer() + 1);
 
-        vm.expectRevert("_minAmountPerBuyer needs to be larger than zero");
+        vm.expectRevert(ZeroAmount.selector);
         vm.prank(OWNER);
         crowdinvesting.setMinAmountPerBuyer(0); //crowdinvesting.maxAmountPerBuyer() + 1);
 
@@ -820,7 +820,7 @@ contract CrowdinvestingTest is Test {
         crowdinvesting.setMaxAmountPerBuyer(newMaxAmountPerBuyer);
         assertTrue(crowdinvesting.maxAmountPerBuyer() == newMaxAmountPerBuyer);
         uint256 _minAmountPerBuyer = crowdinvesting.minAmountPerBuyer();
-        vm.expectRevert("_maxAmount needs to be larger or equal to minAmount");
+        vm.expectRevert(Crowdinvesting.MinAmountExceedsMaxAmount.selector);
         vm.prank(OWNER);
         crowdinvesting.setMaxAmountPerBuyer(_minAmountPerBuyer - 1);
     }
@@ -856,7 +856,7 @@ contract CrowdinvestingTest is Test {
         assertTrue(crowdinvesting.priceBase() == newPrice);
         assertTrue(crowdinvesting.currency() == newPaymentToken);
         vm.prank(OWNER);
-        vm.expectRevert("_tokenPrice needs to be a non-zero amount");
+        vm.expectRevert(ZeroPrice.selector);
         crowdinvesting.setCurrencyAndTokenPrice(paymentToken, 0);
     }
 
@@ -883,7 +883,7 @@ contract CrowdinvestingTest is Test {
         crowdinvesting.setMaxAmountOfTokenToBeSold(newMaxAmountOfTokenToBeSold);
         assertTrue(crowdinvesting.maxAmountOfTokenToBeSold() == newMaxAmountOfTokenToBeSold);
         vm.prank(OWNER);
-        vm.expectRevert("_maxAmountOfTokenToBeSold needs to be larger than zero");
+        vm.expectRevert(ZeroAmount.selector);
         crowdinvesting.setMaxAmountOfTokenToBeSold(0);
     }
 
@@ -895,7 +895,7 @@ contract CrowdinvestingTest is Test {
         crowdinvesting.pause();
         assertTrue(crowdinvesting.paused());
         vm.prank(OWNER);
-        vm.expectRevert("There needs to be at minimum one day to change parameters");
+        vm.expectRevert(Crowdinvesting.CoolDownNotOver.selector);
         crowdinvesting.unpause();
     }
 
@@ -959,7 +959,7 @@ contract CrowdinvestingTest is Test {
         vm.prank(OWNER);
         console.log("current time: ", block.timestamp);
         console.log("unpause at: ", startTime + changeDelay + unpauseDelay);
-        vm.expectRevert("There needs to be at minimum one day to change parameters");
+        vm.expectRevert(Crowdinvesting.CoolDownNotOver.selector);
         crowdinvesting.unpause(); // must fail because of the parameter update
     }
 
@@ -1013,7 +1013,7 @@ contract CrowdinvestingTest is Test {
         vm.prank(OWNER);
         console.log("current time: ", block.timestamp);
         console.log("unpause at: ", startTime + changeDelay + unpauseDelay);
-        vm.expectRevert("There needs to be at minimum one day to change parameters");
+        vm.expectRevert(Crowdinvesting.CoolDownNotOver.selector);
         crowdinvesting.unpause(); // must fail because of the parameter update
     }
 
@@ -1068,7 +1068,7 @@ contract CrowdinvestingTest is Test {
         vm.prank(OWNER);
         console.log("current time: ", block.timestamp);
         console.log("unpause at: ", startTime + changeDelay + unpauseDelay);
-        vm.expectRevert("There needs to be at minimum one day to change parameters");
+        vm.expectRevert(Crowdinvesting.CoolDownNotOver.selector);
         crowdinvesting.unpause(); // must fail because of the parameter update
     }
 
@@ -1122,7 +1122,7 @@ contract CrowdinvestingTest is Test {
         vm.prank(OWNER);
         console.log("current time: ", block.timestamp);
         console.log("unpause at: ", startTime + changeDelay + unpauseDelay);
-        vm.expectRevert("There needs to be at minimum one day to change parameters");
+        vm.expectRevert(Crowdinvesting.CoolDownNotOver.selector);
         crowdinvesting.unpause(); // must fail because of the parameter update
     }
 
@@ -1176,7 +1176,7 @@ contract CrowdinvestingTest is Test {
         vm.prank(OWNER);
         console.log("current time: ", block.timestamp);
         console.log("unpause at: ", startTime + changeDelay + unpauseDelay);
-        vm.expectRevert("There needs to be at minimum one day to change parameters");
+        vm.expectRevert(Crowdinvesting.CoolDownNotOver.selector);
         crowdinvesting.unpause(); // must fail because of the parameter update
     }
 
@@ -1252,7 +1252,7 @@ contract CrowdinvestingTest is Test {
 
         vm.startPrank(OWNER);
         crowdinvesting.pause();
-        vm.expectRevert("currency needs to be on the allowlist with TRUSTED_CURRENCY attribute");
+        vm.expectRevert(UntrustedCurrency.selector);
         crowdinvesting.setCurrencyAndTokenPrice(IERC20(someCurrency), 1);
 
         // check the settings works when the currency is on the allowlist with TRUSTED_CURRENCY attribute
@@ -1368,7 +1368,7 @@ contract CrowdinvestingTest is Test {
         console.log("LAST_BUY_DATE: ", _lastBuyDate);
 
         if (testDate > _lastBuyDate) {
-            vm.expectRevert("Last buy date has passed: not selling tokens anymore.");
+            vm.expectRevert(Crowdinvesting.LastBuyDatePassed.selector);
             vm.prank(BUYER);
             crowdinvesting.buy(tokenBuyAmount, type(uint256).max, BUYER);
         } else {
@@ -1414,7 +1414,7 @@ contract CrowdinvestingTest is Test {
             // auto-pause should trigger
             vm.startPrank(BUYER);
             paymentToken.approve(address(_crowdinvesting), type(uint256).max);
-            vm.expectRevert("Last buy date has passed: not selling tokens anymore.");
+            vm.expectRevert(Crowdinvesting.LastBuyDatePassed.selector);
             _crowdinvesting.buy(tokenBuyAmount, type(uint256).max, BUYER);
             vm.stopPrank();
         } else {
@@ -1449,7 +1449,7 @@ contract CrowdinvestingTest is Test {
         crowdinvesting.pause();
 
         vm.prank(OWNER);
-        vm.expectRevert("currency can not be zero address");
+        vm.expectRevert(ZeroCurrencyAddress.selector);
         crowdinvesting.setCurrencyAndTokenPrice(IERC20(address(0)), PRICE);
     }
 
@@ -1459,7 +1459,7 @@ contract CrowdinvestingTest is Test {
         crowdinvesting.pause();
 
         vm.prank(OWNER);
-        vm.expectRevert("lastBuyDate needs to be 0 or in the future");
+        vm.expectRevert(Crowdinvesting.LastBuyDateNotInFuture.selector);
         crowdinvesting.setLastBuyDate(999);
     }
 }

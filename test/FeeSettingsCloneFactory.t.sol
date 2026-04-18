@@ -273,7 +273,7 @@ contract tokenTest is Test {
 
         FeeSettings.FeeTypeInit[] memory feeTypes = _buildFeeTypesAllSame(1, 2, 3, EXAMPLE_TOKEN_FEE_COLLECTOR);
 
-        vm.expectRevert("FeeSettingsCloneFactory: Unexpected trustedForwarder");
+        vm.expectRevert(Factory.UnexpectedTrustedForwarder.selector);
         factory.createFeeSettingsClone(bytes32(0), _wrongTrustedForwarder, EXAMPLE_OWNER, feeTypes);
     }
 

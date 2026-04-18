@@ -79,7 +79,7 @@ contract FeeSettingsTest is Test {
         {
             FeeSettings.FeeTypeInit[] memory feeType = new FeeSettings.FeeTypeInit[](1);
             feeType[0] = FeeSettings.FeeTypeInit(FeeTypes.TOKEN, 500, numerator, ADMIN);
-            vm.expectRevert("default exceeds max");
+            vm.expectRevert(FeeSettings.DefaultNumeratorExceedsMax.selector);
             feeSettingsCloneFactory.createFeeSettingsClone("salt", TRUSTED_FORWARDER, ADMIN, feeType);
         }
 
@@ -88,7 +88,7 @@ contract FeeSettingsTest is Test {
             FeeSettings.FeeTypeInit[] memory feeType = new FeeSettings.FeeTypeInit[](1);
             feeType[0] = FeeSettings.FeeTypeInit(FeeTypes.CROWDINVESTING, 1000, numerator, ADMIN);
             if (!crowdinvestingFeeInValidRange(numerator)) {
-                vm.expectRevert("default exceeds max");
+                vm.expectRevert(FeeSettings.DefaultNumeratorExceedsMax.selector);
                 feeSettingsCloneFactory.createFeeSettingsClone("salt", TRUSTED_FORWARDER, ADMIN, feeType);
             } else {
                 // this should not revert, as the fee is in valid range for crowdinvesting
@@ -100,7 +100,7 @@ contract FeeSettingsTest is Test {
         {
             FeeSettings.FeeTypeInit[] memory feeType = new FeeSettings.FeeTypeInit[](1);
             feeType[0] = FeeSettings.FeeTypeInit(FeeTypes.PRIVATE_OFFER, 500, numerator, ADMIN);
-            vm.expectRevert("default exceeds max");
+            vm.expectRevert(FeeSettings.DefaultNumeratorExceedsMax.selector);
             feeSettingsCloneFactory.createFeeSettingsClone("salt", TRUSTED_FORWARDER, ADMIN, feeType);
         }
     }
@@ -109,7 +109,7 @@ contract FeeSettingsTest is Test {
         vm.assume(denominator > 0);
         vm.assume(!tokenOrPrivateOfferFeeInValidRange(numerator));
 
-        vm.expectRevert("exceeds max numerator");
+        vm.expectRevert(FeeSettings.NumeratorExceedsMax.selector);
         vm.prank(ADMIN);
         feeSettings.planFeeChange(FeeTypes.TOKEN, numerator, uint64(block.timestamp + 7884001));
     }
@@ -118,7 +118,7 @@ contract FeeSettingsTest is Test {
         vm.assume(denominator > 0);
         vm.assume(!crowdinvestingFeeInValidRange(numerator));
 
-        vm.expectRevert("exceeds max numerator");
+        vm.expectRevert(FeeSettings.NumeratorExceedsMax.selector);
         vm.prank(ADMIN);
         feeSettings.planFeeChange(FeeTypes.CROWDINVESTING, numerator, uint64(block.timestamp + 7884001));
     }
@@ -127,7 +127,7 @@ contract FeeSettingsTest is Test {
         vm.assume(denominator > 0);
         vm.assume(!tokenOrPrivateOfferFeeInValidRange(numerator));
 
-        vm.expectRevert("exceeds max numerator");
+        vm.expectRevert(FeeSettings.NumeratorExceedsMax.selector);
         vm.prank(ADMIN);
         feeSettings.planFeeChange(FeeTypes.PRIVATE_OFFER, numerator, uint64(block.timestamp + 7884001));
     }
@@ -146,15 +146,15 @@ contract FeeSettingsTest is Test {
         );
 
         vm.prank(ADMIN);
-        vm.expectRevert("fee increase needs 12 week delay");
+        vm.expectRevert(FeeSettings.FeeIncreaseNeedsDelay.selector);
         _feeSettings.planFeeChange(FeeTypes.TOKEN, newNumerator, uint64(block.timestamp + delay));
 
         vm.prank(ADMIN);
-        vm.expectRevert("fee increase needs 12 week delay");
+        vm.expectRevert(FeeSettings.FeeIncreaseNeedsDelay.selector);
         _feeSettings.planFeeChange(FeeTypes.CROWDINVESTING, newNumerator, uint64(block.timestamp + delay));
 
         vm.prank(ADMIN);
-        vm.expectRevert("fee increase needs 12 week delay");
+        vm.expectRevert(FeeSettings.FeeIncreaseNeedsDelay.selector);
         _feeSettings.planFeeChange(FeeTypes.PRIVATE_OFFER, newNumerator, uint64(block.timestamp + delay));
     }
 
@@ -176,7 +176,7 @@ contract FeeSettingsTest is Test {
         feeSettings.planFeeChange(FeeTypes.PRIVATE_OFFER, investmentFeeNumerator, activationDate);
 
         vm.prank(ADMIN);
-        vm.expectRevert("activation date not reached");
+        vm.expectRevert(FeeSettings.ActivationDateNotReached.selector);
         vm.warp(activationDate - 1);
         feeSettings.executeFeeChange(FeeTypes.TOKEN);
     }
@@ -279,7 +279,7 @@ contract FeeSettingsTest is Test {
         assertEq(_privateOfferFeeNumerator, 0, "PrivateOffer fee numerator mismatch");
 
         vm.prank(ADMIN);
-        vm.expectRevert("fee increase needs 12 week delay");
+        vm.expectRevert(FeeSettings.FeeIncreaseNeedsDelay.selector);
         _feeSettings.planFeeChange(FeeTypes.TOKEN, 1, 0);
     }
 
@@ -371,7 +371,7 @@ contract FeeSettingsTest is Test {
         {
             FeeSettings.FeeTypeInit[] memory feeType = new FeeSettings.FeeTypeInit[](1);
             feeType[0] = FeeSettings.FeeTypeInit(FeeTypes.TOKEN, 500, 1, address(0));
-            vm.expectRevert("Fee collector cannot be 0x0");
+            vm.expectRevert(FeeSettings.ZeroCollectorAddress.selector);
             _feeSettings = FeeSettings(
                 feeSettingsCloneFactory.createFeeSettingsClone("salt", TRUSTED_FORWARDER, ADMIN, feeType)
             );
@@ -380,7 +380,7 @@ contract FeeSettingsTest is Test {
         {
             FeeSettings.FeeTypeInit[] memory feeType = new FeeSettings.FeeTypeInit[](1);
             feeType[0] = FeeSettings.FeeTypeInit(FeeTypes.CROWDINVESTING, 1000, 2, address(0));
-            vm.expectRevert("Fee collector cannot be 0x0");
+            vm.expectRevert(FeeSettings.ZeroCollectorAddress.selector);
             _feeSettings = FeeSettings(
                 feeSettingsCloneFactory.createFeeSettingsClone("salt", TRUSTED_FORWARDER, ADMIN, feeType)
             );
@@ -389,7 +389,7 @@ contract FeeSettingsTest is Test {
         {
             FeeSettings.FeeTypeInit[] memory feeType = new FeeSettings.FeeTypeInit[](1);
             feeType[0] = FeeSettings.FeeTypeInit(FeeTypes.PRIVATE_OFFER, 500, 3, address(0));
-            vm.expectRevert("Fee collector cannot be 0x0");
+            vm.expectRevert(FeeSettings.ZeroCollectorAddress.selector);
             _feeSettings = FeeSettings(
                 feeSettingsCloneFactory.createFeeSettingsClone("salt", TRUSTED_FORWARDER, ADMIN, feeType)
             );
@@ -397,18 +397,18 @@ contract FeeSettingsTest is Test {
     }
 
     function testOwner0FailsInInitializer() public {
-        vm.expectRevert("owner can not be zero address");
+        vm.expectRevert(FeeSettings.ZeroOwnerAddress.selector);
         feeSettingsCloneFactory.createFeeSettingsClone("salt", TRUSTED_FORWARDER, address(0), _buildFeeTypes(ADMIN));
     }
 
     function testFeeCollector0FailsInSetter() public {
-        vm.expectRevert("collector cannot be 0x0");
+        vm.expectRevert(FeeSettings.ZeroCollectorAddress.selector);
         vm.prank(ADMIN);
         feeSettings.setDefaultFeeCollector(FeeTypes.TOKEN, address(0));
-        vm.expectRevert("collector cannot be 0x0");
+        vm.expectRevert(FeeSettings.ZeroCollectorAddress.selector);
         vm.prank(ADMIN);
         feeSettings.setDefaultFeeCollector(FeeTypes.CROWDINVESTING, address(0));
-        vm.expectRevert("collector cannot be 0x0");
+        vm.expectRevert(FeeSettings.ZeroCollectorAddress.selector);
         vm.prank(ADMIN);
         feeSettings.setDefaultFeeCollector(FeeTypes.PRIVATE_OFFER, address(0));
     }
@@ -675,7 +675,7 @@ contract FeeSettingsTest is Test {
         vm.assume(_rando != ADMIN);
         vm.assume(_rando != TRUSTED_FORWARDER);
 
-        vm.expectRevert("Only managers can call this function");
+        vm.expectRevert(FeeSettings.OnlyManagers.selector);
         vm.prank(_rando);
         feeSettings.setCustomFee(FeeTypes.TOKEN, someTokenAddress, 1, uint64(block.timestamp + 100));
     }
@@ -781,7 +781,7 @@ contract FeeSettingsTest is Test {
         address someTokenAddress = address(74);
         vm.assume(feeSettings.managers(_rando) == false);
         vm.assume(_rando != TRUSTED_FORWARDER);
-        vm.expectRevert("Only managers can call this function");
+        vm.expectRevert(FeeSettings.OnlyManagers.selector);
         vm.prank(_rando);
         feeSettings.removeCustomFee(FeeTypes.TOKEN, someTokenAddress);
     }
@@ -1092,47 +1092,47 @@ contract FeeSettingsTest is Test {
         vm.assume(_customFeeCollector != address(0));
         vm.assume(_customFeeCollector != ADMIN);
 
-        vm.expectRevert("Only managers can call this function");
+        vm.expectRevert(FeeSettings.OnlyManagers.selector);
         vm.prank(_rando);
         feeSettings.setCustomFeeCollector(FeeTypes.TOKEN, EXAMPLE_TOKEN_ADDRESS, _customFeeCollector);
 
-        vm.expectRevert("Only managers can call this function");
+        vm.expectRevert(FeeSettings.OnlyManagers.selector);
         vm.prank(_rando);
         feeSettings.setCustomFeeCollector(FeeTypes.CROWDINVESTING, EXAMPLE_TOKEN_ADDRESS, _customFeeCollector);
 
-        vm.expectRevert("Only managers can call this function");
+        vm.expectRevert(FeeSettings.OnlyManagers.selector);
         vm.prank(_rando);
         feeSettings.setCustomFeeCollector(FeeTypes.PRIVATE_OFFER, EXAMPLE_TOKEN_ADDRESS, _customFeeCollector);
 
-        vm.expectRevert("Only managers can call this function");
+        vm.expectRevert(FeeSettings.OnlyManagers.selector);
         vm.prank(_rando);
         feeSettings.removeCustomFeeCollector(FeeTypes.TOKEN, EXAMPLE_TOKEN_ADDRESS);
 
-        vm.expectRevert("Only managers can call this function");
+        vm.expectRevert(FeeSettings.OnlyManagers.selector);
         vm.prank(_rando);
         feeSettings.removeCustomFeeCollector(FeeTypes.CROWDINVESTING, EXAMPLE_TOKEN_ADDRESS);
 
-        vm.expectRevert("Only managers can call this function");
+        vm.expectRevert(FeeSettings.OnlyManagers.selector);
         vm.prank(_rando);
         feeSettings.removeCustomFeeCollector(FeeTypes.PRIVATE_OFFER, EXAMPLE_TOKEN_ADDRESS);
     }
 
     function testSettingCustomFeeCollectorFor0AddressReverts() public {
-        vm.expectRevert("collector cannot be 0x0");
+        vm.expectRevert(FeeSettings.ZeroCollectorAddress.selector);
         vm.prank(ADMIN);
         feeSettings.setCustomFeeCollector(FeeTypes.TOKEN, EXAMPLE_TOKEN_ADDRESS, address(0));
 
-        vm.expectRevert("collector cannot be 0x0");
+        vm.expectRevert(FeeSettings.ZeroCollectorAddress.selector);
         vm.prank(ADMIN);
         feeSettings.setCustomFeeCollector(FeeTypes.CROWDINVESTING, EXAMPLE_TOKEN_ADDRESS, address(0));
 
-        vm.expectRevert("collector cannot be 0x0");
+        vm.expectRevert(FeeSettings.ZeroCollectorAddress.selector);
         vm.prank(ADMIN);
         feeSettings.setCustomFeeCollector(FeeTypes.PRIVATE_OFFER, EXAMPLE_TOKEN_ADDRESS, address(0));
     }
 
     function testSettingCustomFeesFor0AddressReverts() public {
-        vm.expectRevert("token cannot be 0x0");
+        vm.expectRevert(FeeSettings.ZeroTokenAddress.selector);
         vm.prank(ADMIN);
         feeSettings.setCustomFee(FeeTypes.TOKEN, address(0), 1, uint64(block.timestamp + 100));
     }
@@ -1218,21 +1218,21 @@ contract FeeSettingsTest is Test {
     }
 
     function testRemovingCustomFeeFor0AddressReverts() public {
-        vm.expectRevert("token cannot be 0x0");
+        vm.expectRevert(FeeSettings.ZeroTokenAddress.selector);
         vm.prank(ADMIN);
         feeSettings.removeCustomFee(FeeTypes.TOKEN, address(0));
     }
 
     function testRemovingCustomFeeCollectorsFor0AddressReverts() public {
-        vm.expectRevert("token cannot be 0x0");
+        vm.expectRevert(FeeSettings.ZeroTokenAddress.selector);
         vm.prank(ADMIN);
         feeSettings.removeCustomFeeCollector(FeeTypes.TOKEN, address(0));
 
-        vm.expectRevert("token cannot be 0x0");
+        vm.expectRevert(FeeSettings.ZeroTokenAddress.selector);
         vm.prank(ADMIN);
         feeSettings.removeCustomFeeCollector(FeeTypes.CROWDINVESTING, address(0));
 
-        vm.expectRevert("token cannot be 0x0");
+        vm.expectRevert(FeeSettings.ZeroTokenAddress.selector);
         vm.prank(ADMIN);
         feeSettings.removeCustomFeeCollector(FeeTypes.PRIVATE_OFFER, address(0));
     }
@@ -1276,7 +1276,7 @@ contract FeeSettingsTest is Test {
         vm.assume(feeType != bytes32(0));
         vm.assume(maxNumerator >= feeSettings.FEE_DENOMINATOR());
 
-        vm.expectRevert("maxNumerator too large");
+        vm.expectRevert(FeeSettings.MaxNumeratorTooLarge.selector);
         vm.prank(ADMIN);
         feeSettings.registerFeeType(feeType, maxNumerator, 0, ADMIN);
     }
@@ -1333,37 +1333,37 @@ contract FeeSettingsTest is Test {
 
     function testRegisterFeeTypeRevertsIfFeeTypeZero() public {
         vm.prank(ADMIN);
-        vm.expectRevert("feeType cannot be 0");
+        vm.expectRevert(FeeSettings.ZeroFeeType.selector);
         feeSettings.registerFeeType(bytes32(0), 100, 50, ADMIN);
     }
 
     function testRegisterFeeTypeRevertsIfMaxNumeratorZero() public {
         vm.prank(ADMIN);
-        vm.expectRevert("maxNumerator cannot be 0");
+        vm.expectRevert(FeeSettings.ZeroMaxNumerator.selector);
         feeSettings.registerFeeType(keccak256("NEW_FEE_TYPE"), 0, 0, ADMIN);
     }
 
     function testRegisterFeeTypeRevertsIfAlreadyRegistered() public {
         vm.prank(ADMIN);
-        vm.expectRevert("fee type already registered");
+        vm.expectRevert(abi.encodeWithSelector(FeeSettings.FeeTypeAlreadyRegistered.selector, FeeTypes.TOKEN));
         feeSettings.registerFeeType(FeeTypes.TOKEN, 100, 50, ADMIN);
     }
 
     function testPlanFeeChangeRevertsIfUnknownFeeType() public {
         vm.prank(ADMIN);
-        vm.expectRevert("unknown fee type");
+        vm.expectRevert(abi.encodeWithSelector(FeeSettings.UnknownFeeType.selector, keccak256("UNKNOWN_FEE_TYPE")));
         feeSettings.planFeeChange(keccak256("UNKNOWN_FEE_TYPE"), 1, uint64(block.timestamp + 1));
     }
 
     function testExecuteFeeChangeRevertsIfNoPendingChange() public {
         vm.prank(ADMIN);
-        vm.expectRevert("no proposed fee change");
+        vm.expectRevert(abi.encodeWithSelector(FeeSettings.NoProposedFeeChange.selector, FeeTypes.TOKEN));
         feeSettings.executeFeeChange(FeeTypes.TOKEN);
     }
 
     function testSetCustomFeeRevertsIfUnknownFeeType() public {
         vm.prank(ADMIN);
-        vm.expectRevert("unknown fee type");
+        vm.expectRevert(abi.encodeWithSelector(FeeSettings.UnknownFeeType.selector, keccak256("UNKNOWN_FEE_TYPE")));
         feeSettings.setCustomFee(
             keccak256("UNKNOWN_FEE_TYPE"),
             EXAMPLE_TOKEN_ADDRESS,
@@ -1374,31 +1374,31 @@ contract FeeSettingsTest is Test {
 
     function testSetCustomFeeRevertsIfNumeratorExceedsMax() public {
         vm.prank(ADMIN);
-        vm.expectRevert("numerator exceeds max");
+        vm.expectRevert(FeeSettings.NumeratorExceedsMax.selector);
         feeSettings.setCustomFee(FeeTypes.TOKEN, EXAMPLE_TOKEN_ADDRESS, 501, uint64(block.timestamp + 1 days));
     }
 
     function testSetCustomFeeRevertsIfValidityDateInPast() public {
         vm.prank(ADMIN);
-        vm.expectRevert("validity date must be in the future");
+        vm.expectRevert(FeeSettings.ValidityDateNotInFuture.selector);
         feeSettings.setCustomFee(FeeTypes.TOKEN, EXAMPLE_TOKEN_ADDRESS, 1, uint64(block.timestamp));
     }
 
     function testSetDefaultFeeCollectorRevertsIfUnknownFeeType() public {
         vm.prank(ADMIN);
-        vm.expectRevert("unknown fee type");
+        vm.expectRevert(abi.encodeWithSelector(FeeSettings.UnknownFeeType.selector, keccak256("UNKNOWN_FEE_TYPE")));
         feeSettings.setDefaultFeeCollector(keccak256("UNKNOWN_FEE_TYPE"), ADMIN);
     }
 
     function testSetCustomFeeCollectorRevertsIfUnknownFeeType() public {
         vm.prank(ADMIN);
-        vm.expectRevert("unknown fee type");
+        vm.expectRevert(abi.encodeWithSelector(FeeSettings.UnknownFeeType.selector, keccak256("UNKNOWN_FEE_TYPE")));
         feeSettings.setCustomFeeCollector(keccak256("UNKNOWN_FEE_TYPE"), EXAMPLE_TOKEN_ADDRESS, ADMIN);
     }
 
     function testSetCustomFeeCollectorRevertsIfTokenZero() public {
         vm.prank(ADMIN);
-        vm.expectRevert("token cannot be 0x0");
+        vm.expectRevert(FeeSettings.ZeroTokenAddress.selector);
         feeSettings.setCustomFeeCollector(FeeTypes.TOKEN, address(0), ADMIN);
     }
 }

@@ -260,7 +260,7 @@ contract CoinvestedPositionExitTest is Test {
         vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
 
-        vm.expectRevert("no tokens to claim");
+        vm.expectRevert(ZeroAmount.selector);
         vm.prank(OWNER);
         coinvestedPositionEmpty.claimExit(1, 0);
     }
@@ -1066,7 +1066,7 @@ contract CoinvestedPositionExitTest is Test {
 
         vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(noOpExit)));
-        vm.expectRevert("currency cannot be the held token");
+        vm.expectRevert(CurrencyEqualsToken.selector);
         vm.prank(OWNER);
         coinvestedPosition.claimExit(0, 1);
     }
@@ -1336,7 +1336,7 @@ contract CoinvestedPositionExitTest is Test {
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
 
         // _basePrice=0 and no rate in exit → must revert
-        vm.expectRevert("altBasePrice must be > 0");
+        vm.expectRevert(ZeroPrice.selector);
         vm.prank(OWNER);
         coinvestedPosition.claimExit(1, 0);
 
@@ -1408,7 +1408,7 @@ contract CoinvestedPositionExitTest is Test {
         );
 
         // Before lock expires: setCurrency must revert
-        vm.expectRevert("timelock has not expired");
+        vm.expectRevert(CoinvestedPosition.TimeLockNotExpired.selector);
         vm.prank(OWNER);
         lockedCp.setCurrency(IERC20(address(eure)), 100e18);
 

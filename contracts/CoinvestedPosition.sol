@@ -51,6 +51,14 @@ struct CoinvestedPositionInitializerArguments {
 contract CoinvestedPosition is TokenSwapBase {
     using SafeERC20 for IERC20;
 
+    error NoLeadInvestors();
+    error ZeroLeadInvestorAddress();
+    error ZeroLeadInvestorProfitFraction();
+    error ZeroTokenExitRegistryAddress();
+    error TimeLockNotExpired();
+    error NoExitSet();
+    error PurchaseTooExpensive();
+
     /// lead investors and their carry fractions
     LeadInvestor[] public leadInvestors;
     /// base price per token in bits of the current currency (always expressed in current currency's decimals)
@@ -77,15 +85,15 @@ contract CoinvestedPosition is TokenSwapBase {
     function initialize(CoinvestedPositionInitializerArguments memory _arguments) external initializer {
         _initializeBase(_arguments.owner, 0, _arguments.baseCurrency, _arguments.token, _arguments.receiver);
 
-        require(_arguments.leadInvestors.length > 0, "There must be at least one lead investor");
+        require(_arguments.leadInvestors.length > 0, NoLeadInvestors());
         uint64 profitFractionsSum = 0;
         for (uint256 i = 0; i < _arguments.leadInvestors.length; i++) {
-            require(_arguments.leadInvestors[i].account != address(0), "lead investor can not be zero address");
-            require(_arguments.leadInvestors[i].profitFraction > 0, "lead investor profit fraction can not be zero");
+            require(_arguments.leadInvestors[i].account != address(0), ZeroLeadInvestorAddress());
+            require(_arguments.leadInvestors[i].profitFraction > 0, ZeroLeadInvestorProfitFraction());
             profitFractionsSum += _arguments.leadInvestors[i].profitFraction; // reverts on overflow, thus avoiding profitFractionsSum > 100%
             leadInvestors.push(_arguments.leadInvestors[i]);
         }
-        require(address(_arguments.tokenExitRegistry) != address(0), "tokenExitRegistry can not be zero address");
+        require(address(_arguments.tokenExitRegistry) != address(0), ZeroTokenExitRegistryAddress());
         basePrice = _arguments.basePrice;
         lockedUntil = _arguments.lockedUntil;
         tokenExitRegistry = _arguments.tokenExitRegistry;
@@ -98,8 +106,8 @@ contract CoinvestedPosition is TokenSwapBase {
      * @notice Unpause the contract. Blocked until lockedUntil has passed.
      */
     function unpause() external override onlyOwner {
-        require(tokenPrice != 0, "tokenPrice must be set before unpausing");
-        require(block.timestamp >= lockedUntil, "timelock has not expired");
+        require(tokenPrice != 0, ZeroPrice());
+        require(block.timestamp >= lockedUntil, TimeLockNotExpired());
         _unpause();
     }
 
@@ -109,13 +117,13 @@ contract CoinvestedPosition is TokenSwapBase {
      * @param _basePrice base price expressed in the new currency's units; must be > 0
      */
     function setCurrency(IERC20 _currency, uint256 _basePrice) external onlyOwner {
-        require(block.timestamp >= lockedUntil, "timelock has not expired");
-        require(address(_currency) != address(0), "zero address");
-        require(address(_currency) != address(token), "currency cannot be the held token");
-        require(_basePrice > 0, "altBasePrice must be > 0");
+        require(block.timestamp >= lockedUntil, TimeLockNotExpired());
+        require(address(_currency) != address(0), ZeroCurrencyAddress());
+        require(address(_currency) != address(token), CurrencyEqualsToken());
+        require(_basePrice > 0, ZeroPrice());
         require(
             token.allowList().map(address(_currency)) == TRUSTED_CURRENCY,
-            "currency needs to be on the allowlist with TRUSTED_CURRENCY attribute"
+            UntrustedCurrency()
         );
         basePrice = _basePrice;
         currency = _currency;
@@ -135,7 +143,7 @@ contract CoinvestedPosition is TokenSwapBase {
         // rounding up to the next whole number. Buyer is charged up to one currency bit more in case of a fractional currency bit.
         uint256 currencyAmount = Math.ceilDiv(_tokenAmount * tokenPrice, 10 ** token.decimals());
 
-        require(currencyAmount <= _maxCurrencyAmount, "Purchase more expensive than _maxCurrencyAmount");
+        require(currencyAmount <= _maxCurrencyAmount, PurchaseTooExpensive());
 
         // pull full amount to this contract first, then distribute from here
         currency.safeTransferFrom(_msgSender(), address(this), currencyAmount);
@@ -170,7 +178,7 @@ contract CoinvestedPosition is TokenSwapBase {
      * @param _currency the ERC20 token to use as currency for the settlement
      */
     function _settle(uint256 profit, IERC20 _currency) internal {
-        require(address(_currency) != address(token), "currency cannot be the held token");
+        require(address(_currency) != address(token), CurrencyEqualsToken());
         for (uint256 i = 0; i < leadInvestors.length; i++) {
             uint256 carryFraction = (uint256(leadInvestors[i].profitFraction) * profit) / type(uint64).max;
             if (carryFraction != 0) {
@@ -191,7 +199,7 @@ contract CoinvestedPosition is TokenSwapBase {
         IERC20 dividendCurrency = _dist.currency();
         require(
             token.allowList().map(address(dividendCurrency)) == TRUSTED_CURRENCY,
-            "dividend currency must be a trusted currency"
+            UntrustedCurrency()
         );
         uint256 before = dividendCurrency.balanceOf(address(this));
         _dist.claim(address(this), _minPayout);
@@ -212,9 +220,9 @@ contract CoinvestedPosition is TokenSwapBase {
      */
     function claimExit(uint256 _minCurrencyAmount, uint256 _basePrice) external onlyOwner nonReentrant {
         Exit _exit = tokenExitRegistry.exits(token);
-        require(address(_exit) != address(0), "no exit set in tokenExitRegistry");
+        require(address(_exit) != address(0), NoExitSet());
         uint256 tokenBalance = token.balanceOf(address(this));
-        require(tokenBalance > 0, "no tokens to claim");
+        require(tokenBalance > 0, ZeroAmount());
 
         IERC20 exitCurrency = _exit.currency();
         uint256 effectiveBasePrice;
@@ -225,7 +233,7 @@ contract CoinvestedPosition is TokenSwapBase {
             if (rate > 0) {
                 effectiveBasePrice = (basePrice * rate) / 10 ** IERC20Metadata(address(currency)).decimals();
             } else {
-                require(_basePrice > 0, "altBasePrice must be > 0");
+                require(_basePrice > 0, ZeroPrice());
                 effectiveBasePrice = _basePrice;
             }
         }

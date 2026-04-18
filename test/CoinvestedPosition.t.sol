@@ -269,7 +269,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             lockedUntil: 0,
             tokenExitRegistry: tokenExitRegistry
         });
-        vm.expectRevert("There must be at least one lead investor");
+        vm.expectRevert(CoinvestedPosition.NoLeadInvestors.selector);
         factory.createCoinvestedPositionClone(bytes32(0), TRUSTED_FORWARDER, args);
     }
 
@@ -286,7 +286,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             lockedUntil: 0,
             tokenExitRegistry: tokenExitRegistry
         });
-        vm.expectRevert("lead investor can not be zero address");
+        vm.expectRevert(CoinvestedPosition.ZeroLeadInvestorAddress.selector);
         factory.createCoinvestedPositionClone(bytes32(0), TRUSTED_FORWARDER, args);
     }
 
@@ -303,7 +303,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             lockedUntil: 0,
             tokenExitRegistry: tokenExitRegistry
         });
-        vm.expectRevert("lead investor profit fraction can not be zero");
+        vm.expectRevert(CoinvestedPosition.ZeroLeadInvestorProfitFraction.selector);
         factory.createCoinvestedPositionClone(bytes32(0), TRUSTED_FORWARDER, args);
     }
 
@@ -359,7 +359,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         FakePaymentToken nonTrusted = new FakePaymentToken(0, 6);
         // not on allowList → 0 attributes, no TRUSTED_CURRENCY bit
         vm.prank(OWNER);
-        vm.expectRevert("currency needs to be on the allowlist with TRUSTED_CURRENCY attribute");
+        vm.expectRevert(UntrustedCurrency.selector);
         coinvestedPosition.setCurrency(IERC20(address(nonTrusted)), 1);
     }
 
@@ -411,7 +411,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         // tokenPrice is 0 after init
         assertEq(coinvestedPosition.tokenPrice(), 0);
         vm.prank(OWNER);
-        vm.expectRevert("tokenPrice must be set before unpausing");
+        vm.expectRevert(ZeroPrice.selector);
         coinvestedPosition.unpause();
     }
 
@@ -482,7 +482,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         _setupBuy(10e18, 200e6);
         _fundBuyer(eurc, 200e6);
         vm.prank(BUYER);
-        vm.expectRevert("Purchase more expensive than _maxCurrencyAmount");
+        vm.expectRevert(CoinvestedPosition.PurchaseTooExpensive.selector);
         coinvestedPosition.buy(1e18, 100e6, TOKEN_RECEIVER); // needs 200e6 but max=100e6
     }
 
@@ -1359,7 +1359,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         allowList.set(address(token), TRUSTED_CURRENCY);
 
         // setCurrency itself must reject the held token as currency
-        vm.expectRevert("currency cannot be the held token");
+        vm.expectRevert(CurrencyEqualsToken.selector);
         vm.prank(OWNER);
         coinvestedPosition.setCurrency(IERC20(address(token)), 1);
     }
@@ -1420,7 +1420,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             lockedUntil: 0,
             tokenExitRegistry: GlobalTokenExitRegistry(address(0))
         });
-        vm.expectRevert("tokenExitRegistry can not be zero address");
+        vm.expectRevert(CoinvestedPosition.ZeroTokenExitRegistryAddress.selector);
         factory.createCoinvestedPositionClone(bytes32(0), TRUSTED_FORWARDER, args);
     }
 
@@ -1444,19 +1444,19 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         locked.setTokenPrice(200e6);
 
         vm.prank(OWNER);
-        vm.expectRevert("timelock has not expired");
+        vm.expectRevert(CoinvestedPosition.TimeLockNotExpired.selector);
         locked.unpause();
     }
 
     function testSetCurrencyRevertsIfZeroAddress() public {
         vm.prank(OWNER);
-        vm.expectRevert("zero address");
+        vm.expectRevert(ZeroCurrencyAddress.selector);
         coinvestedPosition.setCurrency(IERC20(address(0)), 1e6);
     }
 
     function testSetCurrencyRevertsIfBasePriceZero() public {
         vm.prank(OWNER);
-        vm.expectRevert("altBasePrice must be > 0");
+        vm.expectRevert(ZeroPrice.selector);
         coinvestedPosition.setCurrency(IERC20(address(eure)), 0);
     }
 
@@ -1465,7 +1465,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         token.mint(address(coinvestedPosition), 100e18);
 
         vm.prank(OWNER);
-        vm.expectRevert("no exit set in tokenExitRegistry");
+        vm.expectRevert(CoinvestedPosition.NoExitSet.selector);
         coinvestedPosition.claimExit(0, 0);
     }
 }

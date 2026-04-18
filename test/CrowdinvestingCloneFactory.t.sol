@@ -470,7 +470,7 @@ contract CrowdinvestingCloneFactoryTest is Test {
             address(0)
         );
 
-        vm.expectRevert("currency needs to be on the allowlist with TRUSTED_CURRENCY attribute");
+        vm.expectRevert(UntrustedCurrency.selector);
         fundraisingFactory.createCrowdinvestingClone("salt", TRUSTED_FORWARDER, arguments);
 
         // test deployment succeeds with trusted currency

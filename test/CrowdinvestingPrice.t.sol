@@ -174,7 +174,7 @@ contract CrowdinvestingTest is Test {
         // activate dynamic pricing
         vm.startPrank(OWNER);
         crowdinvesting.pause();
-        vm.expectRevert("_priceOracle can not be zero address");
+        vm.expectRevert(Crowdinvesting.ZeroPriceOracleAddress.selector);
         crowdinvesting.activateDynamicPricing(IPriceDynamic(address(0)), PRICE_MIN, PRICE_MAX);
     }
 

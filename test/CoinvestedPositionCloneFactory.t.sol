@@ -183,7 +183,7 @@ contract CoinvestedPositionCloneFactoryTest is Test {
 
     function testCreateWithWrongForwarderReverts() public {
         CoinvestedPositionInitializerArguments memory args = _baseArgs();
-        vm.expectRevert("CoinvestedPositionCloneFactory: Unexpected trustedForwarder");
+        vm.expectRevert(Factory.UnexpectedTrustedForwarder.selector);
         factory.createCoinvestedPositionClone(EXAMPLE_SALT, address(0xBAD), args);
     }
 

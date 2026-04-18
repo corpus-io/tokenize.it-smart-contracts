@@ -30,10 +30,7 @@ contract FeeSettingsCloneFactory is CloneFactory {
         bytes32 salt = _generateSalt(_rawSalt, _trustedForwarder, _owner, _feeTypes);
         address clone = Clones.cloneDeterministic(implementation, salt);
         FeeSettings cloneFeeSettings = FeeSettings(clone);
-        require(
-            cloneFeeSettings.isTrustedForwarder(_trustedForwarder),
-            "FeeSettingsCloneFactory: Unexpected trustedForwarder"
-        );
+        require(cloneFeeSettings.isTrustedForwarder(_trustedForwarder), UnexpectedTrustedForwarder());
         cloneFeeSettings.initialize(_owner, _feeTypes);
         emit NewClone(clone);
         return clone;

@@ -50,10 +50,7 @@ contract PriceLinearCloneFactory is CloneFactory {
         );
         address clone = Clones.cloneDeterministic(implementation, salt);
         PriceLinear clonePriceOracle = PriceLinear(clone);
-        require(
-            clonePriceOracle.isTrustedForwarder(_trustedForwarder),
-            "PriceLinearCloneFactory: Unexpected trustedForwarder"
-        );
+        require(clonePriceOracle.isTrustedForwarder(_trustedForwarder), UnexpectedTrustedForwarder());
         clonePriceOracle.initialize(
             _owner,
             _slopeEnumerator,

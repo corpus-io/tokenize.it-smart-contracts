@@ -564,7 +564,7 @@ contract CoinvestedPositionDistributionTest is Test {
         TokenTransferStub stub = new TokenTransferStub(IERC20(address(untrusted)), 0);
         IERC20 untrustedCurrency = IERC20(address(stub.currency()));
 
-        vm.expectRevert("dividend currency must be a trusted currency");
+        vm.expectRevert(UntrustedCurrency.selector);
         vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(stub)), 0);
     }
@@ -953,7 +953,7 @@ contract CoinvestedPositionDistributionTest is Test {
         IERC20(address(token)).transfer(address(stub), stubAmount);
         IERC20 tokenCurrency = IERC20(address(stub.currency()));
 
-        vm.expectRevert("currency cannot be the held token");
+        vm.expectRevert(CurrencyEqualsToken.selector);
         vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(stub)), 0);
     }
