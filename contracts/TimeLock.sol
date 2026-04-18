@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./Distribution.sol";
 import "./Exit.sol";
 import "./GlobalTokenExitRegistry.sol";
+import "./common/Errors.sol";
 
 /**
  * @title TimeLock
@@ -20,17 +21,8 @@ import "./GlobalTokenExitRegistry.sol";
  * @dev Uses clone/proxy pattern. Constructor disables initializers, separate initialize().
  */
 contract TimeLock is Initializable, OwnableUpgradeable, ERC2771ContextUpgradeable, ReentrancyGuardUpgradeable {
-    /// @notice Reverted when the tokenExitRegistry address argument is zero.
-    error ZeroTokenExitRegistryAddress();
-
-    /// @notice Reverted when claimExit() is called but no exit is set in tokenExitRegistry for the token.
-    error NoExitSet();
-
     /// @notice Reverted when claimExit() is called but this contract holds no tokens.
     error NoTokensToExit();
-
-    /// @notice Reverted when drain() is called before lockedUntil has elapsed.
-    error TimeLockNotExpired();
 
     /// @notice Reverted when drain() is called but this contract holds no tokens.
     error NoTokensToDrain();

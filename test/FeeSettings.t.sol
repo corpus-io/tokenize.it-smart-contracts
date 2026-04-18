@@ -397,7 +397,7 @@ contract FeeSettingsTest is Test {
     }
 
     function testOwner0FailsInInitializer() public {
-        vm.expectRevert(FeeSettings.ZeroOwnerAddress.selector);
+        vm.expectRevert(ZeroOwnerAddress.selector);
         feeSettingsCloneFactory.createFeeSettingsClone("salt", TRUSTED_FORWARDER, address(0), _buildFeeTypes(ADMIN));
     }
 
@@ -675,7 +675,7 @@ contract FeeSettingsTest is Test {
         vm.assume(_rando != ADMIN);
         vm.assume(_rando != TRUSTED_FORWARDER);
 
-        vm.expectRevert(FeeSettings.OnlyManagers.selector);
+        vm.expectRevert(CallerNotManager.selector);
         vm.prank(_rando);
         feeSettings.setCustomFee(FeeTypes.TOKEN, someTokenAddress, 1, uint64(block.timestamp + 100));
     }
@@ -781,7 +781,7 @@ contract FeeSettingsTest is Test {
         address someTokenAddress = address(74);
         vm.assume(feeSettings.managers(_rando) == false);
         vm.assume(_rando != TRUSTED_FORWARDER);
-        vm.expectRevert(FeeSettings.OnlyManagers.selector);
+        vm.expectRevert(CallerNotManager.selector);
         vm.prank(_rando);
         feeSettings.removeCustomFee(FeeTypes.TOKEN, someTokenAddress);
     }
@@ -1092,27 +1092,27 @@ contract FeeSettingsTest is Test {
         vm.assume(_customFeeCollector != address(0));
         vm.assume(_customFeeCollector != ADMIN);
 
-        vm.expectRevert(FeeSettings.OnlyManagers.selector);
+        vm.expectRevert(CallerNotManager.selector);
         vm.prank(_rando);
         feeSettings.setCustomFeeCollector(FeeTypes.TOKEN, EXAMPLE_TOKEN_ADDRESS, _customFeeCollector);
 
-        vm.expectRevert(FeeSettings.OnlyManagers.selector);
+        vm.expectRevert(CallerNotManager.selector);
         vm.prank(_rando);
         feeSettings.setCustomFeeCollector(FeeTypes.CROWDINVESTING, EXAMPLE_TOKEN_ADDRESS, _customFeeCollector);
 
-        vm.expectRevert(FeeSettings.OnlyManagers.selector);
+        vm.expectRevert(CallerNotManager.selector);
         vm.prank(_rando);
         feeSettings.setCustomFeeCollector(FeeTypes.PRIVATE_OFFER, EXAMPLE_TOKEN_ADDRESS, _customFeeCollector);
 
-        vm.expectRevert(FeeSettings.OnlyManagers.selector);
+        vm.expectRevert(CallerNotManager.selector);
         vm.prank(_rando);
         feeSettings.removeCustomFeeCollector(FeeTypes.TOKEN, EXAMPLE_TOKEN_ADDRESS);
 
-        vm.expectRevert(FeeSettings.OnlyManagers.selector);
+        vm.expectRevert(CallerNotManager.selector);
         vm.prank(_rando);
         feeSettings.removeCustomFeeCollector(FeeTypes.CROWDINVESTING, EXAMPLE_TOKEN_ADDRESS);
 
-        vm.expectRevert(FeeSettings.OnlyManagers.selector);
+        vm.expectRevert(CallerNotManager.selector);
         vm.prank(_rando);
         feeSettings.removeCustomFeeCollector(FeeTypes.PRIVATE_OFFER, EXAMPLE_TOKEN_ADDRESS);
     }
@@ -1132,7 +1132,7 @@ contract FeeSettingsTest is Test {
     }
 
     function testSettingCustomFeesFor0AddressReverts() public {
-        vm.expectRevert(FeeSettings.ZeroTokenAddress.selector);
+        vm.expectRevert(ZeroTokenAddress.selector);
         vm.prank(ADMIN);
         feeSettings.setCustomFee(FeeTypes.TOKEN, address(0), 1, uint64(block.timestamp + 100));
     }
@@ -1218,21 +1218,21 @@ contract FeeSettingsTest is Test {
     }
 
     function testRemovingCustomFeeFor0AddressReverts() public {
-        vm.expectRevert(FeeSettings.ZeroTokenAddress.selector);
+        vm.expectRevert(ZeroTokenAddress.selector);
         vm.prank(ADMIN);
         feeSettings.removeCustomFee(FeeTypes.TOKEN, address(0));
     }
 
     function testRemovingCustomFeeCollectorsFor0AddressReverts() public {
-        vm.expectRevert(FeeSettings.ZeroTokenAddress.selector);
+        vm.expectRevert(ZeroTokenAddress.selector);
         vm.prank(ADMIN);
         feeSettings.removeCustomFeeCollector(FeeTypes.TOKEN, address(0));
 
-        vm.expectRevert(FeeSettings.ZeroTokenAddress.selector);
+        vm.expectRevert(ZeroTokenAddress.selector);
         vm.prank(ADMIN);
         feeSettings.removeCustomFeeCollector(FeeTypes.CROWDINVESTING, address(0));
 
-        vm.expectRevert(FeeSettings.ZeroTokenAddress.selector);
+        vm.expectRevert(ZeroTokenAddress.selector);
         vm.prank(ADMIN);
         feeSettings.removeCustomFeeCollector(FeeTypes.PRIVATE_OFFER, address(0));
     }
@@ -1345,25 +1345,25 @@ contract FeeSettingsTest is Test {
 
     function testRegisterFeeTypeRevertsIfAlreadyRegistered() public {
         vm.prank(ADMIN);
-        vm.expectRevert(abi.encodeWithSelector(FeeSettings.FeeTypeAlreadyRegistered.selector, FeeTypes.TOKEN));
+        vm.expectRevert(FeeSettings.FeeTypeAlreadyRegistered.selector);
         feeSettings.registerFeeType(FeeTypes.TOKEN, 100, 50, ADMIN);
     }
 
     function testPlanFeeChangeRevertsIfUnknownFeeType() public {
         vm.prank(ADMIN);
-        vm.expectRevert(abi.encodeWithSelector(FeeSettings.UnknownFeeType.selector, keccak256("UNKNOWN_FEE_TYPE")));
+        vm.expectRevert(FeeSettings.UnknownFeeType.selector);
         feeSettings.planFeeChange(keccak256("UNKNOWN_FEE_TYPE"), 1, uint64(block.timestamp + 1));
     }
 
     function testExecuteFeeChangeRevertsIfNoPendingChange() public {
         vm.prank(ADMIN);
-        vm.expectRevert(abi.encodeWithSelector(FeeSettings.NoProposedFeeChange.selector, FeeTypes.TOKEN));
+        vm.expectRevert(FeeSettings.NoProposedFeeChange.selector);
         feeSettings.executeFeeChange(FeeTypes.TOKEN);
     }
 
     function testSetCustomFeeRevertsIfUnknownFeeType() public {
         vm.prank(ADMIN);
-        vm.expectRevert(abi.encodeWithSelector(FeeSettings.UnknownFeeType.selector, keccak256("UNKNOWN_FEE_TYPE")));
+        vm.expectRevert(FeeSettings.UnknownFeeType.selector);
         feeSettings.setCustomFee(
             keccak256("UNKNOWN_FEE_TYPE"),
             EXAMPLE_TOKEN_ADDRESS,
@@ -1386,19 +1386,19 @@ contract FeeSettingsTest is Test {
 
     function testSetDefaultFeeCollectorRevertsIfUnknownFeeType() public {
         vm.prank(ADMIN);
-        vm.expectRevert(abi.encodeWithSelector(FeeSettings.UnknownFeeType.selector, keccak256("UNKNOWN_FEE_TYPE")));
+        vm.expectRevert(FeeSettings.UnknownFeeType.selector);
         feeSettings.setDefaultFeeCollector(keccak256("UNKNOWN_FEE_TYPE"), ADMIN);
     }
 
     function testSetCustomFeeCollectorRevertsIfUnknownFeeType() public {
         vm.prank(ADMIN);
-        vm.expectRevert(abi.encodeWithSelector(FeeSettings.UnknownFeeType.selector, keccak256("UNKNOWN_FEE_TYPE")));
+        vm.expectRevert(FeeSettings.UnknownFeeType.selector);
         feeSettings.setCustomFeeCollector(keccak256("UNKNOWN_FEE_TYPE"), EXAMPLE_TOKEN_ADDRESS, ADMIN);
     }
 
     function testSetCustomFeeCollectorRevertsIfTokenZero() public {
         vm.prank(ADMIN);
-        vm.expectRevert(FeeSettings.ZeroTokenAddress.selector);
+        vm.expectRevert(ZeroTokenAddress.selector);
         feeSettings.setCustomFeeCollector(FeeTypes.TOKEN, address(0), ADMIN);
     }
 }

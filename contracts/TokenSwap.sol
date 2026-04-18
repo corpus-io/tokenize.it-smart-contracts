@@ -42,9 +42,6 @@ contract TokenSwap is TokenSwapBase {
     /// @notice Reverted when the holder address argument is zero.
     error ZeroHolderAddress();
 
-    /// @notice Reverted when the currency amount for a buy exceeds the caller's _maxCurrencyAmount.
-    error PurchaseTooExpensive();
-
     /// @notice Reverted when the payout after fees is below the caller's _minCurrencyAmount.
     error PayoutTooLow();
     using SafeERC20 for IERC20;

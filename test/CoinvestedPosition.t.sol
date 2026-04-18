@@ -269,7 +269,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             lockedUntil: 0,
             tokenExitRegistry: tokenExitRegistry
         });
-        vm.expectRevert(CoinvestedPosition.NoLeadInvestors.selector);
+        vm.expectRevert(NoLeadInvestors.selector);
         factory.createCoinvestedPositionClone(bytes32(0), TRUSTED_FORWARDER, args);
     }
 
@@ -482,7 +482,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         _setupBuy(10e18, 200e6);
         _fundBuyer(eurc, 200e6);
         vm.prank(BUYER);
-        vm.expectRevert(CoinvestedPosition.PurchaseTooExpensive.selector);
+        vm.expectRevert(PurchaseTooExpensive.selector);
         coinvestedPosition.buy(1e18, 100e6, TOKEN_RECEIVER); // needs 200e6 but max=100e6
     }
 
@@ -1420,7 +1420,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             lockedUntil: 0,
             tokenExitRegistry: GlobalTokenExitRegistry(address(0))
         });
-        vm.expectRevert(CoinvestedPosition.ZeroTokenExitRegistryAddress.selector);
+        vm.expectRevert(ZeroTokenExitRegistryAddress.selector);
         factory.createCoinvestedPositionClone(bytes32(0), TRUSTED_FORWARDER, args);
     }
 
@@ -1444,7 +1444,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         locked.setTokenPrice(200e6);
 
         vm.prank(OWNER);
-        vm.expectRevert(CoinvestedPosition.TimeLockNotExpired.selector);
+        vm.expectRevert(TimeLockNotExpired.selector);
         locked.unpause();
     }
 
@@ -1465,7 +1465,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         token.mint(address(coinvestedPosition), 100e18);
 
         vm.prank(OWNER);
-        vm.expectRevert(CoinvestedPosition.NoExitSet.selector);
+        vm.expectRevert(NoExitSet.selector);
         coinvestedPosition.claimExit(0, 0);
     }
 }

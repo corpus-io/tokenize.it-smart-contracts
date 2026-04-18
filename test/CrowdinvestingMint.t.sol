@@ -428,7 +428,7 @@ contract CrowdinvestingTest is Test {
             assertTrue(crowdinvesting.tokensBought(BUYER) == tokenBuyAmount, "crowdinvesting has sold tokens to BUYER");
         } else {
             vm.prank(BUYER);
-            vm.expectRevert(Crowdinvesting.PurchaseTooExpensive.selector);
+            vm.expectRevert(PurchaseTooExpensive.selector);
             crowdinvesting.buy(tokenBuyAmount, maxCurrencyAmount, BUYER);
         }
     }
@@ -895,7 +895,7 @@ contract CrowdinvestingTest is Test {
         crowdinvesting.pause();
         assertTrue(crowdinvesting.paused());
         vm.prank(OWNER);
-        vm.expectRevert(Crowdinvesting.CoolDownNotOver.selector);
+        vm.expectRevert(CoolDownNotOver.selector);
         crowdinvesting.unpause();
     }
 
@@ -959,7 +959,7 @@ contract CrowdinvestingTest is Test {
         vm.prank(OWNER);
         console.log("current time: ", block.timestamp);
         console.log("unpause at: ", startTime + changeDelay + unpauseDelay);
-        vm.expectRevert(Crowdinvesting.CoolDownNotOver.selector);
+        vm.expectRevert(CoolDownNotOver.selector);
         crowdinvesting.unpause(); // must fail because of the parameter update
     }
 
@@ -1013,7 +1013,7 @@ contract CrowdinvestingTest is Test {
         vm.prank(OWNER);
         console.log("current time: ", block.timestamp);
         console.log("unpause at: ", startTime + changeDelay + unpauseDelay);
-        vm.expectRevert(Crowdinvesting.CoolDownNotOver.selector);
+        vm.expectRevert(CoolDownNotOver.selector);
         crowdinvesting.unpause(); // must fail because of the parameter update
     }
 
@@ -1068,7 +1068,7 @@ contract CrowdinvestingTest is Test {
         vm.prank(OWNER);
         console.log("current time: ", block.timestamp);
         console.log("unpause at: ", startTime + changeDelay + unpauseDelay);
-        vm.expectRevert(Crowdinvesting.CoolDownNotOver.selector);
+        vm.expectRevert(CoolDownNotOver.selector);
         crowdinvesting.unpause(); // must fail because of the parameter update
     }
 
@@ -1122,7 +1122,7 @@ contract CrowdinvestingTest is Test {
         vm.prank(OWNER);
         console.log("current time: ", block.timestamp);
         console.log("unpause at: ", startTime + changeDelay + unpauseDelay);
-        vm.expectRevert(Crowdinvesting.CoolDownNotOver.selector);
+        vm.expectRevert(CoolDownNotOver.selector);
         crowdinvesting.unpause(); // must fail because of the parameter update
     }
 
@@ -1176,7 +1176,7 @@ contract CrowdinvestingTest is Test {
         vm.prank(OWNER);
         console.log("current time: ", block.timestamp);
         console.log("unpause at: ", startTime + changeDelay + unpauseDelay);
-        vm.expectRevert(Crowdinvesting.CoolDownNotOver.selector);
+        vm.expectRevert(CoolDownNotOver.selector);
         crowdinvesting.unpause(); // must fail because of the parameter update
     }
 

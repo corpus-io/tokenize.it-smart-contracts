@@ -51,13 +51,8 @@ struct CoinvestedPositionInitializerArguments {
 contract CoinvestedPosition is TokenSwapBase {
     using SafeERC20 for IERC20;
 
-    error NoLeadInvestors();
     error ZeroLeadInvestorAddress();
     error ZeroLeadInvestorProfitFraction();
-    error ZeroTokenExitRegistryAddress();
-    error TimeLockNotExpired();
-    error NoExitSet();
-    error PurchaseTooExpensive();
 
     /// lead investors and their carry fractions
     LeadInvestor[] public leadInvestors;

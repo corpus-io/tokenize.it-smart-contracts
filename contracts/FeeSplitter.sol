@@ -24,9 +24,6 @@ contract FeeSplitter {
     /// @notice Reverted when the coinvestedPosition address argument is zero.
     error ZeroCoinvestedPositionAddress();
 
-    /// @notice Reverted when the lead investor list of the CoinvestedPosition is empty.
-    error NoLeadInvestors();
-
     /// @notice Emitted once when the fee has been pulled and distributed.
     event FeeDistributed(address indexed feePayer, address indexed currency, uint256 feeAmount);
 

@@ -42,8 +42,6 @@ contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPri
     /// @notice Reverted when the stepDuration argument is zero.
     error ZeroStepDuration();
 
-    /// @notice Reverted when getPrice() is called during the cool-down period after a parameter update.
-    error CoolDownNotOver();
     uint32 public constant COOL_DOWN_DURATION = 1 hours;
 
     Linear public parameters;

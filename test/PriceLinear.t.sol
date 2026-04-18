@@ -281,7 +281,7 @@ contract PriceLinearTest is Test {
         oracle.updateParameters(1, 1, uint64(block.timestamp + 1), 1, false, true);
 
         vm.warp(block.timestamp + testDelay);
-        vm.expectRevert(PriceLinear.CoolDownNotOver.selector);
+        vm.expectRevert(CoolDownNotOver.selector);
         oracle.getPrice(7e18);
 
         vm.warp(block.timestamp + testDelay + 1 hours + 1); // this is definitely after the cool down period

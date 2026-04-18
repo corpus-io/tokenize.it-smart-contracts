@@ -30,3 +30,24 @@ error CurrencyEqualsToken();
 
 /// @notice Reverted when a lockedUntil timestamp is not strictly in the future.
 error LockedUntilNotInFuture();
+
+/// @notice Reverted when the cooldown period has not yet elapsed.
+error CoolDownNotOver();
+
+/// @notice Reverted when the purchase cost exceeds the caller's maximum.
+error PurchaseTooExpensive();
+
+/// @notice Reverted when the caller is not a manager.
+error CallerNotManager();
+
+/// @notice Reverted when a time lock has not yet expired.
+error TimeLockNotExpired();
+
+/// @notice Reverted when no exit is set in the registry for a token.
+error NoExitSet();
+
+/// @notice Reverted when a tokenExitRegistry address argument is zero.
+error ZeroTokenExitRegistryAddress();
+
+/// @notice Reverted when a lead investor list is empty.
+error NoLeadInvestors();

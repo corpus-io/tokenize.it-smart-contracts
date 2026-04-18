@@ -1408,7 +1408,7 @@ contract CoinvestedPositionExitTest is Test {
         );
 
         // Before lock expires: setCurrency must revert
-        vm.expectRevert(CoinvestedPosition.TimeLockNotExpired.selector);
+        vm.expectRevert(TimeLockNotExpired.selector);
         vm.prank(OWNER);
         lockedCp.setCurrency(IERC20(address(eure)), 100e18);
 

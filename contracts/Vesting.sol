@@ -55,7 +55,6 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     error NewStartTimeNotAfterEndTime();
     error OnlyBeneficiary();
     error NotAllowedToChangeBeneficiary();
-    error CallerNotManager();
 
     event Commit(bytes32 hash);
     event ERC20Released(uint64 id, uint256 amount);

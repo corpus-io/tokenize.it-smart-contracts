@@ -80,7 +80,7 @@ contract VestingTest is Test {
 
         // rando cannot commit
         vm.prank(rando);
-        vm.expectRevert(Vesting.CallerNotManager.selector);
+        vm.expectRevert(CallerNotManager.selector);
         vest.commit(hash);
 
         // owner can commit
@@ -103,7 +103,7 @@ contract VestingTest is Test {
 
         // rando cannot create
         vm.prank(_rando);
-        vm.expectRevert(Vesting.CallerNotManager.selector);
+        vm.expectRevert(CallerNotManager.selector);
         vest.createVesting(100, address(7), 1, 20 days, 40 days, false);
 
         // owner can create
@@ -581,7 +581,7 @@ contract VestingTest is Test {
 
         address rando = address(99);
         vm.prank(rando);
-        vm.expectRevert(Vesting.CallerNotManager.selector);
+        vm.expectRevert(CallerNotManager.selector);
         vesting.stopVesting(vestingId, uint64(exampleStart + 1));
     }
 }

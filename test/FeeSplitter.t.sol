@@ -165,7 +165,7 @@ contract FeeSplitterTest is Test {
     function testPayFeeNoLeadInvestorsReverts() public {
         // mockPosition has zero investors (never called addLeadInvestor)
         _approveFeeSplitter(FEE_AMOUNT);
-        vm.expectRevert(FeeSplitter.NoLeadInvestors.selector);
+        vm.expectRevert(NoLeadInvestors.selector);
         feeSplitter.payFee(FEE_PAYER, usdc, FEE_AMOUNT, CoinvestedPosition(address(mockPosition)));
     }
 

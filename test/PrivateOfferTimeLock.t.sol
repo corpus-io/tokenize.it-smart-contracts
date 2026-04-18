@@ -188,13 +188,13 @@ contract PrivateOfferTimeLockTest is Test {
         // drain before lock expires should revert
         assertEq(token.balanceOf(TOKEN_RECEIVER), 0, "investor vault should have no tokens");
         vm.prank(ADMIN);
-        vm.expectRevert(TimeLock.TimeLockNotExpired.selector);
+        vm.expectRevert(TimeLockNotExpired.selector);
         timeLock.drain(IERC20(address(token)), TOKEN_RECEIVER);
 
         // drain at attemptTime (still before lockedUntil) should also revert
         vm.warp(attemptTime);
         vm.prank(ADMIN);
-        vm.expectRevert(TimeLock.TimeLockNotExpired.selector);
+        vm.expectRevert(TimeLockNotExpired.selector);
         timeLock.drain(IERC20(address(token)), TOKEN_RECEIVER);
 
         // drain after lock expires transfers all tokens to recipient

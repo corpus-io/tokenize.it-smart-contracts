@@ -151,7 +151,7 @@ contract TimeLockDistributeExitTest is Test {
     function testDrainStillBlockedBeforeLockedUntil() public {
         // No exit is set — drain must be blocked
         vm.prank(OWNER);
-        vm.expectRevert(TimeLock.TimeLockNotExpired.selector);
+        vm.expectRevert(TimeLockNotExpired.selector);
         timeLock.drain(IERC20(address(token)), RECIPIENT);
     }
 
@@ -163,7 +163,7 @@ contract TimeLockDistributeExitTest is Test {
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
 
         vm.prank(OWNER);
-        vm.expectRevert(TimeLock.TimeLockNotExpired.selector);
+        vm.expectRevert(TimeLockNotExpired.selector);
         timeLock.drain(IERC20(address(token)), RECIPIENT);
     }
 
@@ -172,7 +172,7 @@ contract TimeLockDistributeExitTest is Test {
     /// Reverts when no exit is set in tokenExitRegistry
     function testDistributeExitRevertsIfNoExitRegistered() public {
         vm.prank(OWNER);
-        vm.expectRevert(TimeLock.NoExitSet.selector);
+        vm.expectRevert(NoExitSet.selector);
         timeLock.claimExit(token, RECIPIENT, 0);
     }
 
@@ -301,7 +301,7 @@ contract TimeLockDistributeExitTest is Test {
     function testInitializeRevertsIfRegistryZero() public {
         TimeLock logic = new TimeLock(TRUSTED_FORWARDER);
         TimeLockCloneFactory cloneFactory = new TimeLockCloneFactory(address(logic));
-        vm.expectRevert(TimeLock.ZeroTokenExitRegistryAddress.selector);
+        vm.expectRevert(ZeroTokenExitRegistryAddress.selector);
         cloneFactory.createTimeLockClone(
             bytes32(0),
             TRUSTED_FORWARDER,

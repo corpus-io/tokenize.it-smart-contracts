@@ -70,11 +70,9 @@ contract Crowdinvesting is
     error MinAmountPerBuyerNotReached();
     error MaxAmountPerBuyerExceeded();
     error LastBuyDatePassed();
-    error PurchaseTooExpensive();
     error OnlyCurrencyContract();
     error PurchaseYieldsTooFewTokens();
     error LastBuyDateNotInFuture();
-    error CoolDownNotOver();
 
     /// @notice Minimum waiting time between pause or parameter change and unpause.
     /// @dev delay is calculated from parameter change to unpause.

@@ -48,7 +48,7 @@ contract VestingBlindTest is Test {
         vm.assume(noOwner != trustedForwarder);
         vm.assume(vesting.managers(noOwner) == false);
         vm.assume(hash != bytes32(0));
-        vm.expectRevert(Vesting.CallerNotManager.selector);
+        vm.expectRevert(CallerNotManager.selector);
         vm.prank(noOwner);
         vesting.commit(hash);
     }
@@ -84,7 +84,7 @@ contract VestingBlindTest is Test {
 
         assertTrue(vesting.commitments(hash) == type(uint64).max, "commitment does not exist");
         vm.prank(noOwner);
-        vm.expectRevert(Vesting.CallerNotManager.selector);
+        vm.expectRevert(CallerNotManager.selector);
         vesting.revoke(hash, uint64(block.timestamp));
         assertEq(vesting.commitments(hash), type(uint64).max, "commitment has been revoked");
     }

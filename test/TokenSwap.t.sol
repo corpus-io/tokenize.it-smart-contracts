@@ -574,7 +574,7 @@ contract TokenSwapTest is Test {
             );
         } else {
             vm.prank(BUYER);
-            vm.expectRevert(TokenSwap.PurchaseTooExpensive.selector);
+            vm.expectRevert(PurchaseTooExpensive.selector);
             tokenSwap.buy(tokenBuyAmount, maxCurrencyAmount, BUYER);
         }
     }
