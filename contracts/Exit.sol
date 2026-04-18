@@ -93,7 +93,10 @@ contract Exit is PayoutBase {
         require(_arguments.referenceCurrencies.length == _arguments.referenceToExitRates.length, ArrayLengthMismatch());
         for (uint256 i = 0; i < _arguments.referenceCurrencies.length; i++) {
             require(address(_arguments.referenceCurrencies[i]) != address(0), ZeroCurrencyAddress());
-            require(_arguments.referenceCurrencies[i] != _arguments.currency, ReferenceCurrencyEqualsExitCurrency());
+            require(
+                address(_arguments.referenceCurrencies[i]) != address(_arguments.currency),
+                ReferenceCurrencyEqualsExitCurrency()
+            );
             require(_arguments.referenceToExitRates[i] > 0, ZeroPrice());
             referenceToExitRate[_arguments.referenceCurrencies[i]] = _arguments.referenceToExitRates[i];
         }

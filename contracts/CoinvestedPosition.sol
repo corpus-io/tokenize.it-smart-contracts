@@ -215,7 +215,7 @@ contract CoinvestedPosition is TokenSwapBase {
 
         IERC20 exitCurrency = _exit.currency();
         uint256 effectiveBasePrice;
-        if (exitCurrency == currency) {
+        if (address(exitCurrency) == address(currency)) {
             effectiveBasePrice = basePrice;
         } else {
             uint256 rate = _exit.referenceToExitRate(currency);

@@ -89,8 +89,8 @@ contract PrivateOffer {
         require(_arguments.currencyReceiver != address(0), ZeroCurrencyReceiverAddress());
         require(_arguments.tokenPrice != 0, ZeroPrice()); // a simple mint from the token contract will do in that case
         require(block.timestamp <= _arguments.expiration, DealExpired());
-        require(_arguments.token != Token(address(0)), ZeroTokenAddress());
-        require(_arguments.currency != IERC20(address(0)), ZeroCurrencyAddress());
+        require(address(_arguments.token) != address(0), ZeroTokenAddress());
+        require(address(_arguments.currency) != address(0), ZeroCurrencyAddress());
         require(_arguments.tokenAmount != 0, ZeroAmount());
         require(
             _arguments.token.allowList().map(address(_arguments.currency)) == TRUSTED_CURRENCY,

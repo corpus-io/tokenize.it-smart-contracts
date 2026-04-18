@@ -253,7 +253,7 @@ contract Token is
         // Checking that the suggestedFeeSettings is not 0x0 would work, too, but this check is used in other places, too.
         _checkIfFeeSettingsImplementsInterface(_feeSettings);
 
-        require(_feeSettings == suggestedFeeSettings, OnlySuggestedFeeSettings());
+        require(address(_feeSettings) == address(suggestedFeeSettings), OnlySuggestedFeeSettings());
         feeSettings = suggestedFeeSettings;
         emit FeeSettingsChanged(_feeSettings);
     }
