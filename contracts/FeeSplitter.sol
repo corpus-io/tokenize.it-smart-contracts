@@ -12,8 +12,10 @@ import "./common/Errors.sol";
  * @author malteish
  * @notice Pulls a one-time syndicate fee from a payer and distributes it proportionally among the
  *      lead investors of a CoinvestedPosition according to their carry fractions.
- * @dev Uses clone/proxy pattern for deterministic address derivation. payFee() can only succeed
- *      once per clone because the feePayer's allowance is consumed on the first call.
+ * @dev Uses clone/proxy pattern for deterministic address derivation. To prevent frontrunning,
+ *      either approve a counterfactual address (before deployment) or batch the approval with the
+ *      payFee() call. Approve for exactly feeAmount — any excess remains as a live allowance on
+ *      the deployed contract and can be drained by anyone.
  */
 contract FeeSplitter {
     using SafeERC20 for IERC20;
@@ -29,9 +31,10 @@ contract FeeSplitter {
 
     /**
      * @notice Pulls feeAmount of currency from feePayer and distributes it proportionally among the
-     *      lead investors of coinvestedPosition by their carry fractions. The first lead investor
+     *      lead investors of coinvestedPosition by their carry fractions. The last lead investor
      *      absorbs any rounding dust so the full feeAmount is always distributed.
-     *      feePayer must have pre-approved this contract's address for at least feeAmount of currency.
+     *      feePayer must have pre-approved this contract's address for exactly feeAmount of currency;
+     *      any excess approval remains live on this contract and can be drained by anyone.
      * @param feePayer address from which the fee is pulled; must have pre-approved this contract
      * @param currency ERC20 token in which the fee is denominated
      * @param feeAmount total fee to distribute, in currency bits
