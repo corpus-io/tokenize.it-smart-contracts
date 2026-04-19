@@ -168,7 +168,7 @@ Holds ERC20 tokens on behalf of an owner and blocks withdrawals until a configur
 - `claimExit(token, recipient, minPayout)` looks up the registered Exit for `token` in `tokenExitRegistry`, approves it, and redeems the full token balance. Also available during the lock period.
 - `tokenExitRegistry`: the GlobalTokenExitRegistry that `claimExit()` consults to find the authorized exit for a token. If no exit is registered, the call reverts.
 
-### FeeSplitter (FeeSplitter.sol)
+### FeeDistributor (FeeDistributor.sol)
 
 Helper that collects an upfront syndication fee from the co-investor and distributes it proportionally among the lead investors of a CoinvestedPosition.
 
@@ -180,7 +180,7 @@ Helper that collects an upfront syndication fee from the co-investor and distrib
 
 ### Approaches for use
 
-The core risk is granting a standing approval to a live FeeSplitter: anyone can call `payFee` and drain it. There are two safe patterns:
+The core risk is granting a standing approval to a live FeeDistributor: anyone can call `payFee` and drain it. There are two safe patterns:
 
 **Counterfactual (one-shot):** Grant approval to the predicted address before deployment. The contract does not exist yet, so the approval can only be consumed by deploying it — fixing all execution parameters up front. Approve for **exactly** `feeAmount`: any excess becomes a live allowance on the deployed contract and can be drained.
 
@@ -189,7 +189,7 @@ The core risk is granting a standing approval to a live FeeSplitter: anyone can 
 - batch execution through a Safe
 - batch execution through multicall
 
-FeeSplitter is a convenience helper, not a required component. The same outcome can be achieved by calculating each lead investor's share off-chain and sending transfers directly. If this contract does not fit the platform's or a user's needs, it can and should be replaced or adapted.
+FeeDistributor is a convenience helper, not a required component. The same outcome can be achieved by calculating each lead investor's share off-chain and sending transfers directly. If this contract does not fit the platform's or a user's needs, it can and should be replaced or adapted.
 
 ## Employee participation
 

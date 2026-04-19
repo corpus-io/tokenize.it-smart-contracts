@@ -44,7 +44,7 @@ These need a full review:
 - `AllowList`
 - `PriceLinear`
 - `IPriceDynamic`
-- `FeeSplitter`
+- `FeeDistributor`
 
 # Requested Analysis Depth
 

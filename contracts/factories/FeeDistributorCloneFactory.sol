@@ -6,22 +6,22 @@ import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "../CoinvestedPosition.sol";
-import "../FeeSplitter.sol";
+import "../FeeDistributor.sol";
 import "./CloneFactory.sol";
 
 /**
- * @title FeeSplitterCloneFactory
+ * @title FeeDistributorCloneFactory
  * @author malteish
- * @notice Use this contract to create deterministic clones of FeeSplitter contracts.
+ * @notice Use this contract to create deterministic clones of FeeDistributor contracts.
  *      Each clone pulls a one-time fee from a payer and distributes it among the lead investors
  *      of a CoinvestedPosition. The clone address is fully determined by the initialization
  *      parameters, allowing the feePayer to pre-approve the predicted address before deployment.
  */
-contract FeeSplitterCloneFactory is CloneFactory {
+contract FeeDistributorCloneFactory is CloneFactory {
     constructor(address _implementation) CloneFactory(_implementation) {}
 
     /**
-     * @notice Create a new FeeSplitter clone and initialize it. The clone immediately pulls
+     * @notice Create a new FeeDistributor clone and initialize it. The clone immediately pulls
      *      feeAmount of currency from feePayer and distributes it among the lead investors of
      *      coinvestedPosition. feePayer must have pre-approved this clone's address before calling.
      *      Use predictCloneAddress to obtain the address beforehand.
@@ -31,7 +31,7 @@ contract FeeSplitterCloneFactory is CloneFactory {
      * @param _feeAmount total fee to distribute, in currency bits
      * @param _coinvestedPosition source of lead investor accounts and carry fractions
      */
-    function createFeeSplitterClone(
+    function createFeeDistributorClone(
         bytes32 _rawSalt,
         address _feePayer,
         IERC20 _currency,
@@ -39,7 +39,7 @@ contract FeeSplitterCloneFactory is CloneFactory {
         CoinvestedPosition _coinvestedPosition
     ) external returns (address) {
         bytes32 salt = _getSalt(_rawSalt, _feePayer, _currency, _feeAmount, _coinvestedPosition);
-        FeeSplitter clone = FeeSplitter(Clones.cloneDeterministic(implementation, salt));
+        FeeDistributor clone = FeeDistributor(Clones.cloneDeterministic(implementation, salt));
         clone.payFee(_feePayer, _currency, _feeAmount, _coinvestedPosition);
         emit NewClone(address(clone));
         return address(clone);

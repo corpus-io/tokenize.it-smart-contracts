@@ -8,7 +8,7 @@ import "./CoinvestedPosition.sol";
 import "./common/Errors.sol";
 
 /**
- * @title FeeSplitter
+ * @title FeeDistributor
  * @author malteish
  * @notice Pulls a one-time syndicate fee from a payer and distributes it proportionally among the
  *      lead investors of a CoinvestedPosition according to their carry fractions.
@@ -17,7 +17,7 @@ import "./common/Errors.sol";
  *      payFee() call. Approve for exactly feeAmount — any excess remains as a live allowance on
  *      the deployed contract and can be drained by anyone.
  */
-contract FeeSplitter {
+contract FeeDistributor {
     using SafeERC20 for IERC20;
 
     /// @notice Reverted when the feePayer address argument is zero.
