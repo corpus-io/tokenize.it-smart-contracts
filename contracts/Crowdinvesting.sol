@@ -369,7 +369,10 @@ contract Crowdinvesting is
 
         // move payment to currencyReceiver and feeCollector
         (uint256 fee, address feeCollector) = _getFeeAndFeeReceiver(_currencyAmount);
-        currency.safeTransfer(feeCollector, fee);
+        if (fee != 0) {
+            currency.safeTransfer(feeCollector, fee);
+        }
+
         currency.safeTransfer(currencyReceiver, _currencyAmount - fee);
 
         _checkAndDeliver(amount, tokenReceiver);
