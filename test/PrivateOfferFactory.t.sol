@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.23;
+pragma solidity 0.8.34;
 
 import "../lib/forge-std/src/Test.sol";
 import "../lib/forge-std/src/console.sol";
@@ -200,7 +200,7 @@ contract PrivateOfferFactoryTest is Test {
 
         // try to drain before lock expires — must revert
         vm.prank(timeLockOwner);
-        vm.expectRevert("timelock has not expired");
+        vm.expectRevert(TimeLockNotExpired.selector);
         timeLockContract.drain(IERC20(address(token)), tokenReceiver);
 
         // drain after lock expires

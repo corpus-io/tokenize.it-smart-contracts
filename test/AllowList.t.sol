@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.23;
+pragma solidity 0.8.34;
 
 import "../lib/forge-std/src/Test.sol";
 import "../lib/forge-std/src/console.sol";
@@ -31,7 +31,7 @@ contract AllowListTest is Test {
     }
 
     function testOwner0Reverts() public {
-        vm.expectRevert("owner can not be zero address");
+        vm.expectRevert(ZeroOwnerAddress.selector);
         factory.createAllowListClone("salt", trustedForwarder, address(0));
     }
 
@@ -137,7 +137,7 @@ contract AllowListTest is Test {
         uint256[] memory attributes = new uint256[](1);
         attributes[0] = attributesX;
         vm.prank(owner);
-        vm.expectRevert("lengths do not match");
+        vm.expectRevert(ArrayLengthMismatch.selector);
         list.set(addresses, attributes);
     }
 

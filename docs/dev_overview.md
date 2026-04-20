@@ -168,15 +168,28 @@ Holds ERC20 tokens on behalf of an owner and blocks withdrawals until a configur
 - `claimExit(token, recipient, minPayout)` looks up the registered Exit for `token` in `tokenExitRegistry`, approves it, and redeems the full token balance. Also available during the lock period.
 - `tokenExitRegistry`: the GlobalTokenExitRegistry that `claimExit()` consults to find the authorized exit for a token. If no exit is registered, the call reverts.
 
-### FeeSplitter (FeeSplitter.sol)
+### FeeDistributor (FeeDistributor.sol)
 
-A one-shot helper that collects an upfront syndication fee from the co-investor and distributes it proportionally among the lead investors of a CoinvestedPosition.
+Helper that collects an upfront syndication fee from the co-investor and distributes it proportionally among the lead investors of a CoinvestedPosition.
 
 **Key details:**
 
 - `payFee(feePayer, currency, feeAmount, coinvestedPosition)` pulls `feeAmount` of `currency` from `feePayer` (which must have pre-approved this contract) and splits it among the lead investors in proportion to their `profitFraction`. The last investor absorbs any rounding dust so the full amount is always distributed.
-- Each clone is safe to use once. After the feePayer's allowance is consumed, it task is done. Reusing it to split fees for the same or other coinvestors and lead investors is only safe if the new approval is granted and used in the same transaction (frontrunning risk).
 - The contract holds no state of its own — it reads the lead investor list directly from the CoinvestedPosition at call time.
+- **Important**: Approving more than `_feeAmount` puts the approved funds at risk and will eventually result in them being stolen!
+
+### Approaches for use
+
+The core risk is granting a standing approval to a live FeeDistributor: anyone can call `payFee` and drain it. There are two safe patterns:
+
+**Counterfactual (one-shot):** Grant approval to the predicted address before deployment. The contract does not exist yet, so the approval can only be consumed by deploying it — fixing all execution parameters up front. Approve for **exactly** `feeAmount`: any excess becomes a live allowance on the deployed contract and can be drained.
+
+**Batched reuse:** Grant approval to a deployed contract and call `payFee` in the same transaction, so the allowance is never exposed between blocks. Several mechanisms support this, e.g.:
+
+- batch execution through a Safe
+- batch execution through multicall
+
+FeeDistributor is a convenience helper, not a required component. The same outcome can be achieved by calculating each lead investor's share off-chain and sending transfers directly. If this contract does not fit the platform's or a user's needs, it can and should be replaced or adapted.
 
 ## Employee participation
 

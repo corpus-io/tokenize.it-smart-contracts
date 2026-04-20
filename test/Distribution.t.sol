@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.23;
+pragma solidity 0.8.34;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
@@ -142,7 +142,7 @@ contract DistributionTest is Test {
             lockedUntil: lockedUntil,
             initialReassignments: new Reassignment[](0)
         });
-        vm.expectRevert("currency needs to be on the allowlist with TRUSTED_CURRENCY attribute");
+        vm.expectRevert(UntrustedCurrency.selector);
         factory.createDistributionClone(bytes32(0), TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, 0);
     }
 
@@ -174,7 +174,7 @@ contract DistributionTest is Test {
             lockedUntil: lockedUntil,
             initialReassignments: new Reassignment[](0)
         });
-        vm.expectRevert("price must be positive");
+        vm.expectRevert(ZeroPrice.selector);
         factory.createDistributionClone(bytes32(0), TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, 0);
     }
 
@@ -219,7 +219,7 @@ contract DistributionTest is Test {
             lockedUntil: lockedUntil,
             initialReassignments: new Reassignment[](0)
         });
-        vm.expectRevert("snapshot has no tokens");
+        vm.expectRevert(Distribution.EmptySnapshot.selector);
         factory.createDistributionClone(bytes32(0), TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, 0);
     }
 
@@ -324,7 +324,7 @@ contract DistributionTest is Test {
     }
 
     function testClaimZeroEligibleReverts() public {
-        vm.expectRevert("nothing to claim");
+        vm.expectRevert(NothingToClaim.selector);
         dist.claim(RECIPIENT, 0); // address(this) has 0 snapshot balance
     }
 
@@ -339,7 +339,7 @@ contract DistributionTest is Test {
         vm.prank(HOLDER_A);
         dist.claim(HOLDER_A, 0);
         vm.prank(HOLDER_A);
-        vm.expectRevert("nothing to claim");
+        vm.expectRevert(NothingToClaim.selector);
         dist.claim(HOLDER_A, 0);
     }
 
@@ -411,7 +411,7 @@ contract DistributionTest is Test {
     }
 
     function testDrainBeforeDeadlineReverts() public {
-        vm.expectRevert("drain not yet available");
+        vm.expectRevert(DrainNotYetAvailable.selector);
         vm.prank(OWNER);
         dist.drain(OWNER, currency);
     }
@@ -441,7 +441,7 @@ contract DistributionTest is Test {
         vm.assume(warpTo >= block.timestamp);
         vm.warp(warpTo);
         if (warpTo < lockedUntil) {
-            vm.expectRevert("drain not yet available");
+            vm.expectRevert(DrainNotYetAvailable.selector);
             vm.prank(OWNER);
             dist.drain(OWNER, currency);
         } else {
@@ -463,7 +463,7 @@ contract DistributionTest is Test {
 
     function testReassignBeforeDeadlineReverts() public {
         uint256 amount = dist.eligible(HOLDER_A);
-        vm.expectRevert("reassignment not yet available");
+        vm.expectRevert(Distribution.ReassignmentNotYetAvailable.selector);
         vm.prank(OWNER);
         dist.reassign(HOLDER_A, HOLDER_B, amount);
     }
@@ -482,7 +482,7 @@ contract DistributionTest is Test {
         assertEq(dist.eligible(HOLDER_A), amount, "HOLDER_A eligible should be non-zero before reassign");
         assertEq(dist.eligible(HOLDER_B), 60e6, "HOLDER_B eligible should be own share before reassign");
         if (warpTo < lockedUntil) {
-            vm.expectRevert("reassignment not yet available");
+            vm.expectRevert(Distribution.ReassignmentNotYetAvailable.selector);
             vm.prank(OWNER);
             dist.reassign(HOLDER_A, HOLDER_B, amount);
             assertEq(dist.eligible(HOLDER_A), amount, "HOLDER_A eligible should be non-zero after revert");
@@ -498,21 +498,21 @@ contract DistributionTest is Test {
     function testReassignToZeroAddressReverts() public {
         vm.warp(lockedUntil);
         uint256 amount = dist.eligible(HOLDER_A);
-        vm.expectRevert("to can not be zero address");
+        vm.expectRevert(ZeroReceiverAddress.selector);
         vm.prank(OWNER);
         dist.reassign(HOLDER_A, address(0), amount);
     }
 
     function testReassignZeroAmountReverts() public {
         vm.warp(lockedUntil);
-        vm.expectRevert("amount must be positive");
+        vm.expectRevert(ZeroAmount.selector);
         vm.prank(OWNER);
         dist.reassign(HOLDER_A, HOLDER_B, 0);
     }
 
     function testReassignExceedsEligibleReverts() public {
         vm.warp(lockedUntil);
-        vm.expectRevert("amount exceeds eligible");
+        vm.expectRevert(Distribution.ReassignmentExceedsEligible.selector);
         vm.prank(OWNER);
         dist.reassign(address(42), HOLDER_B, 1); // address(42) has no balance
     }
@@ -577,7 +577,7 @@ contract DistributionTest is Test {
         vm.prank(HOLDER_A);
         dist.claim(HOLDER_A, 0); // eligible drops to 0
         vm.warp(lockedUntil);
-        vm.expectRevert("amount exceeds eligible");
+        vm.expectRevert(Distribution.ReassignmentExceedsEligible.selector);
         vm.prank(OWNER);
         dist.reassign(HOLDER_A, HOLDER_B, 1);
     }
@@ -587,7 +587,7 @@ contract DistributionTest is Test {
         uint256 amountA = dist.eligible(HOLDER_A);
         vm.prank(OWNER);
         dist.reassign(HOLDER_A, HOLDER_B, amountA);
-        vm.expectRevert("amount exceeds eligible");
+        vm.expectRevert(Distribution.ReassignmentExceedsEligible.selector);
         vm.prank(OWNER);
         dist.reassign(HOLDER_A, HOLDER_C, 1); // eligible = 0 after first reassign
     }
@@ -676,7 +676,7 @@ contract DistributionTest is Test {
         vm.prank(HOLDER_A);
         dist.claim(HOLDER_A, 0); // eligible(A) = 0
         vm.warp(lockedUntil);
-        vm.expectRevert("amount exceeds eligible");
+        vm.expectRevert(Distribution.ReassignmentExceedsEligible.selector);
         vm.prank(OWNER);
         dist.reassign(HOLDER_A, HOLDER_B, 1);
     }
@@ -695,7 +695,7 @@ contract DistributionTest is Test {
 
         // A's paidOut covers their share: A claims 0
         vm.prank(HOLDER_A);
-        vm.expectRevert("nothing to claim");
+        vm.expectRevert(NothingToClaim.selector);
         dist.claim(HOLDER_A, 0);
         assertEq(currency.balanceOf(HOLDER_A), 0, "HOLDER_A should receive nothing after full reassign");
 
@@ -890,7 +890,7 @@ contract DistributionTest is Test {
     function testClaimMinPayoutAboveEligibleReverts() public {
         uint256 expectedNet = dist.eligible(HOLDER_A);
         vm.prank(HOLDER_A);
-        vm.expectRevert("payout below minimum");
+        vm.expectRevert(PayoutBelowMinimum.selector);
         dist.claim(HOLDER_A, expectedNet + 1);
     }
 
@@ -908,7 +908,7 @@ contract DistributionTest is Test {
         Distribution d = _deployDistWithNonZeroFee();
         uint256 gross = (SUPPLY_A * PRICE_PER_TOKEN) / 1e18; // 120e6, before fee
         vm.prank(HOLDER_A);
-        vm.expectRevert("payout below minimum");
+        vm.expectRevert(PayoutBelowMinimum.selector);
         d.claim(HOLDER_A, gross); // gross > eligible() (net)
     }
 
@@ -920,7 +920,7 @@ contract DistributionTest is Test {
             dist.claim(HOLDER_A, minPayout);
             assertEq(currency.balanceOf(HOLDER_A), net, "HOLDER_A should receive eligible");
         } else {
-            vm.expectRevert("payout below minimum");
+            vm.expectRevert(PayoutBelowMinimum.selector);
             dist.claim(HOLDER_A, minPayout);
         }
     }
@@ -1061,7 +1061,7 @@ contract DistributionTest is Test {
 
         // ensure recipient cannot claim from original dist without reassignment
         vm.prank(RECIPIENT);
-        vm.expectRevert("nothing to claim");
+        vm.expectRevert(NothingToClaim.selector);
         dist.claim(RECIPIENT, 0);
 
         assertEq(currency.balanceOf(RECIPIENT), expectedRecipientCurrency, "RECIPIENT balance changed");

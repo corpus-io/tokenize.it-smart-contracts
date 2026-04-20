@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.23;
+pragma solidity 0.8.34;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
@@ -148,7 +148,7 @@ contract ExitTest is Test {
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
         });
-        vm.expectRevert("price must be positive");
+        vm.expectRevert(ZeroPrice.selector);
         factory.createExitClone(bytes32(0), TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, 0);
     }
 
@@ -162,7 +162,7 @@ contract ExitTest is Test {
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
         });
-        vm.expectRevert("lockedUntil must be in the future");
+        vm.expectRevert(LockedUntilNotInFuture.selector);
         factory.createExitClone("1", TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, 0);
     }
 
@@ -176,7 +176,7 @@ contract ExitTest is Test {
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
         });
-        vm.expectRevert("currency and token must be different");
+        vm.expectRevert(CurrencyEqualsToken.selector);
         factory.createExitClone(bytes32(0), TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, 0);
     }
 
@@ -192,7 +192,7 @@ contract ExitTest is Test {
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
         });
-        vm.expectRevert("currency needs to be on the allowlist with TRUSTED_CURRENCY attribute");
+        vm.expectRevert(UntrustedCurrency.selector);
         factory.createExitClone(bytes32(0), TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, 0);
     }
 
@@ -264,7 +264,7 @@ contract ExitTest is Test {
 
     function testClaimNothingRevertsWhenNoTokens() public {
         address stranger = address(42);
-        vm.expectRevert("nothing to claim");
+        vm.expectRevert(NothingToClaim.selector);
         vm.prank(stranger);
         exitContract.claim(stranger, 0);
     }
@@ -361,7 +361,7 @@ contract ExitTest is Test {
         vm.assume(timestamp < type(uint64).max - 1);
         vm.warp(timestamp);
         if (timestamp < lockedUntil) {
-            vm.expectRevert("drain not yet available");
+            vm.expectRevert(DrainNotYetAvailable.selector);
             vm.prank(OWNER);
             exitContract.drain(RECIPIENT, currency);
         } else {
@@ -623,7 +623,7 @@ contract ExitTest is Test {
         uint256 expectedNet = TOTAL_CURRENCY;
 
         vm.prank(HOLDER);
-        vm.expectRevert("payout below minimum");
+        vm.expectRevert(PayoutBelowMinimum.selector);
         exitContract.claim(RECIPIENT, expectedNet + 1);
     }
 
@@ -645,7 +645,7 @@ contract ExitTest is Test {
         uint256 gross = (TOKEN_SUPPLY * PRICE_PER_TOKEN) / 10 ** feeToken.decimals();
 
         vm.prank(HOLDER);
-        vm.expectRevert("payout below minimum");
+        vm.expectRevert(PayoutBelowMinimum.selector);
         feeExit.claim(RECIPIENT, gross); // gross > net (gross - fee)
     }
 
@@ -665,7 +665,7 @@ contract ExitTest is Test {
         uint256 gross = (TOKEN_SUPPLY * PRICE_PER_TOKEN) / 10 ** feeToken.decimals();
 
         vm.prank(HOLDER);
-        vm.expectRevert("payout below minimum");
+        vm.expectRevert(PayoutBelowMinimum.selector);
         feeExit.claim(RECIPIENT, gross); // gross > eligible() (net)
     }
 
@@ -678,7 +678,7 @@ contract ExitTest is Test {
             exitContract.claim(RECIPIENT, minPayout);
             assertEq(currency.balanceOf(RECIPIENT), net, "RECIPIENT should receive net");
         } else {
-            vm.expectRevert("payout below minimum");
+            vm.expectRevert(PayoutBelowMinimum.selector);
             exitContract.claim(RECIPIENT, minPayout);
         }
     }
@@ -837,7 +837,7 @@ contract ExitTest is Test {
             referenceCurrencies: referenceCurrencies,
             referenceToExitRates: rates
         });
-        vm.expectRevert("referenceCurrencies and referenceToExitRates must have the same length");
+        vm.expectRevert(ArrayLengthMismatch.selector);
         factory.createExitClone(bytes32(0), TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, 0);
     }
 
@@ -861,7 +861,7 @@ contract ExitTest is Test {
             referenceCurrencies: referenceCurrencies,
             referenceToExitRates: rates
         });
-        vm.expectRevert("referenceToExitRate must be positive");
+        vm.expectRevert(ZeroPrice.selector);
         factory.createExitClone(bytes32(0), TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, 0);
     }
 
@@ -881,7 +881,7 @@ contract ExitTest is Test {
             referenceCurrencies: referenceCurrencies,
             referenceToExitRates: rates
         });
-        vm.expectRevert("referenceCurrency can not be the exit currency");
+        vm.expectRevert(Exit.ReferenceCurrencyEqualsExitCurrency.selector);
         factory.createExitClone(bytes32(0), TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, 0);
     }
 
@@ -938,7 +938,7 @@ contract ExitTest is Test {
         vm.prank(CURRENCY_PROVIDER);
         currency.approve(cloneAddr, TOTAL_CURRENCY);
 
-        vm.expectRevert("referenceCurrency can not be zero address");
+        vm.expectRevert(ZeroCurrencyAddress.selector);
         factory.createExitClone(bytes32("1"), TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, TOTAL_CURRENCY);
     }
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.23;
+pragma solidity 0.8.34;
 
 import "../lib/forge-std/src/Test.sol";
 import "../lib/forge-std/src/console.sol";
@@ -470,7 +470,7 @@ contract CrowdinvestingCloneFactoryTest is Test {
             address(0)
         );
 
-        vm.expectRevert("currency needs to be on the allowlist with TRUSTED_CURRENCY attribute");
+        vm.expectRevert(UntrustedCurrency.selector);
         fundraisingFactory.createCrowdinvestingClone("salt", TRUSTED_FORWARDER, arguments);
 
         // test deployment succeeds with trusted currency

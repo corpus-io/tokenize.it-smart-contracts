@@ -29,6 +29,23 @@
 - Use `@notice` for high-level descriptions, `@dev` for implementation notes, `@param` for parameters
 - Include security considerations and invariants in contract-level `@dev` comments
 
+### Custom Errors
+
+- Use custom errors instead of string reverts.
+- Use the `require(condition, CustomError(args))` syntax (available since Solidity 0.8.26 via-ir / 0.8.27 legacy pipeline).
+- **Generic errors** (e.g. `ZeroAddress`, `ZeroAmount`) are declared as top-level file-level errors in `contracts/common/Errors.sol` and imported where needed.
+- **Contract-specific errors** are declared inside the contract that uses them.
+- Do not declare errors in interfaces.
+- Only add arguments to a custom error when they give the caller information they could not already derive from the call context (e.g. the function arguments or their own address). Redundant arguments add gas cost and noise.
+- In tests, match custom errors by selector; for errors with parameters also encode the argument values:
+  ```solidity
+  // parameter-less error
+  vm.expectRevert(ZeroAddress.selector);
+  vm.expectRevert(MyContract.NoLeadInvestors.selector);
+  // error with parameters — verify the argument value too
+  vm.expectRevert(abi.encodeWithSelector(MyContract.UnknownFeeType.selector, feeTypeId));
+  ```
+
 ### Architecture
 
 - Use structs to avoid "stack too deep" errors in functions with many parameters

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.23;
+pragma solidity 0.8.34;
 
 import "../lib/forge-std/src/Test.sol";
 import "../lib/forge-std/src/console.sol";
@@ -36,7 +36,7 @@ contract AllowListCloneFactoryTest is Test {
         vm.assume(_wrongTrustedForwarder != address(0));
 
         // using a different trustedForwarder should fail
-        vm.expectRevert("AllowListCloneFactory: Unexpected trustedForwarder");
+        vm.expectRevert(Factory.UnexpectedTrustedForwarder.selector);
         factory.createAllowListClone(bytes32(uint256(0)), _wrongTrustedForwarder, companyAdmin);
 
         // using the correct trustedForwarder should succeed
@@ -47,7 +47,7 @@ contract AllowListCloneFactoryTest is Test {
         vm.assume(_owner != address(0));
 
         // using a different owner should fail
-        vm.expectRevert("owner can not be zero address");
+        vm.expectRevert(ZeroOwnerAddress.selector);
         factory.createAllowListClone(bytes32(uint256(0)), trustedForwarder, address(0));
 
         // using the correct owner should succeed
@@ -107,12 +107,12 @@ contract AllowListCloneFactoryTest is Test {
         address[] memory addresses = new address[](0);
         uint256[] memory attributes = new uint256[](0);
 
-        vm.expectRevert("AllowListCloneFactory: Unexpected trustedForwarder");
+        vm.expectRevert(Factory.UnexpectedTrustedForwarder.selector);
         factory.createAllowListClone(bytes32(uint256(1)), _wrongTrustedForwarder, companyAdmin, addresses, attributes);
     }
 
     function testFactoryRevertsIfImplementationZero() public {
-        vm.expectRevert("Factory: implementation can not be zero");
+        vm.expectRevert(Factory.ZeroImplementationAddress.selector);
         new AllowListCloneFactory(address(0));
     }
 
@@ -120,7 +120,7 @@ contract AllowListCloneFactoryTest is Test {
         address[] memory addresses = new address[](0);
         uint256[] memory attributes = new uint256[](0);
 
-        vm.expectRevert("owner can not be zero address");
+        vm.expectRevert(ZeroOwnerAddress.selector);
         factory.createAllowListClone(bytes32(uint256(0)), trustedForwarder, address(0), addresses, attributes);
     }
 }

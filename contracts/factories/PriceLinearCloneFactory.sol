@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-pragma solidity 0.8.23;
+pragma solidity 0.8.34;
 
 import "../PriceLinear.sol";
 import "./CloneFactory.sol";
@@ -50,10 +50,7 @@ contract PriceLinearCloneFactory is CloneFactory {
         );
         address clone = Clones.cloneDeterministic(implementation, salt);
         PriceLinear clonePriceOracle = PriceLinear(clone);
-        require(
-            clonePriceOracle.isTrustedForwarder(_trustedForwarder),
-            "PriceLinearCloneFactory: Unexpected trustedForwarder"
-        );
+        require(clonePriceOracle.isTrustedForwarder(_trustedForwarder), UnexpectedTrustedForwarder());
         clonePriceOracle.initialize(
             _owner,
             _slopeEnumerator,

@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.23;
+pragma solidity 0.8.34;
 
 import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol";
+
+import "./common/Errors.sol";
 
 /**
  * @dev the last bit is defined as special bit for the "trusted currency" attribute.
@@ -86,7 +88,7 @@ contract AllowList is Ownable2StepUpgradeable, ERC2771ContextUpgradeable {
      * @param _owner the owner of the contract
      */
     function initialize(address _owner) public initializer {
-        require(_owner != address(0), "owner can not be zero address");
+        require(_owner != address(0), ZeroOwnerAddress());
         _transferOwnership(_owner);
     }
 
@@ -99,7 +101,7 @@ contract AllowList is Ownable2StepUpgradeable, ERC2771ContextUpgradeable {
         address[] calldata _addresses,
         uint256[] calldata _attributes
     ) public initializer {
-        require(_owner != address(0), "owner can not be zero address");
+        require(_owner != address(0), ZeroOwnerAddress());
         _transferOwnership(_owner);
         _set(_addresses, _attributes);
     }
@@ -140,7 +142,7 @@ contract AllowList is Ownable2StepUpgradeable, ERC2771ContextUpgradeable {
      * @param _attributes array of attributes to be assigned to addresses
      */
     function _set(address[] calldata _addr, uint256[] calldata _attributes) internal {
-        require(_addr.length == _attributes.length, "lengths do not match");
+        require(_addr.length == _attributes.length, ArrayLengthMismatch());
         for (uint256 i = 0; i < _addr.length; i++) {
             _set(_addr[i], _attributes[i]);
         }

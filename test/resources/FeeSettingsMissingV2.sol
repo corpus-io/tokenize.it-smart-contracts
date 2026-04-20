@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.23;
+pragma solidity 0.8.34;
 
 /**
  * @notice Stub FeeSettings that passes Token's 3-step ERC165 check for IFeeSettingsV2

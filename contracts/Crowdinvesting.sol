@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.23;
+pragma solidity 0.8.34;
 
 import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol";
@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 
 import "./Token.sol";
 import "./common/IPriceDynamic.sol";
+import "./common/Errors.sol";
 
 /// this struct is used to circumvent the stack too deep error that occurs when passing too many arguments to a function
 struct CrowdinvestingInitializerArguments {
@@ -60,6 +61,18 @@ contract Crowdinvesting is
     ReentrancyGuardUpgradeable
 {
     using SafeERC20 for IERC20;
+
+    error MinAmountExceedsMaxAmount();
+    error ZeroPriceOracleAddress();
+    error PriceMinExceedsPriceBase();
+    error PriceMaxBelowPriceBase();
+    error MaxAmountOfTokenToBeSoldExceeded();
+    error MinAmountPerBuyerNotReached();
+    error MaxAmountPerBuyerExceeded();
+    error LastBuyDatePassed();
+    error OnlyCurrencyContract();
+    error PurchaseYieldsTooFewTokens();
+    error LastBuyDateNotInFuture();
 
     /// @notice Minimum waiting time between pause or parameter change and unpause.
     /// @dev delay is calculated from parameter change to unpause.
@@ -155,23 +168,20 @@ contract Crowdinvesting is
      * @param _arguments Struct containing all arguments for the initializer
      */
     function initialize(CrowdinvestingInitializerArguments memory _arguments) external initializer {
-        require(_arguments.owner != address(0), "owner can not be zero address");
+        require(_arguments.owner != address(0), ZeroOwnerAddress());
         __Ownable2Step_init(); // sets msgSender() as owner
         _transferOwnership(_arguments.owner); // sets owner as owner
 
-        require(_arguments.currencyReceiver != address(0), "currencyReceiver can not be zero address");
-        require(address(_arguments.currency) != address(0), "currency can not be zero address");
-        require(address(_arguments.token) != address(0), "token can not be zero address");
-        require(
-            _arguments.minAmountPerBuyer <= _arguments.maxAmountPerBuyer,
-            "_minAmountPerBuyer needs to be smaller or equal to _maxAmountPerBuyer"
-        );
-        require(_arguments.minAmountPerBuyer != 0, "_minAmountPerBuyer needs to be larger than zero");
-        require(_arguments.tokenPrice != 0, "_tokenPrice needs to be a non-zero amount");
-        require(_arguments.maxAmountOfTokenToBeSold != 0, "_maxAmountOfTokenToBeSold needs to be larger than zero");
+        require(_arguments.currencyReceiver != address(0), ZeroReceiverAddress());
+        require(address(_arguments.currency) != address(0), ZeroCurrencyAddress());
+        require(address(_arguments.token) != address(0), ZeroTokenAddress());
+        require(_arguments.minAmountPerBuyer <= _arguments.maxAmountPerBuyer, MinAmountExceedsMaxAmount());
+        require(_arguments.minAmountPerBuyer != 0, ZeroAmount());
+        require(_arguments.tokenPrice != 0, ZeroPrice());
+        require(_arguments.maxAmountOfTokenToBeSold != 0, ZeroAmount());
         require(
             _arguments.token.allowList().map(address(_arguments.currency)) == TRUSTED_CURRENCY,
-            "currency needs to be on the allowlist with TRUSTED_CURRENCY attribute"
+            UntrustedCurrency()
         );
         currencyReceiver = _arguments.currencyReceiver;
         minAmountPerBuyer = _arguments.minAmountPerBuyer;
@@ -211,11 +221,11 @@ contract Crowdinvesting is
      * @param _priceMax price will never be more than this
      */
     function _activateDynamicPricing(IPriceDynamic _priceOracle, uint256 _priceMin, uint256 _priceMax) internal {
-        require(address(_priceOracle) != address(0), "_priceOracle can not be zero address");
+        require(address(_priceOracle) != address(0), ZeroPriceOracleAddress());
         priceOracle = _priceOracle;
-        require(_priceMin <= priceBase, "priceMin needs to be smaller or equal to priceBase");
+        require(_priceMin <= priceBase, PriceMinExceedsPriceBase());
         priceMin = _priceMin;
-        require(priceBase <= _priceMax, "priceMax needs to be larger or equal to priceBase");
+        require(priceBase <= _priceMax, PriceMaxBelowPriceBase());
         priceMax = _priceMax;
         coolDownStart = block.timestamp;
 
@@ -258,22 +268,19 @@ contract Crowdinvesting is
      * @param _tokenReceiver address that will receive the tokens
      */
     function _checkAndDeliver(uint256 _amount, address _tokenReceiver) internal {
-        require(tokensSold + _amount <= maxAmountOfTokenToBeSold, "Not enough tokens to sell left");
-        require(tokensBought[_tokenReceiver] + _amount >= minAmountPerBuyer, "Buyer needs to buy at least minAmount");
-        require(
-            tokensBought[_tokenReceiver] + _amount <= maxAmountPerBuyer,
-            "Total amount of bought tokens needs to be lower than or equal to maxAmount"
-        );
+        require(tokensSold + _amount <= maxAmountOfTokenToBeSold, MaxAmountOfTokenToBeSoldExceeded());
+        require(tokensBought[_tokenReceiver] + _amount >= minAmountPerBuyer, MinAmountPerBuyerNotReached());
+        require(tokensBought[_tokenReceiver] + _amount <= maxAmountPerBuyer, MaxAmountPerBuyerExceeded());
 
         if (lastBuyDate != 0 && block.timestamp > lastBuyDate) {
-            revert("Last buy date has passed: not selling tokens anymore.");
+            revert LastBuyDatePassed();
         }
 
         tokensSold += _amount;
         tokensBought[_tokenReceiver] += _amount;
 
         if (tokenHolder != address(0)) {
-            token.transferFrom(tokenHolder, _tokenReceiver, _amount);
+            IERC20(address(token)).safeTransferFrom(tokenHolder, _tokenReceiver, _amount);
         } else {
             token.mint(_tokenReceiver, _amount);
         }
@@ -313,7 +320,7 @@ contract Crowdinvesting is
         // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
         uint256 currencyAmount = Math.ceilDiv(_tokenAmount * getPrice(), 10 ** token.decimals());
 
-        require(currencyAmount <= _maxCurrencyAmount, "Purchase more expensive than _maxCurrencyAmount");
+        require(currencyAmount <= _maxCurrencyAmount, PurchaseTooExpensive());
 
         IERC20 _currency = currency;
 
@@ -344,7 +351,7 @@ contract Crowdinvesting is
         uint256 _currencyAmount,
         bytes calldata _data
     ) external whenNotPaused nonReentrant returns (bool) {
-        require(_msgSender() == address(currency), "Only currency contract can call onTokenTransfer");
+        require(_msgSender() == address(currency), OnlyCurrencyContract());
 
         // if a recipient address was provided in data, use it as receiver. Otherwise, use _from as receiver.
         address tokenReceiver;
@@ -357,7 +364,7 @@ contract Crowdinvesting is
 
         // if a minimum amount was provided in data, enforce it.
         if (_data.length >= 64) {
-            require(amount >= abi.decode(_data[32:64], (uint256)), "Purchase yields less tokens than demanded.");
+            require(amount >= abi.decode(_data[32:64], (uint256)), PurchaseYieldsTooFewTokens());
         }
 
         // move payment to currencyReceiver and feeCollector
@@ -378,7 +385,7 @@ contract Crowdinvesting is
      * @param _currencyReceiver new currencyReceiver
      */
     function setCurrencyReceiver(address _currencyReceiver) external onlyOwner whenPaused {
-        require(_currencyReceiver != address(0), "receiver can not be zero address");
+        require(_currencyReceiver != address(0), ZeroReceiverAddress());
         currencyReceiver = _currencyReceiver;
         emit CurrencyReceiverChanged(_currencyReceiver);
         coolDownStart = block.timestamp;
@@ -389,8 +396,8 @@ contract Crowdinvesting is
      * @param _minAmountPerBuyer new minAmountPerBuyer
      */
     function setMinAmountPerBuyer(uint256 _minAmountPerBuyer) external onlyOwner whenPaused {
-        require(_minAmountPerBuyer <= maxAmountPerBuyer, "_minAmount needs to be smaller or equal to maxAmount");
-        require(_minAmountPerBuyer != 0, "_minAmountPerBuyer needs to be larger than zero");
+        require(_minAmountPerBuyer <= maxAmountPerBuyer, MinAmountExceedsMaxAmount());
+        require(_minAmountPerBuyer != 0, ZeroAmount());
         minAmountPerBuyer = _minAmountPerBuyer;
         emit MinAmountPerBuyerChanged(_minAmountPerBuyer);
         coolDownStart = block.timestamp;
@@ -401,7 +408,7 @@ contract Crowdinvesting is
      * @param _maxAmountPerBuyer new maxAmountPerBuyer
      */
     function setMaxAmountPerBuyer(uint256 _maxAmountPerBuyer) external onlyOwner whenPaused {
-        require(minAmountPerBuyer <= _maxAmountPerBuyer, "_maxAmount needs to be larger or equal to minAmount");
+        require(minAmountPerBuyer <= _maxAmountPerBuyer, MinAmountExceedsMaxAmount());
         maxAmountPerBuyer = _maxAmountPerBuyer;
         emit MaxAmountPerBuyerChanged(_maxAmountPerBuyer);
         coolDownStart = block.timestamp;
@@ -414,12 +421,9 @@ contract Crowdinvesting is
      * @param _tokenPrice new tokenPrice
      */
     function setCurrencyAndTokenPrice(IERC20 _currency, uint256 _tokenPrice) external onlyOwner whenPaused {
-        require(address(_currency) != address(0), "currency can not be zero address");
-        require(_tokenPrice != 0, "_tokenPrice needs to be a non-zero amount");
-        require(
-            token.allowList().map(address(_currency)) == TRUSTED_CURRENCY,
-            "currency needs to be on the allowlist with TRUSTED_CURRENCY attribute"
-        );
+        require(address(_currency) != address(0), ZeroCurrencyAddress());
+        require(_tokenPrice != 0, ZeroPrice());
+        require(token.allowList().map(address(_currency)) == TRUSTED_CURRENCY, UntrustedCurrency());
 
         priceOracle = IPriceDynamic(address(0)); // deactivate dynamic pricing because price changed, so min and max need to be updated
         priceBase = _tokenPrice;
@@ -433,7 +437,7 @@ contract Crowdinvesting is
      * @param _maxAmountOfTokenToBeSold new maxAmountOfTokenToBeSold
      */
     function setMaxAmountOfTokenToBeSold(uint256 _maxAmountOfTokenToBeSold) external onlyOwner whenPaused {
-        require(_maxAmountOfTokenToBeSold != 0, "_maxAmountOfTokenToBeSold needs to be larger than zero");
+        require(_maxAmountOfTokenToBeSold != 0, ZeroAmount());
         maxAmountOfTokenToBeSold = _maxAmountOfTokenToBeSold;
         emit MaxAmountOfTokenToBeSoldChanged(_maxAmountOfTokenToBeSold);
         coolDownStart = block.timestamp;
@@ -448,7 +452,7 @@ contract Crowdinvesting is
     /// set auto pause date
     function _setLastBuyDate(uint256 _lastBuyDate) internal {
         if (_lastBuyDate != 0) {
-            require(_lastBuyDate > block.timestamp, "lastBuyDate needs to be 0 or in the future");
+            require(_lastBuyDate > block.timestamp, LastBuyDateNotInFuture());
         }
         lastBuyDate = _lastBuyDate;
         emit SetLastBuyDate(_lastBuyDate);
@@ -471,7 +475,7 @@ contract Crowdinvesting is
      * @notice unpause the contract
      */
     function unpause() external onlyOwner {
-        require(block.timestamp > coolDownStart + delay, "There needs to be at minimum one day to change parameters");
+        require(block.timestamp > coolDownStart + delay, CoolDownNotOver());
         _unpause();
     }
 

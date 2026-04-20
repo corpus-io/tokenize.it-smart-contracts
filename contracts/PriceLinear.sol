@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.23;
+pragma solidity 0.8.34;
 
 import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./common/IPriceDynamic.sol";
+import "./common/Errors.sol";
 
 struct Linear {
     /// numerator of slope of linear function, e.g. a where slope == a/b
@@ -29,6 +30,18 @@ struct Linear {
  * @dev The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support
  */
 contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPriceDynamic {
+    /// @notice Reverted when the slopeEnumerator argument is zero.
+    error ZeroSlopeEnumerator();
+
+    /// @notice Reverted when the slopeDenominator argument is zero.
+    error ZeroSlopeDenominator();
+
+    /// @notice Reverted when the start time or block number is not strictly in the future.
+    error StartNotInFuture();
+
+    /// @notice Reverted when the stepDuration argument is zero.
+    error ZeroStepDuration();
+
     uint32 public constant COOL_DOWN_DURATION = 1 hours;
 
     Linear public parameters;
@@ -62,7 +75,7 @@ contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPri
         bool _isBlockBased,
         bool _isRising
     ) external initializer {
-        require(_owner != address(0), "owner can not be zero address");
+        require(_owner != address(0), ZeroOwnerAddress());
         __Ownable2Step_init(); // sets msgSender() as owner
         _transferOwnership(_owner); // sets owner as owner
         _updateParameters(
@@ -121,14 +134,14 @@ contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPri
         bool _isBlockBased,
         bool _isRising
     ) internal {
-        require(_slopeEnumerator != 0, "slopeEnumerator can not be zero");
-        require(_slopeDenominator != 0, "slopeDenominator can not be zero");
+        require(_slopeEnumerator != 0, ZeroSlopeEnumerator());
+        require(_slopeDenominator != 0, ZeroSlopeDenominator());
         if (_isBlockBased) {
-            require(_startTimeOrBlockNumber > block.number, "start must be in the future");
+            require(_startTimeOrBlockNumber > block.number, StartNotInFuture());
         } else {
-            require(_startTimeOrBlockNumber > block.timestamp, "start must be in the future");
+            require(_startTimeOrBlockNumber > block.timestamp, StartNotInFuture());
         }
-        require(_stepDuration != 0, "stepDuration can not be zero");
+        require(_stepDuration != 0, ZeroStepDuration());
         parameters = Linear({
             slopeEnumerator: _slopeEnumerator,
             slopeDenominator: _slopeDenominator,
@@ -146,7 +159,7 @@ contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPri
      * @return The price of the token at the current time or block height
      */
     function getPrice(uint256 basePrice) public view returns (uint256) {
-        require(coolDownStart + COOL_DOWN_DURATION < block.timestamp, "PriceLinear: cool down period not over yet");
+        require(coolDownStart + COOL_DOWN_DURATION < block.timestamp, CoolDownNotOver());
         Linear memory _parameters = parameters;
         uint256 current = _parameters.isBlockBased ? block.number : block.timestamp;
 

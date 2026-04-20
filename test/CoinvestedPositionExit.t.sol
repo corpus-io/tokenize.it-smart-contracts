@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.23;
+pragma solidity 0.8.34;
 
 import "../lib/forge-std/src/Test.sol";
 
@@ -260,7 +260,7 @@ contract CoinvestedPositionExitTest is Test {
         vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
 
-        vm.expectRevert("no tokens to claim");
+        vm.expectRevert(ZeroAmount.selector);
         vm.prank(OWNER);
         coinvestedPositionEmpty.claimExit(1, 0);
     }
@@ -1020,7 +1020,7 @@ contract CoinvestedPositionExitTest is Test {
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
 
         vm.prank(OWNER);
-        vm.expectRevert("payout below minimum");
+        vm.expectRevert(PayoutBelowMinimum.selector);
         coinvestedPosition.claimExit(totalCurrency + 1, 0);
     }
 
@@ -1066,7 +1066,7 @@ contract CoinvestedPositionExitTest is Test {
 
         vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(noOpExit)));
-        vm.expectRevert("currency cannot be the held token");
+        vm.expectRevert(CurrencyEqualsToken.selector);
         vm.prank(OWNER);
         coinvestedPosition.claimExit(0, 1);
     }
@@ -1093,7 +1093,7 @@ contract CoinvestedPositionExitTest is Test {
 
         vm.prank(OWNER);
         if (uint256(minCurrencyAmount) > received) {
-            vm.expectRevert("payout below minimum");
+            vm.expectRevert(PayoutBelowMinimum.selector);
         }
         coinvestedPositionFuzz.claimExit(uint256(minCurrencyAmount), 0);
     }
@@ -1336,7 +1336,7 @@ contract CoinvestedPositionExitTest is Test {
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
 
         // _basePrice=0 and no rate in exit → must revert
-        vm.expectRevert("altBasePrice must be > 0");
+        vm.expectRevert(ZeroPrice.selector);
         vm.prank(OWNER);
         coinvestedPosition.claimExit(1, 0);
 
@@ -1360,7 +1360,7 @@ contract CoinvestedPositionExitTest is Test {
             referenceCurrencies: referenceCurrencies,
             referenceToExitRates: rates
         });
-        vm.expectRevert("referenceCurrencies and referenceToExitRates must have the same length");
+        vm.expectRevert(ArrayLengthMismatch.selector);
         exitFactory.createExitClone(bytes32(0), TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, 0);
     }
 
@@ -1385,7 +1385,7 @@ contract CoinvestedPositionExitTest is Test {
         eure.mint(CURRENCY_PROVIDER, totalCurrency);
         vm.prank(CURRENCY_PROVIDER);
         eure.approve(cloneAddr, totalCurrency);
-        vm.expectRevert("referenceToExitRate must be positive");
+        vm.expectRevert(ZeroPrice.selector);
         exitFactory.createExitClone(bytes32(0), TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, totalCurrency);
     }
 
@@ -1408,7 +1408,7 @@ contract CoinvestedPositionExitTest is Test {
         );
 
         // Before lock expires: setCurrency must revert
-        vm.expectRevert("timelock has not expired");
+        vm.expectRevert(TimeLockNotExpired.selector);
         vm.prank(OWNER);
         lockedCp.setCurrency(IERC20(address(eure)), 100e18);
 

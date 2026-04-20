@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.23;
+pragma solidity 0.8.34;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -44,6 +44,8 @@ struct ExitInitializerArguments {
  *  owner after lockedUntil.
  */
 contract Exit is PayoutBase {
+    /// @notice Reverted when a reference currency equals the exit currency.
+    error ReferenceCurrencyEqualsExitCurrency();
     using SafeERC20 for IERC20;
 
     /// @notice Exchange rate from a reference currency to the exit currency.
@@ -74,12 +76,12 @@ contract Exit is PayoutBase {
         address _currencyProvider,
         uint256 _initialFundingAmount
     ) external initializer {
-        require(_arguments.pricePerToken > 0, "price must be positive");
-        require(_arguments.lockedUntil > block.timestamp, "lockedUntil must be in the future");
-        require(address(_arguments.currency) != address(_arguments.token), "currency and token must be different");
+        require(_arguments.pricePerToken > 0, ZeroPrice());
+        require(_arguments.lockedUntil > block.timestamp, LockedUntilNotInFuture());
+        require(address(_arguments.currency) != address(_arguments.token), CurrencyEqualsToken());
         require(
             _arguments.token.allowList().map(address(_arguments.currency)) == TRUSTED_CURRENCY,
-            "currency needs to be on the allowlist with TRUSTED_CURRENCY attribute"
+            UntrustedCurrency()
         );
         __PayoutBase_init(
             _arguments.owner,
@@ -88,20 +90,14 @@ contract Exit is PayoutBase {
             _arguments.pricePerToken,
             _arguments.lockedUntil
         );
-        require(
-            _arguments.referenceCurrencies.length == _arguments.referenceToExitRates.length,
-            "referenceCurrencies and referenceToExitRates must have the same length"
-        );
+        require(_arguments.referenceCurrencies.length == _arguments.referenceToExitRates.length, ArrayLengthMismatch());
         for (uint256 i = 0; i < _arguments.referenceCurrencies.length; i++) {
+            require(address(_arguments.referenceCurrencies[i]) != address(0), ZeroCurrencyAddress());
             require(
-                address(_arguments.referenceCurrencies[i]) != address(0),
-                "referenceCurrency can not be zero address"
+                address(_arguments.referenceCurrencies[i]) != address(_arguments.currency),
+                ReferenceCurrencyEqualsExitCurrency()
             );
-            require(
-                _arguments.referenceCurrencies[i] != _arguments.currency,
-                "referenceCurrency can not be the exit currency"
-            );
-            require(_arguments.referenceToExitRates[i] > 0, "referenceToExitRate must be positive");
+            require(_arguments.referenceToExitRates[i] > 0, ZeroPrice());
             referenceToExitRate[_arguments.referenceCurrencies[i]] = _arguments.referenceToExitRates[i];
         }
         _arguments.currency.safeTransferFrom(_currencyProvider, address(this), _initialFundingAmount);
@@ -126,11 +122,11 @@ contract Exit is PayoutBase {
      */
     function claim(address _recipient, uint256 _minPayout) external override nonReentrant {
         uint256 tokenAmount = token.balanceOf(_msgSender());
-        require(tokenAmount > 0, "nothing to claim");
+        require(tokenAmount > 0, NothingToClaim());
         IERC20(address(token)).safeTransferFrom(_msgSender(), address(this), tokenAmount);
         uint256 currencyAmount = (tokenAmount * pricePerToken) / 10 ** token.decimals();
         (uint256 fee, address feeCollector) = _feeInfo(FeeTypes.EXIT, currencyAmount);
-        require(currencyAmount - fee >= _minPayout, "payout below minimum");
+        require(currencyAmount - fee >= _minPayout, PayoutBelowMinimum());
         if (fee != 0) {
             currency.safeTransfer(feeCollector, fee);
         }

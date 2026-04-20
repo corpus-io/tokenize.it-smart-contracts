@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.23;
+pragma solidity 0.8.34;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
@@ -222,7 +222,7 @@ contract DistributionCloneFactoryTest is Test {
         currency.mint(CURRENCY_PROVIDER, EXAMPLE_INITIAL_FUNDING);
         vm.prank(CURRENCY_PROVIDER);
         currency.approve(predicted, EXAMPLE_INITIAL_FUNDING);
-        vm.expectRevert("DistributionCloneFactory: Unexpected trustedForwarder");
+        vm.expectRevert(Factory.UnexpectedTrustedForwarder.selector);
         factory.createDistributionClone(EXAMPLE_SALT, wrongForwarder, CURRENCY_PROVIDER, args, EXAMPLE_INITIAL_FUNDING);
     }
 
@@ -330,7 +330,7 @@ contract DistributionCloneFactoryTest is Test {
         // not set on allowList → 0 bits
         DistributionInitializerArguments memory args = _baseArgs();
         args.currency = IERC20(address(badCurrency));
-        vm.expectRevert("currency needs to be on the allowlist with TRUSTED_CURRENCY attribute");
+        vm.expectRevert(UntrustedCurrency.selector);
         factory.createDistributionClone(bytes32(0), TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, 0);
     }
 

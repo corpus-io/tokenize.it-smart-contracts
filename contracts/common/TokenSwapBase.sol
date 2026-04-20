@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.23;
+pragma solidity 0.8.34;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol";
@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
 import "../Token.sol";
+import "./Errors.sol";
 
 /**
  * @title TokenSwapBase
@@ -76,16 +77,13 @@ abstract contract TokenSwapBase is
         Token _token,
         address _receiver
     ) internal onlyInitializing {
-        require(_owner != address(0), "owner can not be zero address");
+        require(_owner != address(0), ZeroOwnerAddress());
         __Ownable_init();
         _transferOwnership(_owner);
-        require(address(_currency) != address(0), "currency can not be zero address");
-        require(address(_token) != address(0), "token can not be zero address");
-        require(
-            _token.allowList().map(address(_currency)) == TRUSTED_CURRENCY,
-            "currency needs to be on the allowlist with TRUSTED_CURRENCY attribute"
-        );
-        require(_receiver != address(0), "receiver can not be zero address");
+        require(address(_currency) != address(0), ZeroCurrencyAddress());
+        require(address(_token) != address(0), ZeroTokenAddress());
+        require(_token.allowList().map(address(_currency)) == TRUSTED_CURRENCY, UntrustedCurrency());
+        require(_receiver != address(0), ZeroReceiverAddress());
         tokenPrice = _tokenPrice;
         currency = _currency;
         token = _token;
@@ -97,7 +95,7 @@ abstract contract TokenSwapBase is
      * @param _receiver new receiver
      */
     function setReceiver(address _receiver) external onlyOwner {
-        require(_receiver != address(0), "receiver can not be zero address");
+        require(_receiver != address(0), ZeroReceiverAddress());
         receiver = _receiver;
         emit ReceiverChanged(_receiver);
     }
@@ -131,7 +129,7 @@ abstract contract TokenSwapBase is
      * @param _tokenPrice new tokenPrice
      */
     function setTokenPrice(uint256 _tokenPrice) external onlyOwner {
-        require(_tokenPrice != 0, "_tokenPrice needs to be a non-zero amount");
+        require(_tokenPrice != 0, ZeroPrice());
         tokenPrice = _tokenPrice;
         emit TokenPriceChanged(_tokenPrice);
     }

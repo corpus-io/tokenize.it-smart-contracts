@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.23;
+pragma solidity 0.8.34;
 
 import "../lib/forge-std/src/Test.sol";
 
-import "../contracts/FeeSplitter.sol";
+import "../contracts/FeeDistributor.sol";
 import "../contracts/CoinvestedPosition.sol";
+import "../contracts/common/Errors.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/factories/CoinvestedPositionCloneFactory.sol";
 import "../contracts/FeeSettings.sol";
@@ -38,7 +39,7 @@ contract MockCoinvestedPosition {
     }
 }
 
-contract FeeSplitterTest is Test {
+contract FeeDistributorTest is Test {
     event FeeDistributed(address indexed feePayer, address indexed currency, uint256 feeAmount);
 
     // ── Well-known addresses ──────────────────────────────────────────────────
@@ -62,7 +63,7 @@ contract FeeSplitterTest is Test {
     uint256 public constant FEE_AMOUNT = 300e6; // 300 USDC
 
     // ── Shared state ──────────────────────────────────────────────────────────
-    FeeSplitter feeSplitter;
+    FeeDistributor feeDistributor;
     MockCoinvestedPosition mockPosition;
     FakePaymentToken usdc; // 6 decimals
 
@@ -79,7 +80,7 @@ contract FeeSplitterTest is Test {
     // ── setUp ─────────────────────────────────────────────────────────────────
 
     function setUp() public {
-        feeSplitter = new FeeSplitter();
+        feeDistributor = new FeeDistributor();
         mockPosition = new MockCoinvestedPosition();
 
         // USDC-like token (6 decimals)
@@ -128,10 +129,10 @@ contract FeeSplitterTest is Test {
 
     // ── Helper ────────────────────────────────────────────────────────────────
 
-    /// Approve feeSplitter for FEE_PAYER and return the approved amount.
-    function _approveFeeSplitter(uint256 amount) internal {
+    /// Approve feeDistributor for FEE_PAYER and return the approved amount.
+    function _approveFeeDistributor(uint256 amount) internal {
         vm.prank(FEE_PAYER);
-        usdc.approve(address(feeSplitter), amount);
+        usdc.approve(address(feeDistributor), amount);
     }
 
     // =========================================================================
@@ -140,48 +141,48 @@ contract FeeSplitterTest is Test {
 
     function testPayFeeZeroFeePayerReverts() public {
         mockPosition.addLeadInvestor(LEAD_A, CARRY_10PCT);
-        vm.expectRevert("feePayer can not be zero address");
-        feeSplitter.payFee(address(0), usdc, FEE_AMOUNT, CoinvestedPosition(address(mockPosition)));
+        vm.expectRevert(FeeDistributor.ZeroFeePayerAddress.selector);
+        feeDistributor.payFee(address(0), usdc, FEE_AMOUNT, CoinvestedPosition(address(mockPosition)));
     }
 
     function testPayFeeZeroCurrencyReverts() public {
         mockPosition.addLeadInvestor(LEAD_A, CARRY_10PCT);
-        vm.expectRevert("currency can not be zero address");
-        feeSplitter.payFee(FEE_PAYER, IERC20(address(0)), FEE_AMOUNT, CoinvestedPosition(address(mockPosition)));
+        vm.expectRevert(ZeroCurrencyAddress.selector);
+        feeDistributor.payFee(FEE_PAYER, IERC20(address(0)), FEE_AMOUNT, CoinvestedPosition(address(mockPosition)));
     }
 
     function testPayFeeZeroAmountReverts() public {
         mockPosition.addLeadInvestor(LEAD_A, CARRY_10PCT);
-        vm.expectRevert("feeAmount can not be zero");
-        feeSplitter.payFee(FEE_PAYER, usdc, 0, CoinvestedPosition(address(mockPosition)));
+        vm.expectRevert(ZeroAmount.selector);
+        feeDistributor.payFee(FEE_PAYER, usdc, 0, CoinvestedPosition(address(mockPosition)));
     }
 
     function testPayFeeZeroCoinvestedPositionReverts() public {
-        vm.expectRevert("coinvestedPosition can not be zero address");
-        feeSplitter.payFee(FEE_PAYER, usdc, FEE_AMOUNT, CoinvestedPosition(address(0)));
+        vm.expectRevert(FeeDistributor.ZeroCoinvestedPositionAddress.selector);
+        feeDistributor.payFee(FEE_PAYER, usdc, FEE_AMOUNT, CoinvestedPosition(address(0)));
     }
 
     function testPayFeeNoLeadInvestorsReverts() public {
         // mockPosition has zero investors (never called addLeadInvestor)
-        _approveFeeSplitter(FEE_AMOUNT);
-        vm.expectRevert("no lead investors");
-        feeSplitter.payFee(FEE_PAYER, usdc, FEE_AMOUNT, CoinvestedPosition(address(mockPosition)));
+        _approveFeeDistributor(FEE_AMOUNT);
+        vm.expectRevert(NoLeadInvestors.selector);
+        feeDistributor.payFee(FEE_PAYER, usdc, FEE_AMOUNT, CoinvestedPosition(address(mockPosition)));
     }
 
     function testPayFeeInsufficientAllowanceReverts() public {
         mockPosition.addLeadInvestor(LEAD_A, CARRY_10PCT);
         // No approval → transferFrom fails
         vm.expectRevert("ERC20: insufficient allowance");
-        feeSplitter.payFee(FEE_PAYER, usdc, FEE_AMOUNT, CoinvestedPosition(address(mockPosition)));
+        feeDistributor.payFee(FEE_PAYER, usdc, FEE_AMOUNT, CoinvestedPosition(address(mockPosition)));
     }
 
     function testPayFeeInsufficientBalanceReverts() public {
         mockPosition.addLeadInvestor(LEAD_A, CARRY_10PCT);
         uint256 tooMuch = usdc.balanceOf(FEE_PAYER) + 1;
         vm.prank(FEE_PAYER);
-        usdc.approve(address(feeSplitter), tooMuch);
+        usdc.approve(address(feeDistributor), tooMuch);
         vm.expectRevert("ERC20: transfer amount exceeds balance");
-        feeSplitter.payFee(FEE_PAYER, usdc, tooMuch, CoinvestedPosition(address(mockPosition)));
+        feeDistributor.payFee(FEE_PAYER, usdc, tooMuch, CoinvestedPosition(address(mockPosition)));
     }
 
     // =========================================================================
@@ -190,22 +191,22 @@ contract FeeSplitterTest is Test {
 
     function testSingleLeadInvestorReceivesFullFee() public {
         mockPosition.addLeadInvestor(LEAD_A, CARRY_10PCT);
-        _approveFeeSplitter(FEE_AMOUNT);
+        _approveFeeDistributor(FEE_AMOUNT);
 
         uint256 balanceBefore = usdc.balanceOf(LEAD_A);
-        feeSplitter.payFee(FEE_PAYER, usdc, FEE_AMOUNT, CoinvestedPosition(address(mockPosition)));
+        feeDistributor.payFee(FEE_PAYER, usdc, FEE_AMOUNT, CoinvestedPosition(address(mockPosition)));
 
         // Single investor is always the "last" investor and absorbs all remaining fee.
         assertEq(usdc.balanceOf(LEAD_A), balanceBefore + FEE_AMOUNT, "single investor should receive full fee");
-        assertEq(usdc.balanceOf(address(feeSplitter)), 0, "feeSplitter should hold no residual balance");
+        assertEq(usdc.balanceOf(address(feeDistributor)), 0, "feeDistributor should hold no residual balance");
     }
 
     function testSingleLeadInvestorFeePayerBalanceDecreases() public {
         mockPosition.addLeadInvestor(LEAD_A, CARRY_10PCT);
-        _approveFeeSplitter(FEE_AMOUNT);
+        _approveFeeDistributor(FEE_AMOUNT);
 
         uint256 payerBefore = usdc.balanceOf(FEE_PAYER);
-        feeSplitter.payFee(FEE_PAYER, usdc, FEE_AMOUNT, CoinvestedPosition(address(mockPosition)));
+        feeDistributor.payFee(FEE_PAYER, usdc, FEE_AMOUNT, CoinvestedPosition(address(mockPosition)));
 
         assertEq(usdc.balanceOf(FEE_PAYER), payerBefore - FEE_AMOUNT, "feePayer balance should decrease by feeAmount");
     }
@@ -218,9 +219,9 @@ contract FeeSplitterTest is Test {
         // Both have equal carry → each should get FEE_AMOUNT / 2 (last absorbs dust)
         mockPosition.addLeadInvestor(LEAD_A, CARRY_HALF);
         mockPosition.addLeadInvestor(LEAD_B, CARRY_HALF);
-        _approveFeeSplitter(FEE_AMOUNT);
+        _approveFeeDistributor(FEE_AMOUNT);
 
-        feeSplitter.payFee(FEE_PAYER, usdc, FEE_AMOUNT, CoinvestedPosition(address(mockPosition)));
+        feeDistributor.payFee(FEE_PAYER, usdc, FEE_AMOUNT, CoinvestedPosition(address(mockPosition)));
 
         uint256 shareA = usdc.balanceOf(LEAD_A);
         uint256 shareB = usdc.balanceOf(LEAD_B);
@@ -234,9 +235,9 @@ contract FeeSplitterTest is Test {
         // LEAD_A: 10%, LEAD_B: 5% → LEAD_A gets 2/3, LEAD_B gets 1/3 of the fee
         mockPosition.addLeadInvestor(LEAD_A, CARRY_10PCT);
         mockPosition.addLeadInvestor(LEAD_B, CARRY_5PCT);
-        _approveFeeSplitter(FEE_AMOUNT);
+        _approveFeeDistributor(FEE_AMOUNT);
 
-        feeSplitter.payFee(FEE_PAYER, usdc, FEE_AMOUNT, CoinvestedPosition(address(mockPosition)));
+        feeDistributor.payFee(FEE_PAYER, usdc, FEE_AMOUNT, CoinvestedPosition(address(mockPosition)));
 
         uint256 shareA = usdc.balanceOf(LEAD_A);
         uint256 shareB = usdc.balanceOf(LEAD_B);
@@ -251,9 +252,9 @@ contract FeeSplitterTest is Test {
         mockPosition.addLeadInvestor(LEAD_A, CARRY_10PCT);
         mockPosition.addLeadInvestor(LEAD_B, CARRY_5PCT);
         mockPosition.addLeadInvestor(LEAD_C, CARRY_5PCT);
-        _approveFeeSplitter(FEE_AMOUNT);
+        _approveFeeDistributor(FEE_AMOUNT);
 
-        feeSplitter.payFee(FEE_PAYER, usdc, FEE_AMOUNT, CoinvestedPosition(address(mockPosition)));
+        feeDistributor.payFee(FEE_PAYER, usdc, FEE_AMOUNT, CoinvestedPosition(address(mockPosition)));
 
         uint256 shareA = usdc.balanceOf(LEAD_A);
         uint256 shareB = usdc.balanceOf(LEAD_B);
@@ -277,9 +278,9 @@ contract FeeSplitterTest is Test {
         uint256 tinyFee = 1;
         usdc.mint(FEE_PAYER, tinyFee);
         vm.prank(FEE_PAYER);
-        usdc.approve(address(feeSplitter), tinyFee);
+        usdc.approve(address(feeDistributor), tinyFee);
 
-        feeSplitter.payFee(FEE_PAYER, usdc, tinyFee, CoinvestedPosition(address(mockPosition)));
+        feeDistributor.payFee(FEE_PAYER, usdc, tinyFee, CoinvestedPosition(address(mockPosition)));
 
         // First investor: share = (CARRY_HALF * 1) / (CARRY_HALF + CARRY_HALF)
         //                       = CARRY_HALF / (2 * CARRY_HALF) = 0 (integer division)
@@ -297,15 +298,15 @@ contract FeeSplitterTest is Test {
 
         usdc.mint(FEE_PAYER, feeAmount);
         vm.prank(FEE_PAYER);
-        usdc.approve(address(feeSplitter), feeAmount);
+        usdc.approve(address(feeDistributor), feeAmount);
 
         uint256 payerBefore = usdc.balanceOf(FEE_PAYER);
-        feeSplitter.payFee(FEE_PAYER, usdc, feeAmount, CoinvestedPosition(address(mockPosition)));
+        feeDistributor.payFee(FEE_PAYER, usdc, feeAmount, CoinvestedPosition(address(mockPosition)));
 
         uint256 totalReceived = usdc.balanceOf(LEAD_A) + usdc.balanceOf(LEAD_B);
         assertEq(usdc.balanceOf(FEE_PAYER), payerBefore - feeAmount, "feePayer should lose exactly feeAmount");
         assertEq(totalReceived, feeAmount, "sum of shares must equal feeAmount");
-        assertEq(usdc.balanceOf(address(feeSplitter)), 0, "feeSplitter must hold no residual balance");
+        assertEq(usdc.balanceOf(address(feeDistributor)), 0, "feeDistributor must hold no residual balance");
     }
 
     // =========================================================================
@@ -314,26 +315,26 @@ contract FeeSplitterTest is Test {
 
     function testFeeDistributedEventEmitted() public {
         mockPosition.addLeadInvestor(LEAD_A, CARRY_10PCT);
-        _approveFeeSplitter(FEE_AMOUNT);
+        _approveFeeDistributor(FEE_AMOUNT);
 
         vm.expectEmit(true, true, false, true);
         emit FeeDistributed(FEE_PAYER, address(usdc), FEE_AMOUNT);
-        feeSplitter.payFee(FEE_PAYER, usdc, FEE_AMOUNT, CoinvestedPosition(address(mockPosition)));
+        feeDistributor.payFee(FEE_PAYER, usdc, FEE_AMOUNT, CoinvestedPosition(address(mockPosition)));
     }
 
     // =========================================================================
     // Section 6 – Integration with real CoinvestedPosition
     // =========================================================================
 
-    /// Verifies FeeSplitter works end-to-end against a live CoinvestedPosition clone,
+    /// Verifies FeeDistributor works end-to-end against a live CoinvestedPosition clone,
     /// reading actual carry fractions and distributing accordingly.
     function testIntegrationWithRealCoinvestedPosition() public {
-        _approveFeeSplitter(FEE_AMOUNT);
+        _approveFeeDistributor(FEE_AMOUNT);
 
         uint256 leadABefore = usdc.balanceOf(LEAD_A);
         uint256 leadBBefore = usdc.balanceOf(LEAD_B);
 
-        feeSplitter.payFee(FEE_PAYER, usdc, FEE_AMOUNT, realPosition);
+        feeDistributor.payFee(FEE_PAYER, usdc, FEE_AMOUNT, realPosition);
 
         uint256 shareA = usdc.balanceOf(LEAD_A) - leadABefore;
         uint256 shareB = usdc.balanceOf(LEAD_B) - leadBBefore;
@@ -345,14 +346,14 @@ contract FeeSplitterTest is Test {
         assertApproxEqAbs(shareA, 2 * shareB, 1, "LEAD_A (10pct carry) should receive ~2x LEAD_B (5pct carry)");
     }
 
-    /// Verifies that FeeSplitter reads the live lead-investor list from the position
+    /// Verifies that FeeDistributor reads the live lead-investor list from the position
     /// contract and not from any cached state — calling payFee twice with the same mock
     /// (after mutating it between calls) should reflect the updated investor list.
     function testDistributionReflectsCurrentLeadInvestorList() public {
         // Round 1: only LEAD_A
         mockPosition.addLeadInvestor(LEAD_A, CARRY_10PCT);
-        _approveFeeSplitter(FEE_AMOUNT);
-        feeSplitter.payFee(FEE_PAYER, usdc, FEE_AMOUNT, CoinvestedPosition(address(mockPosition)));
+        _approveFeeDistributor(FEE_AMOUNT);
+        feeDistributor.payFee(FEE_PAYER, usdc, FEE_AMOUNT, CoinvestedPosition(address(mockPosition)));
         uint256 firstRoundLeadA = usdc.balanceOf(LEAD_A);
         uint256 firstRoundLeadB = usdc.balanceOf(LEAD_B);
 
@@ -362,9 +363,9 @@ contract FeeSplitterTest is Test {
         // Mutate the mock to add LEAD_B
         mockPosition.addLeadInvestor(LEAD_B, CARRY_10PCT);
         vm.prank(FEE_PAYER);
-        usdc.approve(address(feeSplitter), FEE_AMOUNT);
+        usdc.approve(address(feeDistributor), FEE_AMOUNT);
 
-        feeSplitter.payFee(FEE_PAYER, usdc, FEE_AMOUNT, CoinvestedPosition(address(mockPosition)));
+        feeDistributor.payFee(FEE_PAYER, usdc, FEE_AMOUNT, CoinvestedPosition(address(mockPosition)));
         uint256 secondRoundLeadA = usdc.balanceOf(LEAD_A) - firstRoundLeadA;
         uint256 secondRoundLeadB = usdc.balanceOf(LEAD_B) - firstRoundLeadB;
 

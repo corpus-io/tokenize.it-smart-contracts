@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.23;
+pragma solidity 0.8.34;
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "../lib/forge-std/src/Test.sol";
@@ -7,9 +7,9 @@ import "../contracts/factories/TokenProxyFactory.sol";
 import "../contracts/factories/CoinvestedPositionCloneFactory.sol";
 import "../contracts/factories/PrivateOfferFactory.sol";
 import "../contracts/factories/TimeLockCloneFactory.sol";
-import "../contracts/factories/FeeSplitterCloneFactory.sol";
+import "../contracts/factories/FeeDistributorCloneFactory.sol";
 import "../contracts/CoinvestedPosition.sol";
-import "../contracts/FeeSplitter.sol";
+import "../contracts/FeeDistributor.sol";
 import "../contracts/TimeLock.sol";
 import "../contracts/GlobalTokenExitRegistry.sol";
 import "./resources/CoinvestedPositionTestBase.sol";
@@ -25,7 +25,7 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
 
     // ── Shared state ──────────────────────────────────────────────────────────
     CoinvestedPositionCloneFactory coinvestedPositionCloneFactory;
-    FeeSplitterCloneFactory feeSplitterCloneFactory;
+    FeeDistributorCloneFactory feeDistributorCloneFactory;
     PrivateOfferFactory privateOfferFactory;
 
     function setUp() public {
@@ -53,7 +53,7 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
         CoinvestedPosition coinvestedPositionLogic = new CoinvestedPosition(TRUSTED_FORWARDER);
         coinvestedPositionCloneFactory = new CoinvestedPositionCloneFactory(address(coinvestedPositionLogic));
 
-        feeSplitterCloneFactory = new FeeSplitterCloneFactory(address(new FeeSplitter()));
+        feeDistributorCloneFactory = new FeeDistributorCloneFactory(address(new FeeDistributor()));
 
         TimeLock timeLockLogic = new TimeLock(TRUSTED_FORWARDER);
         TimeLockCloneFactory timeLockCloneFactory = new TimeLockCloneFactory(address(timeLockLogic));
@@ -163,15 +163,15 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
     }
 
     /**
-     * @notice Demonstrates the FeeSplitter flow for paying a one-time syndicate fee:
+     * @notice Demonstrates the FeeDistributor flow for paying a one-time syndicate fee:
      *   1. A CoinvestedPosition is deployed (provides the lead investor roster)
-     *   2. Platform predicts the FeeSplitter address
-     *   3. Fee payer approves the predicted FeeSplitter for the fee amount
-     *   4. Anyone calls createFeeSplitterClone — immediately:
-     *      - FeeSplitter pulls the fee from the payer
+     *   2. Platform predicts the FeeDistributor address
+     *   3. Fee payer approves the predicted FeeDistributor for the fee amount
+     *   4. Anyone calls createFeeDistributorClone — immediately:
+     *      - FeeDistributor pulls the fee from the payer
      *      - Fee is split proportionally among lead investors by carry fraction
      */
-    function testFeeSplitter() public {
+    function testFeeDistributor() public {
         uint256 tokenAmount = 1000e18;
         uint256 tokenPrice = 100e6;
         uint256 investmentAmount = Math.ceilDiv(tokenAmount * tokenPrice, 10 ** token.decimals());
@@ -194,9 +194,9 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
             )
         );
 
-        // ── Predict FeeSplitter address ───────────────────────────────────────
+        // ── Predict FeeDistributor address ────────────────────────────────────
 
-        address expectedFeeSplitter = feeSplitterCloneFactory.predictCloneAddress(
+        address expectedFeeDistributor = feeDistributorCloneFactory.predictCloneAddress(
             bytes32("1"),
             RECEIVER,
             IERC20(address(eurc)),
@@ -208,11 +208,11 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
 
         eurc.mint(RECEIVER, feeAmount);
         vm.prank(RECEIVER);
-        eurc.approve(expectedFeeSplitter, feeAmount);
+        eurc.approve(expectedFeeDistributor, feeAmount);
 
-        // ── Execute: deploy FeeSplitter, which immediately distributes the fee ─
+        // ── Execute: deploy FeeDistributor, which immediately distributes the fee
 
-        address feeSplitterAddress = feeSplitterCloneFactory.createFeeSplitterClone(
+        address feeDistributorAddress = feeDistributorCloneFactory.createFeeDistributorClone(
             bytes32("1"),
             RECEIVER,
             IERC20(address(eurc)),
@@ -222,7 +222,7 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
 
         // ── Assert ────────────────────────────────────────────────────────────
 
-        assertEq(feeSplitterAddress, expectedFeeSplitter, "FeeSplitter address mismatch");
+        assertEq(feeDistributorAddress, expectedFeeDistributor, "FeeDistributor address mismatch");
 
         uint256 profitFractionsSum = uint256(CARRY_10PCT) + uint256(CARRY_5PCT);
         uint256 LEAD_AShare = (uint256(CARRY_10PCT) * feeAmount) / profitFractionsSum;

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.23;
+pragma solidity 0.8.34;
+
+import "../common/Errors.sol";
 
 /**
  * @title Factory
@@ -9,11 +11,17 @@ pragma solidity 0.8.23;
  */
 
 abstract contract Factory {
+    /// @notice Reverted when the implementation address passed to the constructor is zero.
+    error ZeroImplementationAddress();
+
+    /// @notice Reverted when the clone's trusted forwarder does not match the expected one.
+    error UnexpectedTrustedForwarder();
+
     /// The address of the implementation contract
     address public immutable implementation;
 
     constructor(address _implementation) {
-        require(_implementation != address(0), "Factory: implementation can not be zero");
+        require(_implementation != address(0), ZeroImplementationAddress());
         implementation = _implementation;
     }
 }

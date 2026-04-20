@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.23;
+pragma solidity 0.8.34;
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
@@ -39,6 +39,11 @@ struct TokenSwapInitializerArguments {
  * @dev The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support
  */
 contract TokenSwap is TokenSwapBase {
+    /// @notice Reverted when the holder address argument is zero.
+    error ZeroHolderAddress();
+
+    /// @notice Reverted when the payout after fees is below the caller's _minCurrencyAmount.
+    error PayoutTooLow();
     using SafeERC20 for IERC20;
 
     /// holder. Tokens/currency will be transferred from this address.
@@ -71,7 +76,7 @@ contract TokenSwap is TokenSwapBase {
      * @param _arguments Struct containing all arguments for the initializer
      */
     function initialize(TokenSwapInitializerArguments memory _arguments) external initializer {
-        require(_arguments.tokenPrice != 0, "_tokenPrice needs to be a non-zero amount");
+        require(_arguments.tokenPrice != 0, ZeroPrice());
         _initializeBase(
             _arguments.owner,
             _arguments.tokenPrice,
@@ -80,7 +85,7 @@ contract TokenSwap is TokenSwapBase {
             _arguments.receiver
         );
 
-        require(_arguments.holder != address(0), "holder can not be zero address");
+        require(_arguments.holder != address(0), ZeroHolderAddress());
         holder = _arguments.holder;
     }
 
@@ -98,7 +103,7 @@ contract TokenSwap is TokenSwapBase {
         // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
         uint256 currencyAmount = Math.ceilDiv(_tokenAmount * tokenPrice, 10 ** token.decimals());
 
-        require(currencyAmount <= _maxCurrencyAmount, "Purchase more expensive than _maxCurrencyAmount");
+        require(currencyAmount <= _maxCurrencyAmount, PurchaseTooExpensive());
 
         (uint256 fee, address feeCollector) = _getFeeAndFeeReceiver(currencyAmount);
         if (fee != 0) {
@@ -106,7 +111,7 @@ contract TokenSwap is TokenSwapBase {
         }
 
         currency.safeTransferFrom(_msgSender(), receiver, currencyAmount - fee);
-        token.transferFrom(holder, _tokenReceiver, _tokenAmount);
+        IERC20(address(token)).safeTransferFrom(holder, _tokenReceiver, _tokenAmount);
 
         emit TokensBought(_msgSender(), _tokenAmount, currencyAmount);
     }
@@ -131,13 +136,13 @@ contract TokenSwap is TokenSwapBase {
         }
 
         // the payout after fees needs to be at least as high as the minimum currency amount
-        require(currencyAmount - fee >= _minCurrencyAmount, "Payout too low");
+        require(currencyAmount - fee >= _minCurrencyAmount, PayoutTooLow());
 
         // pay out the currency after fees to the token seller's _currencyReceiver address
         currency.safeTransferFrom(holder, _currencyReceiver, currencyAmount - fee);
 
         // get the tokens the caller just sold to us
-        token.transferFrom(_msgSender(), receiver, _tokenAmount);
+        IERC20(address(token)).safeTransferFrom(_msgSender(), receiver, _tokenAmount);
 
         emit TokensSold(_msgSender(), _tokenAmount, currencyAmount);
     }

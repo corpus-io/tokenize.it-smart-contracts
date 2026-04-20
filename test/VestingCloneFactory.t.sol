@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.23;
+pragma solidity 0.8.34;
 
 import "../lib/forge-std/src/Test.sol";
 import "../lib/forge-std/src/console.sol";
@@ -106,7 +106,7 @@ contract VestingCloneFactoryTest is Test {
         assertNotEq(actual, changedAddress, "address prediction failed: salt");
 
         // ensure changing the trustedForwarder reverts
-        vm.expectRevert("VestingCloneFactory: Unexpected trustedForwarder");
+        vm.expectRevert(Factory.UnexpectedTrustedForwarder.selector);
         _factory.predictCloneAddressWithLockupPlan(
             _rawSalt,
             address(1),
@@ -227,10 +227,10 @@ contract VestingCloneFactoryTest is Test {
         address _token = address(3);
 
         // test wrong trustedForwarder reverts
-        vm.expectRevert("VestingCloneFactory: Unexpected trustedForwarder");
+        vm.expectRevert(Factory.UnexpectedTrustedForwarder.selector);
         factory.predictCloneAddress(_salt, _wrongTrustedForwarder, _owner, _token);
 
-        vm.expectRevert("VestingCloneFactory: Unexpected trustedForwarder");
+        vm.expectRevert(Factory.UnexpectedTrustedForwarder.selector);
         factory.createVestingClone(_salt, _wrongTrustedForwarder, _owner, _token);
     }
 

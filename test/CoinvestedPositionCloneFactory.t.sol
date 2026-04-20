@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.23;
+pragma solidity 0.8.34;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/factories/TokenProxyFactory.sol";
@@ -183,7 +183,7 @@ contract CoinvestedPositionCloneFactoryTest is Test {
 
     function testCreateWithWrongForwarderReverts() public {
         CoinvestedPositionInitializerArguments memory args = _baseArgs();
-        vm.expectRevert("CoinvestedPositionCloneFactory: Unexpected trustedForwarder");
+        vm.expectRevert(Factory.UnexpectedTrustedForwarder.selector);
         factory.createCoinvestedPositionClone(EXAMPLE_SALT, address(0xBAD), args);
     }
 
@@ -286,7 +286,7 @@ contract CoinvestedPositionCloneFactoryTest is Test {
         // not on allowList → 0 attributes, no TRUSTED_CURRENCY bit
         CoinvestedPositionInitializerArguments memory args = _baseArgs();
         args.baseCurrency = IERC20(address(badCurrency));
-        vm.expectRevert("currency needs to be on the allowlist with TRUSTED_CURRENCY attribute");
+        vm.expectRevert(UntrustedCurrency.selector);
         factory.createCoinvestedPositionClone(bytes32(0), TRUSTED_FORWARDER, args);
     }
 

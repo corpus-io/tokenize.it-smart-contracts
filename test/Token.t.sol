@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.23;
+pragma solidity 0.8.34;
 
 import "../lib/forge-std/src/Test.sol";
 import "../lib/forge-std/src/console.sol";
@@ -98,7 +98,7 @@ contract tokenTest is Test {
 
     function testAllowList0() public {
         AllowList _noList = AllowList(address(0));
-        vm.expectRevert("AllowList must not be zero address");
+        vm.expectRevert(Token.ZeroAllowListAddress.selector);
         tokenCloneFactory.createTokenProxy(0, TRUSTED_FORWARDER, feeSettings, ADMIN, _noList, 0x0, "testToken", "TEST");
     }
 
@@ -401,7 +401,7 @@ contract tokenTest is Test {
         assertTrue(token.mintingAllowance(MINTER) == 0);
 
         vm.prank(MINTER);
-        vm.expectRevert("MintingAllowance too low");
+        vm.expectRevert(Token.MintingAllowanceTooLow.selector);
         token.mint(PAUSER, 1);
     }
 
@@ -444,7 +444,7 @@ contract tokenTest is Test {
         assertTrue(token.mintingAllowance(MINTER) == 0); // check allowance is 0
 
         vm.prank(MINTER);
-        vm.expectRevert("MintingAllowance too low");
+        vm.expectRevert(Token.MintingAllowanceTooLow.selector);
         token.mint(PAUSER, x); // try to mint -> must fail!
     }
 
@@ -620,9 +620,7 @@ contract tokenTest is Test {
 
         // move tokens around
         vm.prank(TRANSFERER);
-        vm.expectRevert(
-            "Sender or Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
-        );
+        vm.expectRevert(Token.NotAllowedToTransact.selector);
         token.transfer(BURNER, 50);
         assertTrue(token.balanceOf(BURNER) == 0);
     }
@@ -671,9 +669,7 @@ contract tokenTest is Test {
         vm.prank(ADMIN);
         allowList.set(PAUSER, 4); // only one bit set, but bit 1 and 2 (=3) should be set
         vm.prank(MINTER);
-        vm.expectRevert(
-            "Sender or Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
-        );
+        vm.expectRevert(Token.NotAllowedToTransact.selector);
         token.mint(PAUSER, 50);
 
         assertTrue(token.balanceOf(PAUSER) == 0);
@@ -934,17 +930,13 @@ contract tokenTest is Test {
         console.log("person1: ", person1);
 
         vm.prank(person1);
-        vm.expectRevert(
-            "Sender or Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
-        );
+        vm.expectRevert(Token.NotAllowedToTransact.selector);
         token.transfer(person2, 20);
         assertTrue(token.balanceOf(person2) == 20);
         assertTrue(token.balanceOf(person1) == 30);
 
         vm.prank(person2);
-        vm.expectRevert(
-            "Sender or Receiver is not allowed to transact. Either locally issue the role as a TRANSFERER or they must meet requirements as defined in the allowList"
-        );
+        vm.expectRevert(Token.NotAllowedToTransact.selector);
         token.transfer(person1, 10);
         assertTrue(token.balanceOf(person2) == 20);
         assertTrue(token.balanceOf(person1) == 30);

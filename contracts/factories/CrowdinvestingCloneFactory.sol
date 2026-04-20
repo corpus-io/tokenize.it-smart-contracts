@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-pragma solidity 0.8.23;
+pragma solidity 0.8.34;
 
 import "../Crowdinvesting.sol";
 import "./CloneFactory.sol";
@@ -27,10 +27,7 @@ contract CrowdinvestingCloneFactory is CloneFactory {
     ) external returns (address) {
         bytes32 salt = _getSalt(_rawSalt, _trustedForwarder, _arguments);
         Crowdinvesting crowdinvesting = Crowdinvesting(Clones.cloneDeterministic(implementation, salt));
-        require(
-            crowdinvesting.isTrustedForwarder(_trustedForwarder),
-            "CrowdinvestingCloneFactory: Unexpected trustedForwarder"
-        );
+        require(crowdinvesting.isTrustedForwarder(_trustedForwarder), UnexpectedTrustedForwarder());
         crowdinvesting.initialize(_arguments);
         emit NewClone(address(crowdinvesting));
         return address(crowdinvesting);

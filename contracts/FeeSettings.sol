@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.23;
+pragma solidity 0.8.34;
 
 import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol";
 
 import "./common/IFeeSettings.sol";
+import "./common/Errors.sol";
 
 /**
  * @title FeeSettings
@@ -21,6 +22,23 @@ contract FeeSettings is
     IFeeSettingsV2,
     IFeeSettingsV3
 {
+    // -------------------------------------------------------------------------
+    // Errors
+    // -------------------------------------------------------------------------
+
+    error ZeroFeeType();
+    error ZeroMaxNumerator();
+    error MaxNumeratorTooLarge();
+    error FeeTypeAlreadyRegistered();
+    error DefaultNumeratorExceedsMax();
+    error ZeroCollectorAddress();
+    error UnknownFeeType();
+    error NumeratorExceedsMax();
+    error FeeIncreaseNeedsDelay();
+    error NoProposedFeeChange();
+    error ActivationDateNotReached();
+    error ValidityDateNotInFuture();
+
     // -------------------------------------------------------------------------
     // Constants
     // -------------------------------------------------------------------------
@@ -144,7 +162,7 @@ contract FeeSettings is
      * @param _feeTypes  Array of fee type configurations to register on deployment
      */
     function initialize(address _owner, FeeTypeInit[] memory _feeTypes) external initializer {
-        require(_owner != address(0), "owner can not be zero address");
+        require(_owner != address(0), ZeroOwnerAddress());
         managers[_owner] = true;
         _transferOwnership(_owner);
 
@@ -202,12 +220,12 @@ contract FeeSettings is
         uint32 _defaultNumerator,
         address _collector
     ) internal {
-        require(_feeType != bytes32(0), "feeType cannot be 0");
-        require(_maxNumerator > 0, "maxNumerator cannot be 0");
-        require(_maxNumerator < FEE_DENOMINATOR, "maxNumerator too large");
-        require(feeTypeConfigs[_feeType].maxNumerator == 0, "fee type already registered");
-        require(_defaultNumerator <= _maxNumerator, "default exceeds max");
-        require(_collector != address(0), "Fee collector cannot be 0x0");
+        require(_feeType != bytes32(0), ZeroFeeType());
+        require(_maxNumerator > 0, ZeroMaxNumerator());
+        require(_maxNumerator < FEE_DENOMINATOR, MaxNumeratorTooLarge());
+        require(feeTypeConfigs[_feeType].maxNumerator == 0, FeeTypeAlreadyRegistered());
+        require(_defaultNumerator <= _maxNumerator, DefaultNumeratorExceedsMax());
+        require(_collector != address(0), ZeroCollectorAddress());
         feeTypeConfigs[_feeType] = FeeTypeConfig({maxNumerator: _maxNumerator, defaultNumerator: _defaultNumerator});
         collectors[_feeType][address(0)] = _collector;
         emit FeeTypeRegistered(_feeType, _maxNumerator, _defaultNumerator);
@@ -226,10 +244,10 @@ contract FeeSettings is
      */
     function planFeeChange(bytes32 _feeType, uint32 _numerator, uint64 _activationDate) external onlyOwner {
         FeeTypeConfig storage config = feeTypeConfigs[_feeType];
-        require(config.maxNumerator > 0, "unknown fee type");
-        require(_numerator <= config.maxNumerator, "exceeds max numerator");
+        require(config.maxNumerator > 0, UnknownFeeType());
+        require(_numerator <= config.maxNumerator, NumeratorExceedsMax());
         if (_numerator > config.defaultNumerator) {
-            require(_activationDate > block.timestamp + 12 weeks, "fee increase needs 12 week delay");
+            require(_activationDate > block.timestamp + 12 weeks, FeeIncreaseNeedsDelay());
         }
         // activationDate=0 means "immediately" — store block.timestamp so executeFeeChange sentinel works
         if (_activationDate == 0) {
@@ -245,8 +263,8 @@ contract FeeSettings is
      */
     function executeFeeChange(bytes32 _feeType) external onlyOwner {
         ProposedFeeChange memory proposal = proposedFeeChanges[_feeType];
-        require(proposal.activationDate != 0, "no proposed fee change");
-        require(block.timestamp >= proposal.activationDate, "activation date not reached");
+        require(proposal.activationDate != 0, NoProposedFeeChange());
+        require(block.timestamp >= proposal.activationDate, ActivationDateNotReached());
         feeTypeConfigs[_feeType].defaultNumerator = proposal.numerator;
         delete proposedFeeChanges[_feeType];
         emit FeeChanged(_feeType, proposal.numerator);
@@ -270,10 +288,10 @@ contract FeeSettings is
         uint32 _numerator,
         uint64 _validityDate
     ) external onlyManager {
-        require(feeTypeConfigs[_feeType].maxNumerator > 0, "unknown fee type");
-        require(_token != address(0), "token cannot be 0x0");
-        require(_numerator <= feeTypeConfigs[_feeType].maxNumerator, "numerator exceeds max");
-        require(_validityDate > block.timestamp, "validity date must be in the future");
+        require(feeTypeConfigs[_feeType].maxNumerator > 0, UnknownFeeType());
+        require(_token != address(0), ZeroTokenAddress());
+        require(_numerator <= feeTypeConfigs[_feeType].maxNumerator, NumeratorExceedsMax());
+        require(_validityDate > block.timestamp, ValidityDateNotInFuture());
         customFees[_feeType][_token] = CustomFee({numerator: _numerator, validityDate: _validityDate});
         emit CustomFeeSet(_feeType, _token, _numerator, _validityDate);
     }
@@ -284,7 +302,7 @@ contract FeeSettings is
      * @param _token   The token address
      */
     function removeCustomFee(bytes32 _feeType, address _token) external onlyManager {
-        require(_token != address(0), "token cannot be 0x0");
+        require(_token != address(0), ZeroTokenAddress());
         delete customFees[_feeType][_token];
         emit CustomFeeRemoved(_feeType, _token);
     }
@@ -299,8 +317,8 @@ contract FeeSettings is
      * @param _collector The collector address (must not be address(0))
      */
     function setDefaultFeeCollector(bytes32 _feeType, address _collector) external onlyOwner {
-        require(feeTypeConfigs[_feeType].maxNumerator > 0, "unknown fee type");
-        require(_collector != address(0), "collector cannot be 0x0");
+        require(feeTypeConfigs[_feeType].maxNumerator > 0, UnknownFeeType());
+        require(_collector != address(0), ZeroCollectorAddress());
         collectors[_feeType][address(0)] = _collector;
         emit FeeCollectorSet(_feeType, address(0), _collector);
     }
@@ -312,9 +330,9 @@ contract FeeSettings is
      * @param _collector The collector address (must not be address(0))
      */
     function setCustomFeeCollector(bytes32 _feeType, address _token, address _collector) external onlyManager {
-        require(feeTypeConfigs[_feeType].maxNumerator > 0, "unknown fee type");
-        require(_token != address(0), "token cannot be 0x0");
-        require(_collector != address(0), "collector cannot be 0x0");
+        require(feeTypeConfigs[_feeType].maxNumerator > 0, UnknownFeeType());
+        require(_token != address(0), ZeroTokenAddress());
+        require(_collector != address(0), ZeroCollectorAddress());
         collectors[_feeType][_token] = _collector;
         emit FeeCollectorSet(_feeType, _token, _collector);
     }
@@ -325,7 +343,7 @@ contract FeeSettings is
      * @param _token   The token address (must not be address(0))
      */
     function removeCustomFeeCollector(bytes32 _feeType, address _token) external onlyManager {
-        require(_token != address(0), "token cannot be 0x0");
+        require(_token != address(0), ZeroTokenAddress());
         delete collectors[_feeType][_token];
         emit CustomFeeCollectorRemoved(_feeType, _token);
     }
@@ -457,7 +475,7 @@ contract FeeSettings is
     }
 
     modifier onlyManager() {
-        require(managers[_msgSender()], "Only managers can call this function");
+        require(managers[_msgSender()], CallerNotManager());
         _;
     }
 

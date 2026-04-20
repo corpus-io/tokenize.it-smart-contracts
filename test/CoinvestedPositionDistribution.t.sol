@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.23;
+pragma solidity 0.8.34;
 
 import "../lib/forge-std/src/Test.sol";
 
@@ -564,7 +564,7 @@ contract CoinvestedPositionDistributionTest is Test {
         TokenTransferStub stub = new TokenTransferStub(IERC20(address(untrusted)), 0);
         IERC20 untrustedCurrency = IERC20(address(stub.currency()));
 
-        vm.expectRevert("dividend currency must be a trusted currency");
+        vm.expectRevert(UntrustedCurrency.selector);
         vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(stub)), 0);
     }
@@ -629,7 +629,7 @@ contract CoinvestedPositionDistributionTest is Test {
         assertEq(distribution.eligible(address(coinvestedPositionZero)), 0, "DI-VI: eligible not zero");
 
         // claimDistribution must revert because eligible = 0
-        vm.expectRevert("nothing to claim");
+        vm.expectRevert(NothingToClaim.selector);
         vm.prank(OWNER);
         coinvestedPositionZero.claimDistribution(Distribution(address(distribution)), 0);
     }
@@ -705,7 +705,7 @@ contract CoinvestedPositionDistributionTest is Test {
         uint256 holderYBalBefore = usdc.balanceOf(HOLDER_Y);
         // HOLDER_Y's eligible is 0 after full reassign → claim reverts
         vm.prank(HOLDER_Y);
-        vm.expectRevert("nothing to claim");
+        vm.expectRevert(NothingToClaim.selector);
         distribution.claim(HOLDER_Y, 0);
         assertEq(usdc.balanceOf(HOLDER_Y), holderYBalBefore, "DI-VII: HOLDER_Y received non-zero after reassign");
 
@@ -934,7 +934,7 @@ contract CoinvestedPositionDistributionTest is Test {
         vm.prank(CURRENCY_PROVIDER);
         token.approve(cloneAddr, 100e18);
 
-        vm.expectRevert("currency and token must be different");
+        vm.expectRevert(CurrencyEqualsToken.selector);
         distributionFactory.createDistributionClone(bytes32(0), TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, 100e18);
     }
 
@@ -953,7 +953,7 @@ contract CoinvestedPositionDistributionTest is Test {
         IERC20(address(token)).transfer(address(stub), stubAmount);
         IERC20 tokenCurrency = IERC20(address(stub.currency()));
 
-        vm.expectRevert("currency cannot be the held token");
+        vm.expectRevert(CurrencyEqualsToken.selector);
         vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(stub)), 0);
     }

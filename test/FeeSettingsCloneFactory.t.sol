@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.23;
+pragma solidity 0.8.34;
 
 import "../lib/forge-std/src/Test.sol";
 import "../lib/forge-std/src/console.sol";
@@ -273,12 +273,12 @@ contract tokenTest is Test {
 
         FeeSettings.FeeTypeInit[] memory feeTypes = _buildFeeTypesAllSame(1, 2, 3, EXAMPLE_TOKEN_FEE_COLLECTOR);
 
-        vm.expectRevert("FeeSettingsCloneFactory: Unexpected trustedForwarder");
+        vm.expectRevert(Factory.UnexpectedTrustedForwarder.selector);
         factory.createFeeSettingsClone(bytes32(0), _wrongTrustedForwarder, EXAMPLE_OWNER, feeTypes);
     }
 
     function testPrivateOfferFactoryRevertsIfTimeLockFactoryZero() public {
-        vm.expectRevert("TimeLockCloneFactory must not be 0");
+        vm.expectRevert(PrivateOfferFactory.ZeroTimeLockCloneFactoryAddress.selector);
         new PrivateOfferFactory(TimeLockCloneFactory(address(0)), CoinvestedPositionCloneFactory(address(1)));
     }
 }

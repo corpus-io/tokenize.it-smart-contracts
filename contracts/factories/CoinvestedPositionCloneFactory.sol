@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-pragma solidity 0.8.23;
+pragma solidity 0.8.34;
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
@@ -28,10 +28,7 @@ contract CoinvestedPositionCloneFactory is CloneFactory {
     ) external returns (address) {
         bytes32 salt = _getSalt(_rawSalt, _trustedForwarder, _arguments);
         CoinvestedPosition clone = CoinvestedPosition(Clones.cloneDeterministic(implementation, salt));
-        require(
-            clone.isTrustedForwarder(_trustedForwarder),
-            "CoinvestedPositionCloneFactory: Unexpected trustedForwarder"
-        );
+        require(clone.isTrustedForwarder(_trustedForwarder), UnexpectedTrustedForwarder());
         clone.initialize(_arguments);
         emit NewClone(address(clone));
         return address(clone);

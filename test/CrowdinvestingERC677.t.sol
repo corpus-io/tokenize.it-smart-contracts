@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.23;
+pragma solidity 0.8.34;
 
 import "../lib/forge-std/src/Test.sol";
 import "../lib/forge-std/src/console.sol";
@@ -269,7 +269,7 @@ contract CrowdinvestingTest is Test {
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(BUYER);
 
         vm.prank(BUYER);
-        vm.expectRevert("Total amount of bought tokens needs to be lower than or equal to maxAmount");
+        vm.expectRevert(Crowdinvesting.MaxAmountPerBuyerExceeded.selector);
         paymentToken.transferAndCall(address(crowdinvesting), costInPaymentToken, new bytes(0));
         assertTrue(paymentToken.balanceOf(BUYER) == paymentTokenBalanceBefore);
         assertTrue(token.balanceOf(BUYER) == 0);
@@ -361,7 +361,7 @@ contract CrowdinvestingTest is Test {
             );
         } else {
             vm.startPrank(addressWithFunds);
-            vm.expectRevert("Purchase yields less tokens than demanded.");
+            vm.expectRevert(Crowdinvesting.PurchaseYieldsTooFewTokens.selector);
             paymentToken.transferAndCall(address(crowdinvesting), currencyAmount, data);
             vm.stopPrank();
         }
@@ -430,7 +430,7 @@ contract CrowdinvestingTest is Test {
         bytes memory data = abi.encode(addressForTokens, type(uint256).max);
 
         vm.startPrank(addressWithFunds);
-        vm.expectRevert("Purchase yields less tokens than demanded.");
+        vm.expectRevert(Crowdinvesting.PurchaseYieldsTooFewTokens.selector);
         paymentToken.transferAndCall(address(crowdinvesting), currencyAmount, data);
         vm.stopPrank();
     }
@@ -454,7 +454,7 @@ contract CrowdinvestingTest is Test {
         vm.prank(person1);
         paymentToken.transferAndCall(address(crowdinvesting), amountToSpend, new bytes(0));
         vm.prank(person2);
-        vm.expectRevert("Not enough tokens to sell left");
+        vm.expectRevert(Crowdinvesting.MaxAmountOfTokenToBeSoldExceeded.selector);
         paymentToken.transferAndCall(address(crowdinvesting), amountToSpend, new bytes(0));
     }
 
@@ -484,7 +484,7 @@ contract CrowdinvestingTest is Test {
         console.log("Buying second batch of tokens");
 
         vm.startPrank(person1);
-        vm.expectRevert("Total amount of bought tokens needs to be lower than or equal to maxAmount");
+        vm.expectRevert(Crowdinvesting.MaxAmountPerBuyerExceeded.selector);
         paymentToken.transferAndCall(address(crowdinvesting), amountToPay, data);
         vm.stopPrank();
     }
@@ -535,7 +535,7 @@ contract CrowdinvestingTest is Test {
         );
 
         vm.startPrank(BUYER);
-        vm.expectRevert("Buyer needs to buy at least minAmount");
+        vm.expectRevert(Crowdinvesting.MinAmountPerBuyerNotReached.selector);
         paymentToken.transferAndCall(address(crowdinvesting), currencyAmount, new bytes(0));
         assertTrue(paymentToken.balanceOf(BUYER) == paymentTokenBalanceBefore);
         assertTrue(token.balanceOf(BUYER) == 0);
@@ -547,7 +547,7 @@ contract CrowdinvestingTest is Test {
     function testOnlyCurrencyContractCanCallOnTokenTransfer(address rando) public {
         vm.assume(rando != address(paymentToken));
         vm.prank(rando);
-        vm.expectRevert("Only currency contract can call onTokenTransfer");
+        vm.expectRevert(Crowdinvesting.OnlyCurrencyContract.selector);
         crowdinvesting.onTokenTransfer(rando, 0, new bytes(0));
     }
 }
