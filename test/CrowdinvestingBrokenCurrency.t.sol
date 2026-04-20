@@ -94,11 +94,7 @@ contract CrowdinvestingBrokenCurrencyTest is Test {
         list.set(buyer, 1); // Any non-zero value to allow buyer to receive tokens
 
         // Setup FeeSettings with ZERO fee
-        feeSettings = createFeeSettings(
-            trustedForwarder,
-            address(this),
-            buildFeeTypes(0, 0, 0, admin, admin, admin)
-        );
+        feeSettings = createFeeSettings(trustedForwarder, address(this), buildFeeTypes(0, 0, 0, admin, admin, admin));
 
         // Setup Token
         Token implementation = new Token(trustedForwarder);
