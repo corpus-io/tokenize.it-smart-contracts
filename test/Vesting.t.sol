@@ -59,6 +59,7 @@ contract VestingTest is Test {
     function testSwitchOwner(address _owner, address newOwner) public {
         vm.assume(_owner != address(0));
         vm.assume(_owner != trustedForwarder);
+        vm.assume(_owner != owner);
         vm.assume(newOwner != address(0));
         vm.assume(newOwner != _owner);
         vm.assume(_owner != address(this));
