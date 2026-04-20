@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.23;
+pragma solidity 0.8.34;
 
 import "../lib/forge-std/src/Test.sol";
 import "../lib/forge-std/src/console.sol";
@@ -94,8 +94,11 @@ contract CrowdinvestingBrokenCurrencyTest is Test {
         list.set(buyer, 1); // Any non-zero value to allow buyer to receive tokens
 
         // Setup FeeSettings with ZERO fee
-        Fees memory fees = Fees(0, 0, 0, 0); // All fees set to 0
-        feeSettings = createFeeSettings(trustedForwarder, address(this), fees, admin, admin, admin);
+        feeSettings = createFeeSettings(
+            trustedForwarder,
+            address(this),
+            buildFeeTypes(0, 0, 0, admin, admin, admin)
+        );
 
         // Setup Token
         Token implementation = new Token(trustedForwarder);
