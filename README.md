@@ -59,15 +59,15 @@ More dev information can be found here:
 4. Secondary market trading between investors:
    - investors can trade existing tokens between each other using the [TokenSwap.sol](contracts/TokenSwap.sol) contract
    - unlike PrivateOffer and Crowdinvesting which mint new tokens, TokenSwap facilitates the exchange of already-issued tokens between parties at a preset price
-5. Distributing proceeds to token holders:
+5. Co-invested positions:
+   - [CoinvestedPosition.sol](contracts/CoinvestedPosition.sol) holds tokens on behalf of a co-investor and distributes sale proceeds between lead investors (carry) and the co-investor
+6. Distributing proceeds and exits:
    - dividends or other proceeds can be distributed proportionally based on a token snapshot using [Distribution.sol](contracts/Distribution.sol)
-6. Token exits:
    - a company can set up an exit contract [Exit.sol](contracts/Exit.sol), allowing token holders to redeem their tokens for currency at a fixed price
    - the exit for a given token is registered in the global [GlobalTokenExitRegistry.sol](contracts/GlobalTokenExitRegistry.sol), which is the authoritative source for which exit contract is valid
 7. Timelock:
-   - tokens can be held in a [TimeLock.sol](contracts/TimeLock.sol) that blocks withdrawals until a configured timestamp, while still allowing the holder to claim distribution proceeds and exit proceeds
-8. Co-invested positions:
-   - [CoinvestedPosition.sol](contracts/CoinvestedPosition.sol) holds tokens on behalf of a co-investor and distributes sale proceeds between lead investors (carry) and the co-investor
+   - tokens can be timelocked, e.g. in a [TimeLock.sol](contracts/TimeLock.sol) that blocks withdrawals until a configured timestamp
+   - all relevant features work timelocked, e.g. claiming distributions or coinvesting
 
 The requirements for an address to send or receive tokens are checked against the [AllowList.sol](contracts/AllowList.sol) contract. Fees are collected according to the settings in [FeeSettings.sol](./contracts/FeeSettings.sol). Tokenize.it will deploy and manage at least one AllowList and one FeeSettings contract.
 
