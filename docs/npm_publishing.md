@@ -25,7 +25,19 @@ Currently, no automated publishing is set up. Publishing is done manually. To pu
    ```
 
 4. Check if all necessary files are contained and no secrets are leaked.
-5. If everything is fine, publish:
+5. Verify you are logged in to npm as a maintainer of the package:
+
+   ```bash
+   npm whoami
+   ```
+
+   If you are not logged in or the wrong user, run:
+
+   ```bash
+   npm login
+   ```
+
+6. If everything is fine, publish:
    ```bash
    npm publish [--tag <alpha/beta>]
    ```
