@@ -1475,10 +1475,12 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
     function testUpdateLeadInvestorAccountUpdatesAddress() public {
         address newAddress = address(0xBEEF);
+        (address oldAccount, ) = coinvestedPosition.leadInvestors(0);
+        assertEq(oldAccount, LEAD_A, "LEAD_A address unexpected");
         vm.prank(LEAD_A);
         coinvestedPosition.updateLeadInvestorAccount(newAddress);
-        (address acc,) = coinvestedPosition.leadInvestors(0);
-        assertEq(acc, newAddress, "LEAD_A address not updated");
+        (address newAccount, ) = coinvestedPosition.leadInvestors(0);
+        assertEq(newAccount, newAddress, "LEAD_A address not updated");
     }
 
     function testUpdateLeadInvestorAccountEmitsEvent() public {
@@ -1528,10 +1530,10 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         address newB = address(0xCAFE);
         vm.prank(LEAD_B);
         coinvestedPosition.updateLeadInvestorAccount(newB);
-        (address acc,) = coinvestedPosition.leadInvestors(1);
+        (address acc, ) = coinvestedPosition.leadInvestors(1);
         assertEq(acc, newB, "LEAD_B address not updated");
         // first lead unchanged
-        (address acc0,) = coinvestedPosition.leadInvestors(0);
+        (address acc0, ) = coinvestedPosition.leadInvestors(0);
         assertEq(acc0, LEAD_A, "LEAD_A address changed unexpectedly");
     }
 
