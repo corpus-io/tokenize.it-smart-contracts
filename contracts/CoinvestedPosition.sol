@@ -53,6 +53,9 @@ contract CoinvestedPosition is TokenSwapBase {
 
     error ZeroLeadInvestorAddress();
     error ZeroLeadInvestorProfitFraction();
+    error NotLeadInvestor();
+
+    event LeadInvestorAccountUpdated(address indexed oldAccount, address indexed newAccount);
 
     /// lead investors and their carry fractions
     LeadInvestor[] public leadInvestors;
@@ -235,6 +238,24 @@ contract CoinvestedPosition is TokenSwapBase {
         uint256 received = exitCurrency.balanceOf(address(this)) - before;
         uint256 profit = basePayout < received ? received - basePayout : 0;
         _settle(profit, exitCurrency);
+    }
+
+    /**
+     * @notice Update the caller's lead investor account address. Allows a lead investor to migrate
+     *      to a new address, e.g. if the current address is blacklisted by the currency.
+     * @param newAccount new address to receive carry; must not be zero
+     */
+    function updateLeadInvestorAccount(address newAccount) external {
+        require(newAccount != address(0), ZeroLeadInvestorAddress());
+        address caller = _msgSender();
+        for (uint256 i = 0; i < leadInvestors.length; i++) {
+            if (leadInvestors[i].account == caller) {
+                leadInvestors[i].account = newAccount;
+                emit LeadInvestorAccountUpdated(caller, newAccount);
+                return;
+            }
+        }
+        revert NotLeadInvestor();
     }
 
     /**

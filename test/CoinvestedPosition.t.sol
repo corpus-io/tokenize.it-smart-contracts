@@ -1468,4 +1468,77 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         vm.expectRevert(NoExitSet.selector);
         coinvestedPosition.claimExit(0, 0);
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // ── Section 14: updateLeadInvestorAccount() ───────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────
+
+    function testUpdateLeadInvestorAccountUpdatesAddress() public {
+        address newAddress = address(0xBEEF);
+        vm.prank(LEAD_A);
+        coinvestedPosition.updateLeadInvestorAccount(newAddress);
+        (address acc,) = coinvestedPosition.leadInvestors(0);
+        assertEq(acc, newAddress, "LEAD_A address not updated");
+    }
+
+    function testUpdateLeadInvestorAccountEmitsEvent() public {
+        address newAddress = address(0xBEEF);
+        vm.prank(LEAD_A);
+        vm.expectEmit(true, true, false, false);
+        emit CoinvestedPosition.LeadInvestorAccountUpdated(LEAD_A, newAddress);
+        coinvestedPosition.updateLeadInvestorAccount(newAddress);
+    }
+
+    function testUpdateLeadInvestorAccountNonLeadReverts() public {
+        vm.prank(BUYER);
+        vm.expectRevert(CoinvestedPosition.NotLeadInvestor.selector);
+        coinvestedPosition.updateLeadInvestorAccount(address(0xBEEF));
+    }
+
+    function testUpdateLeadInvestorAccountZeroAddressReverts() public {
+        vm.prank(LEAD_A);
+        vm.expectRevert(CoinvestedPosition.ZeroLeadInvestorAddress.selector);
+        coinvestedPosition.updateLeadInvestorAccount(address(0));
+    }
+
+    function testUpdateLeadInvestorAccountOwnerIsNotLeadReverts() public {
+        vm.prank(OWNER);
+        vm.expectRevert(CoinvestedPosition.NotLeadInvestor.selector);
+        coinvestedPosition.updateLeadInvestorAccount(address(0xBEEF));
+    }
+
+    function testUpdateLeadInvestorAccountNewAddressReceivesCarry() public {
+        address newAddress = address(0xBEEF);
+        vm.prank(LEAD_A);
+        coinvestedPosition.updateLeadInvestorAccount(newAddress);
+
+        _setupBuy(10e18, 200e6);
+        _fundBuyer(eurc, 400e6);
+
+        vm.prank(BUYER);
+        coinvestedPosition.buy(2e18, 400e6, TOKEN_RECEIVER);
+
+        uint256 carry = 200e6;
+        uint256 expectedNewAddress = (uint256(CARRY_10PCT) * carry) / type(uint64).max;
+        assertEq(eurc.balanceOf(newAddress), expectedNewAddress, "new address did not receive carry");
+        assertEq(eurc.balanceOf(LEAD_A), 0, "old address received carry");
+    }
+
+    function testUpdateLeadInvestorAccountSecondLeadUpdates() public {
+        address newB = address(0xCAFE);
+        vm.prank(LEAD_B);
+        coinvestedPosition.updateLeadInvestorAccount(newB);
+        (address acc,) = coinvestedPosition.leadInvestors(1);
+        assertEq(acc, newB, "LEAD_B address not updated");
+        // first lead unchanged
+        (address acc0,) = coinvestedPosition.leadInvestors(0);
+        assertEq(acc0, LEAD_A, "LEAD_A address changed unexpectedly");
+    }
+
+    function testFuzz_UpdateLeadInvestorAccountOnlyLeadCanUpdate(address caller) public {
+        vm.assume(caller != LEAD_A && caller != LEAD_B && caller != address(0) && caller != TRUSTED_FORWARDER);
+        vm.prank(caller);
+        vm.expectRevert(CoinvestedPosition.NotLeadInvestor.selector);
+        coinvestedPosition.updateLeadInvestorAccount(address(0xBEEF));
+    }
 }
