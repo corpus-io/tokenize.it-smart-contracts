@@ -178,6 +178,20 @@ contract DistributionTest is Test {
         factory.createDistributionClone(bytes32(0), TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, 0);
     }
 
+    function testInitializeZeroOwnerReverts() public {
+        DistributionInitializerArguments memory args = DistributionInitializerArguments({
+            owner: address(0),
+            token: token,
+            snapshotId: snapshotId,
+            currency: IERC20(address(currency)),
+            pricePerToken: PRICE_PER_TOKEN,
+            lockedUntil: lockedUntil,
+            initialReassignments: new Reassignment[](0)
+        });
+        vm.expectRevert(ZeroOwnerAddress.selector);
+        factory.createDistributionClone(bytes32("1"), TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, 0);
+    }
+
     function testInitializeStateVariables() public view {
         assertEq(address(dist.token()), address(token), "unexpected token address");
         assertEq(dist.snapshotId(), snapshotId, "unexpected snapshotId");
