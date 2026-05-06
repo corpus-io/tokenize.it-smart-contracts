@@ -6,10 +6,12 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 /// @dev Stub IExit: claim() pays a fixed amount to _recipient, ignoring _minPayout.
 /// Lets tests trigger the caller's own balance-diff check independently of Exit's.
 contract FixedPayoutExit {
+    address public token;
     IERC20 public currency;
     uint256 public payout;
 
-    constructor(IERC20 _currency, uint256 _payout) {
+    constructor(address _token, IERC20 _currency, uint256 _payout) {
+        token = _token;
         currency = _currency;
         payout = _payout;
     }

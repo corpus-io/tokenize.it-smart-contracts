@@ -28,6 +28,9 @@ contract GlobalTokenExitRegistry is ERC2771ContextUpgradeable {
     /// @notice Reverted when an exit has already been set for the token and a second set is attempted.
     error ExitAlreadySet();
 
+    /// @notice Reverted when the exit's token() does not match the token being registered.
+    error ExitTokenMismatch();
+
     /// @notice The authorized exit contract per token.
     mapping(Token => Exit) public exits;
 
@@ -51,6 +54,7 @@ contract GlobalTokenExitRegistry is ERC2771ContextUpgradeable {
         require(address(_exit) != address(0), ZeroExitAddress());
         require(address(exits[_token]) == address(0), ExitAlreadySet());
         require(_isTokenAdminOrOwner(_token, _msgSender()), NotTokenAdminOrOwner());
+        require(address(_exit.token()) == address(_token), ExitTokenMismatch());
         exits[_token] = _exit;
         emit ExitSet(_token, _exit);
     }
