@@ -579,12 +579,11 @@ contract DistributionTest is Test {
         );
     }
 
-    function testReassignSelfIsNoOp() public {
+    function testReassignSelfReverts() public {
         vm.warp(lockedUntil);
-        uint256 eligibleBefore = dist.eligible(HOLDER_A);
+        vm.expectRevert(Distribution.SelfReassignmentNotAllowed.selector);
         vm.prank(OWNER);
-        dist.reassign(HOLDER_A, HOLDER_A, eligibleBefore); // self-reassign
-        assertEq(dist.eligible(HOLDER_A), eligibleBefore, "self-reassign should leave eligible unchanged"); // unchanged
+        dist.reassign(HOLDER_A, HOLDER_A, 1);
     }
 
     function testReassignAfterClaimReverts() public {
