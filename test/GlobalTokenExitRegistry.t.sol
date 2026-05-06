@@ -170,11 +170,7 @@ contract GlobalTokenExitRegistryTest is Test {
         vm.prank(ADMIN);
         registry.setExit(Token(address(ownableToken)), Exit(address(exitStub)));
 
-        assertEq(
-            address(registry.exits(Token(address(ownableToken)))),
-            address(exitStub),
-            "exit not set via owner()"
-        );
+        assertEq(address(registry.exits(Token(address(ownableToken)))), address(exitStub), "exit not set via owner()");
     }
 
     function testSetExitRevertsForNonOwnerOfOwnableToken() public {
