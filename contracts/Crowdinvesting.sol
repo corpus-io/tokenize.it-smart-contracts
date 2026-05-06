@@ -170,6 +170,8 @@ contract Crowdinvesting is
     function initialize(CrowdinvestingInitializerArguments memory _arguments) external initializer {
         require(_arguments.owner != address(0), ZeroOwnerAddress());
         __Ownable2Step_init(); // sets msgSender() as owner
+        __Pausable_init();
+        __ReentrancyGuard_init();
         _transferOwnership(_arguments.owner); // sets owner as owner
 
         require(_arguments.currencyReceiver != address(0), ZeroReceiverAddress());

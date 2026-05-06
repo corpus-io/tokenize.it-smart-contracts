@@ -193,6 +193,7 @@ contract Token is
         // set version (can be updated in proxy storage by later implementation contracts)
         version = 1;
 
+        __Pausable_init();
         __ERC20Permit_init(_name);
         __ERC20Snapshot_init();
         __ERC20_init(_name, _symbol);
