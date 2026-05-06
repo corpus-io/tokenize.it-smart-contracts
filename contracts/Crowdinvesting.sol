@@ -211,7 +211,6 @@ contract Crowdinvesting is
         uint256 _priceMax
     ) external onlyOwner whenPaused {
         _activateDynamicPricing(_priceOracle, _priceMin, _priceMax);
-        coolDownStart = block.timestamp;
     }
 
     /**
