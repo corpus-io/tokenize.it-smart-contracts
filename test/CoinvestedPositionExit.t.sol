@@ -16,9 +16,11 @@ import "./resources/FixedPayoutExit.sol";
 
 /// @dev Minimal IExit stub: claim() does nothing. Currency is configurable at construction.
 contract NoOpExit {
+    address public token;
     IERC20 private _currency;
 
-    constructor(IERC20 currency_) {
+    constructor(address token_, IERC20 currency_) {
+        token = token_;
         _currency = currency_;
     }
 
@@ -1062,7 +1064,7 @@ contract CoinvestedPositionExitTest is Test {
         vm.prank(ADMIN);
         allowList.set(address(token), TRUSTED_CURRENCY);
 
-        NoOpExit noOpExit = new NoOpExit(IERC20(address(token)));
+        NoOpExit noOpExit = new NoOpExit(address(token), IERC20(address(token)));
 
         vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(noOpExit)));
@@ -1106,7 +1108,7 @@ contract CoinvestedPositionExitTest is Test {
     function testXIII_BalanceDiffAcceptsExactMinimum() public {
         uint256 minCurrencyAmount = 1e6;
         eurc.mint(address(this), minCurrencyAmount);
-        FixedPayoutExit stub = new FixedPayoutExit(IERC20(address(eurc)), minCurrencyAmount);
+        FixedPayoutExit stub = new FixedPayoutExit(address(token), IERC20(address(eurc)), minCurrencyAmount);
         IERC20(address(eurc)).transfer(address(stub), minCurrencyAmount);
         vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(stub)));

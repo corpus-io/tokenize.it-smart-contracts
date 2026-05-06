@@ -224,7 +224,7 @@ contract TimeLockDistributeExitTest is Test {
     function testClaimExitSucceedsWhenReceivedEqualsMinPayout() public {
         uint256 minPayout = 1e6;
         eurc.mint(address(this), minPayout);
-        FixedPayoutExit stub = new FixedPayoutExit(IERC20(address(eurc)), minPayout);
+        FixedPayoutExit stub = new FixedPayoutExit(address(token), IERC20(address(eurc)), minPayout);
         IERC20(address(eurc)).transfer(address(stub), minPayout);
         vm.prank(ADMIN);
         tokenExitRegistry.setExit(token, Exit(address(stub)));
