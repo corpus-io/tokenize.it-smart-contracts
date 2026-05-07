@@ -6,10 +6,10 @@ The following statements about the smart contracts should always be true
 
 - Only addresses with minting allowances > 0 or the MINTALLOWER_ROLE are able to mint tokens.
 - An address with minting allowance can only mint tokens if the remaining allowance after the mint will be larger or equal to zero.
-- An address can only receive tokens at least one of these statements is true:
+- An address can only receive tokens if at least one of these statements is true:
   - The address fulfills the requirements as proven by the allowList.
   - The address has the TRANSFERER_ROLE.
-  - The address is the feeCollector.
+  - The address is the feeCollector AND the tokens are freshly minted to the feeCollector.
   - The address is the 0 address.
 - An address can only send their own tokens if at least one of these statements is true:
   - The address fulfills the requirements as proven by the allowList.
