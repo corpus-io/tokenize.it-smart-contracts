@@ -104,21 +104,21 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     /**
      * @dev Total amount of tokens that belong to the vesting plan with the given id.
      */
-    function allocation(uint64 _id) public view returns (uint256) {
+    function allocation(uint64 _id) external view returns (uint256) {
         return vestings[_id].allocation;
     }
 
     /**
      * @dev Amount of tokens already released.
      */
-    function released(uint64 _id) public view returns (uint256) {
+    function released(uint64 _id) external view returns (uint256) {
         return vestings[_id].released;
     }
 
     /**
      * @dev Address that will receive the vested tokens.
      */
-    function beneficiary(uint64 _id) public view returns (address) {
+    function beneficiary(uint64 _id) external view returns (address) {
         return vestings[_id].beneficiary;
     }
 
@@ -126,7 +126,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
      * @dev Start date of the vesting plan.
      * The cliff duration and total duration are measured from this date.
      */
-    function start(uint64 _id) public view returns (uint64) {
+    function start(uint64 _id) external view returns (uint64) {
         return vestings[_id].start;
     }
 
@@ -134,7 +134,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
      * @dev Cliff duration of the vesting plan.
      * The beneficiary gets no tokens before this duration has passed.
      */
-    function cliff(uint64 _id) public view returns (uint64) {
+    function cliff(uint64 _id) external view returns (uint64) {
         return vestings[_id].cliff;
     }
 
@@ -142,7 +142,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
      * @dev Total duration of the vesting plan.
      * After this duration all tokens can be released.
      */
-    function duration(uint64 _id) public view returns (uint64) {
+    function duration(uint64 _id) external view returns (uint64) {
         return vestings[_id].duration;
     }
 
@@ -151,22 +151,24 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
      * isMintable == true means that tokens are minted form the token contract.
      * isMintable == false means the tokens need to be held by the vesting contract directly.
      */
-    function isMintable(uint64 _id) public view returns (bool) {
+    function isMintable(uint64 _id) external view returns (bool) {
         return vestings[_id].isMintable;
     }
 
     /**
      * @dev Amount of tokens that could be released right now.
      */
-    function releasable(uint64 _id) public view returns (uint256) {
-        return vestedAmount(_id, uint64(block.timestamp)) - released(_id);
+    function releasable(uint64 _id) external view returns (uint256) {
+        VestingPlan memory vesting = vestings[_id];
+        return _computeVestedAmount(vesting, uint64(block.timestamp)) - vesting.released;
     }
 
     /**
      * @dev Amount of tokens that could be released at a given time.
      */
-    function releasable(uint64 _id, uint64 _time) public view returns (uint256) {
-        return vestedAmount(_id, _time) - released(_id);
+    function releasable(uint64 _id, uint64 _time) external view returns (uint256) {
+        VestingPlan memory vesting = vestings[_id];
+        return _computeVestedAmount(vesting, _time) - vesting.released;
     }
 
     /**
@@ -344,7 +346,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         if (vesting.start + vesting.cliff > _endTime) {
             delete vestings[_id];
         } else {
-            vestings[_id].allocation = vestedAmount(_id, _endTime);
+            vestings[_id].allocation = _computeVestedAmount(vesting, _endTime);
             vestings[_id].duration = _endTime - vesting.start;
         }
         emit VestingStopped(_id, _endTime);
@@ -374,7 +376,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
 
         // create new vesting
         newId = _createVesting(
-            vesting.allocation - vestedAmount(_id, _endTime), # remaining allocation
+            vesting.allocation - _computeVestedAmount(vesting, _endTime),
             vesting.beneficiary,
             _newStartTime,
             cliffRemainder,
@@ -402,7 +404,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     function release(uint64 _id, uint256 _amount) public nonReentrant {
         VestingPlan memory vesting = vestings[_id];
         require(_msgSender() == vesting.beneficiary, OnlyBeneficiary());
-        uint256 releasableAmount = releasable(_id);
+        uint256 releasableAmount = _computeVestedAmount(vesting, uint64(block.timestamp)) - vesting.released;
         _amount = releasableAmount < _amount ? releasableAmount : _amount;
         vestings[_id].released += _amount;
         if (vesting.isMintable) {
@@ -421,8 +423,11 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
      * @param _timestamp point in time for which the vested amount is calculated
      * @return amount of vested tokens
      */
-    function vestedAmount(uint64 _id, uint64 _timestamp) public view returns (uint256) {
-        VestingPlan memory vesting = vestings[_id];
+    function vestedAmount(uint64 _id, uint64 _timestamp) external view returns (uint256) {
+        return _computeVestedAmount(vestings[_id], _timestamp);
+    }
+
+    function _computeVestedAmount(VestingPlan memory vesting, uint64 _timestamp) private pure returns (uint256) {
         if (_timestamp < vesting.start + vesting.cliff) {
             return 0;
         } else if (_timestamp > vesting.start + vesting.duration) {
@@ -442,9 +447,10 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
      * @param _newBeneficiary new beneficiary address
      */
     function changeBeneficiary(uint64 _id, address _newBeneficiary) external {
+        VestingPlan memory vesting = vestings[_id];
         require(
-            _msgSender() == beneficiary(_id) ||
-                ((_msgSender() == owner()) && uint64(block.timestamp) > start(_id) + duration(_id) + 365 days),
+            _msgSender() == vesting.beneficiary ||
+                ((_msgSender() == owner()) && uint64(block.timestamp) > vesting.start + vesting.duration + 365 days),
             NotAllowedToChangeBeneficiary()
         );
         require(_newBeneficiary != address(0), ZeroReceiverAddress());
