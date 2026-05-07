@@ -193,6 +193,28 @@ contract tokenTest is Test {
         assertTrue(_newTokenFeeNumerator != _oldTokenFeeNumerator, "token fee denominator changed!");
     }
 
+    function testAcceptNewFeeSettingsClearsSuggestedFeeSettings(address newCollector) public {
+        vm.assume(newCollector != address(0));
+        FeeSettings newFeeSettings = createFeeSettings(
+            TRUSTED_FORWARDER,
+            address(this),
+            buildFeeTypes(0, 0, 0, newCollector, newCollector, newCollector)
+        );
+
+        vm.prank(feeSettings.owner());
+        token.suggestNewFeeSettings(newFeeSettings);
+        assertEq(address(token.suggestedFeeSettings()), address(newFeeSettings), "suggested fee settings not set");
+
+        vm.prank(ADMIN);
+        token.acceptNewFeeSettings(newFeeSettings);
+
+        assertEq(
+            address(token.suggestedFeeSettings()),
+            address(0),
+            "suggested fee settings not cleared after acceptance"
+        );
+    }
+
     function testAcceptFeeCollectorInsteadOfFeeSettings(address newFeeSettingsPretendAddress) public {
         vm.assume(newFeeSettingsPretendAddress != address(0));
         FeeSettings newFeeSettings = createFeeSettings(

@@ -257,6 +257,7 @@ contract Token is
 
         require(address(_feeSettings) == address(suggestedFeeSettings), OnlySuggestedFeeSettings());
         feeSettings = suggestedFeeSettings;
+        suggestedFeeSettings = IFeeSettingsV2(address(0));
         emit FeeSettingsChanged(_feeSettings);
     }
 
