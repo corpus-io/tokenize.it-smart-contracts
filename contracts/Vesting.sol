@@ -95,6 +95,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
         require(_owner != address(0), ZeroOwnerAddress());
         require(_token != address(0), ZeroTokenAddress());
         __Ownable_init();
+        __ReentrancyGuard_init();
         transferOwnership(_owner);
         managers[_owner] = true;
         token = _token;

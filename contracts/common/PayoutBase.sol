@@ -57,6 +57,7 @@ abstract contract PayoutBase is ERC2771ContextUpgradeable, Ownable2StepUpgradeab
         uint256 _pricePerToken,
         uint64 _lockedUntil
     ) internal onlyInitializing {
+        require(_owner != address(0), ZeroOwnerAddress());
         __ReentrancyGuard_init();
         __Ownable2Step_init();
         _transferOwnership(_owner);

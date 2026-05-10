@@ -178,6 +178,20 @@ contract DistributionTest is Test {
         factory.createDistributionClone(bytes32(0), TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, 0);
     }
 
+    function testInitializeZeroOwnerReverts() public {
+        DistributionInitializerArguments memory args = DistributionInitializerArguments({
+            owner: address(0),
+            token: token,
+            snapshotId: snapshotId,
+            currency: IERC20(address(currency)),
+            pricePerToken: PRICE_PER_TOKEN,
+            lockedUntil: lockedUntil,
+            initialReassignments: new Reassignment[](0)
+        });
+        vm.expectRevert(ZeroOwnerAddress.selector);
+        factory.createDistributionClone(bytes32("1"), TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, 0);
+    }
+
     function testInitializeStateVariables() public view {
         assertEq(address(dist.token()), address(token), "unexpected token address");
         assertEq(dist.snapshotId(), snapshotId, "unexpected snapshotId");
@@ -565,12 +579,11 @@ contract DistributionTest is Test {
         );
     }
 
-    function testReassignSelfIsNoOp() public {
+    function testReassignSelfReverts() public {
         vm.warp(lockedUntil);
-        uint256 eligibleBefore = dist.eligible(HOLDER_A);
+        vm.expectRevert(Distribution.SelfReassignmentNotAllowed.selector);
         vm.prank(OWNER);
-        dist.reassign(HOLDER_A, HOLDER_A, eligibleBefore); // self-reassign
-        assertEq(dist.eligible(HOLDER_A), eligibleBefore, "self-reassign should leave eligible unchanged"); // unchanged
+        dist.reassign(HOLDER_A, HOLDER_A, 1);
     }
 
     function testReassignAfterClaimReverts() public {

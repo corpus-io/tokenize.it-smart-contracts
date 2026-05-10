@@ -50,7 +50,7 @@ struct CrowdinvestingInitializerArguments {
  *      The buyer can decide how many tokens to buy, but has to buy at least minAmount and can buy at most maxAmount.
  *      The currency the offer is denominated in is set at creation time and can be updated later.
  *      The contract can be paused at any time by the owner, which will prevent any new deals from being made. Then, changes to the contract can be made, like changing the currency, price or requirements.
- *      The contract can be unpaused after "delay", which will allow new deals to be made again.
+ *      The contract can be unpaused 1 hour after the last parameter change, which will allow new deals to be made again.
  *      A company will create only one Crowdinvesting contract for their token.
  * @dev The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support
  */
@@ -74,8 +74,8 @@ contract Crowdinvesting is
     error PurchaseYieldsTooFewTokens();
     error LastBuyDateNotInFuture();
 
-    /// @notice Minimum waiting time between pause or parameter change and unpause.
-    /// @dev delay is calculated from parameter change to unpause.
+    /// @notice Minimum waiting time between a parameter change and unpause.
+    /// @dev delay is calculated from the last parameter change to unpause.
     uint256 public constant delay = 1 hours;
 
     /// address that receives the currency when tokens are bought
@@ -170,6 +170,8 @@ contract Crowdinvesting is
     function initialize(CrowdinvestingInitializerArguments memory _arguments) external initializer {
         require(_arguments.owner != address(0), ZeroOwnerAddress());
         __Ownable2Step_init(); // sets msgSender() as owner
+        __Pausable_init();
+        __ReentrancyGuard_init();
         _transferOwnership(_arguments.owner); // sets owner as owner
 
         require(_arguments.currencyReceiver != address(0), ZeroReceiverAddress());
@@ -211,7 +213,6 @@ contract Crowdinvesting is
         uint256 _priceMax
     ) external onlyOwner whenPaused {
         _activateDynamicPricing(_priceOracle, _priceMin, _priceMax);
-        coolDownStart = block.timestamp;
     }
 
     /**

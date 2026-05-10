@@ -174,7 +174,8 @@ contract CoinvestedPosition is TokenSwapBase {
      */
     function _settle(uint256 profit, IERC20 _currency) internal {
         require(address(_currency) != address(token), CurrencyEqualsToken());
-        for (uint256 i = 0; i < leadInvestors.length; i++) {
+        uint256 leadInvestorsLength = leadInvestors.length;
+        for (uint256 i = 0; i < leadInvestorsLength; i++) {
             uint256 carryFraction = (uint256(leadInvestors[i].profitFraction) * profit) / type(uint64).max;
             if (carryFraction != 0) {
                 _currency.safeTransfer(leadInvestors[i].account, carryFraction);

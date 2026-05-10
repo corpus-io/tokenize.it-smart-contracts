@@ -152,6 +152,20 @@ contract ExitTest is Test {
         factory.createExitClone(bytes32(0), TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, 0);
     }
 
+    function testInitializeZeroOwnerReverts() public {
+        ExitInitializerArguments memory args = ExitInitializerArguments({
+            owner: address(0),
+            token: token,
+            currency: IERC20(address(currency)),
+            pricePerToken: PRICE_PER_TOKEN,
+            lockedUntil: lockedUntil,
+            referenceCurrencies: new IERC20[](0),
+            referenceToExitRates: new uint256[](0)
+        });
+        vm.expectRevert(ZeroOwnerAddress.selector);
+        factory.createExitClone(bytes32("1"), TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, 0);
+    }
+
     function testInitializePastLockedUntilReverts() public {
         ExitInitializerArguments memory args = ExitInitializerArguments({
             owner: OWNER,

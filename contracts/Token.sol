@@ -193,6 +193,7 @@ contract Token is
         // set version (can be updated in proxy storage by later implementation contracts)
         version = 1;
 
+        __Pausable_init();
         __ERC20Permit_init(_name);
         __ERC20Snapshot_init();
         __ERC20_init(_name, _symbol);
@@ -256,6 +257,7 @@ contract Token is
 
         require(address(_feeSettings) == address(suggestedFeeSettings), OnlySuggestedFeeSettings());
         feeSettings = suggestedFeeSettings;
+        suggestedFeeSettings = IFeeSettingsV2(address(0));
         emit FeeSettingsChanged(_feeSettings);
     }
 
@@ -375,9 +377,9 @@ contract Token is
      */
     function _checkIfFeeSettingsImplementsInterface(IFeeSettingsV2 _feeSettings) internal view {
         // step 1: needs to return true if EIP165 is supported
-        require(_feeSettings.supportsInterface(0x01ffc9a7) == true, FeeSettingsInterfaceNotSupported());
+        require(_feeSettings.supportsInterface(0x01ffc9a7), FeeSettingsInterfaceNotSupported());
         // step 2: needs to return false if EIP165 is supported
-        require(_feeSettings.supportsInterface(0xffffffff) == false, FeeSettingsInterfaceNotSupported());
+        require(!_feeSettings.supportsInterface(0xffffffff), FeeSettingsInterfaceNotSupported());
         // now we know EIP165 is supported
         // step 3: needs to return true if IFeeSettingsV2 is supported
         require(_feeSettings.supportsInterface(type(IFeeSettingsV2).interfaceId), FeeSettingsInterfaceNotSupported());

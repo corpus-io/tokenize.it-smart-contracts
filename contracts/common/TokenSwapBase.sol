@@ -79,6 +79,8 @@ abstract contract TokenSwapBase is
     ) internal onlyInitializing {
         require(_owner != address(0), ZeroOwnerAddress());
         __Ownable_init();
+        __Pausable_init();
+        __ReentrancyGuard_init();
         _transferOwnership(_owner);
         require(address(_currency) != address(0), ZeroCurrencyAddress());
         require(address(_token) != address(0), ZeroTokenAddress());
