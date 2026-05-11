@@ -77,7 +77,6 @@ contract Exit is PayoutBase {
         uint256 _initialFundingAmount
     ) external initializer {
         require(_arguments.pricePerToken > 0, ZeroPrice());
-        require(_arguments.lockedUntil > block.timestamp, LockedUntilNotInFuture());
         require(address(_arguments.currency) != address(_arguments.token), CurrencyEqualsToken());
         require(
             _arguments.token.allowList().map(address(_arguments.currency)) == TRUSTED_CURRENCY,

@@ -74,7 +74,7 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
                 basePrice: 80e6,
                 baseCurrency: IERC20(address(eurc)),
                 token: token,
-                lockedUntil: 0,
+                lockedUntil: 1,
                 tokenExitRegistry: tokenExitRegistry
             });
     }

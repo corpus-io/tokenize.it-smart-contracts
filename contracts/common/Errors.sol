@@ -28,7 +28,7 @@ error UntrustedCurrency();
 /// @notice Reverted when a currency argument equals the token address (they must differ).
 error CurrencyEqualsToken();
 
-/// @notice Reverted when a lockedUntil timestamp is not strictly in the future.
+/// @notice Reverted when a lockedUntil timestamp does not meet the minimum lock duration.
 error LockedUntilNotInFuture();
 
 /// @notice Reverted when the cooldown period has not yet elapsed.

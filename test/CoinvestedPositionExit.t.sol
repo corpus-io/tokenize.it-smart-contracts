@@ -164,7 +164,7 @@ contract CoinvestedPositionExitTest is Test {
             basePrice: basePrice,
             baseCurrency: IERC20(address(baseCurrency)),
             token: token,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: tokenExitRegistry
         });
         return
@@ -627,7 +627,7 @@ contract CoinvestedPositionExitTest is Test {
             basePrice: BASE_PRICE_EURC,
             baseCurrency: IERC20(address(eurc)),
             token: tokenWithFee,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: tokenExitRegistry
         });
         CoinvestedPosition coinvestedPositionFee = CoinvestedPosition(

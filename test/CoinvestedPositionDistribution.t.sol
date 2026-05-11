@@ -180,7 +180,7 @@ contract CoinvestedPositionDistributionTest is Test {
             basePrice: basePrice,
             baseCurrency: IERC20(address(baseCurrency)),
             token: token,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: tokenExitRegistry
         });
         return
@@ -1039,7 +1039,7 @@ contract CoinvestedPositionDistributionTest is Test {
                         basePrice: BASE_PRICE_EURC,
                         baseCurrency: IERC20(address(eurc)),
                         token: fuzzToken,
-                        lockedUntil: 0,
+                        lockedUntil: 1,
                         tokenExitRegistry: tokenExitRegistry
                     });
                 coinvestedPositionFuzz = CoinvestedPosition(

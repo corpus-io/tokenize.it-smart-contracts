@@ -29,7 +29,7 @@ struct CoinvestedPositionInitializerArguments {
     IERC20 baseCurrency;
     /// token being held
     Token token;
-    /// unix timestamp before which unpause() is blocked; 0 means no lock
+    /// unix timestamp before which unpause() is blocked; must be non-zero
     uint64 lockedUntil;
     /// registry contract; if an exit is set for the token, it can be claimed
     GlobalTokenExitRegistry tokenExitRegistry;
@@ -63,7 +63,7 @@ contract CoinvestedPosition is TokenSwapBase {
     LeadInvestor[] public leadInvestors;
     /// base price per token in bits of the current currency (always expressed in current currency's decimals)
     uint256 public basePrice;
-    /// unix timestamp before which unpause() is blocked; 0 means no lock
+    /// unix timestamp before which unpause() is blocked; must be non-zero
     uint64 public lockedUntil;
     /// registry contract; if an exit is set for the token, an exit reward can be claimed from that
     /// address even if lockedUntil has not passed yet
@@ -94,6 +94,7 @@ contract CoinvestedPosition is TokenSwapBase {
             leadInvestors.push(_arguments.leadInvestors[i]);
         }
         require(address(_arguments.tokenExitRegistry) != address(0), ZeroTokenExitRegistryAddress());
+        require(_arguments.lockedUntil > 0, LockedUntilNotInFuture());
         basePrice = _arguments.basePrice;
         lockedUntil = _arguments.lockedUntil;
         tokenExitRegistry = _arguments.tokenExitRegistry;

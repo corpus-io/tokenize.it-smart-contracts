@@ -79,7 +79,7 @@ contract PrivateOfferTimeLockTest is Test {
      * @param attemptTime try to drain tokens at this timestamp (must be before lockedUntil)
      */
     function testPrivateOfferWithTimeLock(bytes32 salt, uint64 lockedUntil, uint64 attemptTime) public {
-        vm.assume(lockedUntil > block.timestamp + 1);
+        vm.assume(lockedUntil >= block.timestamp + 30 days);
         vm.assume(lockedUntil < type(uint64).max / 2);
         vm.assume(attemptTime > block.timestamp);
         vm.assume(attemptTime < lockedUntil);

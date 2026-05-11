@@ -49,7 +49,7 @@ contract TimeLock is Initializable, Ownable2StepUpgradeable, ERC2771ContextUpgra
     /**
      * @notice Sets up the TimeLock.
      * @param _owner owner of the contract
-     * @param _lockedUntil unix timestamp before which drain() is blocked; 0 means no lock
+     * @param _lockedUntil unix timestamp before which drain() is blocked; must be at least 30 days in the future
      * @param _tokenExitRegistry registry contract; setting exit on it bypasses lockedUntil
      */
     function initialize(
@@ -58,7 +58,7 @@ contract TimeLock is Initializable, Ownable2StepUpgradeable, ERC2771ContextUpgra
         GlobalTokenExitRegistry _tokenExitRegistry
     ) external initializer {
         require(_owner != address(0), ZeroOwnerAddress());
-        require(_lockedUntil > block.timestamp, LockedUntilNotInFuture());
+        require(_lockedUntil >= block.timestamp + 30 days, LockedUntilNotInFuture());
         require(address(_tokenExitRegistry) != address(0), ZeroTokenExitRegistryAddress());
         __Ownable2Step_init();
         __ReentrancyGuard_init();

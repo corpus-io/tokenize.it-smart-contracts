@@ -115,7 +115,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             basePrice: basePrice,
             baseCurrency: IERC20(address(baseCurrency)),
             token: token,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: tokenExitRegistry
         });
         return CoinvestedPosition(factory.createCoinvestedPositionClone(salt, TRUSTED_FORWARDER, args));
@@ -141,7 +141,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             basePrice: 100e6,
             baseCurrency: IERC20(address(eurc)),
             token: token,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: tokenExitRegistry
         });
 
@@ -199,7 +199,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             basePrice: basePrice,
             baseCurrency: IERC20(address(fuzzCurrency)),
             token: token,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: tokenExitRegistry
         });
         CoinvestedPosition fuzzPosition = CoinvestedPosition(
@@ -229,7 +229,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             basePrice: 100e6,
             baseCurrency: IERC20(address(nonTrusted)),
             token: token,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: tokenExitRegistry
         });
         vm.expectRevert(UntrustedCurrency.selector);
@@ -247,7 +247,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             basePrice: 100e6,
             baseCurrency: IERC20(address(noBit)),
             token: token,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: tokenExitRegistry
         });
         vm.expectRevert();
@@ -268,7 +268,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             basePrice: 100e6,
             baseCurrency: IERC20(address(eurc)),
             token: token,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: tokenExitRegistry
         });
         vm.expectRevert(NoLeadInvestors.selector);
@@ -285,7 +285,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             basePrice: 100e6,
             baseCurrency: IERC20(address(eurc)),
             token: token,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: tokenExitRegistry
         });
         vm.expectRevert(CoinvestedPosition.ZeroLeadInvestorAddress.selector);
@@ -302,7 +302,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             basePrice: 100e6,
             baseCurrency: IERC20(address(eurc)),
             token: token,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: tokenExitRegistry
         });
         vm.expectRevert(CoinvestedPosition.ZeroLeadInvestorProfitFraction.selector);
@@ -321,7 +321,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             basePrice: 100e6,
             baseCurrency: IERC20(address(eurc)),
             token: token,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: tokenExitRegistry
         });
         vm.expectRevert("panic: arithmetic underflow or overflow (0x11)"); // arithmetic overflow
@@ -578,7 +578,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             basePrice: 100e6,
             baseCurrency: IERC20(address(eurc)),
             token: tokenWithFee,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: tokenExitRegistry
         });
         CoinvestedPosition coinvestedPositionWithFee = CoinvestedPosition(
@@ -648,7 +648,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             basePrice: 100e6,
             baseCurrency: IERC20(address(eurc)),
             token: tokenHighFee,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: tokenExitRegistry
         });
         CoinvestedPosition coinvestedPositionHighFee = CoinvestedPosition(
@@ -1400,7 +1400,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             basePrice: 100e6,
             baseCurrency: IERC20(address(malicious)),
             token: token,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: tokenExitRegistry
         });
         CoinvestedPosition coinvestedPositionMalicious = CoinvestedPosition(
@@ -1436,10 +1436,25 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             basePrice: 100e6,
             baseCurrency: IERC20(address(eurc)),
             token: token,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: GlobalTokenExitRegistry(address(0))
         });
         vm.expectRevert(ZeroTokenExitRegistryAddress.selector);
+        factory.createCoinvestedPositionClone(bytes32(0), TRUSTED_FORWARDER, args);
+    }
+
+    function testInitZeroLockedUntilReverts() public {
+        CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
+            owner: OWNER,
+            receiver: RECEIVER,
+            leadInvestors: _defaultLeadInvestors(),
+            basePrice: 100e6,
+            baseCurrency: IERC20(address(eurc)),
+            token: token,
+            lockedUntil: 0,
+            tokenExitRegistry: tokenExitRegistry
+        });
+        vm.expectRevert(LockedUntilNotInFuture.selector);
         factory.createCoinvestedPositionClone(bytes32(0), TRUSTED_FORWARDER, args);
     }
 

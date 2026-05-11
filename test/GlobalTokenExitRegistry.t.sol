@@ -68,7 +68,7 @@ contract GlobalTokenExitRegistryTest is Test {
             token: _exitToken,
             currency: IERC20(address(currency)),
             pricePerToken: 2e6,
-            lockedUntil: uint64(block.timestamp + 1),
+            lockedUntil: uint64(block.timestamp + 30 days),
             referenceCurrencies: new IERC20[](0),
             referenceToExitRates: new uint256[](0)
         });
