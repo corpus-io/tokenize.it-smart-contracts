@@ -99,7 +99,7 @@ contract TokenSwap is TokenSwapBase {
         uint256 _tokenAmount,
         uint256 _maxCurrencyAmount,
         address _tokenReceiver
-    ) public whenNotPaused nonReentrant {
+    ) external whenNotPaused nonReentrant {
         // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
         uint256 currencyAmount = Math.ceilDiv(_tokenAmount * tokenPrice, 10 ** token.decimals());
 
@@ -126,7 +126,7 @@ contract TokenSwap is TokenSwapBase {
         uint256 _tokenAmount,
         uint256 _minCurrencyAmount,
         address _currencyReceiver
-    ) public whenNotPaused nonReentrant {
+    ) external whenNotPaused nonReentrant {
         // rounding down. Seller receives at most the exact price, protecting the holder.
         uint256 currencyAmount = (_tokenAmount * tokenPrice) / (10 ** token.decimals());
 

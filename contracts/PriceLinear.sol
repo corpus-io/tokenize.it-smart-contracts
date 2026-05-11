@@ -176,7 +176,7 @@ contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPri
      * @param basePrice The base price of the token
      * @return The price of the token at the current time or block height
      */
-    function getPrice(uint256 basePrice) public view returns (uint256) {
+    function getPrice(uint256 basePrice) external view returns (uint256) {
         require(coolDownStart + COOL_DOWN_DURATION < block.timestamp, CoolDownNotOver());
         Linear memory _parameters = parameters;
         uint256 current = _parameters.isBlockBased ? block.number : block.timestamp;

@@ -166,7 +166,7 @@ contract Token is
         uint256 _requirements,
         string memory _name,
         string memory _symbol
-    ) public initializer {
+    ) external initializer {
         // Grant admin roles
         _grantRole(DEFAULT_ADMIN_ROLE, _admin); // except for the Transferer role, the _admin is the roles admin for all other roles
         _setRoleAdmin(TRANSFERER_ROLE, TRANSFERERADMIN_ROLE);

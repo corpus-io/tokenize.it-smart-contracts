@@ -56,7 +56,7 @@ contract TimeLock is Initializable, OwnableUpgradeable, ERC2771ContextUpgradeabl
         address _owner,
         uint64 _lockedUntil,
         GlobalTokenExitRegistry _tokenExitRegistry
-    ) public initializer {
+    ) external initializer {
         require(_owner != address(0), ZeroOwnerAddress());
         require(_lockedUntil > block.timestamp, LockedUntilNotInFuture());
         require(address(_tokenExitRegistry) != address(0), ZeroTokenExitRegistryAddress());

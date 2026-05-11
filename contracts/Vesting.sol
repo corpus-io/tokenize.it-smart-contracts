@@ -91,7 +91,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
      * @param _owner address of the owner of the contract
      * @param _token address of the token to be vested
      */
-    function initialize(address _owner, address _token) public initializer {
+    function initialize(address _owner, address _token) external initializer {
         require(_owner != address(0), ZeroOwnerAddress());
         require(_token != address(0), ZeroTokenAddress());
         __Ownable_init();
@@ -165,7 +165,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     /**
      * @dev Amount of tokens that could be released at a given time.
      */
-    function releasable(uint64 _id, uint64 _time) public view returns (uint256) {
+    function releasable(uint64 _id, uint64 _time) external view returns (uint256) {
         return vestedAmount(_id, _time) - released(_id);
     }
 
