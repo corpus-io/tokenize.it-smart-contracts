@@ -264,6 +264,27 @@ contract PriceLinearTest is Test {
         assertEq(currentIsRising, _isRising, "isRising should be _isRising");
     }
 
+    function testUpdateParametersEmitsEvent() public {
+        vm.warp(1 days);
+        uint64 slopeEnumerator = 5;
+        uint64 slopeDenominator = 100;
+        uint64 start = uint64(block.timestamp + 1);
+        uint32 stepDuration = 1 hours;
+        bool isBlockBased = false;
+        bool isRising = true;
+        vm.expectEmit(false, false, false, true, address(oracle));
+        emit PriceLinear.ParametersUpdated(
+            slopeEnumerator,
+            slopeDenominator,
+            start,
+            stepDuration,
+            isBlockBased,
+            isRising
+        );
+        vm.prank(COMPANY_ADMIN);
+        oracle.updateParameters(slopeEnumerator, slopeDenominator, start, stepDuration, isBlockBased, isRising);
+    }
+
     function testOnlyOwnerCanUpdateParameters(address rando) public {
         vm.assume(rando != COMPANY_ADMIN);
         vm.assume(rando != address(0));

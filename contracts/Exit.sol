@@ -131,5 +131,6 @@ contract Exit is PayoutBase {
             currency.safeTransfer(feeCollector, fee);
         }
         currency.safeTransfer(_recipient, currencyAmount - fee);
+        emit Claimed(_msgSender(), _recipient, currencyAmount - fee);
     }
 }

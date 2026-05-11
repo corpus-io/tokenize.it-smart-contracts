@@ -31,6 +31,8 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
     event TokensBought(address indexed BUYER, uint256 tokenAmount, uint256 currencyAmount);
     event ReceiverChanged(address indexed newReceiver);
     event TokenPriceChanged(uint256 newTokenPrice);
+    event CurrencyChanged(address indexed currency, uint256 basePrice);
+    event ProfitSettled(address indexed currency, uint256 profit);
 
     // ── Well-known addresses ──────────────────────────────────────────────────
     address public constant BUYER = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
@@ -379,6 +381,13 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         assertEq(address(coinvestedPosition.currency()), address(newCurrency));
     }
 
+    function testSetCurrencyEmitsEvent() public {
+        vm.expectEmit(true, false, false, true, address(coinvestedPosition));
+        emit CurrencyChanged(address(eure), 50e18);
+        vm.prank(OWNER);
+        coinvestedPosition.setCurrency(IERC20(address(eure)), 50e18);
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // ── Section 4: setTokenPrice() / pause() / unpause() ─────────────────────
     // ─────────────────────────────────────────────────────────────────────────
@@ -503,6 +512,16 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         vm.expectEmit(true, true, true, true);
         emit TokensBought(BUYER, 1e18, 200e6);
         coinvestedPosition.buy(1e18, 400e6, TOKEN_RECEIVER);
+    }
+
+    function testBuyEmitsProfitSettledEvent() public {
+        // tokenPrice=200e6, basePrice=100e6, buy 1 token → profit = 200e6 - 100e6 = 100e6
+        _setupBuy(10e18, 200e6);
+        _fundBuyer(eurc, 200e6);
+        vm.expectEmit(true, false, false, true, address(coinvestedPosition));
+        emit ProfitSettled(address(eurc), 100e6);
+        vm.prank(BUYER);
+        coinvestedPosition.buy(1e18, 200e6, TOKEN_RECEIVER);
     }
 
     function testBuyZeroFeeCorrectCarrySplit() public {

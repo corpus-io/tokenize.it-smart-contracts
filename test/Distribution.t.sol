@@ -364,6 +364,13 @@ contract DistributionTest is Test {
         assertEq(currency.balanceOf(RECIPIENT), 120e6, "RECIPIENT did not receive HOLDER_A's share");
     }
 
+    function testClaimEmitsEvent() public {
+        vm.expectEmit(true, true, false, true, address(dist));
+        emit Claimed(HOLDER_A, RECIPIENT, 120e6);
+        vm.prank(HOLDER_A);
+        dist.claim(RECIPIENT, 0);
+    }
+
     function testMultipleHoldersClaimIndependently() public {
         vm.prank(HOLDER_A);
         dist.claim(HOLDER_A, 0);
@@ -436,6 +443,14 @@ contract DistributionTest is Test {
         dist.drain(OWNER, currency);
         assertEq(currency.balanceOf(OWNER), TOTAL_CURRENCY, "OWNER should receive full balance after drain");
         assertEq(currency.balanceOf(address(dist)), 0, "dist should be empty after drain");
+    }
+
+    function testDrainEmitsEvent() public {
+        vm.warp(lockedUntil);
+        vm.expectEmit(true, true, false, true, address(dist));
+        emit Drained(OWNER, address(currency), TOTAL_CURRENCY);
+        vm.prank(OWNER);
+        dist.drain(OWNER, currency);
     }
 
     function testDrainAfterPartialClaims() public {

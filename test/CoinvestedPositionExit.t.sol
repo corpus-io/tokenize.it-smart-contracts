@@ -1421,4 +1421,19 @@ contract CoinvestedPositionExitTest is Test {
         assertEq(address(lockedCp.currency()), address(eure), "XIVG: currency not updated");
         assertEq(lockedCp.basePrice(), 100e18, "XIVG: basePrice not updated");
     }
+
+    function testEmitsExitClaimedEvent() public {
+        // CP holds 200 tokens, exit price = 200e6 → received = 200e18 * 200e6 / 1e18 = 40_000e6
+        uint256 pricePerToken = 200e6;
+        uint256 received = (CP_TOKEN_AMOUNT * pricePerToken) / (10 ** token.decimals());
+        Exit exitContract = _deployExit(bytes32(0), eurc, pricePerToken, CP_TOKEN_AMOUNT);
+
+        vm.prank(ADMIN);
+        tokenExitRegistry.setExit(token, Exit(address(exitContract)));
+
+        vm.expectEmit(true, true, false, true, address(coinvestedPosition));
+        emit CoinvestedPosition.ExitClaimed(address(exitContract), address(eurc), received);
+        vm.prank(OWNER);
+        coinvestedPosition.claimExit(1, 0);
+    }
 }

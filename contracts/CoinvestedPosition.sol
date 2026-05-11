@@ -54,6 +54,11 @@ contract CoinvestedPosition is TokenSwapBase {
     error ZeroLeadInvestorAddress();
     error ZeroLeadInvestorProfitFraction();
 
+    event CurrencyChanged(address indexed currency, uint256 basePrice);
+    event ProfitSettled(address indexed currency, uint256 profit);
+    event DistributionClaimed(address indexed distribution, address indexed currency, uint256 amount);
+    event ExitClaimed(address indexed exit, address indexed currency, uint256 received);
+
     /// lead investors and their carry fractions
     LeadInvestor[] public leadInvestors;
     /// base price per token in bits of the current currency (always expressed in current currency's decimals)
@@ -119,6 +124,7 @@ contract CoinvestedPosition is TokenSwapBase {
         require(token.allowList().map(address(_currency)) == TRUSTED_CURRENCY, UntrustedCurrency());
         basePrice = _basePrice;
         currency = _currency;
+        emit CurrencyChanged(address(_currency), _basePrice);
     }
 
     /**
@@ -179,6 +185,7 @@ contract CoinvestedPosition is TokenSwapBase {
             }
         }
         _currency.safeTransfer(receiver, _currency.balanceOf(address(this)));
+        emit ProfitSettled(address(_currency), profit);
     }
 
     /**
@@ -195,6 +202,7 @@ contract CoinvestedPosition is TokenSwapBase {
         _dist.claim(address(this), _minPayout);
         uint256 profit = dividendCurrency.balanceOf(address(this)) - before;
         _settle(profit, dividendCurrency);
+        emit DistributionClaimed(address(_dist), address(dividendCurrency), profit);
     }
 
     /**
@@ -236,6 +244,7 @@ contract CoinvestedPosition is TokenSwapBase {
         uint256 received = exitCurrency.balanceOf(address(this)) - before;
         uint256 profit = basePayout < received ? received - basePayout : 0;
         _settle(profit, exitCurrency);
+        emit ExitClaimed(address(_exit), address(exitCurrency), received);
     }
 
     /**

@@ -1155,4 +1155,17 @@ contract CoinvestedPositionDistributionTest is Test {
         coinvestedPosition.claimDistribution(Distribution(address(stub)), minPayout);
         assertEq(usdc.balanceOf(address(coinvestedPosition)), 0, "cp should hold no usdc after settle");
     }
+
+    function testDI_EmitsDistributionClaimedEvent() public {
+        Distribution distribution = _deployDistribution(bytes32(0), usdc, TOTAL_USDC, PRICE_PER_TOKEN_USDC);
+
+        vm.expectEmit(true, true, false, true, address(coinvestedPosition));
+        emit CoinvestedPosition.DistributionClaimed(
+            address(distribution),
+            address(usdc),
+            COINVESTED_POSITION_ELIGIBLE_USDC
+        );
+        vm.prank(OWNER);
+        coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
+    }
 }
