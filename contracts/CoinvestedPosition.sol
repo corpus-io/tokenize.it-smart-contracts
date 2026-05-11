@@ -48,8 +48,8 @@ struct CoinvestedPositionInitializerArguments {
  *      currency's units.
  * @dev Payouts are pull-based. Each lead investor calls `withdrawAsLeadInvestor` for their slot.
  *      The owner (coinvestor) calls `withdrawAsCoinvestor` with an explicit destination address.
- *      Any currency not allocated to a credit slot (e.g. accidentally transferred to the contract)
- *      is automatically swept into the coinvestor's credit during the next `_credit` for that currency.
+ *      Any accidentally-sent currency (balance above `totalCredit`) is swept to the
+ *      coinvestor at withdrawal time.
  */
 contract CoinvestedPosition is TokenSwapBase {
     using SafeERC20 for IERC20;
@@ -108,9 +108,7 @@ contract CoinvestedPosition is TokenSwapBase {
      * @param _arguments Struct containing all arguments for the initializer
      */
     function initialize(CoinvestedPositionInitializerArguments memory _arguments) external initializer {
-        // Coinvestor == owner. `receiver` on the inherited base is set to owner just to
-        // satisfy the non-zero check; payouts go through withdrawAsCoinvestor instead.
-        _initializeBase(_arguments.owner, 0, _arguments.baseCurrency, _arguments.token, _arguments.owner);
+        _initializeBase(_arguments.owner, 0, _arguments.baseCurrency, _arguments.token);
 
         require(_arguments.leadInvestors.length > 0, NoLeadInvestors());
         uint64 profitFractionsSum = 0;

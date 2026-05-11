@@ -149,7 +149,6 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
     function testLogicContractStateIsZero() public view {
         assertEq(address(logic.token()), address(0), "token");
         assertEq(address(logic.currency()), address(0), "currency");
-        assertEq(address(logic.receiver()), address(0), "RECEIVER");
         assertEq(logic.tokenPrice(), 0, "tokenPrice");
         assertEq(logic.basePrice(), 0, "basePrice");
         assertEq(logic.getLeadInvestorsCount(), 0, "leadInvestors length");
@@ -166,7 +165,6 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
     function testInitStateVarsCorrect() public view {
         assertEq(coinvestedPosition.owner(), OWNER, "OWNER");
-        assertEq(coinvestedPosition.receiver(), OWNER, "receiver == owner (vestigial field)");
         assertEq(address(coinvestedPosition.currency()), address(eurc), "currency");
         assertEq(address(coinvestedPosition.token()), address(token), "token");
         assertEq(coinvestedPosition.basePrice(), 100e6, "basePrice");
@@ -434,26 +432,6 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
     // ── Section 5: setReceiver() ──────────────────────────────────────────────
     // ─────────────────────────────────────────────────────────────────────────
 
-    function testSetReceiverOnlyOwner() public {
-        vm.prank(BUYER);
-        vm.expectRevert("Ownable: caller is not the owner");
-        coinvestedPosition.setReceiver(BUYER);
-    }
-
-    function testSetReceiverZeroAddressReverts() public {
-        vm.prank(OWNER);
-        vm.expectRevert(ZeroReceiverAddress.selector);
-        coinvestedPosition.setReceiver(address(0));
-    }
-
-    function testSetReceiverStoresAndEmitsEvent() public {
-        assertEq(coinvestedPosition.receiver(), OWNER); // initialized to owner
-        vm.prank(OWNER);
-        vm.expectEmit(true, false, false, false);
-        emit ReceiverChanged(LEAD_A);
-        coinvestedPosition.setReceiver(LEAD_A);
-        assertEq(coinvestedPosition.receiver(), LEAD_A);
-    }
 
     // ─────────────────────────────────────────────────────────────────────────
     // ── Section 6: buy() — Core Logic ────────────────────────────────────────
@@ -1340,13 +1318,6 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         vm.prank(caller);
         vm.expectRevert("Ownable: caller is not the owner");
         coinvestedPosition.setTokenPrice(200e6);
-    }
-
-    function testFuzz_AccessControl_SetReceiver(address caller) public {
-        vm.assume(caller != address(0) && caller != OWNER && caller != TRUSTED_FORWARDER);
-        vm.prank(caller);
-        vm.expectRevert("Ownable: caller is not the owner");
-        coinvestedPosition.setReceiver(caller);
     }
 
     function testFuzz_AccessControl_Pause(address caller) public {

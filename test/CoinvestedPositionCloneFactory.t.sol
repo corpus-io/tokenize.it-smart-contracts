@@ -194,7 +194,6 @@ contract CoinvestedPositionCloneFactoryTest is Test {
         CoinvestedPosition cp = _deploy(EXAMPLE_SALT, TRUSTED_FORWARDER, args);
 
         assertEq(cp.owner(), args.owner);
-        assertEq(cp.receiver(), args.owner); // receiver is set to owner (vestigial field)
         assertEq(address(cp.currency()), address(args.baseCurrency));
         assertEq(address(cp.token()), address(args.token));
         assertEq(cp.basePrice(), args.basePrice);
