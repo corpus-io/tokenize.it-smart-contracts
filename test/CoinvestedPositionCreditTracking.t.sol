@@ -122,14 +122,15 @@ contract CoinvestedPositionCreditTrackingTest is CoinvestedPositionTestBase {
 
         // ── Phase 1: buy 2 tokens at 200e6 currencyA ─────────────────────────
         {
-            _enableBuy(200e6);
-            _buy(IERC20(address(currencyA)), 2e18);
-
+            // Verify all credits start at zero before any operation.
             assertEq(coinvestedPosition.leadInvestorCredit(0, IERC20(address(currencyA))), 0, "p1: leadA not 0");
             assertEq(coinvestedPosition.leadInvestorCredit(1, IERC20(address(currencyA))), 0, "p1: leadB not 0");
             assertEq(coinvestedPosition.leadInvestorCredit(2, IERC20(address(currencyA))), 0, "p1: leadC not 0");
             assertEq(coinvestedPosition.coinvestorCredit(IERC20(address(currencyA))), 0, "p1: coinvestor not 0");
             assertEq(coinvestedPosition.totalCredit(IERC20(address(currencyA))), 0, "p1: total credit not 0");
+
+            _enableBuy(200e6);
+            _buy(IERC20(address(currencyA)), 2e18);
 
             uint256 profit = 200e6; // 400e6 paid - 200e6 base
             uint256 cA = _carry(CARRY_10PCT, profit);
