@@ -56,7 +56,6 @@ contract CoinvestedPositionERC2771Test is CoinvestedPositionTestBase {
 
         CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
             owner: OWNER,
-            receiver: RECEIVER,
             leadInvestors: leadInvestors,
             basePrice: BASE_PRICE,
             baseCurrency: IERC20(address(eurc)),

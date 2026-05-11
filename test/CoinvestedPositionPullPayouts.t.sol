@@ -77,7 +77,6 @@ contract CoinvestedPositionPullPayoutsTest is CoinvestedPositionTestBase {
     function _deployWithBlacklistCurrency() internal returns (CoinvestedPosition) {
         CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
             owner: OWNER,
-            receiver: RECEIVER,
             leadInvestors: _defaultLeads(),
             basePrice: 100e6,
             baseCurrency: IERC20(address(blacklistCurrency)),
@@ -108,13 +107,11 @@ contract CoinvestedPositionPullPayoutsTest is CoinvestedPositionTestBase {
     // ─────────────────────────────────────────────────────────────────────────
 
     function testBlacklistedLeadInvestorDoesNotBlockBuy() public {
-        // LEAD_A is blacklisted by the currency provider — buy() must still succeed.
         blacklistCurrency.setBlacklisted(LEAD_A, true);
 
         _setupAndBuy(2e18, 200e6, 400e6);
 
-        // Credit accumulated, no transfer attempted yet → no DoS
-        // 10% of 200e6 carry = 20e6 - 1 due to floor
+        // Credit accumulated, no transfer attempted during buy — no DoS.
         uint256 expectedA = (uint256(CARRY_10PCT) * 200e6) / type(uint64).max;
         assertEq(
             coinvestedPosition.leadInvestorCredit(0, IERC20(address(blacklistCurrency))),
@@ -122,35 +119,35 @@ contract CoinvestedPositionPullPayoutsTest is CoinvestedPositionTestBase {
             "LEAD_A credit not accumulated"
         );
 
-        // LEAD_B (not blacklisted) can withdraw; receiver can withdraw.
+        // LEAD_B (not blacklisted) can withdraw; coinvestor can withdraw to any address.
         vm.prank(LEAD_B);
         coinvestedPosition.withdrawAsLeadInvestor(1, IERC20(address(blacklistCurrency)));
-        vm.prank(RECEIVER);
-        coinvestedPosition.withdrawAsReceiver(IERC20(address(blacklistCurrency)));
+        vm.prank(OWNER);
+        coinvestedPosition.withdrawAsCoinvestor(IERC20(address(blacklistCurrency)), RECEIVER);
 
-        // LEAD_A's withdraw still reverts at the currency layer — but only LEAD_A is affected.
+        // LEAD_A withdraw reverts at currency layer — but only LEAD_A is affected.
         vm.expectRevert("blacklisted recipient");
         vm.prank(LEAD_A);
         coinvestedPosition.withdrawAsLeadInvestor(0, IERC20(address(blacklistCurrency)));
     }
 
-    function testBlacklistedReceiverDoesNotBlockBuy() public {
-        // RECEIVER is blacklisted by the currency provider — buy() must still succeed.
-        blacklistCurrency.setBlacklisted(RECEIVER, true);
-
+    function testBlacklistedCoinvestorDestinationDoesNotBlockLeadInvestors() public {
         _setupAndBuy(2e18, 200e6, 400e6);
 
-        // Lead investors can still withdraw their carry.
+        // RECEIVER is blacklisted — but the coinvestor (owner) can route to any destination.
+        blacklistCurrency.setBlacklisted(RECEIVER, true);
+
+        // Lead investors are unaffected.
         vm.prank(LEAD_A);
         coinvestedPosition.withdrawAsLeadInvestor(0, IERC20(address(blacklistCurrency)));
         vm.prank(LEAD_B);
         coinvestedPosition.withdrawAsLeadInvestor(1, IERC20(address(blacklistCurrency)));
 
-        // Receiver's withdraw reverts at the currency layer; receiver credit is preserved.
-        assertGt(coinvestedPosition.receiverCredit(IERC20(address(blacklistCurrency))), 0, "receiver credit missing");
-        vm.expectRevert("blacklisted recipient");
-        vm.prank(RECEIVER);
-        coinvestedPosition.withdrawAsReceiver(IERC20(address(blacklistCurrency)));
+        // Owner routes coinvestor share to an unblacklisted address.
+        address altDest = address(0xABCD);
+        vm.prank(OWNER);
+        coinvestedPosition.withdrawAsCoinvestor(IERC20(address(blacklistCurrency)), altDest);
+        assertGt(blacklistCurrency.balanceOf(altDest), 0, "alt destination received nothing");
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -163,18 +160,16 @@ contract CoinvestedPositionPullPayoutsTest is CoinvestedPositionTestBase {
 
         uint256 expectedA = (uint256(CARRY_10PCT) * 200e6) / type(uint64).max;
 
-        // LEAD_A self-rotates to a non-blacklisted address. ERC20 blacklisting does not
-        // prevent the address from signing transactions — only currency transfers.
+        // ERC20 blacklisting only blocks currency transfers — LEAD_A can still sign transactions.
         vm.prank(LEAD_A);
         coinvestedPosition.setLeadInvestorAccount(0, LEAD_RESCUE);
 
-        // The pending credit follows the index, so LEAD_RESCUE can now withdraw it.
+        // Credit follows the index: LEAD_RESCUE can now withdraw it.
         vm.prank(LEAD_RESCUE);
         coinvestedPosition.withdrawAsLeadInvestor(0, IERC20(address(blacklistCurrency)));
 
         assertEq(blacklistCurrency.balanceOf(LEAD_RESCUE), expectedA, "rescue address didn't receive credit");
         assertEq(coinvestedPosition.leadInvestorCredit(0, IERC20(address(blacklistCurrency))), 0, "credit not zeroed");
-        // Old account no longer controls the slot.
         vm.expectRevert(CoinvestedPosition.NotLeadInvestor.selector);
         vm.prank(LEAD_A);
         coinvestedPosition.withdrawAsLeadInvestor(0, IERC20(address(blacklistCurrency)));
@@ -185,17 +180,14 @@ contract CoinvestedPositionPullPayoutsTest is CoinvestedPositionTestBase {
     // ─────────────────────────────────────────────────────────────────────────
 
     function testSetLeadInvestorAccountOnlyByCurrentLead() public {
-        // Owner cannot rotate (self-rotation only).
         vm.expectRevert(CoinvestedPosition.NotLeadInvestor.selector);
         vm.prank(OWNER);
         coinvestedPosition.setLeadInvestorAccount(0, LEAD_RESCUE);
 
-        // A random caller cannot rotate.
         vm.expectRevert(CoinvestedPosition.NotLeadInvestor.selector);
         vm.prank(address(0xDEAD));
         coinvestedPosition.setLeadInvestorAccount(0, LEAD_RESCUE);
 
-        // The current lead investor at the slot can.
         vm.prank(LEAD_A);
         coinvestedPosition.setLeadInvestorAccount(0, LEAD_RESCUE);
         (address acc, ) = coinvestedPosition.leadInvestors(0);
@@ -209,7 +201,6 @@ contract CoinvestedPositionPullPayoutsTest is CoinvestedPositionTestBase {
     }
 
     function testSetLeadInvestorAccountRevertsOnIndexOutOfBounds() public {
-        // Out-of-bounds index → Solidity 0.8+ array-access panic (0x32).
         vm.expectRevert();
         vm.prank(LEAD_A);
         coinvestedPosition.setLeadInvestorAccount(99, LEAD_RESCUE);
@@ -230,111 +221,106 @@ contract CoinvestedPositionPullPayoutsTest is CoinvestedPositionTestBase {
     }
 
     function testWithdrawAsLeadInvestorRevertsOnZeroCredit() public {
-        // No buy yet → zero credit
         vm.expectRevert(ZeroAmount.selector);
         vm.prank(LEAD_A);
         coinvestedPosition.withdrawAsLeadInvestor(0, IERC20(address(blacklistCurrency)));
     }
 
-    function testWithdrawAsReceiverRejectsNonReceiver() public {
+    function testWithdrawAsCoinvestorOnlyOwner() public {
         _setupAndBuy(2e18, 200e6, 400e6);
-        vm.expectRevert(CoinvestedPosition.NotReceiver.selector);
+        vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(address(0xBEEF));
-        coinvestedPosition.withdrawAsReceiver(IERC20(address(blacklistCurrency)));
+        coinvestedPosition.withdrawAsCoinvestor(IERC20(address(blacklistCurrency)), RECEIVER);
     }
 
-    function testWithdrawAsReceiverRevertsOnZeroCredit() public {
-        vm.expectRevert(ZeroAmount.selector);
-        vm.prank(RECEIVER);
-        coinvestedPosition.withdrawAsReceiver(IERC20(address(blacklistCurrency)));
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // ── sweepUntracked correctness ────────────────────────────────────────────
-    // ─────────────────────────────────────────────────────────────────────────
-
-    function testSweepUntrackedMovesOnlyUntrackedToReceiver() public {
-        _setupAndBuy(2e18, 200e6, 400e6);
-
-        // Credits exist; balance == totalCredit. sweepUntracked must revert with ZeroAmount.
+    function testWithdrawAsCoinvestorRevertsOnZeroAmount() public {
+        // No credit and no untracked balance → ZeroAmount.
         vm.expectRevert(ZeroAmount.selector);
         vm.prank(OWNER);
-        coinvestedPosition.sweepUntracked(IERC20(address(blacklistCurrency)));
+        coinvestedPosition.withdrawAsCoinvestor(IERC20(address(blacklistCurrency)), RECEIVER);
+    }
 
+    function testWithdrawAsCoinvestorRejectsZeroDestination() public {
+        _setupAndBuy(2e18, 200e6, 400e6);
+        vm.expectRevert(ZeroReceiverAddress.selector);
+        vm.prank(OWNER);
+        coinvestedPosition.withdrawAsCoinvestor(IERC20(address(blacklistCurrency)), address(0));
+    }
+
+    function testWithdrawAsCoinvestorCanRouteToAnyDestination() public {
+        _setupAndBuy(2e18, 200e6, 400e6);
+
+        uint256 coinvestorOwed = coinvestedPosition.coinvestorCredit(IERC20(address(blacklistCurrency)));
+        assertGt(coinvestorOwed, 0, "no coinvestor credit");
+
+        address dest = address(0xCAFE);
+        vm.prank(OWNER);
+        coinvestedPosition.withdrawAsCoinvestor(IERC20(address(blacklistCurrency)), dest);
+        assertEq(blacklistCurrency.balanceOf(dest), coinvestorOwed, "wrong amount at destination");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // ── Auto-sweep of untracked balance via withdrawAsCoinvestor ─────────────
+    // ─────────────────────────────────────────────────────────────────────────
+
+    function testWithdrawAsCoinvestorSweepsUntrackedBalance() public {
+        _setupAndBuy(2e18, 200e6, 400e6);
+
+        uint256 coinvestorOwed = coinvestedPosition.coinvestorCredit(IERC20(address(blacklistCurrency)));
         uint256 leadACreditBefore = coinvestedPosition.leadInvestorCredit(0, IERC20(address(blacklistCurrency)));
-        uint256 receiverCreditBefore = coinvestedPosition.receiverCredit(IERC20(address(blacklistCurrency)));
 
         // Mint extra (untracked) currency directly to the contract.
         uint256 extra = 123e6;
         blacklistCurrency.mint(address(coinvestedPosition), extra);
 
         vm.prank(OWNER);
-        coinvestedPosition.sweepUntracked(IERC20(address(blacklistCurrency)));
+        coinvestedPosition.withdrawAsCoinvestor(IERC20(address(blacklistCurrency)), RECEIVER);
 
-        // Lead-investor credits are unchanged; receiver credit increased by exactly `extra`.
+        // Lead credit is unchanged; coinvestor received their credit + extra.
         assertEq(
             coinvestedPosition.leadInvestorCredit(0, IERC20(address(blacklistCurrency))),
             leadACreditBefore,
             "lead credit was disturbed"
         );
-        assertEq(
-            coinvestedPosition.receiverCredit(IERC20(address(blacklistCurrency))),
-            receiverCreditBefore + extra,
-            "receiver credit not increased by exactly extra"
-        );
+        assertEq(blacklistCurrency.balanceOf(RECEIVER), coinvestorOwed + extra, "sweep not included in withdrawal");
     }
 
-    function testSweepUntrackedRejectsHeldToken() public {
-        // Mark token as TRUSTED_CURRENCY just so we can attempt sweepUntracked on it
+    function testWithdrawAsCoinvestorSweepsWithNoCreditToo() public {
+        // No prior buy — coinvestorCredit == 0. But extra currency was sent to the contract.
+        uint256 extra = 100e6;
+        blacklistCurrency.mint(address(coinvestedPosition), extra);
+
+        vm.prank(OWNER);
+        coinvestedPosition.withdrawAsCoinvestor(IERC20(address(blacklistCurrency)), RECEIVER);
+        assertEq(blacklistCurrency.balanceOf(RECEIVER), extra, "untracked not swept");
+    }
+
+    function testWithdrawAsCoinvestorEmitsSeparateWithdrawnAndSweptEvents() public {
+        _setupAndBuy(2e18, 200e6, 400e6);
+        uint256 owed = coinvestedPosition.coinvestorCredit(IERC20(address(blacklistCurrency)));
+        uint256 extra = 55e6;
+        blacklistCurrency.mint(address(coinvestedPosition), extra);
+
+        vm.expectEmit(true, true, false, true);
+        emit CoinvestedPosition.CoinvestorWithdrawn(IERC20(address(blacklistCurrency)), RECEIVER, owed);
+        vm.expectEmit(true, true, false, true);
+        emit CoinvestedPosition.CoinvestorSwept(IERC20(address(blacklistCurrency)), RECEIVER, extra);
+        vm.prank(OWNER);
+        coinvestedPosition.withdrawAsCoinvestor(IERC20(address(blacklistCurrency)), RECEIVER);
+    }
+
+    function testWithdrawAsCoinvestorRejectsHeldToken() public {
         vm.prank(ADMIN);
         allowList.set(address(token), TRUSTED_CURRENCY);
-
         vm.expectRevert(CurrencyEqualsToken.selector);
         vm.prank(OWNER);
-        coinvestedPosition.sweepUntracked(IERC20(address(token)));
-    }
-
-    function testSweepUntrackedOnlyOwner() public {
-        blacklistCurrency.mint(address(coinvestedPosition), 100e6);
-        vm.expectRevert("Ownable: caller is not the owner");
-        vm.prank(address(0xBEEF));
-        coinvestedPosition.sweepUntracked(IERC20(address(blacklistCurrency)));
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // ── Receiver rotation ─────────────────────────────────────────────────────
-    // ─────────────────────────────────────────────────────────────────────────
-
-    function testReceiverRotationRedirectsPendingPot() public {
-        _setupAndBuy(2e18, 200e6, 400e6);
-
-        uint256 receiverCreditAmt = coinvestedPosition.receiverCredit(IERC20(address(blacklistCurrency)));
-        assertGt(receiverCreditAmt, 0, "no receiver credit accumulated");
-
-        // Owner rotates receiver before the old receiver withdraws.
-        address NEW_RECEIVER = address(0xCAFEBABE);
-        vm.prank(OWNER);
-        coinvestedPosition.setReceiver(NEW_RECEIVER);
-
-        // Old receiver no longer controls the pot.
-        vm.expectRevert(CoinvestedPosition.NotReceiver.selector);
-        vm.prank(RECEIVER);
-        coinvestedPosition.withdrawAsReceiver(IERC20(address(blacklistCurrency)));
-
-        // New receiver gets the entire pending pot.
-        vm.prank(NEW_RECEIVER);
-        coinvestedPosition.withdrawAsReceiver(IERC20(address(blacklistCurrency)));
-        assertEq(blacklistCurrency.balanceOf(NEW_RECEIVER), receiverCreditAmt, "new receiver did not get pot");
-        assertEq(blacklistCurrency.balanceOf(RECEIVER), 0, "old receiver received funds after rotation");
+        coinvestedPosition.withdrawAsCoinvestor(IERC20(address(token)), RECEIVER);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
     // ── Credit invariant fuzz ─────────────────────────────────────────────────
     // ─────────────────────────────────────────────────────────────────────────
 
-    /// After any successful buy, the bookkeeping invariant holds:
-    ///   receiverCredit + Σ leadInvestorCredit[i] == totalCredit
-    /// And the contract holds at least totalCredit.
     function testFuzz_CreditInvariantAfterBuy(uint96 tokenAmt, uint64 priceAboveBase) public {
         vm.assume(tokenAmt > 0 && tokenAmt <= 1e24);
         uint256 tokenPrice = 100e6 + uint256(priceAboveBase);
@@ -355,14 +341,13 @@ contract CoinvestedPositionPullPayoutsTest is CoinvestedPositionTestBase {
 
         IERC20 c = IERC20(address(blacklistCurrency));
         uint256 sumLeads;
-        uint256 leadCount = coinvestedPosition.getLeadInvestorsCount();
-        for (uint256 i = 0; i < leadCount; i++) {
+        for (uint256 i = 0; i < coinvestedPosition.getLeadInvestorsCount(); i++) {
             sumLeads += coinvestedPosition.leadInvestorCredit(i, c);
         }
-        uint256 receiverPot = coinvestedPosition.receiverCredit(c);
+        uint256 coinvestorPot = coinvestedPosition.coinvestorCredit(c);
         uint256 total = coinvestedPosition.totalCredit(c);
 
-        assertEq(sumLeads + receiverPot, total, "totalCredit != sum of credits");
-        assertGe(blacklistCurrency.balanceOf(address(coinvestedPosition)), total, "contract balance < totalCredit");
+        assertEq(sumLeads + coinvestorPot, total, "totalCredit != sum of credits");
+        assertEq(blacklistCurrency.balanceOf(address(coinvestedPosition)), total, "balance != totalCredit");
     }
 }

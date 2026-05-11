@@ -58,7 +58,6 @@ contract CoinvestedPositionCloneFactoryTest is Test {
         return
             CoinvestedPositionInitializerArguments({
                 owner: OWNER,
-                receiver: RECEIVER,
                 leadInvestors: leads,
                 basePrice: EXAMPLE_BASE_PRICE,
                 baseCurrency: IERC20(address(currency)),
@@ -122,14 +121,6 @@ contract CoinvestedPositionCloneFactoryTest is Test {
         CoinvestedPositionInitializerArguments memory args = _baseArgs();
         address a1 = factory.predictCloneAddress(EXAMPLE_SALT, TRUSTED_FORWARDER, args);
         args.owner = address(0x9999);
-        address a2 = factory.predictCloneAddress(EXAMPLE_SALT, TRUSTED_FORWARDER, args);
-        assertFalse(a1 == a2);
-    }
-
-    function testReceiverChangesAddress() public view {
-        CoinvestedPositionInitializerArguments memory args = _baseArgs();
-        address a1 = factory.predictCloneAddress(EXAMPLE_SALT, TRUSTED_FORWARDER, args);
-        args.receiver = address(0x9999);
         address a2 = factory.predictCloneAddress(EXAMPLE_SALT, TRUSTED_FORWARDER, args);
         assertFalse(a1 == a2);
     }
@@ -203,7 +194,7 @@ contract CoinvestedPositionCloneFactoryTest is Test {
         CoinvestedPosition cp = _deploy(EXAMPLE_SALT, TRUSTED_FORWARDER, args);
 
         assertEq(cp.owner(), args.owner);
-        assertEq(cp.receiver(), args.receiver);
+        assertEq(cp.receiver(), args.owner); // receiver is set to owner (vestigial field)
         assertEq(address(cp.currency()), address(args.baseCurrency));
         assertEq(address(cp.token()), address(args.token));
         assertEq(cp.basePrice(), args.basePrice);

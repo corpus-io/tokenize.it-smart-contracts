@@ -69,7 +69,6 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
         return
             CoinvestedPositionInitializerArguments({
                 owner: OWNER,
-                receiver: RECEIVER,
                 leadInvestors: leadInvestors,
                 basePrice: 80e6,
                 baseCurrency: IERC20(address(eurc)),

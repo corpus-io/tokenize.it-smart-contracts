@@ -97,8 +97,9 @@ contract CoinvestedPositionDistributionTest is Test {
     /// Default CoinvestedPosition: basePrice=100e6 EURc, LEAD_A=10%, LEAD_B=5%
     CoinvestedPosition coinvestedPosition;
 
-    /// Drain pending pull-payout credits in `_currency` for every lead investor and the receiver
+    /// Drain pending pull-payout credits in `_currency` for every lead investor and the coinvestor
     /// of `position`. Used after claimDistribution so legacy push-style balance assertions still hold.
+    /// Coinvestor share is routed to RECEIVER for backward compatibility with existing assertions.
     function _drainCredits(CoinvestedPosition position, IERC20 _currency) internal {
         uint256 leadCount = position.getLeadInvestorsCount();
         for (uint256 i = 0; i < leadCount; i++) {
@@ -109,9 +110,9 @@ contract CoinvestedPositionDistributionTest is Test {
                 position.withdrawAsLeadInvestor(i, _currency);
             }
         }
-        if (position.receiverCredit(_currency) != 0) {
-            vm.prank(position.receiver());
-            position.withdrawAsReceiver(_currency);
+        if (position.coinvestorCredit(_currency) != 0) {
+            vm.prank(position.owner());
+            position.withdrawAsCoinvestor(_currency, RECEIVER);
         }
     }
 
@@ -193,7 +194,6 @@ contract CoinvestedPositionDistributionTest is Test {
     ) internal returns (CoinvestedPosition) {
         CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
             owner: OWNER,
-            receiver: RECEIVER,
             leadInvestors: leadInvestors,
             basePrice: basePrice,
             baseCurrency: IERC20(address(baseCurrency)),
@@ -840,9 +840,7 @@ contract CoinvestedPositionDistributionTest is Test {
 
         vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
-        // The 300e6 pre-seeded USDC is untracked by claim; sweep it to receiver, then drain.
-        vm.prank(OWNER);
-        coinvestedPosition.sweepUntracked(IERC20(address(usdc)));
+        // Auto-sweep inside _credit captures the 300e6 pre-seeded USDC into coinvestor credit.
         _drainCredits(coinvestedPosition, distribution.currency());
 
         uint256 aGot = usdc.balanceOf(LEAD_A) - beforeA;
@@ -1066,7 +1064,6 @@ contract CoinvestedPositionDistributionTest is Test {
                 CoinvestedPositionInitializerArguments
                     memory coinvestedPositionArgs = CoinvestedPositionInitializerArguments({
                         owner: OWNER,
-                        receiver: RECEIVER,
                         leadInvestors: leadInvestors,
                         basePrice: BASE_PRICE_EURC,
                         baseCurrency: IERC20(address(eurc)),

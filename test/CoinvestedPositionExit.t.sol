@@ -90,8 +90,9 @@ contract CoinvestedPositionExitTest is Test {
     // Default clone: basePrice = 100e6 EURc, LEAD_A=10%, LEAD_B=5%
     CoinvestedPosition coinvestedPosition;
 
-    /// Drain pending pull-payout credits in `_currency` for every lead investor and the receiver
+    /// Drain pending pull-payout credits in `_currency` for every lead investor and the coinvestor
     /// of `position`. Used after claimExit so legacy push-style balance assertions still hold.
+    /// Coinvestor share is routed to RECEIVER for backward compatibility with existing assertions.
     function _drainCredits(CoinvestedPosition position, IERC20 _currency) internal {
         uint256 leadCount = position.getLeadInvestorsCount();
         for (uint256 i = 0; i < leadCount; i++) {
@@ -102,9 +103,9 @@ contract CoinvestedPositionExitTest is Test {
                 position.withdrawAsLeadInvestor(i, _currency);
             }
         }
-        if (position.receiverCredit(_currency) != 0) {
-            vm.prank(position.receiver());
-            position.withdrawAsReceiver(_currency);
+        if (position.coinvestorCredit(_currency) != 0) {
+            vm.prank(position.owner());
+            position.withdrawAsCoinvestor(_currency, RECEIVER);
         }
     }
 
@@ -177,7 +178,6 @@ contract CoinvestedPositionExitTest is Test {
     ) internal returns (CoinvestedPosition) {
         CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
             owner: OWNER,
-            receiver: RECEIVER,
             leadInvestors: leadInvestors,
             basePrice: basePrice,
             baseCurrency: IERC20(address(baseCurrency)),
@@ -649,7 +649,6 @@ contract CoinvestedPositionExitTest is Test {
 
         CoinvestedPositionInitializerArguments memory coinvestedPositionArgs = CoinvestedPositionInitializerArguments({
             owner: OWNER,
-            receiver: RECEIVER,
             leadInvestors: _defaultLeadInvestors(),
             basePrice: BASE_PRICE_EURC,
             baseCurrency: IERC20(address(eurc)),
@@ -741,9 +740,7 @@ contract CoinvestedPositionExitTest is Test {
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
         vm.prank(OWNER);
         coinvestedPosition.claimExit(1, 0);
-        // Pre-existing 500e6 EURc is untracked by claimExit; sweep it to receiver, then drain.
-        vm.prank(OWNER);
-        coinvestedPosition.sweepUntracked(IERC20(address(eurc)));
+        // Auto-sweep inside _credit captures the 500e6 pre-existing EURc into coinvestor credit.
         _drainCredits(coinvestedPosition, IERC20(address(eurc)));
 
         // received computed via before-snapshot excludes the 500e6 pre-existing
@@ -930,9 +927,7 @@ contract CoinvestedPositionExitTest is Test {
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
         vm.prank(OWNER);
         coinvestedPosition.claimExit(1, 0);
-        // Pre-existing EURc is untracked by claimExit; sweep it to receiver, then drain.
-        vm.prank(OWNER);
-        coinvestedPosition.sweepUntracked(IERC20(address(eurc)));
+        // Auto-sweep inside _credit captures the pre-existing EURc into coinvestor credit.
         _drainCredits(coinvestedPosition, IERC20(address(eurc)));
 
         uint256 received = 40_000e6; // snapshot-based, excludes preExisting
@@ -1447,7 +1442,6 @@ contract CoinvestedPositionExitTest is Test {
         LeadInvestor[] memory leadInvestors = _defaultLeadInvestors();
         CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
             owner: OWNER,
-            receiver: RECEIVER,
             leadInvestors: leadInvestors,
             basePrice: BASE_PRICE_EURC,
             baseCurrency: IERC20(address(eurc)),

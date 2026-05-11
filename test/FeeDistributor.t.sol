@@ -115,7 +115,6 @@ contract FeeDistributorTest is Test {
                 TRUSTED_FORWARDER,
                 CoinvestedPositionInitializerArguments({
                     owner: OWNER,
-                    receiver: RECEIVER,
                     leadInvestors: investors,
                     basePrice: 100e6,
                     baseCurrency: IERC20(address(usdc)),

@@ -46,9 +46,10 @@ abstract contract CoinvestedPositionTestBase is Test {
         coinvestedPosition.unpause();
     }
 
-    /// Drain pending pull-payout credits in `_currency` for every lead investor and the receiver
+    /// Drain pending pull-payout credits in `_currency` for every lead investor and the coinvestor
     /// of `position`. Used after buy/claimDistribution/claimExit so legacy push-style balance
-    /// assertions continue to work.
+    /// assertions continue to work. The coinvestor share is routed to `RECEIVER` so tests that
+    /// asserted balanceOf(RECEIVER) continue to hold.
     function _drainCredits(CoinvestedPosition position, IERC20 _currency) internal {
         uint256 leadCount = position.getLeadInvestorsCount();
         for (uint256 i = 0; i < leadCount; i++) {
@@ -59,9 +60,9 @@ abstract contract CoinvestedPositionTestBase is Test {
                 position.withdrawAsLeadInvestor(i, _currency);
             }
         }
-        if (position.receiverCredit(_currency) != 0) {
-            vm.prank(position.receiver());
-            position.withdrawAsReceiver(_currency);
+        if (position.coinvestorCredit(_currency) != 0) {
+            vm.prank(position.owner());
+            position.withdrawAsCoinvestor(_currency, RECEIVER);
         }
     }
 }

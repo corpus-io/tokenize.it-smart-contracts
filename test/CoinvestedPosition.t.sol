@@ -108,7 +108,6 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
     ) internal returns (CoinvestedPosition) {
         CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
             owner: OWNER,
-            receiver: RECEIVER,
             leadInvestors: leadInvestors,
             basePrice: basePrice,
             baseCurrency: IERC20(address(baseCurrency)),
@@ -134,7 +133,6 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         LeadInvestor[] memory leadInvestors = _defaultLeadInvestors();
         CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
             owner: OWNER,
-            receiver: RECEIVER,
             leadInvestors: leadInvestors,
             basePrice: 100e6,
             baseCurrency: IERC20(address(eurc)),
@@ -168,7 +166,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
     function testInitStateVarsCorrect() public view {
         assertEq(coinvestedPosition.owner(), OWNER, "OWNER");
-        assertEq(coinvestedPosition.receiver(), RECEIVER, "RECEIVER");
+        assertEq(coinvestedPosition.receiver(), OWNER, "receiver == owner (vestigial field)");
         assertEq(address(coinvestedPosition.currency()), address(eurc), "currency");
         assertEq(address(coinvestedPosition.token()), address(token), "token");
         assertEq(coinvestedPosition.basePrice(), 100e6, "basePrice");
@@ -192,7 +190,6 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         bytes32 salt = keccak256(abi.encodePacked(decimals, basePrice));
         CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
             owner: OWNER,
-            receiver: RECEIVER,
             leadInvestors: _defaultLeadInvestors(),
             basePrice: basePrice,
             baseCurrency: IERC20(address(fuzzCurrency)),
@@ -222,7 +219,6 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         LeadInvestor[] memory leadInvestors = _defaultLeadInvestors();
         CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
             owner: OWNER,
-            receiver: RECEIVER,
             leadInvestors: leadInvestors,
             basePrice: 100e6,
             baseCurrency: IERC20(address(nonTrusted)),
@@ -240,7 +236,6 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         LeadInvestor[] memory leadInvestors = _defaultLeadInvestors();
         CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
             owner: OWNER,
-            receiver: RECEIVER,
             leadInvestors: leadInvestors,
             basePrice: 100e6,
             baseCurrency: IERC20(address(noBit)),
@@ -261,7 +256,6 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](0);
         CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
             owner: OWNER,
-            receiver: RECEIVER,
             leadInvestors: leadInvestors,
             basePrice: 100e6,
             baseCurrency: IERC20(address(eurc)),
@@ -278,7 +272,6 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         leadInvestors[0] = LeadInvestor({account: address(0), profitFraction: CARRY_10PCT});
         CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
             owner: OWNER,
-            receiver: RECEIVER,
             leadInvestors: leadInvestors,
             basePrice: 100e6,
             baseCurrency: IERC20(address(eurc)),
@@ -295,7 +288,6 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: 0});
         CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
             owner: OWNER,
-            receiver: RECEIVER,
             leadInvestors: leadInvestors,
             basePrice: 100e6,
             baseCurrency: IERC20(address(eurc)),
@@ -314,7 +306,6 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         leadInvestors[1] = LeadInvestor({account: LEAD_B, profitFraction: type(uint64).max / 2 + 1});
         CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
             owner: OWNER,
-            receiver: RECEIVER,
             leadInvestors: leadInvestors,
             basePrice: 100e6,
             baseCurrency: IERC20(address(eurc)),
@@ -456,7 +447,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
     }
 
     function testSetReceiverStoresAndEmitsEvent() public {
-        assertEq(coinvestedPosition.receiver(), RECEIVER);
+        assertEq(coinvestedPosition.receiver(), OWNER); // initialized to owner
         vm.prank(OWNER);
         vm.expectEmit(true, false, false, false);
         emit ReceiverChanged(LEAD_A);
@@ -556,7 +547,6 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         LeadInvestor[] memory leadInvestors = _defaultLeadInvestors();
         CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
             owner: OWNER,
-            receiver: RECEIVER,
             leadInvestors: leadInvestors,
             basePrice: 100e6,
             baseCurrency: IERC20(address(eurc)),
@@ -628,7 +618,6 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         LeadInvestor[] memory leadInvestors = _defaultLeadInvestors();
         CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
             owner: OWNER,
-            receiver: RECEIVER,
             leadInvestors: leadInvestors,
             basePrice: 100e6,
             baseCurrency: IERC20(address(eurc)),
@@ -979,10 +968,9 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
     // ── Section 9: _settle() Sweep Behavior ──────────────────────────────────
     // ─────────────────────────────────────────────────────────────────────────
 
-    function testSweepUntrackedExtraSameCurrencyToReceiver() public {
+    function testBuyAutoSweepsExtraSameCurrency() public {
         // Extra 500e6 EURc sent before buy. Buy 10 tokens at 200e6, basePrice=100e6.
-        // After buy: A's credit = 100e6 (carry), receiver's credit = 1900e6 (base + remainder of profit).
-        // The 500e6 extra remains untracked. sweepUntracked credits it to receiver.
+        // _credit auto-sweeps the 500e6 untracked balance into coinvestor credit during buy.
 
         // Use a fresh coinvestedPosition with single 10% lead investor to simplify
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](1);
@@ -1012,17 +1000,14 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         vm.prank(BUYER);
         coinvestedPositionSweep.buy(10e18, paid, TOKEN_RECEIVER);
 
-        // Sweep the untracked 500e6 to receiver, then drain credits.
-        vm.prank(OWNER);
-        coinvestedPositionSweep.sweepUntracked(IERC20(address(eurc)));
         _drainCredits(coinvestedPositionSweep, IERC20(address(eurc)));
 
         assertEq(eurc.balanceOf(LEAD_A), expectedA, "A's carry was inflated by extra balance");
         assertEq(eurc.balanceOf(RECEIVER), expectedReceiver, "RECEIVER did not get share + extra");
     }
 
-    function testSweepUntrackedCarryZeroWithExtra() public {
-        // tokenPrice == basePrice → carry=0; RECEIVER gets everything (paid) plus the swept extra
+    function testBuyAutoSweepCarryZeroWithExtra() public {
+        // tokenPrice == basePrice → carry=0; coinvestor gets everything (paid) plus auto-swept extra
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](1);
         leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT});
         CoinvestedPosition coinvestedPositionZeroCarry = _deployCoinvestedPosition(
@@ -1049,17 +1034,15 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         vm.prank(BUYER);
         coinvestedPositionZeroCarry.buy(1e18, paid, TOKEN_RECEIVER);
 
-        vm.prank(OWNER);
-        coinvestedPositionZeroCarry.sweepUntracked(IERC20(address(eurc)));
         _drainCredits(coinvestedPositionZeroCarry, IERC20(address(eurc)));
 
         assertEq(eurc.balanceOf(LEAD_A), 0, "lead investor got non-zero carry when carry=0");
         assertEq(eurc.balanceOf(RECEIVER), paid + 300e6, "RECEIVER did not get all including extra");
     }
 
-    function testSweepUntrackedDifferentCurrencyOnlyTouchesItself() public {
-        // Active currency = EURe; a pre-existing EURc balance is untracked.
-        // sweepUntracked(EURc) credits 1000e6 to receiver; EURe flow is untouched.
+    function testAutoSweepIsPerCurrencyOnly() public {
+        // Active currency = EURe; a pre-existing EURc balance is on the contract.
+        // _credit on EURe does not touch EURc — only the active currency is auto-swept.
         vm.prank(OWNER);
         coinvestedPosition.setCurrency(IERC20(address(eure)), 100e18);
 
@@ -1070,7 +1053,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         vm.prank(OWNER);
         coinvestedPosition.unpause();
 
-        // Put EURc on the contract — it is untracked
+        // Put EURc on the contract — it is untracked and unrelated to the EURe flow
         eurc.mint(address(coinvestedPosition), 1000e6);
 
         uint256 paid = 200e18;
@@ -1081,18 +1064,9 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         vm.prank(BUYER);
         coinvestedPosition.buy(1e18, paid, TOKEN_RECEIVER);
 
-        // Pre-sweep: EURc untouched, EURe is fully credited (not yet withdrawn)
-        assertEq(eurc.balanceOf(address(coinvestedPosition)), 1000e6, "EURc not preserved before sweep");
-
-        // Sweep EURc → receiver credit, then drain both currencies
-        vm.prank(OWNER);
-        coinvestedPosition.sweepUntracked(IERC20(address(eurc)));
-        _drainCredits(coinvestedPosition, IERC20(address(eurc)));
+        // EURe was fully credited and is drained; EURc is left untouched.
         _drainCredits(coinvestedPosition, IERC20(address(eure)));
-
-        // After: contract holds nothing of either currency; receiver has EURc, leads + receiver have EURe
-        assertEq(eurc.balanceOf(address(coinvestedPosition)), 0, "EURc not drained");
-        assertEq(eurc.balanceOf(RECEIVER), 1000e6, "RECEIVER did not receive swept EURc");
+        assertEq(eurc.balanceOf(address(coinvestedPosition)), 1000e6, "EURc was touched by EURe flow");
         assertEq(eure.balanceOf(address(coinvestedPosition)), 0, "EURe not fully distributed");
     }
 
@@ -1426,7 +1400,6 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         LeadInvestor[] memory leadInvestors = _defaultLeadInvestors();
         CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
             owner: OWNER,
-            receiver: RECEIVER,
             leadInvestors: leadInvestors,
             basePrice: 100e6,
             baseCurrency: IERC20(address(malicious)),
@@ -1462,7 +1435,6 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
     function testInitZeroTokenExitRegistryReverts() public {
         CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
             owner: OWNER,
-            receiver: RECEIVER,
             leadInvestors: _defaultLeadInvestors(),
             basePrice: 100e6,
             baseCurrency: IERC20(address(eurc)),
@@ -1478,7 +1450,6 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         uint64 futureUnlock = uint64(block.timestamp + 1000);
         CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
             owner: OWNER,
-            receiver: RECEIVER,
             leadInvestors: _defaultLeadInvestors(),
             basePrice: 100e6,
             baseCurrency: IERC20(address(eurc)),
