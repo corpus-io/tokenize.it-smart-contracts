@@ -531,6 +531,8 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         vm.prank(BUYER);
         coinvestedPosition.buy(2e18, 400e6, TOKEN_RECEIVER);
 
+        _drainCredits(coinvestedPosition, IERC20(address(eurc)));
+
         assertEq(eurc.balanceOf(LEAD_A), expectedA, "LEAD_A carry");
         assertEq(eurc.balanceOf(LEAD_B), expectedB, "LEAD_B carry");
         assertEq(eurc.balanceOf(RECEIVER), expectedReceiver, "RECEIVER");
@@ -589,6 +591,8 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
         vm.prank(BUYER);
         coinvestedPositionWithFee.buy(2e18, currencyAmount, TOKEN_RECEIVER);
+
+        _drainCredits(coinvestedPositionWithFee, IERC20(address(eurc)));
 
         assertEq(eurc.balanceOf(FEE_COLLECTOR), fee, "fee collector");
         assertEq(eurc.balanceOf(LEAD_A), expectedA, "LEAD_A");
@@ -656,6 +660,8 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         vm.prank(BUYER);
         coinvestedPositionHighFee.buy(1e18, currencyAmount, TOKEN_RECEIVER);
 
+        _drainCredits(coinvestedPositionHighFee, IERC20(address(eurc)));
+
         assertEq(eurc.balanceOf(FEE_COLLECTOR), expectedFee, "fee collector");
         assertEq(eurc.balanceOf(LEAD_A), 0, "LEAD_A got carry despite fee");
         assertEq(eurc.balanceOf(LEAD_B), 0, "LEAD_B got carry despite fee");
@@ -671,6 +677,8 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         vm.prank(BUYER);
         coinvestedPosition.buy(1e18, paid, TOKEN_RECEIVER);
 
+        _drainCredits(coinvestedPosition, IERC20(address(eurc)));
+
         assertEq(eurc.balanceOf(LEAD_A), 0, "LEAD_A got non-zero carry");
         assertEq(eurc.balanceOf(LEAD_B), 0, "LEAD_B got non-zero carry");
         assertEq(eurc.balanceOf(RECEIVER), paid, "RECEIVER did not get everything");
@@ -685,6 +693,8 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
         vm.prank(BUYER);
         coinvestedPosition.buy(1e18, paid, TOKEN_RECEIVER);
+
+        _drainCredits(coinvestedPosition, IERC20(address(eurc)));
 
         assertEq(eurc.balanceOf(LEAD_A), 0, "LEAD_A got non-zero carry");
         assertEq(eurc.balanceOf(LEAD_B), 0, "LEAD_B got non-zero carry");
@@ -727,6 +737,8 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
         vm.prank(BUYER);
         coinvestedPositionThreeLeads.buy(2e18, paid, address(0xCAFE));
+
+        _drainCredits(coinvestedPositionThreeLeads, IERC20(address(eurc)));
 
         assertEq(eurc.balanceOf(LEAD_A), shareA, "5% share"); // 10e6
         assertEq(eurc.balanceOf(LEAD_B), shareB, "2% share"); // 4e6
@@ -792,6 +804,8 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         vm.prank(BUYER);
         coinvestedPosition.buy(2e18, paid, TOKEN_RECEIVER);
 
+        _drainCredits(coinvestedPosition, IERC20(address(eure)));
+
         assertEq(eure.balanceOf(LEAD_A), expectedA, "LEAD_A (18dec)");
         assertEq(eure.balanceOf(LEAD_B), expectedB, "LEAD_B (18dec)");
         assertEq(eure.balanceOf(RECEIVER), expectedReceiver, "RECEIVER (18dec)");
@@ -831,6 +845,8 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         vm.prank(BUYER);
         coinvestedPosition18.buy(2e18, paid, TOKEN_RECEIVER);
 
+        _drainCredits(coinvestedPosition18, IERC20(address(eurc)));
+
         assertEq(eurc.balanceOf(LEAD_A), expectedA, "LEAD_A (downscaled)");
         assertEq(eurc.balanceOf(LEAD_B), expectedB, "LEAD_B (downscaled)");
         assertEq(eurc.balanceOf(RECEIVER), expectedReceiver, "RECEIVER (downscaled)");
@@ -852,6 +868,8 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
         vm.prank(BUYER);
         coinvestedPosition.buy(1e18, paid, TOKEN_RECEIVER);
+
+        _drainCredits(coinvestedPosition, IERC20(address(eurc)));
 
         assertEq(eurc.balanceOf(LEAD_A), expectedA);
         assertEq(eurc.balanceOf(LEAD_B), expectedB);
@@ -889,6 +907,8 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         vm.prank(BUYER);
         coinvestedPosition.buy(5e18, t1paid, TOKEN_RECEIVER);
 
+        _drainCredits(coinvestedPosition, IERC20(address(eurc)));
+
         assertEq(token.balanceOf(address(coinvestedPosition)), 95e18, "95 tokens after tranche 1");
         assertEq(eurc.balanceOf(LEAD_A), t1A, "LEAD_A after tranche 1");
         assertEq(eurc.balanceOf(LEAD_B), t1B, "LEAD_B after tranche 1");
@@ -918,6 +938,8 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         vm.prank(BUYER);
         coinvestedPosition.buy(40e18, t2paid, TOKEN_RECEIVER);
 
+        _drainCredits(coinvestedPosition, IERC20(address(eure)));
+
         assertEq(token.balanceOf(address(coinvestedPosition)), 55e18, "55 tokens after tranche 2");
         assertEq(eure.balanceOf(LEAD_A), t2A, "LEAD_A EURe after tranche 2");
         assertEq(eure.balanceOf(LEAD_B), t2B, "LEAD_B EURe after tranche 2");
@@ -944,6 +966,8 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         vm.prank(BUYER);
         coinvestedPosition.buy(55e18, t3paid, TOKEN_RECEIVER);
 
+        _drainCredits(coinvestedPosition, IERC20(address(eure)));
+
         assertEq(token.balanceOf(address(coinvestedPosition)), 0, "0 tokens after tranche 3");
         // carry=0 in tranche 3, so lead and RECEIVER EURe changes only for RECEIVER
         assertEq(eure.balanceOf(LEAD_A), t2A, "LEAD_A EURe changed after tranche 3");
@@ -955,11 +979,10 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
     // ── Section 9: _settle() Sweep Behavior ──────────────────────────────────
     // ─────────────────────────────────────────────────────────────────────────
 
-    function testSettleSweepsExtraSameCurrencyToReceiver() public {
+    function testSweepUntrackedExtraSameCurrencyToReceiver() public {
         // Extra 500e6 EURc sent before buy. Buy 10 tokens at 200e6, basePrice=100e6.
-        // carry from BUYER = 1000e6; A gets 100e6; RECEIVER gets 1000e6 + 500e6 = ...
-        // Actually: contract balance before sweep = 2000e6 (from BUYER) - 100e6 (A) + 500e6 (extra) = 2400e6
-        // RECEIVER sweep = 2400e6
+        // After buy: A's credit = 100e6 (carry), receiver's credit = 1900e6 (base + remainder of profit).
+        // The 500e6 extra remains untracked. sweepUntracked credits it to receiver.
 
         // Use a fresh coinvestedPosition with single 10% lead investor to simplify
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](1);
@@ -989,12 +1012,17 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         vm.prank(BUYER);
         coinvestedPositionSweep.buy(10e18, paid, TOKEN_RECEIVER);
 
+        // Sweep the untracked 500e6 to receiver, then drain credits.
+        vm.prank(OWNER);
+        coinvestedPositionSweep.sweepUntracked(IERC20(address(eurc)));
+        _drainCredits(coinvestedPositionSweep, IERC20(address(eurc)));
+
         assertEq(eurc.balanceOf(LEAD_A), expectedA, "A's carry was inflated by extra balance");
         assertEq(eurc.balanceOf(RECEIVER), expectedReceiver, "RECEIVER did not get share + extra");
     }
 
-    function testSettleSweepCarryZeroWithExtra() public {
-        // tokenPrice == basePrice → carry=0; RECEIVER gets everything including extra
+    function testSweepUntrackedCarryZeroWithExtra() public {
+        // tokenPrice == basePrice → carry=0; RECEIVER gets everything (paid) plus the swept extra
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](1);
         leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT});
         CoinvestedPosition coinvestedPositionZeroCarry = _deployCoinvestedPosition(
@@ -1021,12 +1049,17 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         vm.prank(BUYER);
         coinvestedPositionZeroCarry.buy(1e18, paid, TOKEN_RECEIVER);
 
+        vm.prank(OWNER);
+        coinvestedPositionZeroCarry.sweepUntracked(IERC20(address(eurc)));
+        _drainCredits(coinvestedPositionZeroCarry, IERC20(address(eurc)));
+
         assertEq(eurc.balanceOf(LEAD_A), 0, "lead investor got non-zero carry when carry=0");
         assertEq(eurc.balanceOf(RECEIVER), paid + 300e6, "RECEIVER did not get all including extra");
     }
 
-    function testSettleDifferentCurrencyNotSwept() public {
-        // Active currency = EURe; a pre-existing EURc balance stays on the contract
+    function testSweepUntrackedDifferentCurrencyOnlyTouchesItself() public {
+        // Active currency = EURe; a pre-existing EURc balance is untracked.
+        // sweepUntracked(EURc) credits 1000e6 to receiver; EURe flow is untouched.
         vm.prank(OWNER);
         coinvestedPosition.setCurrency(IERC20(address(eure)), 100e18);
 
@@ -1037,7 +1070,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         vm.prank(OWNER);
         coinvestedPosition.unpause();
 
-        // Put EURc on the contract
+        // Put EURc on the contract — it is untracked
         eurc.mint(address(coinvestedPosition), 1000e6);
 
         uint256 paid = 200e18;
@@ -1048,9 +1081,18 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         vm.prank(BUYER);
         coinvestedPosition.buy(1e18, paid, TOKEN_RECEIVER);
 
-        // EURc should remain on contract (not swept)
-        assertEq(eurc.balanceOf(address(coinvestedPosition)), 1000e6, "EURc was swept");
-        // EURe swept to RECEIVER and leads
+        // Pre-sweep: EURc untouched, EURe is fully credited (not yet withdrawn)
+        assertEq(eurc.balanceOf(address(coinvestedPosition)), 1000e6, "EURc not preserved before sweep");
+
+        // Sweep EURc → receiver credit, then drain both currencies
+        vm.prank(OWNER);
+        coinvestedPosition.sweepUntracked(IERC20(address(eurc)));
+        _drainCredits(coinvestedPosition, IERC20(address(eurc)));
+        _drainCredits(coinvestedPosition, IERC20(address(eure)));
+
+        // After: contract holds nothing of either currency; receiver has EURc, leads + receiver have EURe
+        assertEq(eurc.balanceOf(address(coinvestedPosition)), 0, "EURc not drained");
+        assertEq(eurc.balanceOf(RECEIVER), 1000e6, "RECEIVER did not receive swept EURc");
         assertEq(eure.balanceOf(address(coinvestedPosition)), 0, "EURe not fully distributed");
     }
 
@@ -1136,6 +1178,8 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             fuzzPosition.buy(tokenAmt, currencyAmount, TOKEN_RECEIVER);
             spent = buyerBefore - eurc.balanceOf(BUYER);
 
+            _drainCredits(fuzzPosition, IERC20(address(eurc)));
+
             // basePayout = floor(tokenAmt × scaledBasePrice / 1e18)
             // scaledBasePrice = 100e6 (basePriceDecimals == currencyDecimals, no scaling)
             uint256 basePayout = (uint256(tokenAmt) * 100e6) / 1e18;
@@ -1166,6 +1210,8 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
         vm.prank(BUYER);
         coinvestedPosition.buy(tokenAmt, currencyAmount, TOKEN_RECEIVER);
+
+        _drainCredits(coinvestedPosition, IERC20(address(eurc)));
 
         uint256 spent = buyerBalBefore - eurc.balanceOf(BUYER);
         uint256 totalOut = eurc.balanceOf(LEAD_A) + eurc.balanceOf(LEAD_B) + eurc.balanceOf(RECEIVER);
@@ -1223,6 +1269,8 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
         vm.prank(BUYER);
         fuzzPosition.buy(1e18, tokenPrice, TOKEN_RECEIVER);
+
+        _drainCredits(fuzzPosition, IERC20(address(eure)));
 
         // carry = tokenPrice - scaledBasePrice (for 1 token) = scaledBasePrice
         uint256 carry = scaledBasePrice;
@@ -1287,6 +1335,8 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
         vm.prank(BUYER);
         fuzzPosition.buy(1e18, tokenPrice, TOKEN_RECEIVER);
+
+        _drainCredits(fuzzPosition, IERC20(address(buyCurrency)));
 
         // carry = tokenPrice - scaledBasePrice (for 1 token) = scaledBasePrice
         uint256 carry = scaledBasePrice;

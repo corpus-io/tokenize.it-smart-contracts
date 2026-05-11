@@ -167,6 +167,9 @@ contract CoinvestedPositionERC2771Test is CoinvestedPositionTestBase {
         // ── Execute via forwarder ─────────────────────────────────────────────
         forwarder.execute(request, domainSeparator, requestType, suffixData, signature);
 
+        // Drain pull-payout credits so legacy push-style balance assertions hold below.
+        _drainCredits(coinvestedPosition, IERC20(address(eurc)));
+
         // ── Post-conditions ───────────────────────────────────────────────────
         _assertPostBuyBalances(
             address(forwarder),

@@ -45,4 +45,23 @@ abstract contract CoinvestedPositionTestBase is Test {
         vm.prank(OWNER);
         coinvestedPosition.unpause();
     }
+
+    /// Drain pending pull-payout credits in `_currency` for every lead investor and the receiver
+    /// of `position`. Used after buy/claimDistribution/claimExit so legacy push-style balance
+    /// assertions continue to work.
+    function _drainCredits(CoinvestedPosition position, IERC20 _currency) internal {
+        uint256 leadCount = position.getLeadInvestorsCount();
+        for (uint256 i = 0; i < leadCount; i++) {
+            uint256 credit = position.leadInvestorCredit(i, _currency);
+            if (credit != 0) {
+                (address account, ) = position.leadInvestors(i);
+                vm.prank(account);
+                position.withdrawAsLeadInvestor(i, _currency);
+            }
+        }
+        if (position.receiverCredit(_currency) != 0) {
+            vm.prank(position.receiver());
+            position.withdrawAsReceiver(_currency);
+        }
+    }
 }

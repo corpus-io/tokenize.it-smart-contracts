@@ -97,6 +97,24 @@ contract CoinvestedPositionDistributionTest is Test {
     /// Default CoinvestedPosition: basePrice=100e6 EURc, LEAD_A=10%, LEAD_B=5%
     CoinvestedPosition coinvestedPosition;
 
+    /// Drain pending pull-payout credits in `_currency` for every lead investor and the receiver
+    /// of `position`. Used after claimDistribution so legacy push-style balance assertions still hold.
+    function _drainCredits(CoinvestedPosition position, IERC20 _currency) internal {
+        uint256 leadCount = position.getLeadInvestorsCount();
+        for (uint256 i = 0; i < leadCount; i++) {
+            uint256 credit = position.leadInvestorCredit(i, _currency);
+            if (credit != 0) {
+                (address account, ) = position.leadInvestors(i);
+                vm.prank(account);
+                position.withdrawAsLeadInvestor(i, _currency);
+            }
+        }
+        if (position.receiverCredit(_currency) != 0) {
+            vm.prank(position.receiver());
+            position.withdrawAsReceiver(_currency);
+        }
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // ── setUp ─────────────────────────────────────────────────────────────────
     // ─────────────────────────────────────────────────────────────────────────
@@ -266,6 +284,7 @@ contract CoinvestedPositionDistributionTest is Test {
 
         vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
+        _drainCredits(coinvestedPosition, distribution.currency());
 
         uint256 aGot = usdc.balanceOf(LEAD_A) - beforeA;
         uint256 bGot = usdc.balanceOf(LEAD_B) - beforeB;
@@ -329,6 +348,7 @@ contract CoinvestedPositionDistributionTest is Test {
 
         vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
+        _drainCredits(coinvestedPosition, distribution.currency());
 
         uint256 aGot = usdc.balanceOf(LEAD_A) - beforeA;
         uint256 bGot = usdc.balanceOf(LEAD_B) - beforeB;
@@ -416,6 +436,7 @@ contract CoinvestedPositionDistributionTest is Test {
 
         vm.prank(OWNER);
         coinvestedPosition3.claimDistribution(Distribution(address(distribution)), 0);
+        _drainCredits(coinvestedPosition3, distribution.currency());
 
         assertEq(usdc.balanceOf(LEAD_A) - beforeA, expectedA, "DI-III-A: wrong LEAD_A payout");
         assertEq(usdc.balanceOf(LEAD_B) - beforeB, expectedB, "DI-III-A: wrong LEAD_B payout");
@@ -504,6 +525,7 @@ contract CoinvestedPositionDistributionTest is Test {
 
         vm.prank(OWNER);
         coinvestedPosition3.claimDistribution(Distribution(address(distribution)), 0);
+        _drainCredits(coinvestedPosition3, distribution.currency());
 
         assertEq(eure.balanceOf(LEAD_A) - beforeA, expectedA, "DI-III-B: wrong LEAD_A EURe payout");
         assertEq(eure.balanceOf(LEAD_B) - beforeB, expectedB, "DI-III-B: wrong LEAD_B EURe payout");
@@ -538,6 +560,7 @@ contract CoinvestedPositionDistributionTest is Test {
         // Must not revert
         vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
+        _drainCredits(coinvestedPosition, distribution.currency());
 
         uint256 aGot = usdc.balanceOf(LEAD_A) - beforeA;
         uint256 bGot = usdc.balanceOf(LEAD_B) - beforeB;
@@ -587,6 +610,7 @@ contract CoinvestedPositionDistributionTest is Test {
 
         vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
+        _drainCredits(coinvestedPosition, distribution.currency());
 
         uint256 aGot = usdc.balanceOf(LEAD_A) - beforeA;
         uint256 bGot = usdc.balanceOf(LEAD_B) - beforeB;
@@ -684,6 +708,7 @@ contract CoinvestedPositionDistributionTest is Test {
 
         vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
+        _drainCredits(coinvestedPosition, distribution.currency());
 
         uint256 aGot = usdc.balanceOf(LEAD_A) - beforeA;
         uint256 bGot = usdc.balanceOf(LEAD_B) - beforeB;
@@ -731,6 +756,7 @@ contract CoinvestedPositionDistributionTest is Test {
 
             vm.prank(OWNER);
             coinvestedPosition.claimDistribution(Distribution(address(usdcDistribution)), 0);
+            _drainCredits(coinvestedPosition, usdcDistribution.currency());
 
             uint256 aGot = usdc.balanceOf(LEAD_A) - beforeA;
             uint256 bGot = usdc.balanceOf(LEAD_B) - beforeB;
@@ -769,6 +795,7 @@ contract CoinvestedPositionDistributionTest is Test {
 
             vm.prank(OWNER);
             coinvestedPosition.claimDistribution(Distribution(address(eureDistribution)), 0);
+            _drainCredits(coinvestedPosition, eureDistribution.currency());
 
             uint256 aGot = eure.balanceOf(LEAD_A) - beforeA;
             uint256 bGot = eure.balanceOf(LEAD_B) - beforeB;
@@ -813,6 +840,10 @@ contract CoinvestedPositionDistributionTest is Test {
 
         vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
+        // The 300e6 pre-seeded USDC is untracked by claim; sweep it to receiver, then drain.
+        vm.prank(OWNER);
+        coinvestedPosition.sweepUntracked(IERC20(address(usdc)));
+        _drainCredits(coinvestedPosition, distribution.currency());
 
         uint256 aGot = usdc.balanceOf(LEAD_A) - beforeA;
         uint256 bGot = usdc.balanceOf(LEAD_B) - beforeB;
@@ -886,6 +917,7 @@ contract CoinvestedPositionDistributionTest is Test {
 
         vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
+        _drainCredits(coinvestedPosition, distribution.currency());
 
         uint256 aGot = usdc.balanceOf(LEAD_A) - beforeA;
         uint256 bGot = usdc.balanceOf(LEAD_B) - beforeB;
@@ -1115,6 +1147,7 @@ contract CoinvestedPositionDistributionTest is Test {
 
         vm.prank(OWNER);
         coinvestedPositionFuzz.claimDistribution(Distribution(address(distributionFuzz)), 0);
+        _drainCredits(coinvestedPositionFuzz, distributionFuzz.currency());
 
         uint256 totalGot = 0;
         {
@@ -1153,6 +1186,7 @@ contract CoinvestedPositionDistributionTest is Test {
 
         vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(stub)), minPayout);
+        _drainCredits(coinvestedPosition, stub.currency());
         assertEq(usdc.balanceOf(address(coinvestedPosition)), 0, "cp should hold no usdc after settle");
     }
 }
