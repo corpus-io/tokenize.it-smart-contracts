@@ -69,6 +69,9 @@ contract VestingTest is Test {
         vm.prank(_owner);
         vest.transferOwnership(newOwner);
 
+        vm.prank(newOwner);
+        vest.acceptOwnership();
+
         assertEq(vest.owner(), newOwner, "owner not changed");
     }
 

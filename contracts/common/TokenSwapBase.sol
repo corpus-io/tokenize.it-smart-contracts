@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.34;
 
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
@@ -21,7 +21,7 @@ import "./Errors.sol";
  */
 abstract contract TokenSwapBase is
     ERC2771ContextUpgradeable,
-    OwnableUpgradeable,
+    Ownable2StepUpgradeable,
     PausableUpgradeable,
     ReentrancyGuardUpgradeable
 {
@@ -78,7 +78,7 @@ abstract contract TokenSwapBase is
         address _receiver
     ) internal onlyInitializing {
         require(_owner != address(0), ZeroOwnerAddress());
-        __Ownable_init();
+        __Ownable2Step_init();
         __Pausable_init();
         __ReentrancyGuard_init();
         _transferOwnership(_owner);

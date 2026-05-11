@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.34;
 
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
@@ -20,7 +20,7 @@ import "./common/Errors.sol";
  *      token to any recipient after lockedUntil has passed.
  * @dev Uses clone/proxy pattern. Constructor disables initializers, separate initialize().
  */
-contract TimeLock is Initializable, OwnableUpgradeable, ERC2771ContextUpgradeable, ReentrancyGuardUpgradeable {
+contract TimeLock is Initializable, Ownable2StepUpgradeable, ERC2771ContextUpgradeable, ReentrancyGuardUpgradeable {
     /// @notice Reverted when claimExit() is called but this contract holds no tokens.
     error NoTokensToExit();
 
@@ -60,7 +60,7 @@ contract TimeLock is Initializable, OwnableUpgradeable, ERC2771ContextUpgradeabl
         require(_owner != address(0), ZeroOwnerAddress());
         require(_lockedUntil > block.timestamp, LockedUntilNotInFuture());
         require(address(_tokenExitRegistry) != address(0), ZeroTokenExitRegistryAddress());
-        __Ownable_init();
+        __Ownable2Step_init();
         __ReentrancyGuard_init();
         _transferOwnership(_owner);
         lockedUntil = _lockedUntil;

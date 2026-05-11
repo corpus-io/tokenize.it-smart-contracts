@@ -6,7 +6,7 @@ pragma solidity 0.8.34;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "./common/Errors.sol";
@@ -46,7 +46,7 @@ struct VestingPlan {
  * committing to a vesting plan without revealing the details). In the latter case, the details can be revealed later, which
  * must happen before the tokens can be released.
  */
-contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
+contract Vesting is Initializable, ERC2771ContextUpgradeable, Ownable2StepUpgradeable, ReentrancyGuardUpgradeable {
     error ZeroHash();
     error InvalidHash();
     error CommitmentRevokedBeforeCliff();
@@ -94,9 +94,9 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     function initialize(address _owner, address _token) external initializer {
         require(_owner != address(0), ZeroOwnerAddress());
         require(_token != address(0), ZeroTokenAddress());
-        __Ownable_init();
+        __Ownable2Step_init();
         __ReentrancyGuard_init();
-        transferOwnership(_owner);
+        _transferOwnership(_owner);
         managers[_owner] = true;
         token = _token;
     }

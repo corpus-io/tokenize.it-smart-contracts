@@ -945,6 +945,9 @@ contract TokenSwapTest is Test {
         vm.prank(OWNER);
         tokenSwap.transferOwnership(newOwner);
 
+        vm.prank(newOwner);
+        tokenSwap.acceptOwnership();
+
         assertTrue(tokenSwap.owner() == newOwner, "OWNER should be newOwner after acceptance");
     }
 
