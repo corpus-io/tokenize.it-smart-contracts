@@ -53,6 +53,7 @@ contract CoinvestedPosition is TokenSwapBase {
 
     error ZeroLeadInvestorAddress();
     error ZeroLeadInvestorProfitFraction();
+    error ZeroLockedUntil();
 
     event CurrencyChanged(address indexed currency, uint256 basePrice);
     event ProfitSettled(address indexed currency, uint256 profit);
@@ -94,7 +95,7 @@ contract CoinvestedPosition is TokenSwapBase {
             leadInvestors.push(_arguments.leadInvestors[i]);
         }
         require(address(_arguments.tokenExitRegistry) != address(0), ZeroTokenExitRegistryAddress());
-        require(_arguments.lockedUntil > 0, LockedUntilNotInFuture());
+        require(_arguments.lockedUntil > 0, ZeroLockedUntil());
         basePrice = _arguments.basePrice;
         lockedUntil = _arguments.lockedUntil;
         tokenExitRegistry = _arguments.tokenExitRegistry;

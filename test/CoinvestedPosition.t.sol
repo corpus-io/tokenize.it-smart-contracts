@@ -1454,7 +1454,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             lockedUntil: 0,
             tokenExitRegistry: tokenExitRegistry
         });
-        vm.expectRevert(LockedUntilNotInFuture.selector);
+        vm.expectRevert(CoinvestedPosition.ZeroLockedUntil.selector);
         factory.createCoinvestedPositionClone(bytes32(0), TRUSTED_FORWARDER, args);
     }
 
