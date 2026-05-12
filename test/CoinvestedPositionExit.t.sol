@@ -1412,14 +1412,15 @@ contract CoinvestedPositionExitTest is Test {
         // Before lock expires: setCurrency must revert
         vm.expectRevert(TimeLockNotExpired.selector);
         vm.prank(OWNER);
-        lockedCp.setCurrency(IERC20(address(eure)), 100e18);
+        lockedCp.setCurrency(IERC20(address(eure)), 100e18, 1e18);
 
         // After lock expires: setCurrency succeeds
         vm.warp(lockUntil);
         vm.prank(OWNER);
-        lockedCp.setCurrency(IERC20(address(eure)), 100e18);
+        lockedCp.setCurrency(IERC20(address(eure)), 100e18, 1e18);
         assertEq(address(lockedCp.currency()), address(eure), "XIVG: currency not updated");
         assertEq(lockedCp.basePrice(), 100e18, "XIVG: basePrice not updated");
+        assertEq(lockedCp.tokenPrice(), 1e18, "XIVG: tokenPrice not updated");
     }
 
     function testEmitsExitClaimedEvent() public {

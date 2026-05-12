@@ -115,17 +115,20 @@ contract CoinvestedPosition is TokenSwapBase {
     }
 
     /**
-     * @notice Change the payment currency and update basePrice to match the new currency's units.
+     * @notice Change the payment currency and atomically update basePrice and tokenPrice to match the new currency's units.
      * @param _currency new currency; must have TRUSTED_CURRENCY bit set on the token's allowList
      * @param _basePrice base price expressed in the new currency's units; must be > 0
+     * @param _tokenPrice new token price expressed in the new currency's bits per main-unit token; must be > 0
      */
-    function setCurrency(IERC20 _currency, uint256 _basePrice) external onlyOwner {
+    function setCurrency(IERC20 _currency, uint256 _basePrice, uint256 _tokenPrice) external onlyOwner {
         require(block.timestamp >= lockedUntil, TimeLockNotExpired());
         require(address(_currency) != address(0), ZeroCurrencyAddress());
         require(address(_currency) != address(token), CurrencyEqualsToken());
         require(_basePrice > 0, ZeroPrice());
+        require(_tokenPrice > 0, ZeroPrice());
         require(token.allowList().map(address(_currency)) == TRUSTED_CURRENCY, UntrustedCurrency());
         basePrice = _basePrice;
+        tokenPrice = _tokenPrice;
         currency = _currency;
         emit CurrencyChanged(address(_currency), _basePrice);
     }
