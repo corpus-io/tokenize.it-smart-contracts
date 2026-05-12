@@ -46,8 +46,8 @@ contract MinPriceOracle is IPriceDynamic {
 
 contract CrowdinvestingDynamicPricingTest is Test {
     event CurrencyReceiverChanged(address indexed);
-    event MinAmountPerBuyerChanged(uint256);
-    event MaxAmountPerBuyerChanged(uint256);
+    event MinAmountPerReceiverChanged(uint256);
+    event MaxAmountPerReceiverChanged(uint256);
     event TokenPriceAndCurrencyChanged(uint256, IERC20 indexed);
     event MaxAmountOfTokenToBeSoldChanged(uint256);
     event TokensBought(address indexed BUYER, uint256 tokenAmount, uint256 currencyAmount);
@@ -78,8 +78,8 @@ contract CrowdinvestingDynamicPricingTest is Test {
     uint256 public constant PRICE = 7 * 10 ** PAYMENT_TOKEN_DECIMALS; // 7 payment tokens per token
 
     uint256 public constant MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD = 20 * 10 ** 18; // 20 token
-    uint256 public constant MAX_AMOUNT_PER_BUYER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 2; // 10 token
-    uint256 public constant MIN_AMOUNT_PER_BUYER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 200; // 0.1 token
+    uint256 public constant MAX_AMOUNT_PER_RECEIVER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 2; // 10 token
+    uint256 public constant MIN_AMOUNT_PER_RECEIVER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 200; // 0.1 token
 
     function setUp() public {
         // set up currency
@@ -131,8 +131,8 @@ contract CrowdinvestingDynamicPricingTest is Test {
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             COMPANY_ADMIN,
             payable(RECEIVER),
-            MIN_AMOUNT_PER_BUYER,
-            MAX_AMOUNT_PER_BUYER,
+            MIN_AMOUNT_PER_RECEIVER,
+            MAX_AMOUNT_PER_RECEIVER,
             PRICE,
             PRICE,
             PRICE,

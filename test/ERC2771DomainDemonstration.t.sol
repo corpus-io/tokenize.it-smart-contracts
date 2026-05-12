@@ -114,8 +114,8 @@ contract TokenERC2771Test is Test {
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments({
             owner: companyAdmin,
             currencyReceiver: RECEIVER,
-            minAmountPerBuyer: 1000 * 10 ** 18,
-            maxAmountPerBuyer: 2000 * 10 ** 18,
+            minAmountPerReceiver: 1000 * 10 ** 18,
+            maxAmountPerReceiver: 2000 * 10 ** 18,
             tokenPrice: 688,
             priceMin: 688,
             priceMax: 688,

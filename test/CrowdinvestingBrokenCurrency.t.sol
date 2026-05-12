@@ -78,7 +78,7 @@ contract CrowdinvestingBrokenCurrencyTest is Test {
     address public constant trustedForwarder = address(0);
 
     uint256 public constant maxAmountOfTokenToBeSold = 20 * 10 ** 18;
-    uint256 public constant minAmountPerBuyer = 1 * 10 ** 17; // 0.1 token minimum
+    uint256 public constant minAmountPerReceiver = 1 * 10 ** 17; // 0.1 token minimum
     uint256 public constant price = 1 * 10 ** 18; // 1:1 for simplicity
     uint256 public constant tokensToBuy = 10 * 10 ** 18;
 
@@ -111,8 +111,8 @@ contract CrowdinvestingBrokenCurrencyTest is Test {
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             admin, // owner
             payable(receiver), // currency receiver
-            minAmountPerBuyer,
-            maxAmountOfTokenToBeSold, // maxAmountPerBuyer
+            minAmountPerReceiver,
+            maxAmountOfTokenToBeSold, // maxAmountPerReceiver
             price, // tokenPrice
             price, // priceMin (not used in this test)
             price, // priceMax (not used in this test)

@@ -102,8 +102,8 @@ Where `CrowdinvestingInitializerArguments` contains:
 
 - `owner`: address of the owner of the fundraising contract. This address can change the parameters of the fundraising contract, and can pause it.
 - `currencyReceiver`: address of the recipient of the payment
-- `minAmountPerBuyer`: minimum amount of tokens an investor needs to buy, in [bits](price.md#terms-used)
-- `maxAmountPerBuyer`: maximum amount of tokens an investor can buy in total (can be the same as `minAmountPerBuyer`), in [bits](price.md#terms-used)
+- `minAmountPerReceiver`: minimum cumulative tokens a single receiver address must receive from this contract, in [bits](price.md#terms-used). Tracked per token receiver address, not per transaction originator.
+- `maxAmountPerReceiver`: maximum cumulative tokens a single receiver address may receive from this contract in total (can be the same as `minAmountPerReceiver`), in [bits](price.md#terms-used). Tracked per token receiver address, not per transaction originator.
 - `tokenPrice`: price per token denoted in `currency`, and denominated in [bits](price.md#terms-used). Please refer to the [price explanation](price.md) for more details.
 - `priceMin`: minimum price accepted from a dynamic pricing oracle (unused if no oracle is set)
 - `priceMax`: maximum price accepted from a dynamic pricing oracle (unused if no oracle is set)

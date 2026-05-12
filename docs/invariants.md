@@ -104,9 +104,9 @@ The following statements about the smart contracts should always be true
 - The contract address never holds funds during the buy or any other use it was designed for.
 - Funds sent to the contract can not be recovered.
 - No buys can be executed if the contract is paused.
-- No buyer can buy a token amount that would result in their sum of tokens bought from this contract being less than minAmountPerBuyer.
-- No token amount that is larger than maxAmountPerBuyer can be bought by one address through this contract. That is still true if multiple buys are executed and tokens are transferred to another address between the calls.
-- maxAmountPerBuyer can not be less than minAmountPerBuyer.
+- No purchase is valid if it would result in the receiver address having accumulated fewer tokens than minAmountPerReceiver from this contract. Note: the limit is tracked per token receiver address, not per transaction originator.
+- The cumulative tokens delivered to a single receiver address can never exceed maxAmountPerReceiver, regardless of how many transactions are used. Note: a buyer who directs purchases to multiple receiver addresses can exceed this cap in aggregate — the limit is per receiver, not per originator.
+- maxAmountPerReceiver can not be less than minAmountPerReceiver.
 - receiver address can never be 0.
 - tokenPrice can never be 0.
 - tokenPrice can never be negative.

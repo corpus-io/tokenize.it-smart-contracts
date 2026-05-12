@@ -11,8 +11,8 @@ function cloneCrowdinvestingInitializerArguments(
         CrowdinvestingInitializerArguments(
             arguments.owner,
             arguments.currencyReceiver,
-            arguments.minAmountPerBuyer,
-            arguments.maxAmountPerBuyer,
+            arguments.minAmountPerReceiver,
+            arguments.maxAmountPerReceiver,
             arguments.tokenPrice,
             arguments.priceMin,
             arguments.priceMax,

@@ -36,8 +36,8 @@ contract CrowdinvestingCloneFactoryTest is Test {
     address public constant EXAMPLE_TRUSTED_FORWARDER = address(52);
     address public constant EXAMPLE_OWNER = address(53);
     address public constant EXAMPLE_CURRENCY_RECEIVER = address(54);
-    uint256 public constant EXAMPLE_MIN_AMOUNT_PER_BUYER = 1;
-    uint256 public constant EXAMPLE_MAX_AMOUNT_PER_BUYER = type(uint256).max;
+    uint256 public constant EXAMPLE_MIN_AMOUNT_PER_RECEIVER = 1;
+    uint256 public constant EXAMPLE_MAX_AMOUNT_PER_RECEIVER = type(uint256).max;
     uint256 public constant EXAMPLE_TOKEN_PRICE = 2;
     uint256 public constant EXAMPLE_MIN_TOKEN_PRICE = 1;
     uint256 public constant EXAMPLE_MAX_TOKEN_PRICE = type(uint256).max;
@@ -103,7 +103,7 @@ contract CrowdinvestingCloneFactoryTest is Test {
     }
 
     function testAddressPrediction1(
-        uint256 _maxAmountPerBuyer,
+        uint256 _maxAmountPerReceiver,
         uint256 _tokenPrice,
         uint256 _tokenPriceMin,
         uint256 _tokenPriceMax,
@@ -113,12 +113,12 @@ contract CrowdinvestingCloneFactoryTest is Test {
         address _priceOracle
     ) public {
         vm.assume(address(_currency) != address(0));
-        vm.assume(EXAMPLE_MIN_AMOUNT_PER_BUYER > 0);
-        vm.assume(_maxAmountPerBuyer >= EXAMPLE_MIN_AMOUNT_PER_BUYER);
+        vm.assume(EXAMPLE_MIN_AMOUNT_PER_RECEIVER > 0);
+        vm.assume(_maxAmountPerReceiver >= EXAMPLE_MIN_AMOUNT_PER_RECEIVER);
         vm.assume(_tokenPrice > 0);
         vm.assume(_tokenPriceMin <= _tokenPrice);
         vm.assume(_tokenPriceMax >= _tokenPrice);
-        vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
+        vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerReceiver);
         vm.assume(_lastBuyDate > block.timestamp || _lastBuyDate == 0);
 
         vm.prank(FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
@@ -144,8 +144,8 @@ contract CrowdinvestingCloneFactoryTest is Test {
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             EXAMPLE_OWNER,
             EXAMPLE_CURRENCY_RECEIVER,
-            EXAMPLE_MIN_AMOUNT_PER_BUYER,
-            _maxAmountPerBuyer,
+            EXAMPLE_MIN_AMOUNT_PER_RECEIVER,
+            _maxAmountPerReceiver,
             _tokenPrice,
             _tokenPriceMin,
             _tokenPriceMax,
@@ -182,12 +182,12 @@ contract CrowdinvestingCloneFactoryTest is Test {
         address _trustedForwarder,
         address _owner,
         address _currencyReceiver,
-        uint256 _minAmountPerBuyer
+        uint256 _minAmountPerReceiver
     ) public {
         vm.assume(_trustedForwarder != address(0));
         vm.assume(_owner != address(0));
         vm.assume(_currencyReceiver != address(0));
-        vm.assume(_minAmountPerBuyer > 0);
+        vm.assume(_minAmountPerReceiver > 0);
 
         // create new clone factory so we can use the local forwarder
         fundraisingImplementation = new Crowdinvesting(_trustedForwarder);
@@ -196,8 +196,8 @@ contract CrowdinvestingCloneFactoryTest is Test {
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             _owner,
             _currencyReceiver,
-            _minAmountPerBuyer,
-            EXAMPLE_MAX_AMOUNT_PER_BUYER,
+            _minAmountPerReceiver,
+            EXAMPLE_MAX_AMOUNT_PER_RECEIVER,
             EXAMPLE_TOKEN_PRICE,
             EXAMPLE_MIN_TOKEN_PRICE,
             EXAMPLE_MAX_TOKEN_PRICE,
@@ -225,12 +225,12 @@ contract CrowdinvestingCloneFactoryTest is Test {
         address _trustedForwarder,
         address _owner,
         address _currencyReceiver,
-        uint256 _minAmountPerBuyer
+        uint256 _minAmountPerReceiver
     ) public {
         vm.assume(_trustedForwarder != address(0));
         vm.assume(_owner != address(0));
         vm.assume(_currencyReceiver != address(0));
-        vm.assume(_minAmountPerBuyer > 0);
+        vm.assume(_minAmountPerReceiver > 0);
 
         // create new clone factory so we can use the local forwarder
         fundraisingImplementation = new Crowdinvesting(_trustedForwarder);
@@ -239,8 +239,8 @@ contract CrowdinvestingCloneFactoryTest is Test {
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             _owner,
             _currencyReceiver,
-            _minAmountPerBuyer,
-            EXAMPLE_MAX_AMOUNT_PER_BUYER,
+            _minAmountPerReceiver,
+            EXAMPLE_MAX_AMOUNT_PER_RECEIVER,
             EXAMPLE_TOKEN_PRICE,
             EXAMPLE_MIN_TOKEN_PRICE,
             EXAMPLE_MAX_TOKEN_PRICE,
@@ -254,7 +254,7 @@ contract CrowdinvestingCloneFactoryTest is Test {
 
         address expected1 = fundraisingFactory.predictCloneAddress(_rawSalt, _trustedForwarder, arguments);
 
-        arguments.maxAmountPerBuyer = EXAMPLE_MAX_AMOUNT_PER_BUYER - 1;
+        arguments.maxAmountPerReceiver = EXAMPLE_MAX_AMOUNT_PER_RECEIVER - 1;
 
         address expected2 = fundraisingFactory.predictCloneAddress(_rawSalt, _trustedForwarder, arguments);
 
@@ -265,8 +265,8 @@ contract CrowdinvestingCloneFactoryTest is Test {
         bytes32 _rawSalt,
         address _owner,
         address _currencyReceiver,
-        uint256 _minAmountPerBuyer,
-        uint256 _maxAmountPerBuyer,
+        uint256 _minAmountPerReceiver,
+        uint256 _maxAmountPerReceiver,
         uint256 _priceBase,
         uint256 _tokenPriceMin,
         uint256 _tokenPriceMax,
@@ -276,12 +276,12 @@ contract CrowdinvestingCloneFactoryTest is Test {
         vm.assume(_owner != address(0));
         vm.assume(address(_currency) != address(0));
         vm.assume(_currencyReceiver != address(0));
-        vm.assume(_minAmountPerBuyer > 0);
-        vm.assume(_maxAmountPerBuyer >= _minAmountPerBuyer);
+        vm.assume(_minAmountPerReceiver > 0);
+        vm.assume(_maxAmountPerReceiver >= _minAmountPerReceiver);
         vm.assume(_priceBase > 0);
         vm.assume(_tokenPriceMin <= _priceBase);
         vm.assume(_tokenPriceMax >= _priceBase);
-        vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
+        vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerReceiver);
 
         vm.prank(FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
         allowList.set(address(_currency), TRUSTED_CURRENCY);
@@ -302,8 +302,8 @@ contract CrowdinvestingCloneFactoryTest is Test {
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             _owner,
             _currencyReceiver,
-            _minAmountPerBuyer,
-            _maxAmountPerBuyer,
+            _minAmountPerReceiver,
+            _maxAmountPerReceiver,
             _priceBase,
             _tokenPriceMin,
             _tokenPriceMax,
@@ -328,14 +328,14 @@ contract CrowdinvestingCloneFactoryTest is Test {
         address _trustedForwarder,
         address _owner,
         address _currencyReceiver,
-        uint256 _minAmountPerBuyer,
-        uint256 _maxAmountPerBuyer
+        uint256 _minAmountPerReceiver,
+        uint256 _maxAmountPerReceiver
     ) public {
         vm.assume(_trustedForwarder != address(0));
         vm.assume(_owner != address(0));
         vm.assume(_currencyReceiver != address(0));
-        vm.assume(_minAmountPerBuyer > 0);
-        vm.assume(_maxAmountPerBuyer >= _minAmountPerBuyer);
+        vm.assume(_minAmountPerReceiver > 0);
+        vm.assume(_maxAmountPerReceiver >= _minAmountPerReceiver);
 
         // create new clone factory so we can use the local forwarder
         fundraisingImplementation = new Crowdinvesting(_trustedForwarder);
@@ -344,8 +344,8 @@ contract CrowdinvestingCloneFactoryTest is Test {
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             _owner,
             _currencyReceiver,
-            _minAmountPerBuyer,
-            _maxAmountPerBuyer,
+            _minAmountPerReceiver,
+            _maxAmountPerReceiver,
             EXAMPLE_TOKEN_PRICE,
             EXAMPLE_MIN_TOKEN_PRICE,
             EXAMPLE_MAX_TOKEN_PRICE,
@@ -364,12 +364,12 @@ contract CrowdinvestingCloneFactoryTest is Test {
         assertTrue(crowdinvesting.isTrustedForwarder(_trustedForwarder), "TRUSTED_FORWARDER not set");
         assertEq(crowdinvesting.owner(), _owner, "owner not set");
         assertEq(crowdinvesting.currencyReceiver(), _currencyReceiver, "currencyReceiver not set");
-        assertEq(crowdinvesting.minAmountPerBuyer(), _minAmountPerBuyer, "minAmountPerBuyer not set");
-        assertEq(crowdinvesting.maxAmountPerBuyer(), _maxAmountPerBuyer, "maxAmountPerBuyer not set");
+        assertEq(crowdinvesting.minAmountPerReceiver(), _minAmountPerReceiver, "minAmountPerReceiver not set");
+        assertEq(crowdinvesting.maxAmountPerReceiver(), _maxAmountPerReceiver, "maxAmountPerReceiver not set");
     }
 
     function testInitialization2(
-        uint256 _maxAmountPerBuyer,
+        uint256 _maxAmountPerReceiver,
         uint256 _priceBase,
         uint256 _priceMin,
         uint256 _priceMax,
@@ -382,8 +382,8 @@ contract CrowdinvestingCloneFactoryTest is Test {
         vm.assume(_priceBase > 0);
         vm.assume(_priceMin <= _priceBase);
         vm.assume(_priceMax >= _priceBase);
-        vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerBuyer);
-        vm.assume(_maxAmountPerBuyer > 0);
+        vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerReceiver);
+        vm.assume(_maxAmountPerReceiver > 0);
         vm.assume(_lastBuyDate > block.timestamp || _lastBuyDate == 0);
 
         vm.prank(FEE_SETTINGS_AND_ALLOW_LIST_OWNER);
@@ -409,8 +409,8 @@ contract CrowdinvestingCloneFactoryTest is Test {
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             EXAMPLE_OWNER,
             EXAMPLE_CURRENCY_RECEIVER,
-            EXAMPLE_MIN_AMOUNT_PER_BUYER,
-            _maxAmountPerBuyer,
+            EXAMPLE_MIN_AMOUNT_PER_RECEIVER,
+            _maxAmountPerReceiver,
             _priceBase,
             _priceMin,
             _priceMax,
@@ -426,7 +426,7 @@ contract CrowdinvestingCloneFactoryTest is Test {
             fundraisingFactory.createCrowdinvestingClone(EXAMPLE_RAW_SALT, EXAMPLE_TRUSTED_FORWARDER, arguments)
         );
 
-        assertEq(crowdinvesting.maxAmountPerBuyer(), _maxAmountPerBuyer, "maxAmountPerBuyer not set");
+        assertEq(crowdinvesting.maxAmountPerReceiver(), _maxAmountPerReceiver, "maxAmountPerReceiver not set");
         assertEq(crowdinvesting.priceBase(), _priceBase, "priceBase not set");
 
         assertEq(
@@ -457,8 +457,8 @@ contract CrowdinvestingCloneFactoryTest is Test {
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             EXAMPLE_OWNER,
             EXAMPLE_CURRENCY_RECEIVER,
-            EXAMPLE_MIN_AMOUNT_PER_BUYER,
-            EXAMPLE_MAX_AMOUNT_PER_BUYER,
+            EXAMPLE_MIN_AMOUNT_PER_RECEIVER,
+            EXAMPLE_MAX_AMOUNT_PER_RECEIVER,
             EXAMPLE_TOKEN_PRICE,
             EXAMPLE_MIN_TOKEN_PRICE,
             EXAMPLE_MAX_TOKEN_PRICE,
@@ -490,8 +490,8 @@ contract CrowdinvestingCloneFactoryTest is Test {
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             _admin,
             _admin,
-            EXAMPLE_MIN_AMOUNT_PER_BUYER,
-            EXAMPLE_MAX_AMOUNT_PER_BUYER,
+            EXAMPLE_MIN_AMOUNT_PER_RECEIVER,
+            EXAMPLE_MAX_AMOUNT_PER_RECEIVER,
             EXAMPLE_TOKEN_PRICE,
             EXAMPLE_MIN_TOKEN_PRICE,
             EXAMPLE_MAX_TOKEN_PRICE,
