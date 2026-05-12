@@ -36,7 +36,7 @@ contract Token is
     bytes32 public constant REQUIREMENT_ROLE = keccak256("REQUIREMENT_ROLE");
     /// @notice The role that has the ability to grant minting allowances
     bytes32 public constant MINTALLOWER_ROLE = keccak256("MINTALLOWER_ROLE");
-    /// @notice The role that has the ability to burn tokens from anywhere. Usage is planned for legal purposes and error recovery.
+    /// @notice The role that has the ability to burn tokens from any address. Intended for legal compliance and token recovery.
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
     /// @notice The role that has the ability to grant transfer rights to other addresses
     bytes32 public constant TRANSFERERADMIN_ROLE = keccak256("TRANSFERERADMIN_ROLE");
@@ -141,6 +141,10 @@ contract Token is
     /// @param minter The address for which the minting allowance has been changed.
     /// @param newAllowance The new minting allowance for the address (does not include fees).
     event MintingAllowanceChanged(address indexed minter, uint256 newAllowance);
+    /// @param from The address from which the tokens were burned.
+    /// @param amount The amount of tokens burned.
+    /// @param operator The address that triggered the burn (holds BURNER_ROLE).
+    event Burn(address indexed from, uint256 amount, address indexed operator);
 
     /**
      * @notice Constructor a token logic contract that can be used by clones. It does not initialize state variables properly, so the resulting contract will not be functional.
@@ -310,12 +314,24 @@ contract Token is
     }
 
     /**
-     * @notice Burn `_amount` tokens from `_from`.
+     * @notice Burn `_amount` tokens from `_from`. Two use cases are intended:
+     *         1. Token recovery: if an investor loses access to their address and the tokens have never moved, the admin can
+     *            burn those tokens and re-mint the same amount to a new address after re-verifying the investor's identity.
+     *         2. Legal compliance: courts or regulators may order the removal of specific tokens; the burn function provides
+     *            the mechanism to execute such orders.
+     *         Note: because the token is an upgradeable proxy, the DEFAULT_ADMIN_ROLE implicitly has this power regardless —
+     *         they could upgrade the logic to add any capability. The explicit BURNER_ROLE exists so that burning can be
+     *         delegated to an address that does not hold the far more powerful DEFAULT_ADMIN_ROLE.
+     *         Every burn is recorded on-chain and can be audited and challenged in court. This design prioritises
+     *         auditability and legal enforceability over decentralisation.
      * @param _from address that holds the tokens
      * @param _amount how many tokens to burn
+     * @dev Emits a {Burn} event in addition to the standard ERC-20 {Transfer} event, so that privileged burns are
+     *      unambiguously distinguishable from ordinary transfers in event logs.
      */
     function burn(address _from, uint256 _amount) external onlyRole(BURNER_ROLE) {
         _burn(_from, _amount);
+        emit Burn(_from, _amount, _msgSender());
     }
 
     /**
