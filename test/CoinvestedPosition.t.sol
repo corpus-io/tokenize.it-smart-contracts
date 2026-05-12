@@ -340,6 +340,22 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         assertEq(coinvestedPositionBoundary.getLeadInvestorsCount(), 1);
     }
 
+    function testInitZeroBasePriceReverts() public {
+        LeadInvestor[] memory leadInvestors = _defaultLeadInvestors();
+        CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
+            owner: OWNER,
+            receiver: RECEIVER,
+            leadInvestors: leadInvestors,
+            basePrice: 0,
+            baseCurrency: IERC20(address(eurc)),
+            token: token,
+            lockedUntil: 1,
+            tokenExitRegistry: tokenExitRegistry
+        });
+        vm.expectRevert(ZeroPrice.selector);
+        factory.createCoinvestedPositionClone(bytes32("1"), TRUSTED_FORWARDER, args);
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // ── Section 3: setCurrency() ──────────────────────────────────────────────
     // ─────────────────────────────────────────────────────────────────────────

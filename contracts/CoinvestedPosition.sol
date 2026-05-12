@@ -96,6 +96,7 @@ contract CoinvestedPosition is TokenSwapBase {
         }
         require(address(_arguments.tokenExitRegistry) != address(0), ZeroTokenExitRegistryAddress());
         require(_arguments.lockedUntil > 0, ZeroLockedUntil());
+        require(_arguments.basePrice > 0, ZeroPrice());
         basePrice = _arguments.basePrice;
         lockedUntil = _arguments.lockedUntil;
         tokenExitRegistry = _arguments.tokenExitRegistry;
