@@ -55,6 +55,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, Ownable2StepUpgrad
     error NewStartTimeNotAfterEndTime();
     error OnlyBeneficiary();
     error NotAllowedToChangeBeneficiary();
+    error CommitmentAlreadyExists();
 
     event Commit(bytes32 hash);
     event ERC20Released(uint64 id, uint256 amount);
@@ -177,6 +178,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, Ownable2StepUpgrad
      */
     function commit(bytes32 _hash) external onlyManager {
         require(_hash != bytes32(0), ZeroHash());
+        require(commitments[_hash] == 0, CommitmentAlreadyExists());
         // the value is interpreted as maximum end date of the vesting
         // for real world use cases, type(uint64).max is "unlimited"
         commitments[_hash] = type(uint64).max;
