@@ -123,8 +123,8 @@ contract CrowdinvestingTest is Test {
         vm.assume(duration > 0);
         vm.assume(startDate > 1 hours + 1);
         vm.assume(testDate > 0);
-        // create oracle
-        vm.warp(1 hours + 1); // otherwise, PRICE linear thinks it has to cool down
+        // create oracle before warp so coolDownStart is set at the default (low) timestamp,
+        // ensuring the cooldown expires before any getPrice() call
         PriceLinear priceLinear = PriceLinear(
             priceLinearCloneFactory.createPriceLinearClone(
                 0,
@@ -138,6 +138,7 @@ contract CrowdinvestingTest is Test {
                 true
             )
         );
+        vm.warp(1 hours + 1);
         // check cooldown start
         assertEq(crowdinvesting.coolDownStart(), 0, "Cooldown start not set correctly");
 
@@ -240,8 +241,8 @@ contract CrowdinvestingTest is Test {
         vm.assume(startDate > 1 hours + 1);
         vm.assume(testDate > 0);
 
-        // create oracle
-        vm.warp(1 hours + 1); // otherwise, PRICE linear thinks it has to cool down
+        // create oracle before warp so coolDownStart is set at the default (low) timestamp,
+        // ensuring the cooldown expires before any getPrice() call
         PriceLinear priceLinear = PriceLinear(
             priceLinearCloneFactory.createPriceLinearClone(
                 0,
@@ -255,6 +256,8 @@ contract CrowdinvestingTest is Test {
                 false // PRICE will fall
             )
         );
+        // warp to 1 hours + 2 so block.timestamp strictly exceeds coolDownStart + COOL_DOWN_DURATION
+        vm.warp(1 hours + 2);
 
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             OWNER,

@@ -35,7 +35,7 @@ contract PriceLinearTest is Test {
     function testPriceRises(uint256 price, uint256 someTime) public {
         vm.warp(1 days);
 
-        uint256 startTime = 3 + 1 days;
+        uint256 startTime = 2 hours + 1 days;
         uint256 plannedChange = 42e9;
         vm.assume(price < type(uint256).max - plannedChange);
         vm.assume(someTime < type(uint256).max - startTime);
@@ -79,7 +79,7 @@ contract PriceLinearTest is Test {
 
         uint256 price = 1e18;
         uint32 stepWidth = 10;
-        uint256 startTime = 5 + 1 days;
+        uint256 startTime = 2 hours + 1 days;
         uint64 increasePerStep = 1e9;
 
         PriceLinear _oracle = PriceLinear(
@@ -96,6 +96,7 @@ contract PriceLinearTest is Test {
             )
         );
 
+        vm.warp(block.timestamp + 1 hours + 1);
         assertEq(_oracle.getPrice(price), price, "Price changed before start time");
 
         vm.warp(1 + startTime);
@@ -123,7 +124,7 @@ contract PriceLinearTest is Test {
 
         uint256 price = 1e18;
         uint32 stepWidth = 10;
-        uint256 startTime = 5 + 1 days;
+        uint256 startTime = 2 hours + 1 days;
         uint64 decreasePerStep = 1e9;
 
         PriceLinear _oracle = PriceLinear(
@@ -140,6 +141,7 @@ contract PriceLinearTest is Test {
             )
         );
 
+        vm.warp(block.timestamp + 1 hours + 1);
         assertEq(_oracle.getPrice(price), price, "Price changed before start time");
 
         vm.warp(1 + startTime);
@@ -187,6 +189,7 @@ contract PriceLinearTest is Test {
             )
         );
 
+        vm.warp(block.timestamp + 1 hours + 1);
         assertEq(_oracle.getPrice(price), price, "Price changed before start time");
 
         vm.roll(1 + startBlock);
@@ -231,8 +234,6 @@ contract PriceLinearTest is Test {
             vm.assume(_startTimeOrBlockNumber > block.timestamp);
         }
         vm.assume(_stepDuration != 0);
-
-        assertEq(oracle.coolDownStart(), 0, "coolDownStart should be 0");
 
         // update parameters
         vm.prank(COMPANY_ADMIN);
@@ -292,6 +293,28 @@ contract PriceLinearTest is Test {
         vm.prank(rando);
         vm.expectRevert("Ownable: caller is not the owner");
         oracle.updateParameters(1, 1, 1 days, 1, false, true);
+    }
+
+    function testInitializeSetsCoolDownStart() public {
+        vm.warp(1 days);
+        PriceLinear _oracle = PriceLinear(
+            priceLinearCloneFactory.createPriceLinearClone(
+                bytes32(uint256(0)),
+                trustedForwarder,
+                COMPANY_ADMIN,
+                1,
+                1,
+                uint64(block.timestamp + 2 hours),
+                1,
+                false,
+                true
+            )
+        );
+        assertEq(_oracle.coolDownStart(), block.timestamp, "coolDownStart should be set at initialization");
+        vm.expectRevert(CoolDownNotOver.selector);
+        _oracle.getPrice(1e18);
+        vm.warp(block.timestamp + 1 hours + 1);
+        _oracle.getPrice(1e18);
     }
 
     function testRevertsBeforeCoolDownEnd(uint32 testDelay) public {

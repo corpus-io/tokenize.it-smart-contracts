@@ -123,7 +123,6 @@ contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPri
             _isBlockBased,
             _isRising
         );
-        coolDownStart = block.timestamp;
         emit ParametersUpdated(
             _slopeEnumerator,
             _slopeDenominator,
@@ -168,6 +167,7 @@ contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPri
             isBlockBased: _isBlockBased,
             isRising: _isRising
         });
+        coolDownStart = block.timestamp;
     }
 
     /**
