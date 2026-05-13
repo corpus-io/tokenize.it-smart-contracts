@@ -43,6 +43,26 @@ contract VestingBlindTest is Test {
         assertTrue(vesting.commitments(hash) == type(uint64).max, "commitment does not exist");
     }
 
+    function testCommitRevertsIfAlreadyCommitted(bytes32 hash) public {
+        vm.assume(hash != bytes32(0));
+        vm.prank(owner);
+        vesting.commit(hash);
+        vm.expectRevert(Vesting.CommitmentAlreadyExists.selector);
+        vm.prank(owner);
+        vesting.commit(hash);
+    }
+
+    function testCommitRevertsIfRevoked(bytes32 hash) public {
+        vm.assume(hash != bytes32(0));
+        vm.prank(owner);
+        vesting.commit(hash);
+        vm.prank(owner);
+        vesting.revoke(hash, uint64(block.timestamp));
+        vm.expectRevert(Vesting.CommitmentAlreadyExists.selector);
+        vm.prank(owner);
+        vesting.commit(hash);
+    }
+
     function testCommitNoManager(address noOwner, bytes32 hash) public {
         vm.assume(noOwner != address(0));
         vm.assume(noOwner != trustedForwarder);

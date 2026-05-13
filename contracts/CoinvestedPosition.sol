@@ -28,7 +28,7 @@ struct CoinvestedPositionInitializerArguments {
     IERC20 baseCurrency;
     /// token being held
     Token token;
-    /// unix timestamp before which unpause() is blocked; 0 means no lock
+    /// unix timestamp before which unpause() is blocked; must be non-zero
     uint64 lockedUntil;
     /// registry contract; if an exit is set for the token, it can be claimed
     GlobalTokenExitRegistry tokenExitRegistry;
@@ -57,12 +57,17 @@ contract CoinvestedPosition is TokenSwapBase {
     error ZeroLeadInvestorAddress();
     error ZeroLeadInvestorProfitFraction();
     error NotLeadInvestor();
+    error ZeroLockedUntil();
+
+    event CurrencyChanged(address indexed currency, uint256 basePrice);
+    event DistributionClaimed(address indexed distribution, address indexed currency, uint256 amount);
+    event ExitClaimed(address indexed exit, address indexed currency, uint256 received);
 
     /// lead investors and their carry fractions
     LeadInvestor[] public leadInvestors;
     /// base price per token in bits of the current currency (always expressed in current currency's decimals)
     uint256 public basePrice;
-    /// unix timestamp before which unpause() is blocked; 0 means no lock
+    /// unix timestamp before which unpause() is blocked; must be non-zero
     uint64 public lockedUntil;
     /// registry contract; if an exit is set for the token, an exit reward can be claimed from that
     /// address even if lockedUntil has not passed yet
@@ -119,6 +124,8 @@ contract CoinvestedPosition is TokenSwapBase {
             leadInvestors.push(_arguments.leadInvestors[i]);
         }
         require(address(_arguments.tokenExitRegistry) != address(0), ZeroTokenExitRegistryAddress());
+        require(_arguments.lockedUntil > 0, ZeroLockedUntil());
+        require(_arguments.basePrice > 0, ZeroPrice());
         basePrice = _arguments.basePrice;
         lockedUntil = _arguments.lockedUntil;
         tokenExitRegistry = _arguments.tokenExitRegistry;
@@ -137,18 +144,22 @@ contract CoinvestedPosition is TokenSwapBase {
     }
 
     /**
-     * @notice Change the payment currency and update basePrice to match the new currency's units.
+     * @notice Change the payment currency and atomically update basePrice and tokenPrice to match the new currency's units.
      * @param _currency new currency; must have TRUSTED_CURRENCY bit set on the token's allowList
      * @param _basePrice base price expressed in the new currency's units; must be > 0
+     * @param _tokenPrice new token price expressed in the new currency's bits per main-unit token; must be > 0
      */
-    function setCurrency(IERC20 _currency, uint256 _basePrice) external onlyOwner {
+    function setCurrency(IERC20 _currency, uint256 _basePrice, uint256 _tokenPrice) external onlyOwner {
         require(block.timestamp >= lockedUntil, TimeLockNotExpired());
         require(address(_currency) != address(0), ZeroCurrencyAddress());
         require(address(_currency) != address(token), CurrencyEqualsToken());
         require(_basePrice > 0, ZeroPrice());
+        require(_tokenPrice > 0, ZeroPrice());
         require(token.allowList().map(address(_currency)) == TRUSTED_CURRENCY, UntrustedCurrency());
         basePrice = _basePrice;
+        tokenPrice = _tokenPrice;
         currency = _currency;
+        emit CurrencyChanged(address(_currency), _basePrice);
     }
 
     /**
@@ -161,7 +172,7 @@ contract CoinvestedPosition is TokenSwapBase {
         uint256 _tokenAmount,
         uint256 _maxCurrencyAmount,
         address _tokenReceiver
-    ) public whenNotPaused nonReentrant {
+    ) external whenNotPaused nonReentrant {
         // rounding up to the next whole number. Buyer is charged up to one currency bit more in case of a fractional currency bit.
         uint256 currencyAmount = Math.ceilDiv(_tokenAmount * tokenPrice, 10 ** token.decimals());
 
@@ -236,6 +247,7 @@ contract CoinvestedPosition is TokenSwapBase {
         uint256 received = dividendCurrency.balanceOf(address(this)) - before;
         // basePortion = 0: dividends have no base portion; all of `received` is carry-eligible.
         _credit(received, 0, dividendCurrency);
+        emit DistributionClaimed(address(_dist), address(dividendCurrency), received);
     }
 
     /**
@@ -276,6 +288,7 @@ contract CoinvestedPosition is TokenSwapBase {
         _exit.claim(address(this), _minCurrencyAmount);
         uint256 received = exitCurrency.balanceOf(address(this)) - before;
         _credit(received, basePayout, exitCurrency);
+        emit ExitClaimed(address(_exit), address(exitCurrency), received);
     }
 
     /**

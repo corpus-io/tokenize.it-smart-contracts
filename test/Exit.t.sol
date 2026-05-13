@@ -276,6 +276,13 @@ contract ExitTest is Test {
         assertGt(currency.balanceOf(RECIPIENT), 0, "RECIPIENT should have received currency");
     }
 
+    function testClaimEmitsEvent() public {
+        vm.expectEmit(true, true, false, true, address(exitContract));
+        emit Claimed(HOLDER, RECIPIENT, TOTAL_CURRENCY);
+        vm.prank(HOLDER);
+        exitContract.claim(RECIPIENT, 0);
+    }
+
     function testClaimNothingRevertsWhenNoTokens() public {
         address stranger = address(42);
         vm.expectRevert(NothingToClaim.selector);

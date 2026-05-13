@@ -18,7 +18,7 @@ contract ExitCloneFactoryTest is Test {
     bytes32 public constant EXAMPLE_SALT = bytes32(0);
     address public constant EXAMPLE_OWNER = address(0x1001);
     uint256 public constant EXAMPLE_PRICE = 2e6;
-    uint64 public constant EXAMPLE_DRAIN_START = 2000;
+    uint64 public EXAMPLE_DRAIN_START;
     uint256 public constant EXAMPLE_TOTAL_CURRENCY = 100e6;
 
     AllowList allowList;
@@ -28,6 +28,7 @@ contract ExitCloneFactoryTest is Test {
     TokenProxyFactory tokenFactory;
 
     function setUp() public {
+        EXAMPLE_DRAIN_START = uint64(block.timestamp + 30 days);
         allowList = createAllowList(TRUSTED_FORWARDER, ADMIN);
         currency = new FakePaymentToken(0, 6);
         vm.prank(ADMIN);

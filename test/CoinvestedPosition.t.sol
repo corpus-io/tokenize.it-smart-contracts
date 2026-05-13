@@ -31,6 +31,8 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
     event TokensBought(address indexed BUYER, uint256 tokenAmount, uint256 currencyAmount);
     event ReceiverChanged(address indexed newReceiver);
     event TokenPriceChanged(uint256 newTokenPrice);
+    event CurrencyChanged(address indexed currency, uint256 basePrice);
+    event CoinvestorCredited(IERC20 indexed currency, uint256 amount);
 
     // ── Well-known addresses ──────────────────────────────────────────────────
     address public constant BUYER = 0x1109709ecFA91a80626ff3989D68f67F5B1Dd121;
@@ -112,7 +114,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             basePrice: basePrice,
             baseCurrency: IERC20(address(baseCurrency)),
             token: token,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: tokenExitRegistry
         });
         return CoinvestedPosition(factory.createCoinvestedPositionClone(salt, TRUSTED_FORWARDER, args));
@@ -137,7 +139,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             basePrice: 100e6,
             baseCurrency: IERC20(address(eurc)),
             token: token,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: tokenExitRegistry
         });
 
@@ -192,7 +194,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             basePrice: basePrice,
             baseCurrency: IERC20(address(fuzzCurrency)),
             token: token,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: tokenExitRegistry
         });
         CoinvestedPosition fuzzPosition = CoinvestedPosition(
@@ -221,7 +223,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             basePrice: 100e6,
             baseCurrency: IERC20(address(nonTrusted)),
             token: token,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: tokenExitRegistry
         });
         vm.expectRevert(UntrustedCurrency.selector);
@@ -238,7 +240,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             basePrice: 100e6,
             baseCurrency: IERC20(address(noBit)),
             token: token,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: tokenExitRegistry
         });
         vm.expectRevert();
@@ -258,7 +260,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             basePrice: 100e6,
             baseCurrency: IERC20(address(eurc)),
             token: token,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: tokenExitRegistry
         });
         vm.expectRevert(NoLeadInvestors.selector);
@@ -274,7 +276,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             basePrice: 100e6,
             baseCurrency: IERC20(address(eurc)),
             token: token,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: tokenExitRegistry
         });
         vm.expectRevert(CoinvestedPosition.ZeroLeadInvestorAddress.selector);
@@ -290,7 +292,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             basePrice: 100e6,
             baseCurrency: IERC20(address(eurc)),
             token: token,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: tokenExitRegistry
         });
         vm.expectRevert(CoinvestedPosition.ZeroLeadInvestorProfitFraction.selector);
@@ -308,7 +310,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             basePrice: 100e6,
             baseCurrency: IERC20(address(eurc)),
             token: token,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: tokenExitRegistry
         });
         vm.expectRevert("panic: arithmetic underflow or overflow (0x11)"); // arithmetic overflow
@@ -327,6 +329,21 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         assertEq(coinvestedPositionBoundary.getLeadInvestorsCount(), 1);
     }
 
+    function testInitZeroBasePriceReverts() public {
+        LeadInvestor[] memory leadInvestors = _defaultLeadInvestors();
+        CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
+            owner: OWNER,
+            leadInvestors: leadInvestors,
+            basePrice: 0,
+            baseCurrency: IERC20(address(eurc)),
+            token: token,
+            lockedUntil: 1,
+            tokenExitRegistry: tokenExitRegistry
+        });
+        vm.expectRevert(ZeroPrice.selector);
+        factory.createCoinvestedPositionClone(bytes32("1"), TRUSTED_FORWARDER, args);
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // ── Section 3: setCurrency() ──────────────────────────────────────────────
     // ─────────────────────────────────────────────────────────────────────────
@@ -334,14 +351,14 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
     function testSetCurrencyOnlyOwner() public {
         vm.prank(BUYER);
         vm.expectRevert("Ownable: caller is not the owner");
-        coinvestedPosition.setCurrency(IERC20(address(eure)), 1);
+        coinvestedPosition.setCurrency(IERC20(address(eure)), 1, 1);
     }
 
     function testFuzz_SetCurrencyOnlyOwner(address caller) public {
         vm.assume(caller != OWNER && caller != address(0) && caller != TRUSTED_FORWARDER);
         vm.prank(caller);
         vm.expectRevert("Ownable: caller is not the owner");
-        coinvestedPosition.setCurrency(IERC20(address(eure)), 1);
+        coinvestedPosition.setCurrency(IERC20(address(eure)), 1, 1);
     }
 
     function testSetCurrencyNonTrustedReverts() public {
@@ -349,7 +366,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         // not on allowList → 0 attributes, no TRUSTED_CURRENCY bit
         vm.prank(OWNER);
         vm.expectRevert(UntrustedCurrency.selector);
-        coinvestedPosition.setCurrency(IERC20(address(nonTrusted)), 1);
+        coinvestedPosition.setCurrency(IERC20(address(nonTrusted)), 1, 1);
     }
 
     function testFuzz_SetCurrencyValidAccepted(uint8 decimals) public {
@@ -358,14 +375,21 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         // Not on allowList yet → revert
         vm.prank(OWNER);
         vm.expectRevert();
-        coinvestedPosition.setCurrency(IERC20(address(newCurrency)), 1);
+        coinvestedPosition.setCurrency(IERC20(address(newCurrency)), 1, 1);
 
         // Add to allowList with TRUSTED_CURRENCY bit → accepted
         vm.prank(ADMIN);
         allowList.set(address(newCurrency), TRUSTED_CURRENCY);
         vm.prank(OWNER);
-        coinvestedPosition.setCurrency(IERC20(address(newCurrency)), 1);
+        coinvestedPosition.setCurrency(IERC20(address(newCurrency)), 1, 1);
         assertEq(address(coinvestedPosition.currency()), address(newCurrency));
+    }
+
+    function testSetCurrencyEmitsEvent() public {
+        vm.expectEmit(true, false, false, true, address(coinvestedPosition));
+        emit CurrencyChanged(address(eure), 50e18);
+        vm.prank(OWNER);
+        coinvestedPosition.setCurrency(IERC20(address(eure)), 50e18, 1e18);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -469,6 +493,20 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         coinvestedPosition.buy(1e18, 400e6, TOKEN_RECEIVER);
     }
 
+    function testBuyEmitsCoinvestorCreditedEvent() public {
+        // tokenPrice=200e6, basePrice=100e6, buy 1 token → gross=200e6, profit=100e6
+        _setupBuy(10e18, 200e6);
+        _fundBuyer(eurc, 200e6);
+        uint256 profit = 100e6;
+        uint256 carryA = (uint256(CARRY_10PCT) * profit) / type(uint64).max;
+        uint256 carryB = (uint256(CARRY_5PCT) * profit) / type(uint64).max;
+        uint256 coinvestorShare = 200e6 - carryA - carryB;
+        vm.expectEmit(true, true, false, true, address(coinvestedPosition));
+        emit CoinvestorCredited(eurc, coinvestorShare);
+        vm.prank(BUYER);
+        coinvestedPosition.buy(1e18, 200e6, TOKEN_RECEIVER);
+    }
+
     function testBuyZeroFeeCorrectCarrySplit() public {
         // 2 tokens at tokenPrice=200e6, basePrice=100e6
         // paid=400e6, fee=0, remaining=400e6, basePayout=200e6, carry=200e6
@@ -524,7 +562,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             basePrice: 100e6,
             baseCurrency: IERC20(address(eurc)),
             token: tokenWithFee,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: tokenExitRegistry
         });
         CoinvestedPosition coinvestedPositionWithFee = CoinvestedPosition(
@@ -595,7 +633,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             basePrice: 100e6,
             baseCurrency: IERC20(address(eurc)),
             token: tokenHighFee,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: tokenExitRegistry
         });
         CoinvestedPosition coinvestedPositionHighFee = CoinvestedPosition(
@@ -742,12 +780,10 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         // buy 2 tokens: paid=400e18, basePayout=200e18, carry=200e18
 
         vm.prank(OWNER);
-        coinvestedPosition.setCurrency(IERC20(address(eure)), 100e18);
+        coinvestedPosition.setCurrency(IERC20(address(eure)), 100e18, 200e18);
 
         vm.prank(ADMIN);
         token.mint(address(coinvestedPosition), 10e18);
-        vm.prank(OWNER);
-        coinvestedPosition.setTokenPrice(200e18);
         vm.prank(OWNER);
         coinvestedPosition.unpause();
 
@@ -784,12 +820,10 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             _defaultLeadInvestors()
         );
         vm.prank(OWNER);
-        coinvestedPosition18.setCurrency(IERC20(address(eurc)), 100e6);
+        coinvestedPosition18.setCurrency(IERC20(address(eurc)), 100e6, 200e6);
 
         vm.prank(ADMIN);
         token.mint(address(coinvestedPosition18), 10e18);
-        vm.prank(OWNER);
-        coinvestedPosition18.setTokenPrice(200e6);
         vm.prank(OWNER);
         coinvestedPosition18.unpause();
 
@@ -880,9 +914,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         vm.prank(OWNER);
         coinvestedPosition.pause();
         vm.prank(OWNER);
-        coinvestedPosition.setCurrency(IERC20(address(eure)), 100e18);
-        vm.prank(OWNER);
-        coinvestedPosition.setTokenPrice(200e18);
+        coinvestedPosition.setCurrency(IERC20(address(eure)), 100e18, 200e18);
         vm.prank(OWNER);
         coinvestedPosition.unpause();
 
@@ -1017,12 +1049,10 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         // Active currency = EURe; a pre-existing EURc balance is on the contract.
         // _credit on EURe does not touch EURc — only the active currency is auto-swept.
         vm.prank(OWNER);
-        coinvestedPosition.setCurrency(IERC20(address(eure)), 100e18);
+        coinvestedPosition.setCurrency(IERC20(address(eure)), 100e18, 200e18);
 
         vm.prank(ADMIN);
         token.mint(address(coinvestedPosition), 10e18);
-        vm.prank(OWNER);
-        coinvestedPosition.setTokenPrice(200e18);
         vm.prank(OWNER);
         coinvestedPosition.unpause();
 
@@ -1200,12 +1230,10 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         // so carry = scaledBasePrice (50% markup over base)
         uint256 tokenPrice = 2 * scaledBasePrice;
         vm.prank(OWNER);
-        fuzzPosition.setCurrency(IERC20(address(eure)), scaledBasePrice);
+        fuzzPosition.setCurrency(IERC20(address(eure)), scaledBasePrice, tokenPrice);
 
         vm.prank(ADMIN);
         token.mint(address(fuzzPosition), 1e18);
-        vm.prank(OWNER);
-        fuzzPosition.setTokenPrice(tokenPrice);
         vm.prank(OWNER);
         fuzzPosition.unpause();
 
@@ -1266,12 +1294,10 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         // so carry = scaledBasePrice (50% markup over base)
         uint256 tokenPrice = 2 * scaledBasePrice;
         vm.prank(OWNER);
-        fuzzPosition.setCurrency(IERC20(address(buyCurrency)), scaledBasePrice);
+        fuzzPosition.setCurrency(IERC20(address(buyCurrency)), scaledBasePrice, tokenPrice);
 
         vm.prank(ADMIN);
         token.mint(address(fuzzPosition), 1e18);
-        vm.prank(OWNER);
-        fuzzPosition.setTokenPrice(tokenPrice);
         vm.prank(OWNER);
         fuzzPosition.unpause();
 
@@ -1305,7 +1331,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         vm.assume(caller != address(0) && caller != OWNER && caller != TRUSTED_FORWARDER);
         vm.prank(caller);
         vm.expectRevert("Ownable: caller is not the owner");
-        coinvestedPosition.setCurrency(IERC20(address(eure)), 1);
+        coinvestedPosition.setCurrency(IERC20(address(eure)), 1, 1);
     }
 
     function testFuzz_AccessControl_SetTokenPrice(address caller) public {
@@ -1351,7 +1377,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         // setCurrency itself must reject the held token as currency
         vm.expectRevert(CurrencyEqualsToken.selector);
         vm.prank(OWNER);
-        coinvestedPosition.setCurrency(IERC20(address(token)), 1);
+        coinvestedPosition.setCurrency(IERC20(address(token)), 1, 1);
     }
 
     function testReentrancyBuyReverts() public {
@@ -1370,7 +1396,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             basePrice: 100e6,
             baseCurrency: IERC20(address(malicious)),
             token: token,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: tokenExitRegistry
         });
         CoinvestedPosition coinvestedPositionMalicious = CoinvestedPosition(
@@ -1405,10 +1431,24 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
             basePrice: 100e6,
             baseCurrency: IERC20(address(eurc)),
             token: token,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: GlobalTokenExitRegistry(address(0))
         });
         vm.expectRevert(ZeroTokenExitRegistryAddress.selector);
+        factory.createCoinvestedPositionClone(bytes32(0), TRUSTED_FORWARDER, args);
+    }
+
+    function testInitZeroLockedUntilReverts() public {
+        CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
+            owner: OWNER,
+            leadInvestors: _defaultLeadInvestors(),
+            basePrice: 100e6,
+            baseCurrency: IERC20(address(eurc)),
+            token: token,
+            lockedUntil: 0,
+            tokenExitRegistry: tokenExitRegistry
+        });
+        vm.expectRevert(CoinvestedPosition.ZeroLockedUntil.selector);
         factory.createCoinvestedPositionClone(bytes32(0), TRUSTED_FORWARDER, args);
     }
 
@@ -1438,13 +1478,19 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
     function testSetCurrencyRevertsIfZeroAddress() public {
         vm.prank(OWNER);
         vm.expectRevert(ZeroCurrencyAddress.selector);
-        coinvestedPosition.setCurrency(IERC20(address(0)), 1e6);
+        coinvestedPosition.setCurrency(IERC20(address(0)), 1e6, 1);
     }
 
     function testSetCurrencyRevertsIfBasePriceZero() public {
         vm.prank(OWNER);
         vm.expectRevert(ZeroPrice.selector);
-        coinvestedPosition.setCurrency(IERC20(address(eure)), 0);
+        coinvestedPosition.setCurrency(IERC20(address(eure)), 0, 1);
+    }
+
+    function testSetCurrencyRevertsIfTokenPriceZero() public {
+        vm.prank(OWNER);
+        vm.expectRevert(ZeroPrice.selector);
+        coinvestedPosition.setCurrency(IERC20(address(eure)), 1e18, 0);
     }
 
     function testClaimExitRevertsIfNoExitSet() public {

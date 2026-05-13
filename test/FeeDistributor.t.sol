@@ -119,7 +119,7 @@ contract FeeDistributorTest is Test {
                     basePrice: 100e6,
                     baseCurrency: IERC20(address(usdc)),
                     token: token,
-                    lockedUntil: 0,
+                    lockedUntil: 1,
                     tokenExitRegistry: tokenExitRegistry
                 })
             )

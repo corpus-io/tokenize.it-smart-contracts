@@ -42,6 +42,16 @@ contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPri
     /// @notice Reverted when the stepDuration argument is zero.
     error ZeroStepDuration();
 
+    /// @notice Emitted when the price parameters are updated by the owner
+    event ParametersUpdated(
+        uint64 slopeEnumerator,
+        uint64 slopeDenominator,
+        uint64 start,
+        uint32 stepDuration,
+        bool isBlockBased,
+        bool isRising
+    );
+
     uint32 public constant COOL_DOWN_DURATION = 1 hours;
 
     Linear public parameters;
@@ -113,7 +123,14 @@ contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPri
             _isBlockBased,
             _isRising
         );
-        coolDownStart = block.timestamp;
+        emit ParametersUpdated(
+            _slopeEnumerator,
+            _slopeDenominator,
+            _startTimeOrBlockNumber,
+            _stepDuration,
+            _isBlockBased,
+            _isRising
+        );
     }
 
     /**
@@ -150,6 +167,7 @@ contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPri
             isBlockBased: _isBlockBased,
             isRising: _isRising
         });
+        coolDownStart = block.timestamp;
     }
 
     /**
@@ -158,7 +176,7 @@ contract PriceLinear is ERC2771ContextUpgradeable, Ownable2StepUpgradeable, IPri
      * @param basePrice The base price of the token
      * @return The price of the token at the current time or block height
      */
-    function getPrice(uint256 basePrice) public view returns (uint256) {
+    function getPrice(uint256 basePrice) external view returns (uint256) {
         require(coolDownStart + COOL_DOWN_DURATION < block.timestamp, CoolDownNotOver());
         Linear memory _parameters = parameters;
         uint256 current = _parameters.isBlockBased ? block.number : block.timestamp;

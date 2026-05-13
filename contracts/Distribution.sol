@@ -177,5 +177,6 @@ contract Distribution is PayoutBase {
             currency.safeTransfer(feeCollector, fee);
         }
         currency.safeTransfer(_recipient, net);
+        emit Claimed(_msgSender(), _recipient, net);
     }
 }

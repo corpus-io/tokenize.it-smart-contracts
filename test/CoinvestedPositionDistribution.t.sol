@@ -198,7 +198,7 @@ contract CoinvestedPositionDistributionTest is Test {
             basePrice: basePrice,
             baseCurrency: IERC20(address(baseCurrency)),
             token: token,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: tokenExitRegistry
         });
         return
@@ -1068,7 +1068,7 @@ contract CoinvestedPositionDistributionTest is Test {
                         basePrice: BASE_PRICE_EURC,
                         baseCurrency: IERC20(address(eurc)),
                         token: fuzzToken,
-                        lockedUntil: 0,
+                        lockedUntil: 1,
                         tokenExitRegistry: tokenExitRegistry
                     });
                 coinvestedPositionFuzz = CoinvestedPosition(
@@ -1185,5 +1185,18 @@ contract CoinvestedPositionDistributionTest is Test {
         coinvestedPosition.claimDistribution(Distribution(address(stub)), minPayout);
         _drainCredits(coinvestedPosition, stub.currency());
         assertEq(usdc.balanceOf(address(coinvestedPosition)), 0, "cp should hold no usdc after settle");
+    }
+
+    function testDI_EmitsDistributionClaimedEvent() public {
+        Distribution distribution = _deployDistribution(bytes32(0), usdc, TOTAL_USDC, PRICE_PER_TOKEN_USDC);
+
+        vm.expectEmit(true, true, false, true, address(coinvestedPosition));
+        emit CoinvestedPosition.DistributionClaimed(
+            address(distribution),
+            address(usdc),
+            COINVESTED_POSITION_ELIGIBLE_USDC
+        );
+        vm.prank(OWNER);
+        coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
     }
 }

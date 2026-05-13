@@ -182,7 +182,7 @@ contract CoinvestedPositionExitTest is Test {
             basePrice: basePrice,
             baseCurrency: IERC20(address(baseCurrency)),
             token: token,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: tokenExitRegistry
         });
         return
@@ -653,7 +653,7 @@ contract CoinvestedPositionExitTest is Test {
             basePrice: BASE_PRICE_EURC,
             baseCurrency: IERC20(address(eurc)),
             token: tokenWithFee,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: tokenExitRegistry
         });
         CoinvestedPosition coinvestedPositionFee = CoinvestedPosition(
@@ -1456,13 +1456,29 @@ contract CoinvestedPositionExitTest is Test {
         // Before lock expires: setCurrency must revert
         vm.expectRevert(TimeLockNotExpired.selector);
         vm.prank(OWNER);
-        lockedCp.setCurrency(IERC20(address(eure)), 100e18);
+        lockedCp.setCurrency(IERC20(address(eure)), 100e18, 1e18);
 
         // After lock expires: setCurrency succeeds
         vm.warp(lockUntil);
         vm.prank(OWNER);
-        lockedCp.setCurrency(IERC20(address(eure)), 100e18);
+        lockedCp.setCurrency(IERC20(address(eure)), 100e18, 1e18);
         assertEq(address(lockedCp.currency()), address(eure), "XIVG: currency not updated");
         assertEq(lockedCp.basePrice(), 100e18, "XIVG: basePrice not updated");
+        assertEq(lockedCp.tokenPrice(), 1e18, "XIVG: tokenPrice not updated");
+    }
+
+    function testEmitsExitClaimedEvent() public {
+        // CP holds 200 tokens, exit price = 200e6 → received = 200e18 * 200e6 / 1e18 = 40_000e6
+        uint256 pricePerToken = 200e6;
+        uint256 received = (CP_TOKEN_AMOUNT * pricePerToken) / (10 ** token.decimals());
+        Exit exitContract = _deployExit(bytes32(0), eurc, pricePerToken, CP_TOKEN_AMOUNT);
+
+        vm.prank(ADMIN);
+        tokenExitRegistry.setExit(token, Exit(address(exitContract)));
+
+        vm.expectEmit(true, true, false, true, address(coinvestedPosition));
+        emit CoinvestedPosition.ExitClaimed(address(exitContract), address(eurc), received);
+        vm.prank(OWNER);
+        coinvestedPosition.claimExit(1, 0);
     }
 }

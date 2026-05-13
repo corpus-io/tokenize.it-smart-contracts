@@ -45,8 +45,8 @@ contract CrowdinvestingTest is Test {
     uint256 public constant PRICE = 7 * 10 ** PAYMENT_TOKEN_DECIMALS; // 7 payment tokens per token
 
     uint256 public constant MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD = 20 * 10 ** 18; // 20 token
-    uint256 public constant MAX_AMOUNT_PER_BUYER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 2; // 10 token
-    uint256 public constant MIN_AMOUNT_PER_BUYER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 200; // 0.1 token
+    uint256 public constant MAX_AMOUNT_PER_RECEIVER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 2; // 10 token
+    uint256 public constant MIN_AMOUNT_PER_RECEIVER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 200; // 0.1 token
 
     uint256 tokenBuyAmount;
     uint256 costInPaymentToken;
@@ -88,8 +88,8 @@ contract CrowdinvestingTest is Test {
         arguments = CrowdinvestingInitializerArguments(
             OWNER,
             payable(RECEIVER),
-            MIN_AMOUNT_PER_BUYER,
-            MAX_AMOUNT_PER_BUYER,
+            MIN_AMOUNT_PER_RECEIVER,
+            MAX_AMOUNT_PER_RECEIVER,
             PRICE,
             PRICE,
             PRICE,
@@ -190,7 +190,7 @@ contract CrowdinvestingTest is Test {
         assertEq(token.balanceOf(RECEIVER), 0, "RECEIVER has tokens before");
         assertEq(token.balanceOf(address(forwarder)), 0, "forwarder has tokens before");
         assertTrue(crowdinvesting.tokensSold() == 0, "tokens sold before");
-        assertTrue(crowdinvesting.tokensBought(buyer) == 0, "tokens bought before");
+        assertTrue(crowdinvesting.tokensBoughtByReceiver(buyer) == 0, "tokens bought before");
         //assertTrue(vm.getNonce(buyer) == 0); // it seems forge does not increase nonces with prank
 
         console.log("Token balance of buyer before: ", token.balanceOf(buyer));
@@ -229,7 +229,7 @@ contract CrowdinvestingTest is Test {
         assertEq(token.balanceOf(RECEIVER), 0, "RECEIVER has tokens after");
         assertEq(token.balanceOf(address(forwarder)), 0, "forwarder has tokens after");
         assertTrue(crowdinvesting.tokensSold() == tokenBuyAmount, "tokens sold after");
-        assertTrue(crowdinvesting.tokensBought(buyer) == tokenBuyAmount, "tokens bought after");
+        assertTrue(crowdinvesting.tokensBoughtByReceiver(buyer) == tokenBuyAmount, "tokens bought after");
         //assertTrue(vm.getNonce(buyer) == 0);
 
         console.log("paymentToken balance of RECEIVER after: ", paymentToken.balanceOf(RECEIVER));

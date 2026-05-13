@@ -12,11 +12,26 @@ Beyond being an ERC20 token, it has fine grained access control to:
 
 Also, this is the only contract in this repository that is deployed using an ERC1967-proxy. This means that it can be upgraded. Since this token is legally bound to the company, we want to make sure that we can offer our customers options if a security issue arises or regulation enforces changes.
 
+### Security recommendation
+
+The `DEFAULT_ADMIN_ROLE` should always be held by a well-configured multisig. A compromised admin key can upgrade the contract, burn all tokens, or revoke every role. Using a multisig raises the bar for an attacker.
+
 ### Minting
 
 Minting is very central to the usage of this contract. The MintAllower role (see [access control](https://docs.openzeppelin.com/contracts/4.x/access-control)) can give an address a minting allowance. For example the admin (or CEO) of the company might need a minting allowance to create new shares. Each investment or vesting contract also needs a minting allowance in order to function.
 The allowances are stored in the map `mintingAllowance`.
 Addresses with the MintAllower role can mint tokens regardless of their own allowance (since they can change it at any time, enforcing the minting allowance would be pointless).
+
+### Burning
+
+The `BURNER_ROLE` can remove tokens from any address at any time. Two use cases are intended:
+
+1. **Token recovery:** an investor who bought tokens directly from the company and can prove their identity but has lost access to their original address could ask to have the tokens burned from the old address and re-minted to a new one after the company re-verifies them.
+2. **Legal compliance:** courts or regulators may order the removal of specific tokens. The token is legally bound to the company, so the company must have the means to comply — "law is law" as opposed to "code is law".
+
+Every burn is an on-chain transaction and can therefore be audited and challenged in court. The primary value of tokenized equity in this framework is auditability and tradeability, not decentralisation.
+
+Because the token is an upgradeable proxy, the `DEFAULT_ADMIN_ROLE` already has this power implicitly — they could upgrade the logic contract to add any capability. The explicit `BURNER_ROLE` exists so that routine burn operations can be delegated to a separate address without handing out the even more powerful admin role.
 
 ### Requirements
 

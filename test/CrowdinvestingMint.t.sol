@@ -15,8 +15,8 @@ import "./resources/CrowdinvestingArgumentHelper.sol";
 
 contract CrowdinvestingTest is Test {
     event CurrencyReceiverChanged(address indexed);
-    event MinAmountPerBuyerChanged(uint256);
-    event MaxAmountPerBuyerChanged(uint256);
+    event MinAmountPerReceiverChanged(uint256);
+    event MaxAmountPerReceiverChanged(uint256);
     event TokenPriceAndCurrencyChanged(uint256, IERC20 indexed);
     event MaxAmountOfTokenToBeSoldChanged(uint256);
     event TokensBought(address indexed BUYER, uint256 tokenAmount, uint256 currencyAmount);
@@ -49,8 +49,8 @@ contract CrowdinvestingTest is Test {
     uint256 public constant PRICE = 7 * 10 ** PAYMENT_TOKEN_DECIMALS; // 7 payment tokens per token
 
     uint256 public constant MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD = 20 * 10 ** 18; // 20 token
-    uint256 public constant MAX_AMOUNT_PER_BUYER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 2; // 10 token
-    uint256 public constant MIN_AMOUNT_PER_BUYER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 200; // 0.1 token
+    uint256 public constant MAX_AMOUNT_PER_RECEIVER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 2; // 10 token
+    uint256 public constant MIN_AMOUNT_PER_RECEIVER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 200; // 0.1 token
 
     uint256 public constant LAST_BUY_DATE = 12859023;
 
@@ -85,8 +85,8 @@ contract CrowdinvestingTest is Test {
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             OWNER,
             payable(RECEIVER),
-            MIN_AMOUNT_PER_BUYER,
-            MAX_AMOUNT_PER_BUYER,
+            MIN_AMOUNT_PER_RECEIVER,
+            MAX_AMOUNT_PER_RECEIVER,
             PRICE,
             PRICE,
             PRICE,
@@ -123,8 +123,8 @@ contract CrowdinvestingTest is Test {
             CrowdinvestingInitializerArguments(
                 address(this),
                 payable(RECEIVER),
-                MIN_AMOUNT_PER_BUYER,
-                MAX_AMOUNT_PER_BUYER,
+                MIN_AMOUNT_PER_RECEIVER,
+                MAX_AMOUNT_PER_RECEIVER,
                 PRICE,
                 PRICE,
                 PRICE,
@@ -140,8 +140,8 @@ contract CrowdinvestingTest is Test {
         // OWNER and all settings are 0
         assertTrue(_logic.owner() == address(0), "OWNER is not 0");
         assertTrue(_logic.currencyReceiver() == address(0));
-        assertTrue(_logic.minAmountPerBuyer() == 0);
-        assertTrue(_logic.maxAmountPerBuyer() == 0);
+        assertTrue(_logic.minAmountPerReceiver() == 0);
+        assertTrue(_logic.maxAmountPerReceiver() == 0);
         assertTrue(_logic.priceBase() == 0);
         assertTrue(address(_logic.currency()) == address(0));
         assertTrue(address(_logic.token()) == address(0));
@@ -151,8 +151,8 @@ contract CrowdinvestingTest is Test {
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             address(this),
             payable(RECEIVER),
-            MIN_AMOUNT_PER_BUYER,
-            MAX_AMOUNT_PER_BUYER,
+            MIN_AMOUNT_PER_RECEIVER,
+            MAX_AMOUNT_PER_RECEIVER,
             PRICE,
             PRICE,
             PRICE,
@@ -168,8 +168,8 @@ contract CrowdinvestingTest is Test {
         );
         assertTrue(_crowdinvesting.owner() == address(this));
         assertTrue(_crowdinvesting.currencyReceiver() == RECEIVER);
-        assertTrue(_crowdinvesting.minAmountPerBuyer() == MIN_AMOUNT_PER_BUYER);
-        assertTrue(_crowdinvesting.maxAmountPerBuyer() == MAX_AMOUNT_PER_BUYER);
+        assertTrue(_crowdinvesting.minAmountPerReceiver() == MIN_AMOUNT_PER_RECEIVER);
+        assertTrue(_crowdinvesting.maxAmountPerReceiver() == MAX_AMOUNT_PER_RECEIVER);
         assertTrue(_crowdinvesting.maxAmountOfTokenToBeSold() == MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD);
         assertTrue(_crowdinvesting.priceBase() == PRICE);
         assertTrue(_crowdinvesting.currency() == paymentToken);
@@ -181,8 +181,8 @@ contract CrowdinvestingTest is Test {
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             address(this),
             payable(RECEIVER),
-            MIN_AMOUNT_PER_BUYER,
-            MAX_AMOUNT_PER_BUYER,
+            MIN_AMOUNT_PER_RECEIVER,
+            MAX_AMOUNT_PER_RECEIVER,
             PRICE,
             PRICE,
             PRICE,
@@ -208,15 +208,15 @@ contract CrowdinvestingTest is Test {
         vm.expectRevert(ZeroReceiverAddress.selector);
         factory.createCrowdinvestingClone(0, TRUSTED_FORWARDER, tempArgs);
 
-        // token minAmount > MAX_AMOUNT_PER_BUYER
+        // token minAmount > MAX_AMOUNT_PER_RECEIVER
         tempArgs = cloneCrowdinvestingInitializerArguments(arguments);
-        tempArgs.minAmountPerBuyer = MAX_AMOUNT_PER_BUYER + 1;
+        tempArgs.minAmountPerReceiver = MAX_AMOUNT_PER_RECEIVER + 1;
         vm.expectRevert(Crowdinvesting.MinAmountExceedsMaxAmount.selector);
         factory.createCrowdinvestingClone(0, TRUSTED_FORWARDER, tempArgs);
 
         // token minAmount 0
         tempArgs = cloneCrowdinvestingInitializerArguments(arguments);
-        tempArgs.minAmountPerBuyer = 0;
+        tempArgs.minAmountPerReceiver = 0;
         vm.expectRevert(ZeroAmount.selector);
         factory.createCrowdinvestingClone(0, TRUSTED_FORWARDER, tempArgs);
 
@@ -349,8 +349,8 @@ contract CrowdinvestingTest is Test {
     }
 
     function testBuyHappyCase(uint256 tokenBuyAmount) public {
-        vm.assume(tokenBuyAmount >= crowdinvesting.minAmountPerBuyer());
-        vm.assume(tokenBuyAmount <= crowdinvesting.maxAmountPerBuyer());
+        vm.assume(tokenBuyAmount >= crowdinvesting.minAmountPerReceiver());
+        vm.assume(tokenBuyAmount <= crowdinvesting.maxAmountPerReceiver());
         uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * crowdinvesting.priceBase(), 10 ** 18);
         vm.assume(costInPaymentToken <= paymentToken.balanceOf(BUYER));
 
@@ -381,12 +381,15 @@ contract CrowdinvestingTest is Test {
             "fee collector has collected fee in tokens"
         );
         assertTrue(crowdinvesting.tokensSold() == tokenBuyAmount, "crowdinvesting has sold tokens");
-        assertTrue(crowdinvesting.tokensBought(BUYER) == tokenBuyAmount, "crowdinvesting has sold tokens to BUYER");
+        assertTrue(
+            crowdinvesting.tokensBoughtByReceiver(BUYER) == tokenBuyAmount,
+            "crowdinvesting has sold tokens to BUYER"
+        );
     }
 
     function testBuyWithMaxCurrencyAmount(uint256 tokenBuyAmount, uint256 maxCurrencyAmount) public {
-        vm.assume(tokenBuyAmount >= crowdinvesting.minAmountPerBuyer());
-        vm.assume(tokenBuyAmount <= crowdinvesting.maxAmountPerBuyer());
+        vm.assume(tokenBuyAmount >= crowdinvesting.minAmountPerReceiver());
+        vm.assume(tokenBuyAmount <= crowdinvesting.maxAmountPerReceiver());
         uint256 costInPaymentToken = Math.ceilDiv(tokenBuyAmount * crowdinvesting.priceBase(), 10 ** 18);
         vm.assume(costInPaymentToken <= paymentToken.balanceOf(BUYER));
 
@@ -425,7 +428,10 @@ contract CrowdinvestingTest is Test {
                 "fee collector has collected fee in tokens"
             );
             assertTrue(crowdinvesting.tokensSold() == tokenBuyAmount, "crowdinvesting has sold tokens");
-            assertTrue(crowdinvesting.tokensBought(BUYER) == tokenBuyAmount, "crowdinvesting has sold tokens to BUYER");
+            assertTrue(
+                crowdinvesting.tokensBoughtByReceiver(BUYER) == tokenBuyAmount,
+                "crowdinvesting has sold tokens to BUYER"
+            );
         } else {
             vm.prank(BUYER);
             vm.expectRevert(PurchaseTooExpensive.selector);
@@ -437,13 +443,13 @@ contract CrowdinvestingTest is Test {
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(BUYER);
 
         vm.prank(BUYER);
-        vm.expectRevert(Crowdinvesting.MaxAmountPerBuyerExceeded.selector);
-        crowdinvesting.buy(MAX_AMOUNT_PER_BUYER + 10 ** 18, type(uint256).max, BUYER); //+ 10**token.decimals());
+        vm.expectRevert(Crowdinvesting.MaxAmountPerReceiverExceeded.selector);
+        crowdinvesting.buy(MAX_AMOUNT_PER_RECEIVER + 10 ** 18, type(uint256).max, BUYER); //+ 10**token.decimals());
         assertTrue(paymentToken.balanceOf(BUYER) == paymentTokenBalanceBefore);
         assertTrue(token.balanceOf(BUYER) == 0);
         assertTrue(paymentToken.balanceOf(RECEIVER) == 0);
         assertTrue(crowdinvesting.tokensSold() == 0);
-        assertTrue(crowdinvesting.tokensBought(BUYER) == 0);
+        assertTrue(crowdinvesting.tokensBoughtByReceiver(BUYER) == 0);
     }
 
     function testBuyAndMintToDifferentAddress() public {
@@ -529,7 +535,7 @@ contract CrowdinvestingTest is Test {
         vm.prank(BUYER);
         crowdinvesting.buy(MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 2, type(uint256).max, BUYER);
         vm.prank(person1);
-        vm.expectRevert(Crowdinvesting.MaxAmountPerBuyerExceeded.selector);
+        vm.expectRevert(Crowdinvesting.MaxAmountPerReceiverExceeded.selector);
         crowdinvesting.buy(MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 2, type(uint256).max, BUYER);
     }
 
@@ -552,9 +558,9 @@ contract CrowdinvestingTest is Test {
 
         // check all entries are 0 before
         assertTrue(crowdinvesting.tokensSold() == 0);
-        assertTrue(crowdinvesting.tokensBought(BUYER) == 0);
-        assertTrue(crowdinvesting.tokensBought(person1) == 0);
-        assertTrue(crowdinvesting.tokensBought(person2) == 0);
+        assertTrue(crowdinvesting.tokensBoughtByReceiver(BUYER) == 0);
+        assertTrue(crowdinvesting.tokensBoughtByReceiver(person1) == 0);
+        assertTrue(crowdinvesting.tokensBoughtByReceiver(person2) == 0);
 
         vm.prank(BUYER);
         crowdinvesting.buy(MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 2, type(uint256).max, BUYER);
@@ -565,9 +571,9 @@ contract CrowdinvestingTest is Test {
 
         // check all entries are correct after
         assertTrue(crowdinvesting.tokensSold() == (MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD * 7) / 8);
-        assertTrue(crowdinvesting.tokensBought(BUYER) == MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 2);
-        assertTrue(crowdinvesting.tokensBought(person1) == MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 4);
-        assertTrue(crowdinvesting.tokensBought(person2) == MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 8);
+        assertTrue(crowdinvesting.tokensBoughtByReceiver(BUYER) == MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 2);
+        assertTrue(crowdinvesting.tokensBoughtByReceiver(person1) == MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 4);
+        assertTrue(crowdinvesting.tokensBoughtByReceiver(person2) == MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 8);
         assertTrue(token.balanceOf(BUYER) == MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 2);
         assertTrue(token.balanceOf(person1) == MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 4);
         assertTrue(token.balanceOf(person2) == MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 8);
@@ -578,17 +584,17 @@ contract CrowdinvestingTest is Test {
         vm.startPrank(MINT_ALLOWER);
         token.decreaseMintingAllowance(
             address(crowdinvesting),
-            token.mintingAllowance(address(crowdinvesting)) - (MAX_AMOUNT_PER_BUYER / 2)
+            token.mintingAllowance(address(crowdinvesting)) - (MAX_AMOUNT_PER_RECEIVER / 2)
         );
         vm.stopPrank();
 
         vm.prank(BUYER);
         vm.expectRevert(Token.MintingAllowanceTooLow.selector);
-        crowdinvesting.buy(MAX_AMOUNT_PER_BUYER, type(uint256).max, BUYER); //+ 10**token.decimals());
+        crowdinvesting.buy(MAX_AMOUNT_PER_RECEIVER, type(uint256).max, BUYER); //+ 10**token.decimals());
         assertTrue(token.balanceOf(BUYER) == 0);
         assertTrue(paymentToken.balanceOf(RECEIVER) == 0);
         assertTrue(crowdinvesting.tokensSold() == 0);
-        assertTrue(crowdinvesting.tokensBought(BUYER) == 0);
+        assertTrue(crowdinvesting.tokensBoughtByReceiver(BUYER) == 0);
     }
 
     function testBuyTooLittle() public {
@@ -600,28 +606,28 @@ contract CrowdinvestingTest is Test {
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(BUYER);
 
         vm.prank(BUYER);
-        vm.expectRevert(Crowdinvesting.MinAmountPerBuyerNotReached.selector);
-        crowdinvesting.buy(MIN_AMOUNT_PER_BUYER / 2, type(uint256).max, BUYER);
+        vm.expectRevert(Crowdinvesting.MinAmountPerReceiverNotReached.selector);
+        crowdinvesting.buy(MIN_AMOUNT_PER_RECEIVER / 2, type(uint256).max, BUYER);
         assertTrue(paymentToken.balanceOf(BUYER) == paymentTokenBalanceBefore);
         assertTrue(token.balanceOf(BUYER) == 0);
         assertTrue(paymentToken.balanceOf(RECEIVER) == 0);
         assertTrue(crowdinvesting.tokensSold() == 0);
-        assertTrue(crowdinvesting.tokensBought(BUYER) == 0);
+        assertTrue(crowdinvesting.tokensBoughtByReceiver(BUYER) == 0);
     }
 
     function testBuySmallAmountAfterInitialInvestment() public {
-        uint256 tokenBuyAmount = MIN_AMOUNT_PER_BUYER;
+        uint256 tokenBuyAmount = MIN_AMOUNT_PER_RECEIVER;
         uint256 costInPaymentTokenForMinAmount = (tokenBuyAmount * PRICE) / 10 ** 18;
         uint256 paymentTokenBalanceBefore = paymentToken.balanceOf(BUYER);
 
         vm.prank(BUYER);
-        crowdinvesting.buy(MIN_AMOUNT_PER_BUYER, type(uint256).max, BUYER);
+        crowdinvesting.buy(MIN_AMOUNT_PER_RECEIVER, type(uint256).max, BUYER);
 
         // buy less than minAmount -> should be okay because minAmount has already been bought.
         vm.prank(BUYER);
-        crowdinvesting.buy(MIN_AMOUNT_PER_BUYER / 2, type(uint256).max, BUYER);
+        crowdinvesting.buy(MIN_AMOUNT_PER_RECEIVER / 2, type(uint256).max, BUYER);
 
-        uint256 totalBought = (MIN_AMOUNT_PER_BUYER * 3) / 2;
+        uint256 totalBought = (MIN_AMOUNT_PER_RECEIVER * 3) / 2;
         uint256 totalPaid = (costInPaymentTokenForMinAmount * 3) / 2;
 
         assertTrue(
@@ -647,9 +653,9 @@ contract CrowdinvestingTest is Test {
             paymentTokenFee,
             "fee collector has not collected fee in payment tokens"
         );
-        assertTrue(crowdinvesting.tokensSold() == (MIN_AMOUNT_PER_BUYER * 3) / 2, "crowdinvesting has sold tokens");
+        assertTrue(crowdinvesting.tokensSold() == (MIN_AMOUNT_PER_RECEIVER * 3) / 2, "crowdinvesting has sold tokens");
         assertTrue(
-            crowdinvesting.tokensBought(BUYER) == crowdinvesting.tokensSold(),
+            crowdinvesting.tokensBoughtByReceiver(BUYER) == crowdinvesting.tokensSold(),
             "crowdinvesting has sold tokens to BUYER"
         );
     }
@@ -661,7 +667,7 @@ contract CrowdinvestingTest is Test {
         vm.startPrank(OWNER);
         crowdinvesting.pause();
         crowdinvesting.setCurrencyAndTokenPrice(crowdinvesting.currency(), _price);
-        crowdinvesting.setMinAmountPerBuyer(1); // min amount = 1 currency bit
+        crowdinvesting.setMinAmountPerReceiver(1); // min amount = 1 currency bit
         vm.warp(block.timestamp + 1 days + 1 seconds);
         crowdinvesting.unpause();
         vm.stopPrank();
@@ -694,7 +700,7 @@ contract CrowdinvestingTest is Test {
     }
 
     function testBuyAnyAmountRoundsUp(uint tokenBuyAmount) public {
-        vm.assume(tokenBuyAmount < crowdinvesting.maxAmountPerBuyer());
+        vm.assume(tokenBuyAmount < crowdinvesting.maxAmountPerReceiver());
         vm.assume(tokenBuyAmount > 0);
         ensureRealCostIsHigherEqualAdvertisedCost(tokenBuyAmount);
     }
@@ -707,19 +713,19 @@ contract CrowdinvestingTest is Test {
     /*
         try to buy more than allowed
     */
-    function testBuyMoreThanMaxAmountPerBuyer() public {
+    function testBuyMoreThanMaxAmountPerReceiver() public {
         vm.prank(BUYER);
-        vm.expectRevert(Crowdinvesting.MaxAmountPerBuyerExceeded.selector);
-        crowdinvesting.buy(MAX_AMOUNT_PER_BUYER + 1, type(uint256).max, BUYER);
+        vm.expectRevert(Crowdinvesting.MaxAmountPerReceiverExceeded.selector);
+        crowdinvesting.buy(MAX_AMOUNT_PER_RECEIVER + 1, type(uint256).max, BUYER);
     }
 
     /*
         try to buy less than allowed
     */
-    function testBuyLessThanMinAmountPerBuyer() public {
+    function testBuyLessThanMinAmountPerReceiver() public {
         vm.prank(BUYER);
-        vm.expectRevert(Crowdinvesting.MinAmountPerBuyerNotReached.selector);
-        crowdinvesting.buy(MIN_AMOUNT_PER_BUYER - 1, type(uint256).max, BUYER);
+        vm.expectRevert(Crowdinvesting.MinAmountPerReceiverNotReached.selector);
+        crowdinvesting.buy(MIN_AMOUNT_PER_RECEIVER - 1, type(uint256).max, BUYER);
     }
 
     /*
@@ -730,7 +736,7 @@ contract CrowdinvestingTest is Test {
         crowdinvesting.pause();
         vm.prank(BUYER);
         vm.expectRevert("Pausable: paused");
-        crowdinvesting.buy(MIN_AMOUNT_PER_BUYER, type(uint256).max, BUYER);
+        crowdinvesting.buy(MIN_AMOUNT_PER_RECEIVER, type(uint256).max, BUYER);
     }
 
     /*
@@ -761,68 +767,68 @@ contract CrowdinvestingTest is Test {
     }
 
     /* 
-        try to update MIN_AMOUNT_PER_BUYER not paused
+        try to update MIN_AMOUNT_PER_RECEIVER not paused
     */
-    function testUpdateMinAmountPerBuyerNotPaused() public {
+    function testUpdateMinAmountPerReceiverNotPaused() public {
         vm.prank(OWNER);
         vm.expectRevert("Pausable: not paused");
-        crowdinvesting.setMinAmountPerBuyer(100);
+        crowdinvesting.setMinAmountPerReceiver(100);
     }
 
     /* 
-        try to update MIN_AMOUNT_PER_BUYER while paused
+        try to update MIN_AMOUNT_PER_RECEIVER while paused
     */
-    function testUpdateMinAmountPerBuyerPaused(uint256 newMinAmountPerBuyer) public {
-        vm.assume(newMinAmountPerBuyer <= crowdinvesting.maxAmountPerBuyer());
-        vm.assume(newMinAmountPerBuyer > 0);
-        assertTrue(crowdinvesting.minAmountPerBuyer() == MIN_AMOUNT_PER_BUYER);
+    function testUpdateMinAmountPerReceiverPaused(uint256 newMinAmountPerReceiver) public {
+        vm.assume(newMinAmountPerReceiver <= crowdinvesting.maxAmountPerReceiver());
+        vm.assume(newMinAmountPerReceiver > 0);
+        assertTrue(crowdinvesting.minAmountPerReceiver() == MIN_AMOUNT_PER_RECEIVER);
         vm.prank(OWNER);
         crowdinvesting.pause();
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true, address(crowdinvesting));
-        emit MinAmountPerBuyerChanged(newMinAmountPerBuyer);
-        crowdinvesting.setMinAmountPerBuyer(newMinAmountPerBuyer);
-        assertTrue(crowdinvesting.minAmountPerBuyer() == newMinAmountPerBuyer);
+        emit MinAmountPerReceiverChanged(newMinAmountPerReceiver);
+        crowdinvesting.setMinAmountPerReceiver(newMinAmountPerReceiver);
+        assertTrue(crowdinvesting.minAmountPerReceiver() == newMinAmountPerReceiver);
 
-        uint256 _maxAmountPerBuyer = crowdinvesting.maxAmountPerBuyer();
+        uint256 _maxAmountPerReceiver = crowdinvesting.maxAmountPerReceiver();
         vm.expectRevert(Crowdinvesting.MinAmountExceedsMaxAmount.selector);
         vm.prank(OWNER);
-        crowdinvesting.setMinAmountPerBuyer(_maxAmountPerBuyer + 1); //crowdinvesting.maxAmountPerBuyer() + 1);
+        crowdinvesting.setMinAmountPerReceiver(_maxAmountPerReceiver + 1); //crowdinvesting.maxAmountPerReceiver() + 1);
 
         vm.expectRevert(ZeroAmount.selector);
         vm.prank(OWNER);
-        crowdinvesting.setMinAmountPerBuyer(0); //crowdinvesting.maxAmountPerBuyer() + 1);
+        crowdinvesting.setMinAmountPerReceiver(0); //crowdinvesting.maxAmountPerReceiver() + 1);
 
-        console.log("minAmount: ", crowdinvesting.minAmountPerBuyer());
-        console.log("maxAmount: ", crowdinvesting.maxAmountPerBuyer());
+        console.log("minAmount: ", crowdinvesting.minAmountPerReceiver());
+        console.log("maxAmount: ", crowdinvesting.maxAmountPerReceiver());
     }
 
     /* 
-        try to update MAX_AMOUNT_PER_BUYER not paused
+        try to update MAX_AMOUNT_PER_RECEIVER not paused
     */
-    function testUpdateMaxAmountPerBuyerNotPaused() public {
+    function testUpdateMaxAmountPerReceiverNotPaused() public {
         vm.prank(OWNER);
         vm.expectRevert("Pausable: not paused");
-        crowdinvesting.setMaxAmountPerBuyer(100);
+        crowdinvesting.setMaxAmountPerReceiver(100);
     }
 
     /* 
-        try to update MAX_AMOUNT_PER_BUYER while paused
+        try to update MAX_AMOUNT_PER_RECEIVER while paused
     */
-    function testUpdateMaxAmountPerBuyerPaused(uint256 newMaxAmountPerBuyer) public {
-        vm.assume(newMaxAmountPerBuyer >= crowdinvesting.minAmountPerBuyer());
-        assertTrue(crowdinvesting.maxAmountPerBuyer() == MAX_AMOUNT_PER_BUYER);
+    function testUpdateMaxAmountPerReceiverPaused(uint256 newMaxAmountPerReceiver) public {
+        vm.assume(newMaxAmountPerReceiver >= crowdinvesting.minAmountPerReceiver());
+        assertTrue(crowdinvesting.maxAmountPerReceiver() == MAX_AMOUNT_PER_RECEIVER);
         vm.prank(OWNER);
         crowdinvesting.pause();
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true, address(crowdinvesting));
-        emit MaxAmountPerBuyerChanged(newMaxAmountPerBuyer);
-        crowdinvesting.setMaxAmountPerBuyer(newMaxAmountPerBuyer);
-        assertTrue(crowdinvesting.maxAmountPerBuyer() == newMaxAmountPerBuyer);
-        uint256 _minAmountPerBuyer = crowdinvesting.minAmountPerBuyer();
+        emit MaxAmountPerReceiverChanged(newMaxAmountPerReceiver);
+        crowdinvesting.setMaxAmountPerReceiver(newMaxAmountPerReceiver);
+        assertTrue(crowdinvesting.maxAmountPerReceiver() == newMaxAmountPerReceiver);
+        uint256 _minAmountPerReceiver = crowdinvesting.minAmountPerReceiver();
         vm.expectRevert(Crowdinvesting.MinAmountExceedsMaxAmount.selector);
         vm.prank(OWNER);
-        crowdinvesting.setMaxAmountPerBuyer(_minAmountPerBuyer - 1);
+        crowdinvesting.setMaxAmountPerReceiver(_minAmountPerReceiver - 1);
     }
 
     /*
@@ -1036,13 +1042,13 @@ contract CrowdinvestingTest is Test {
     }
 
     /*
-        try to unpause too soon after setMinAmountPerBuyer
+        try to unpause too soon after setMinAmountPerReceiver
     */
-    function testUnpauseTooSoonAfterSetMinAmountPerBuyer(
+    function testUnpauseTooSoonAfterSetMinAmountPerReceiver(
         uint128 startTime,
         uint32 changeDelay,
         uint32 attemptUnpauseDelay,
-        uint256 newMinAmountPerBuyer
+        uint256 newMinAmountPerReceiver
     ) public {
         uint256 unpauseDelay = crowdinvesting.delay();
         vm.assume(startTime < type(uint128).max / 2);
@@ -1050,8 +1056,8 @@ contract CrowdinvestingTest is Test {
         vm.assume(changeDelay > 0);
         vm.assume(attemptUnpauseDelay > 0);
         vm.assume(attemptUnpauseDelay < unpauseDelay + changeDelay);
-        vm.assume(newMinAmountPerBuyer > 0);
-        vm.assume(newMinAmountPerBuyer <= crowdinvesting.maxAmountPerBuyer());
+        vm.assume(newMinAmountPerReceiver > 0);
+        vm.assume(newMinAmountPerReceiver <= crowdinvesting.maxAmountPerReceiver());
 
         vm.warp(startTime);
         vm.prank(OWNER);
@@ -1059,7 +1065,7 @@ contract CrowdinvestingTest is Test {
         assertTrue(crowdinvesting.paused(), "crowdinvesting should be paused");
         vm.warp(startTime + changeDelay);
         vm.prank(OWNER);
-        crowdinvesting.setMinAmountPerBuyer(newMinAmountPerBuyer);
+        crowdinvesting.setMinAmountPerReceiver(newMinAmountPerReceiver);
         assertTrue(
             crowdinvesting.coolDownStart() == startTime + changeDelay,
             "coolDownStart should be startTime + changeDelay"
@@ -1073,9 +1079,9 @@ contract CrowdinvestingTest is Test {
     }
 
     /*
-        try to unpause after setMinAmountPerBuyer
+        try to unpause after setMinAmountPerReceiver
     */
-    function testUnpauseAfterSetMinAmountPerBuyer() public {
+    function testUnpauseAfterSetMinAmountPerReceiver() public {
         uint256 time = block.timestamp;
         vm.warp(time);
         vm.prank(OWNER);
@@ -1083,7 +1089,7 @@ contract CrowdinvestingTest is Test {
         assertTrue(crowdinvesting.paused());
         vm.warp(time + 2 hours);
         vm.prank(OWNER);
-        crowdinvesting.setMinAmountPerBuyer(700);
+        crowdinvesting.setMinAmountPerReceiver(700);
         assertTrue(crowdinvesting.coolDownStart() == time + 2 hours);
         vm.warp(time + crowdinvesting.delay() + 2 hours + 1 seconds);
         vm.prank(OWNER);
@@ -1091,13 +1097,13 @@ contract CrowdinvestingTest is Test {
     }
 
     /*
-        try to unpause too soon after setMaxAmountPerBuyer
+        try to unpause too soon after setMaxAmountPerReceiver
     */
-    function testUnpauseTooSoonAfterSetMaxAmountPerBuyer(
+    function testUnpauseTooSoonAfterSetMaxAmountPerReceiver(
         uint128 startTime,
         uint32 changeDelay,
         uint32 attemptUnpauseDelay,
-        uint256 newMaxAmountPerBuyer
+        uint256 newMaxAmountPerReceiver
     ) public {
         uint256 unpauseDelay = crowdinvesting.delay();
         vm.assume(startTime < type(uint128).max / 2);
@@ -1105,7 +1111,7 @@ contract CrowdinvestingTest is Test {
         vm.assume(changeDelay > 0);
         vm.assume(attemptUnpauseDelay > 0);
         vm.assume(attemptUnpauseDelay < unpauseDelay + changeDelay);
-        vm.assume(newMaxAmountPerBuyer >= crowdinvesting.minAmountPerBuyer());
+        vm.assume(newMaxAmountPerReceiver >= crowdinvesting.minAmountPerReceiver());
 
         vm.warp(startTime);
         vm.prank(OWNER);
@@ -1113,7 +1119,7 @@ contract CrowdinvestingTest is Test {
         assertTrue(crowdinvesting.paused(), "crowdinvesting should be paused");
         vm.warp(startTime + changeDelay);
         vm.prank(OWNER);
-        crowdinvesting.setMaxAmountPerBuyer(newMaxAmountPerBuyer);
+        crowdinvesting.setMaxAmountPerReceiver(newMaxAmountPerReceiver);
         assertTrue(
             crowdinvesting.coolDownStart() == startTime + changeDelay,
             "coolDownStart should be startTime + changeDelay"
@@ -1127,9 +1133,9 @@ contract CrowdinvestingTest is Test {
     }
 
     /*
-        try to unpause after setMaxAmountPerBuyer
+        try to unpause after setMaxAmountPerReceiver
     */
-    function testUnpauseAfterSetMaxAmountPerBuyer() public {
+    function testUnpauseAfterSetMaxAmountPerReceiver() public {
         uint256 time = block.timestamp;
         vm.warp(time);
         vm.prank(OWNER);
@@ -1137,7 +1143,7 @@ contract CrowdinvestingTest is Test {
         assertTrue(crowdinvesting.paused());
         vm.warp(time + 2 hours);
         vm.prank(OWNER);
-        crowdinvesting.setMaxAmountPerBuyer(2 * MIN_AMOUNT_PER_BUYER);
+        crowdinvesting.setMaxAmountPerReceiver(2 * MIN_AMOUNT_PER_RECEIVER);
         assertTrue(crowdinvesting.coolDownStart() == time + 2 hours);
         vm.warp(time + crowdinvesting.delay() + 2 hours + 1 seconds);
         vm.prank(OWNER);
@@ -1384,8 +1390,8 @@ contract CrowdinvestingTest is Test {
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             address(this),
             payable(RECEIVER),
-            MIN_AMOUNT_PER_BUYER,
-            MAX_AMOUNT_PER_BUYER,
+            MIN_AMOUNT_PER_RECEIVER,
+            MAX_AMOUNT_PER_RECEIVER,
             PRICE,
             PRICE,
             PRICE,

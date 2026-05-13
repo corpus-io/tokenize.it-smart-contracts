@@ -62,7 +62,7 @@ contract CoinvestedPositionCloneFactoryTest is Test {
                 basePrice: EXAMPLE_BASE_PRICE,
                 baseCurrency: IERC20(address(currency)),
                 token: token,
-                lockedUntil: 0,
+                lockedUntil: 1,
                 tokenExitRegistry: tokenExitRegistry
             });
     }

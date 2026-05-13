@@ -81,7 +81,7 @@ contract CoinvestedPositionPullPayoutsTest is CoinvestedPositionTestBase {
             basePrice: 100e6,
             baseCurrency: IERC20(address(blacklistCurrency)),
             token: token,
-            lockedUntil: 0,
+            lockedUntil: 1,
             tokenExitRegistry: tokenExitRegistry
         });
         return CoinvestedPosition(factory.createCoinvestedPositionClone(bytes32(0), TRUSTED_FORWARDER, args));

@@ -70,7 +70,7 @@ contract CoinvestedPositionCreditTrackingTest is CoinvestedPositionTestBase {
                     basePrice: BASE_PRICE_A,
                     baseCurrency: IERC20(address(currencyA)),
                     token: token,
-                    lockedUntil: 0,
+                    lockedUntil: 1,
                     tokenExitRegistry: tokenExitRegistry
                 })
             )
@@ -209,7 +209,7 @@ contract CoinvestedPositionCreditTrackingTest is CoinvestedPositionTestBase {
             vm.prank(OWNER);
             coinvestedPosition.pause();
             vm.prank(OWNER);
-            coinvestedPosition.setCurrency(IERC20(address(currencyB)), 100e18); // basePrice = 100e18 in currencyB
+            coinvestedPosition.setCurrency(IERC20(address(currencyB)), 100e18, 300e18); // basePrice = 100e18, tokenPrice = 300e18 in currencyB
             _enableBuy(300e18);
             _buy(IERC20(address(currencyB)), 3e18);
 

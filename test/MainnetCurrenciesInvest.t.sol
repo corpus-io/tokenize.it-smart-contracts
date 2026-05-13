@@ -44,9 +44,9 @@ contract MainnetCurrencies is Test {
     address public constant TRUSTED_FORWARDER = 0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA;
 
     uint256 public constant MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD = 20 * 10 ** 18; // 20 token
-    uint256 public constant MAX_AMOUNT_PER_BUYER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 2; // 10 token
-    uint256 public constant MIN_AMOUNT_PER_BUYER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 200; // 0.1 token
-    uint256 public constant AMOUNT_OF_TOKEN_TO_BUY = MAX_AMOUNT_PER_BUYER;
+    uint256 public constant MAX_AMOUNT_PER_RECEIVER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 2; // 10 token
+    uint256 public constant MIN_AMOUNT_PER_RECEIVER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 200; // 0.1 token
+    uint256 public constant AMOUNT_OF_TOKEN_TO_BUY = MAX_AMOUNT_PER_RECEIVER;
 
     // some math
     uint256 public constant PRICE = 7 * 10 ** 18;
@@ -118,8 +118,8 @@ contract MainnetCurrencies is Test {
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             OWNER,
             payable(RECEIVER),
-            MIN_AMOUNT_PER_BUYER,
-            MAX_AMOUNT_PER_BUYER,
+            MIN_AMOUNT_PER_RECEIVER,
+            MAX_AMOUNT_PER_RECEIVER,
             _price,
             _price,
             _price,
@@ -158,7 +158,7 @@ contract MainnetCurrencies is Test {
 
         // buy tokens
         vm.prank(BUYER);
-        _crowdinvesting.buy(MAX_AMOUNT_PER_BUYER, type(uint256).max, BUYER);
+        _crowdinvesting.buy(MAX_AMOUNT_PER_RECEIVER, type(uint256).max, BUYER);
 
         // check BUYER has tokens and RECEIVER has _currency afterwards
         assertEq(token.balanceOf(BUYER), AMOUNT_OF_TOKEN_TO_BUY, "BUYER has tokens");

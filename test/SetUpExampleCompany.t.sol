@@ -65,8 +65,8 @@ contract CompanySetUpTest is Test {
     uint256 public constant PRICE = 7 * 10 ** PAYMENT_TOKEN_DECIMALS; // 7 payment tokens per token
 
     uint256 public constant MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD = 20 * 10 ** 18; // 20 token
-    uint256 public constant MAX_AMOUNT_PER_BUYER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 2; // 10 token
-    uint256 public constant MIN_AMOUNT_PER_BUYER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 200; // 0.1 token
+    uint256 public constant MAX_AMOUNT_PER_RECEIVER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 2; // 10 token
+    uint256 public constant MIN_AMOUNT_PER_RECEIVER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 200; // 0.1 token
 
     uint256 public constant REQUIREMENTS = 0x3842; // 0b111100000010
 
@@ -199,8 +199,8 @@ contract CompanySetUpTest is Test {
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             companyAdmin,
             COMPANY_CURRENCY_RECEIVER,
-            MIN_AMOUNT_PER_BUYER,
-            MAX_AMOUNT_PER_BUYER,
+            MIN_AMOUNT_PER_RECEIVER,
+            MAX_AMOUNT_PER_RECEIVER,
             PRICE,
             PRICE,
             PRICE,
