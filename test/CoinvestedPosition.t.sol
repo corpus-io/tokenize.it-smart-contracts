@@ -718,11 +718,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](3);
         leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_5PCT, recoveryArmedAt: 0}); // 5%
         leadInvestors[1] = LeadInvestor({account: LEAD_B, profitFraction: CARRY_2PCT, recoveryArmedAt: 0}); // 2%
-        leadInvestors[2] = LeadInvestor({
-            account: TOKEN_RECEIVER,
-            profitFraction: CARRY_10PCT,
-            recoveryArmedAt: 0
-        }); // 10%
+        leadInvestors[2] = LeadInvestor({account: TOKEN_RECEIVER, profitFraction: CARRY_10PCT, recoveryArmedAt: 0}); // 10%
         CoinvestedPosition coinvestedPositionThreeLeads = _deployCoinvestedPosition(
             bytes32(0),
             300e6,

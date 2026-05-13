@@ -89,11 +89,7 @@ contract CoinvestedPosition is TokenSwapBase {
     /// @notice The owner exercised the recovery path and rotated a lead investor slot's account
     ///         via ownerRotateLeadInvestorAccount. Distinct from LeadInvestorAccountRotated so
     ///         indexers can attribute the action to the owner rather than the lead investor.
-    event LeadInvestorAccountRecovered(
-        uint256 indexed index,
-        address indexed oldAccount,
-        address indexed newAccount
-    );
+    event LeadInvestorAccountRecovered(uint256 indexed index, address indexed oldAccount, address indexed newAccount);
 
     /// @notice Duration after the most recent unclaimed credit event for a given lead investor
     ///         after which the owner may rotate that slot via ownerRotateLeadInvestorAccount.
