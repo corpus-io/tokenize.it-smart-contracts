@@ -267,7 +267,7 @@ contract Crowdinvesting is
 
     /**
      * Validates the purchase against global and per-receiver limits, then delivers the tokens.
-     * The min/max limits are enforced on `_tokenReceiver`, not on `msg.sender`.
+     * The min/max limits are enforced on `_tokenReceiver`, not on `_msgSender()`.
      * @param _amount how many tokens to deliver, in bits (bit = smallest subunit of token)
      * @param _tokenReceiver address that will receive the tokens; limits are tracked against this address
      */
