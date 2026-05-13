@@ -79,12 +79,7 @@ contract CoinvestedPosition is TokenSwapBase {
     /// @notice A lead investor withdrew their pending credit. `to` is the chosen destination,
     ///         which may differ from the slot's current account (e.g. when routing around a
     ///         currency-level blacklist on the registered address).
-    event LeadInvestorWithdrawn(
-        uint256 indexed index,
-        IERC20 indexed currency,
-        address indexed to,
-        uint256 amount
-    );
+    event LeadInvestorWithdrawn(uint256 indexed index, IERC20 indexed currency, address indexed to, uint256 amount);
     /// @notice The coinvestor withdrew their pending credit to `to` (credit portion only).
     event CoinvestorWithdrawn(IERC20 indexed currency, address indexed to, uint256 amount);
     /// @notice Untracked balance (currency on the contract above `totalCredit`) was swept to the

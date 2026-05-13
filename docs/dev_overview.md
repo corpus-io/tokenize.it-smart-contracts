@@ -199,13 +199,13 @@ CoinvestedPosition is a long-lived contract — an exit can be years away — so
 
 `recoveryArmedAt` is a per-lead-investor flag that tracks whether the owner has the right to rotate that slot:
 
-| State                                         | Transition                                                                                |
-| --------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `recoveryArmedAt = 0` (disarmed)              | Initial state. Owner cannot rotate.                                                       |
-| Non-zero credit accrues for this lead investor | `_credit` sets `recoveryArmedAt = uint64(block.timestamp)`. Each new credit pushes it forward.   |
-| Lead investor calls `withdrawAsLeadInvestor`  | `recoveryArmedAt` resets to `0`. Pulling any currency disarms the timer.                  |
-| Lead investor calls `rotateLeadInvestorAccount` | `recoveryArmedAt` resets to `0`. Self-rotation also disarms.                            |
-| `block.timestamp ≥ recoveryArmedAt + TIMEOUT` | Owner may call `ownerRotateLeadInvestorAccount(index, newAccount)`. Resets to `0` after.  |
+| State                                           | Transition                                                                                     |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `recoveryArmedAt = 0` (disarmed)                | Initial state. Owner cannot rotate.                                                            |
+| Non-zero credit accrues for this lead investor  | `_credit` sets `recoveryArmedAt = uint64(block.timestamp)`. Each new credit pushes it forward. |
+| Lead investor calls `withdrawAsLeadInvestor`    | `recoveryArmedAt` resets to `0`. Pulling any currency disarms the timer.                       |
+| Lead investor calls `rotateLeadInvestorAccount` | `recoveryArmedAt` resets to `0`. Self-rotation also disarms.                                   |
+| `block.timestamp ≥ recoveryArmedAt + TIMEOUT`   | Owner may call `ownerRotateLeadInvestorAccount(index, newAccount)`. Resets to `0` after.       |
 
 The owner cannot manufacture the right to rotate by withholding claims — only credit events arm the timer, and the lead investor can disarm it at any time by pulling credit (in any currency they hold) or by rotating their own slot.
 
