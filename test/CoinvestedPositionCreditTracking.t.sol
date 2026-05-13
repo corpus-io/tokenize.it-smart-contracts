@@ -21,8 +21,8 @@ contract CoinvestedPositionCreditTrackingTest is CoinvestedPositionTestBase {
     address public constant LEAD_C = 0x4109709eCFa91A80626ff3989d68F67f5b1DD124;
     address public constant COINVESTOR_DEST = 0xD109709eCFA91a80626ff3989d68F67f5B1Dd12D;
 
-    uint64 public constant CARRY_5PCT = type(uint64).max / 20;
-    uint64 public constant CARRY_3PCT = uint64((uint256(type(uint64).max) * 3) / 100);
+    uint32 public constant CARRY_5PCT = type(uint32).max / 20;
+    uint32 public constant CARRY_3PCT = uint32((uint256(type(uint32).max) * 3) / 100);
 
     uint256 public constant BASE_PRICE_A = 100e6;
     uint256 public constant EXTRA = 77e6; // accidentally-sent currencyA
@@ -56,9 +56,9 @@ contract CoinvestedPositionCreditTrackingTest is CoinvestedPositionTestBase {
         CoinvestedPositionCloneFactory cpFactory = new CoinvestedPositionCloneFactory(address(logic));
 
         LeadInvestor[] memory leads = new LeadInvestor[](3);
-        leads[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT}); // 10%
-        leads[1] = LeadInvestor({account: LEAD_B, profitFraction: CARRY_5PCT}); //  5%
-        leads[2] = LeadInvestor({account: LEAD_C, profitFraction: CARRY_3PCT}); //  3%
+        leads[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT, recoveryArmedAt: 0}); // 10%
+        leads[1] = LeadInvestor({account: LEAD_B, profitFraction: CARRY_5PCT, recoveryArmedAt: 0}); //  5%
+        leads[2] = LeadInvestor({account: LEAD_C, profitFraction: CARRY_3PCT, recoveryArmedAt: 0}); //  3%
 
         coinvestedPosition = CoinvestedPosition(
             cpFactory.createCoinvestedPositionClone(
@@ -80,8 +80,8 @@ contract CoinvestedPositionCreditTrackingTest is CoinvestedPositionTestBase {
         token.mint(address(coinvestedPosition), 10e18);
     }
 
-    function _carry(uint64 fraction, uint256 profit) internal pure returns (uint256) {
-        return (uint256(fraction) * profit) / type(uint64).max;
+    function _carry(uint32 fraction, uint256 profit) internal pure returns (uint256) {
+        return (uint256(fraction) * profit) / type(uint32).max;
     }
 
     function _enableBuy(uint256 tokenPrice) internal {

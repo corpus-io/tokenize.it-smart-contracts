@@ -53,8 +53,8 @@ contract CoinvestedPositionCloneFactoryTest is Test {
     ///     We use a function instead of a variable because the array needs to be in memory
     function _baseArgs() internal view returns (CoinvestedPositionInitializerArguments memory) {
         LeadInvestor[] memory leads = new LeadInvestor[](2);
-        leads[0] = LeadInvestor({account: LEAD_A, profitFraction: type(uint64).max / 10}); // 10%
-        leads[1] = LeadInvestor({account: LEAD_B, profitFraction: type(uint64).max / 20}); // 5%
+        leads[0] = LeadInvestor({account: LEAD_A, profitFraction: type(uint32).max / 10, recoveryArmedAt: 0}); // 10%
+        leads[1] = LeadInvestor({account: LEAD_B, profitFraction: type(uint32).max / 20, recoveryArmedAt: 0}); // 5%
         return
             CoinvestedPositionInitializerArguments({
                 owner: OWNER,
@@ -152,7 +152,7 @@ contract CoinvestedPositionCloneFactoryTest is Test {
     function testLeadInvestorsCarryFractionChangesAddress() public view {
         CoinvestedPositionInitializerArguments memory args = _baseArgs();
         address a1 = factory.predictCloneAddress(EXAMPLE_SALT, TRUSTED_FORWARDER, args);
-        args.leadInvestors[0].profitFraction = type(uint64).max / 10 + 1;
+        args.leadInvestors[0].profitFraction = type(uint32).max / 10 + 1;
         address a2 = factory.predictCloneAddress(EXAMPLE_SALT, TRUSTED_FORWARDER, args);
         assertFalse(a1 == a2);
     }
@@ -164,7 +164,7 @@ contract CoinvestedPositionCloneFactoryTest is Test {
         LeadInvestor[] memory threeLeads = new LeadInvestor[](3);
         threeLeads[0] = args.leadInvestors[0];
         threeLeads[1] = args.leadInvestors[1];
-        threeLeads[2] = LeadInvestor({account: address(0xBBB), profitFraction: 1});
+        threeLeads[2] = LeadInvestor({account: address(0xBBB), profitFraction: 1, recoveryArmedAt: 0});
         args.leadInvestors = threeLeads;
         address a2 = factory.predictCloneAddress(EXAMPLE_SALT, TRUSTED_FORWARDER, args);
         assertFalse(a1 == a2);
@@ -206,32 +206,34 @@ contract CoinvestedPositionCloneFactoryTest is Test {
         CoinvestedPositionInitializerArguments memory args = _baseArgs();
         CoinvestedPosition cp = _deploy(EXAMPLE_SALT, TRUSTED_FORWARDER, args);
 
-        (address accA, uint64 fracA) = cp.leadInvestors(0);
-        (address accB, uint64 fracB) = cp.leadInvestors(1);
+        (address accA, uint32 fracA, uint64 sinceA) = cp.leadInvestors(0);
+        (address accB, uint32 fracB, uint64 sinceB) = cp.leadInvestors(1);
         assertEq(accA, LEAD_A);
-        assertEq(fracA, type(uint64).max / 10);
+        assertEq(fracA, type(uint32).max / 10);
+        assertEq(sinceA, 0);
         assertEq(accB, LEAD_B);
-        assertEq(fracB, type(uint64).max / 20);
+        assertEq(fracB, type(uint32).max / 20);
+        assertEq(sinceB, 0);
     }
 
     function testFuzzLeadInvestorsStoredCorrectly(
         address[100] calldata accounts,
-        uint64[100] calldata fractions,
+        uint32[100] calldata fractions,
         uint8 count
     ) public {
         vm.assume(count > 0 && count <= 100);
 
-        // build a valid lead investors array: non-zero accounts, non-zero fractions, sum fits uint64
+        // build a valid lead investors array: non-zero accounts, non-zero fractions, sum fits uint32
         LeadInvestor[] memory leads = new LeadInvestor[](count);
         uint256 usedSlots = 0;
-        uint64 runningSum = 0;
+        uint32 runningSum = 0;
         for (uint256 i = 0; i < count; i++) {
             address acc = accounts[i];
-            uint64 frac = fractions[i];
+            uint32 frac = fractions[i];
             if (acc == address(0)) continue;
             if (frac == 0) continue;
-            if (uint256(runningSum) + uint256(frac) > type(uint64).max) break;
-            leads[usedSlots] = LeadInvestor({account: acc, profitFraction: frac});
+            if (uint256(runningSum) + uint256(frac) > type(uint32).max) break;
+            leads[usedSlots] = LeadInvestor({account: acc, profitFraction: frac, recoveryArmedAt: 0});
             runningSum += frac;
             usedSlots++;
         }
@@ -250,7 +252,7 @@ contract CoinvestedPositionCloneFactoryTest is Test {
 
         assertEq(cp.getLeadInvestorsCount(), usedSlots);
         for (uint256 i = 0; i < usedSlots; i++) {
-            (address acc, uint64 frac) = cp.leadInvestors(i);
+            (address acc, uint32 frac, ) = cp.leadInvestors(i);
             assertEq(acc, trimmed[i].account);
             assertEq(frac, trimmed[i].profitFraction);
         }

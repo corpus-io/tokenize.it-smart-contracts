@@ -21,8 +21,8 @@ import "./resources/CloneCreators.sol";
 contract MockCoinvestedPosition {
     LeadInvestor[] private _investors;
 
-    function addLeadInvestor(address account, uint64 profitFraction) external {
-        _investors.push(LeadInvestor({account: account, profitFraction: profitFraction}));
+    function addLeadInvestor(address account, uint32 profitFraction) external {
+        _investors.push(LeadInvestor({account: account, profitFraction: profitFraction, recoveryArmedAt: 0}));
     }
 
     function clearLeadInvestors() external {
@@ -34,8 +34,10 @@ contract MockCoinvestedPosition {
     }
 
     /// @dev Matches the auto-generated getter for the public `LeadInvestor[] public leadInvestors` array.
-    function leadInvestors(uint256 index) external view returns (address account, uint64 profitFraction) {
-        return (_investors[index].account, _investors[index].profitFraction);
+    function leadInvestors(
+        uint256 index
+    ) external view returns (address account, uint32 profitFraction, uint64 recoveryArmedAt) {
+        return (_investors[index].account, _investors[index].profitFraction, _investors[index].recoveryArmedAt);
     }
 }
 
@@ -53,12 +55,12 @@ contract FeeDistributorTest is Test {
     address public constant TRUSTED_FORWARDER = 0xa109709ecfA91A80626ff3989D68F67F5b1dD12a;
 
     // ── Test constants ────────────────────────────────────────────────────────
-    // 10 % of uint64.max (floor)
-    uint64 public constant CARRY_10PCT = type(uint64).max / 10;
-    // 5 % of uint64.max (floor)
-    uint64 public constant CARRY_5PCT = type(uint64).max / 20;
+    // 10 % of uint32.max (floor)
+    uint32 public constant CARRY_10PCT = type(uint32).max / 10;
+    // 5 % of uint32.max (floor)
+    uint32 public constant CARRY_5PCT = type(uint32).max / 20;
     // Equal shares
-    uint64 public constant CARRY_HALF = type(uint64).max / 2;
+    uint32 public constant CARRY_HALF = type(uint32).max / 2;
 
     uint256 public constant FEE_AMOUNT = 300e6; // 300 USDC
 
@@ -106,8 +108,8 @@ contract FeeDistributorTest is Test {
         positionFactory = new CoinvestedPositionCloneFactory(address(positionLogic));
 
         LeadInvestor[] memory investors = new LeadInvestor[](2);
-        investors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT});
-        investors[1] = LeadInvestor({account: LEAD_B, profitFraction: CARRY_5PCT});
+        investors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT, recoveryArmedAt: 0});
+        investors[1] = LeadInvestor({account: LEAD_B, profitFraction: CARRY_5PCT, recoveryArmedAt: 0});
 
         realPosition = CoinvestedPosition(
             positionFactory.createCoinvestedPositionClone(

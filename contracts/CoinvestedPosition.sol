@@ -12,8 +12,14 @@ import "./common/TokenSwapBase.sol";
 struct LeadInvestor {
     /// lead investor address that receives carry
     address account;
-    /// profit fraction this lead investor receives, divided by uint64.max
-    uint64 profitFraction;
+    /// profit fraction this lead investor receives, divided by uint32.max
+    uint32 profitFraction;
+    /// Owner-recovery timer. 0 = disarmed (initial state, or after the lead investor
+    /// proved liveness by pulling credit or self-rotating). Otherwise the unix timestamp
+    /// of the most recent credit event for this lead investor: the owner may rotate this
+    /// slot via ownerRotateLeadInvestorAccount once block.timestamp is at least
+    /// `recoveryArmedAt + LEAD_INVESTOR_RECOVERY_TIMEOUT`. Initialized to 0.
+    uint64 recoveryArmedAt;
 }
 
 struct CoinvestedPositionInitializerArguments {
@@ -58,6 +64,7 @@ contract CoinvestedPosition is TokenSwapBase {
     error ZeroLeadInvestorProfitFraction();
     error NotLeadInvestor();
     error ZeroLockedUntil();
+    error LeadInvestorRecoveryLocked();
 
     /// @notice The payment currency and base price were updated to a new denomination.
     event CurrencyChanged(address indexed currency, uint256 basePrice);
@@ -77,8 +84,23 @@ contract CoinvestedPosition is TokenSwapBase {
     ///         coinvestor `to` during a coinvestor withdrawal. Emitted only when the surplus is non-zero,
     ///         so credit-side numbers stay clean for consumers that sum {CoinvestorCredited} amounts.
     event CoinvestorSwept(IERC20 indexed currency, address indexed to, uint256 amount);
-    /// @notice A lead investor rotated their own address.
-    event LeadInvestorAccountChanged(uint256 indexed index, address indexed oldAccount, address indexed newAccount);
+    /// @notice A lead investor rotated their own slot's account via rotateLeadInvestorAccount.
+    event LeadInvestorAccountRotated(uint256 indexed index, address indexed oldAccount, address indexed newAccount);
+    /// @notice The owner exercised the recovery path and rotated a lead investor slot's account
+    ///         via ownerRotateLeadInvestorAccount. Distinct from LeadInvestorAccountRotated so
+    ///         indexers can attribute the action to the owner rather than the lead investor.
+    event LeadInvestorAccountRecovered(
+        uint256 indexed index,
+        address indexed oldAccount,
+        address indexed newAccount
+    );
+
+    /// @notice Duration after the most recent unclaimed credit event for a given lead investor
+    ///         after which the owner may rotate that slot via ownerRotateLeadInvestorAccount.
+    ///         Designed to recover stranded carry when a lead investor has lost access to their keys.
+    ///         A constant rather than a stored value so the owner cannot shrink it post-deploy
+    ///         to seize carry; legal teams set the literal pre-deploy.
+    uint64 public constant LEAD_INVESTOR_RECOVERY_TIMEOUT = 90 days;
 
     /// lead investors and their carry fractions
     LeadInvestor[] public leadInvestors;
@@ -92,7 +114,7 @@ contract CoinvestedPosition is TokenSwapBase {
 
     /// Pending pull-payout for a lead investor, keyed by their array index and currency.
     /// @dev Index-keyed (not address-keyed) so rotating an investor's address via
-    ///      setLeadInvestorAccount automatically redirects pending credit to the new address.
+    ///      rotateLeadInvestorAccount automatically redirects pending credit to the new address.
     mapping(uint256 => mapping(IERC20 => uint256)) public leadInvestorCredit;
     /// Pending pull-payout for the coinvestor (owner), keyed by currency.
     mapping(IERC20 => uint256) public coinvestorCredit;
@@ -118,12 +140,18 @@ contract CoinvestedPosition is TokenSwapBase {
         _initializeBase(_arguments.owner, 0, _arguments.baseCurrency, _arguments.token);
 
         require(_arguments.leadInvestors.length > 0, NoLeadInvestors());
-        uint64 profitFractionsSum = 0;
+        uint32 profitFractionsSum = 0;
         for (uint256 i = 0; i < _arguments.leadInvestors.length; i++) {
             require(_arguments.leadInvestors[i].account != address(0), ZeroLeadInvestorAddress());
             require(_arguments.leadInvestors[i].profitFraction > 0, ZeroLeadInvestorProfitFraction());
             profitFractionsSum += _arguments.leadInvestors[i].profitFraction; // reverts on overflow, thus avoiding profitFractionsSum > 100%
-            leadInvestors.push(_arguments.leadInvestors[i]);
+            leadInvestors.push(
+                LeadInvestor({
+                    account: _arguments.leadInvestors[i].account,
+                    profitFraction: _arguments.leadInvestors[i].profitFraction,
+                    recoveryArmedAt: 0
+                })
+            );
         }
         require(address(_arguments.tokenExitRegistry) != address(0), ZeroTokenExitRegistryAddress());
         require(_arguments.lockedUntil > 0, ZeroLockedUntil());
@@ -219,10 +247,13 @@ contract CoinvestedPosition is TokenSwapBase {
         uint256 totalCarry;
         uint256 leadInvestorsLength = leadInvestors.length;
         for (uint256 i = 0; i < leadInvestorsLength; i++) {
-            uint256 carry = (uint256(leadInvestors[i].profitFraction) * profit) / type(uint64).max;
+            uint256 carry = (uint256(leadInvestors[i].profitFraction) * profit) / type(uint32).max;
             if (carry != 0) {
                 leadInvestorCredit[i][_currency] += carry;
                 totalCarry += carry;
+                // (Re-)arm the recovery timer for this lead investor; overwritten on every new credit
+                // so protection always runs from the most recent credit event.
+                leadInvestors[i].recoveryArmedAt = uint64(block.timestamp);
                 emit LeadInvestorCredited(i, _currency, carry);
             }
         }
@@ -235,21 +266,21 @@ contract CoinvestedPosition is TokenSwapBase {
     }
 
     /**
-     * @notice Claim this contract's eligible dividend share from `_dist` and split it among lead investors.
+     * @notice Claim this contract's eligible dividend share from `_distribution` and split it among lead investors.
      * @dev The full received amount is treated as profit. Each lead investor receives their carry (profitFraction
      *      of profit); remainder goes to receiver. Any trusted currency may be used.
-     * @param _dist the Distribution (dividend) contract to claim from
+     * @param _distribution the Distribution (dividend) contract to claim from
      * @param _minPayout minimum currency the call must receive; passed through to the distribution
      */
-    function claimDistribution(Distribution _dist, uint256 _minPayout) external onlyOwner nonReentrant {
-        IERC20 dividendCurrency = _dist.currency();
+    function claimDistribution(Distribution _distribution, uint256 _minPayout) external onlyOwner nonReentrant {
+        IERC20 dividendCurrency = _distribution.currency();
         require(token.allowList().map(address(dividendCurrency)) == TRUSTED_CURRENCY, UntrustedCurrency());
         uint256 before = dividendCurrency.balanceOf(address(this));
-        _dist.claim(address(this), _minPayout);
+        _distribution.claim(address(this), _minPayout);
         uint256 received = dividendCurrency.balanceOf(address(this)) - before;
         // basePortion = 0: dividends have no base portion; all of `received` is carry-eligible.
         _credit(received, 0, dividendCurrency);
-        emit DistributionClaimed(address(_dist), address(dividendCurrency), received);
+        emit DistributionClaimed(address(_distribution), address(dividendCurrency), received);
     }
 
     /**
@@ -299,16 +330,49 @@ contract CoinvestedPosition is TokenSwapBase {
      *      blacklisted address is still able to sign this transaction, since blacklisting
      *      is enforced inside the currency contract, not at the EVM level).
      * @dev Index-keyed pull credit means any pending balances automatically follow the new
-     *      address; no migration step is needed.
+     *      address; no migration step is needed. Also disarms the owner-recovery timer:
+     *      a self-rotation proves the lead investor still holds their keys.
      * @param index lead investor index in the `leadInvestors` array
      * @param newAccount new address for this slot; must be non-zero
      */
-    function setLeadInvestorAccount(uint256 index, address newAccount) external {
+    function rotateLeadInvestorAccount(uint256 index, address newAccount) external {
         require(newAccount != address(0), ZeroLeadInvestorAddress());
         address oldAccount = leadInvestors[index].account;
         require(_msgSender() == oldAccount, NotLeadInvestor());
         leadInvestors[index].account = newAccount;
-        emit LeadInvestorAccountChanged(index, oldAccount, newAccount);
+        leadInvestors[index].recoveryArmedAt = 0;
+        emit LeadInvestorAccountRotated(index, oldAccount, newAccount);
+    }
+
+    /**
+     * @notice Owner-driven recovery: rotate the address of a lead-investor slot whose holder has
+     *      not pulled their credit within `LEAD_INVESTOR_RECOVERY_TIMEOUT` after the most recent
+     *      credit event. Designed for the case where a lead investor has lost access to their keys.
+     * @dev Only callable when `recoveryArmedAt != 0` (a credit accrued and has not yet been pulled or
+     *      otherwise acknowledged) AND `block.timestamp >= recoveryArmedAt + LEAD_INVESTOR_RECOVERY_TIMEOUT`.
+     *      Any liveness signal from the lead investor (`withdrawAsLeadInvestor` or
+     *      `rotateLeadInvestorAccount`) disarms the timer, blocking this path. The new account starts
+     *      disarmed — the owner cannot immediately re-rotate; another credit event plus the full
+     *      timeout is required.
+     *      Reads and writes the slot once each: the struct fits in a single storage slot, so a
+     *      memory round-trip collapses to one SLOAD and one SSTORE while preserving the (unchanged)
+     *      profitFraction field.
+     * @param index lead investor slot to rotate
+     * @param newAccount new address for the slot; must be non-zero
+     */
+    function ownerRotateLeadInvestorAccount(uint256 index, address newAccount) external onlyOwner {
+        require(newAccount != address(0), ZeroLeadInvestorAddress());
+        LeadInvestor memory leadInvestor = leadInvestors[index];
+        require(leadInvestor.recoveryArmedAt != 0, LeadInvestorRecoveryLocked());
+        require(
+            block.timestamp >= uint256(leadInvestor.recoveryArmedAt) + LEAD_INVESTOR_RECOVERY_TIMEOUT,
+            LeadInvestorRecoveryLocked()
+        );
+        address oldAccount = leadInvestor.account;
+        leadInvestor.account = newAccount;
+        leadInvestor.recoveryArmedAt = 0;
+        leadInvestors[index] = leadInvestor;
+        emit LeadInvestorAccountRecovered(index, oldAccount, newAccount);
     }
 
     /**
@@ -323,6 +387,8 @@ contract CoinvestedPosition is TokenSwapBase {
         require(amount != 0, ZeroAmount());
         leadInvestorCredit[index][_currency] = 0;
         totalCredit[_currency] -= amount;
+        // a successful pull proves the lead investor holds keys; disarm the recovery timer.
+        leadInvestors[index].recoveryArmedAt = 0;
         _currency.safeTransfer(account, amount);
         emit LeadInvestorWithdrawn(index, _currency, amount);
     }

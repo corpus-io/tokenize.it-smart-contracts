@@ -56,10 +56,10 @@ contract CoinvestedPositionExitTest is Test {
     address public constant FEE_COLLECTOR = 0xB109709ECfa91A80626ff3989d68f67f5B1Dd12B;
 
     // ── Carry constants ───────────────────────────────────────────────────────
-    // 10% of uint64.max
-    uint64 public constant CARRY_10PCT = type(uint64).max / 10;
-    // 5% of uint64.max
-    uint64 public constant CARRY_5PCT = type(uint64).max / 20;
+    // 10% of uint32.max
+    uint32 public constant CARRY_10PCT = type(uint32).max / 10;
+    // 5% of uint32.max
+    uint32 public constant CARRY_5PCT = type(uint32).max / 20;
 
     // ── Token setup ───────────────────────────────────────────────────────────
     uint256 public constant TOKEN_SUPPLY = 1000e18;
@@ -98,7 +98,7 @@ contract CoinvestedPositionExitTest is Test {
         for (uint256 i = 0; i < leadCount; i++) {
             uint256 credit = position.leadInvestorCredit(i, _currency);
             if (credit != 0) {
-                (address account, ) = position.leadInvestors(i);
+                (address account, , ) = position.leadInvestors(i);
                 vm.prank(account);
                 position.withdrawAsLeadInvestor(i, _currency);
             }
@@ -165,8 +165,8 @@ contract CoinvestedPositionExitTest is Test {
 
     function _defaultLeadInvestors() internal pure returns (LeadInvestor[] memory) {
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](2);
-        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT});
-        leadInvestors[1] = LeadInvestor({account: LEAD_B, profitFraction: CARRY_5PCT});
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT, recoveryArmedAt: 0});
+        leadInvestors[1] = LeadInvestor({account: LEAD_B, profitFraction: CARRY_5PCT, recoveryArmedAt: 0});
         return leadInvestors;
     }
 
@@ -319,8 +319,8 @@ contract CoinvestedPositionExitTest is Test {
         uint256 bGot = eurc.balanceOf(LEAD_B) - beforeB;
         uint256 rGot = eurc.balanceOf(RECEIVER) - beforeR;
 
-        uint256 expectedA = (uint256(CARRY_10PCT) * carry) / type(uint64).max;
-        uint256 expectedB = (uint256(CARRY_5PCT) * carry) / type(uint64).max;
+        uint256 expectedA = (uint256(CARRY_10PCT) * carry) / type(uint32).max;
+        uint256 expectedB = (uint256(CARRY_5PCT) * carry) / type(uint32).max;
         assertEq(aGot, expectedA, "IIA: wrong A payout");
         assertEq(bGot, expectedB, "IIA: wrong B payout");
         // RECEIVER gets full sweep: basePayout + dust from carry
@@ -425,8 +425,8 @@ contract CoinvestedPositionExitTest is Test {
         uint256 bGot = eure.balanceOf(LEAD_B) - beforeB;
         uint256 rGot = eure.balanceOf(RECEIVER) - beforeR;
 
-        uint256 expectedA = (uint256(CARRY_10PCT) * carry) / type(uint64).max;
-        uint256 expectedB = (uint256(CARRY_5PCT) * carry) / type(uint64).max;
+        uint256 expectedA = (uint256(CARRY_10PCT) * carry) / type(uint32).max;
+        uint256 expectedB = (uint256(CARRY_5PCT) * carry) / type(uint32).max;
         assertEq(aGot, expectedA, "IIIA: wrong A payout in EURe");
         assertEq(bGot, expectedB, "IIIA: wrong B payout in EURe");
         assertEq(rGot, received - expectedA - expectedB, "IIIA: wrong RECEIVER payout in EURe");
@@ -474,8 +474,8 @@ contract CoinvestedPositionExitTest is Test {
         uint256 aGot = eurc.balanceOf(LEAD_A) - beforeA;
         uint256 bGot = eurc.balanceOf(LEAD_B) - beforeB;
         uint256 rGot = eurc.balanceOf(RECEIVER) - beforeR;
-        uint256 expectedA = (uint256(CARRY_10PCT) * carry) / type(uint64).max;
-        uint256 expectedB = (uint256(CARRY_5PCT) * carry) / type(uint64).max;
+        uint256 expectedA = (uint256(CARRY_10PCT) * carry) / type(uint32).max;
+        uint256 expectedB = (uint256(CARRY_5PCT) * carry) / type(uint32).max;
         assertEq(aGot, expectedA, "IIIB: wrong A payout downscaled");
         assertEq(bGot, expectedB, "IIIB: wrong B payout downscaled");
         assertEq(rGot, received - expectedA - expectedB, "IIIB: wrong RECEIVER payout downscaled");
@@ -500,8 +500,8 @@ contract CoinvestedPositionExitTest is Test {
 
         // Same as II-A — using formula-based expected values to confirm no double-scaling
         uint256 carryIIIC = 20_000e6;
-        assertEq(eurc.balanceOf(LEAD_A), (uint256(CARRY_10PCT) * carryIIIC) / type(uint64).max, "IIIC: wrong A payout");
-        assertEq(eurc.balanceOf(LEAD_B), (uint256(CARRY_5PCT) * carryIIIC) / type(uint64).max, "IIIC: wrong B payout");
+        assertEq(eurc.balanceOf(LEAD_A), (uint256(CARRY_10PCT) * carryIIIC) / type(uint32).max, "IIIC: wrong A payout");
+        assertEq(eurc.balanceOf(LEAD_B), (uint256(CARRY_5PCT) * carryIIIC) / type(uint32).max, "IIIC: wrong B payout");
         assertEq(token.balanceOf(address(coinvestedPosition)), 0, "IIIC: cp still holds tokens");
     }
 
@@ -512,15 +512,15 @@ contract CoinvestedPositionExitTest is Test {
     /// IV-A: Three lead investors, non-round fractions
     /// A=17%, B=11%, C=3%; pricePerToken=600e6 so received=120,000e6; base=20,000e6; carry=100,000e6
     // carry fractions for IV-A test (constants to avoid stack pressure)
-    uint64 internal constant IVA_FRAC_A = uint64((uint256(type(uint64).max) * 17) / 100);
-    uint64 internal constant IVA_FRAC_B = uint64((uint256(type(uint64).max) * 11) / 100);
-    uint64 internal constant IVA_FRAC_C = uint64((uint256(type(uint64).max) * 3) / 100);
+    uint32 internal constant IVA_FRAC_A = uint32((uint256(type(uint32).max) * 17) / 100);
+    uint32 internal constant IVA_FRAC_B = uint32((uint256(type(uint32).max) * 11) / 100);
+    uint32 internal constant IVA_FRAC_C = uint32((uint256(type(uint32).max) * 3) / 100);
 
     function _deployThreeInvestorCp() internal returns (CoinvestedPosition) {
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](3);
-        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: IVA_FRAC_A});
-        leadInvestors[1] = LeadInvestor({account: LEAD_B, profitFraction: IVA_FRAC_B});
-        leadInvestors[2] = LeadInvestor({account: LEAD_C, profitFraction: IVA_FRAC_C});
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: IVA_FRAC_A, recoveryArmedAt: 0});
+        leadInvestors[1] = LeadInvestor({account: LEAD_B, profitFraction: IVA_FRAC_B, recoveryArmedAt: 0});
+        leadInvestors[2] = LeadInvestor({account: LEAD_C, profitFraction: IVA_FRAC_C, recoveryArmedAt: 0});
         CoinvestedPosition coinvestedPosition3 = _deployCoinvestedPosition(
             bytes32(0),
             BASE_PRICE_EURC,
@@ -567,9 +567,9 @@ contract CoinvestedPositionExitTest is Test {
         uint256 bGot = eurc.balanceOf(LEAD_B) - beforeB;
         uint256 cGot = eurc.balanceOf(LEAD_C) - beforeC;
 
-        assertEq(aGot, (uint256(IVA_FRAC_A) * carry) / type(uint64).max, "IVA: wrong A payout");
-        assertEq(bGot, (uint256(IVA_FRAC_B) * carry) / type(uint64).max, "IVA: wrong B payout");
-        assertEq(cGot, (uint256(IVA_FRAC_C) * carry) / type(uint64).max, "IVA: wrong C payout");
+        assertEq(aGot, (uint256(IVA_FRAC_A) * carry) / type(uint32).max, "IVA: wrong A payout");
+        assertEq(bGot, (uint256(IVA_FRAC_B) * carry) / type(uint32).max, "IVA: wrong B payout");
+        assertEq(cGot, (uint256(IVA_FRAC_C) * carry) / type(uint32).max, "IVA: wrong C payout");
 
         uint256[] memory payouts = new uint256[](3);
         payouts[0] = aGot;
@@ -580,10 +580,10 @@ contract CoinvestedPositionExitTest is Test {
 
     /// IV-B: Single lead investor with ~99.9% carry
     function testIVB_SingleLeadNearMaxCarry() public {
-        // profitFraction = type(uint64).max - 1  (≈ 100%, just below the max limit)
-        uint64 fracNearMax = type(uint64).max - 1;
+        // profitFraction = type(uint32).max - 1  (≈ 100%, just below the max limit)
+        uint32 fracNearMax = type(uint32).max - 1;
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](1);
-        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: fracNearMax});
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: fracNearMax, recoveryArmedAt: 0});
 
         CoinvestedPosition coinvestedPositionSingle = _deployCoinvestedPosition(
             bytes32(0),
@@ -611,7 +611,7 @@ contract CoinvestedPositionExitTest is Test {
         uint256 aGot = eurc.balanceOf(LEAD_A) - beforeA;
         uint256 rGot = eurc.balanceOf(RECEIVER) - beforeR;
 
-        uint256 expectedA = (uint256(fracNearMax) * carry) / type(uint64).max;
+        uint256 expectedA = (uint256(fracNearMax) * carry) / type(uint32).max;
         assertEq(aGot, expectedA, "IVB: wrong A near-max carry payout");
 
         uint256[] memory payouts = new uint256[](1);
@@ -750,8 +750,8 @@ contract CoinvestedPositionExitTest is Test {
         uint256 rGot = eurc.balanceOf(RECEIVER) - beforeR;
 
         uint256 carry = 20_000e6;
-        uint256 expectedA = (uint256(CARRY_10PCT) * carry) / type(uint64).max;
-        uint256 expectedB = (uint256(CARRY_5PCT) * carry) / type(uint64).max;
+        uint256 expectedA = (uint256(CARRY_10PCT) * carry) / type(uint32).max;
+        uint256 expectedB = (uint256(CARRY_5PCT) * carry) / type(uint32).max;
         assertEq(aGot, expectedA, "VIA: A was inflated by pre-existing");
         assertEq(bGot, expectedB, "VIA: B was inflated by pre-existing");
         // RECEIVER gets: (received - A - B) + preExisting (via sweep)
@@ -937,8 +937,8 @@ contract CoinvestedPositionExitTest is Test {
         uint256 rGot = eurc.balanceOf(RECEIVER) - beforeR;
 
         // A and B should be based only on received carry
-        uint256 expectedA = (uint256(CARRY_10PCT) * carry) / type(uint64).max;
-        uint256 expectedB = (uint256(CARRY_5PCT) * carry) / type(uint64).max;
+        uint256 expectedA = (uint256(CARRY_10PCT) * carry) / type(uint32).max;
+        uint256 expectedB = (uint256(CARRY_5PCT) * carry) / type(uint32).max;
         assertEq(aGot, expectedA, "IX-B: A carry was affected by preExisting");
         assertEq(bGot, expectedB, "IX-B: B carry was affected by preExisting");
 
@@ -1015,8 +1015,8 @@ contract CoinvestedPositionExitTest is Test {
         // A(10%) = 1,500e6; B(5%) = 750e6; RECEIVER = 27,750e6
         uint256 received = 30_000e6;
         uint256 carry = 15_000e6;
-        uint256 expectedA = (uint256(CARRY_10PCT) * carry) / type(uint64).max;
-        uint256 expectedB = (uint256(CARRY_5PCT) * carry) / type(uint64).max;
+        uint256 expectedA = (uint256(CARRY_10PCT) * carry) / type(uint32).max;
+        uint256 expectedB = (uint256(CARRY_5PCT) * carry) / type(uint32).max;
 
         uint256 aGot = eurc.balanceOf(LEAD_A) - beforeA;
         uint256 bGot = eurc.balanceOf(LEAD_B) - beforeB;
@@ -1294,8 +1294,8 @@ contract CoinvestedPositionExitTest is Test {
         uint256 bGot = eure.balanceOf(LEAD_B) - beforeB;
         uint256 rGot = eure.balanceOf(RECEIVER) - beforeR;
 
-        uint256 expectedA = (uint256(CARRY_10PCT) * carry) / type(uint64).max;
-        uint256 expectedB = (uint256(CARRY_5PCT) * carry) / type(uint64).max;
+        uint256 expectedA = (uint256(CARRY_10PCT) * carry) / type(uint32).max;
+        uint256 expectedB = (uint256(CARRY_5PCT) * carry) / type(uint32).max;
         assertEq(aGot, expectedA, "XIVA: wrong A payout");
         assertEq(bGot, expectedB, "XIVA: wrong B payout");
         assertEq(rGot, received - expectedA - expectedB, "XIVA: wrong RECEIVER payout");

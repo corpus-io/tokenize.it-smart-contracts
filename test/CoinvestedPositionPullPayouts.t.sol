@@ -30,8 +30,8 @@ contract CoinvestedPositionPullPayoutsTest is CoinvestedPositionTestBase {
     address public constant LEAD_B = 0x3109709ECfA91A80626fF3989D68f67F5B1Dd123;
     address public constant LEAD_RESCUE = 0xc109709eCFa91a80626FF3989D68f67F5B1Dd12C;
 
-    /// 5% of uint64.max (floor)
-    uint64 public constant CARRY_5PCT = type(uint64).max / 20;
+    /// 5% of uint32.max (floor)
+    uint32 public constant CARRY_5PCT = type(uint32).max / 20;
 
     BlacklistingPaymentToken blacklistCurrency;
     CoinvestedPosition logic;
@@ -69,8 +69,8 @@ contract CoinvestedPositionPullPayoutsTest is CoinvestedPositionTestBase {
 
     function _defaultLeads() internal pure returns (LeadInvestor[] memory) {
         LeadInvestor[] memory leads = new LeadInvestor[](2);
-        leads[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT});
-        leads[1] = LeadInvestor({account: LEAD_B, profitFraction: CARRY_5PCT});
+        leads[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT, recoveryArmedAt: 0});
+        leads[1] = LeadInvestor({account: LEAD_B, profitFraction: CARRY_5PCT, recoveryArmedAt: 0});
         return leads;
     }
 
@@ -112,7 +112,7 @@ contract CoinvestedPositionPullPayoutsTest is CoinvestedPositionTestBase {
         _setupAndBuy(2e18, 200e6, 400e6);
 
         // Credit accumulated, no transfer attempted during buy — no DoS.
-        uint256 expectedA = (uint256(CARRY_10PCT) * 200e6) / type(uint64).max;
+        uint256 expectedA = (uint256(CARRY_10PCT) * 200e6) / type(uint32).max;
         assertEq(
             coinvestedPosition.leadInvestorCredit(0, IERC20(address(blacklistCurrency))),
             expectedA,
@@ -158,11 +158,11 @@ contract CoinvestedPositionPullPayoutsTest is CoinvestedPositionTestBase {
         blacklistCurrency.setBlacklisted(LEAD_A, true);
         _setupAndBuy(2e18, 200e6, 400e6);
 
-        uint256 expectedA = (uint256(CARRY_10PCT) * 200e6) / type(uint64).max;
+        uint256 expectedA = (uint256(CARRY_10PCT) * 200e6) / type(uint32).max;
 
         // ERC20 blacklisting only blocks currency transfers — LEAD_A can still sign transactions.
         vm.prank(LEAD_A);
-        coinvestedPosition.setLeadInvestorAccount(0, LEAD_RESCUE);
+        coinvestedPosition.rotateLeadInvestorAccount(0, LEAD_RESCUE);
 
         // Credit follows the index: LEAD_RESCUE can now withdraw it.
         vm.prank(LEAD_RESCUE);
@@ -179,38 +179,38 @@ contract CoinvestedPositionPullPayoutsTest is CoinvestedPositionTestBase {
     // ── Access control on rotation and withdrawals ────────────────────────────
     // ─────────────────────────────────────────────────────────────────────────
 
-    function testSetLeadInvestorAccountOnlyByCurrentLead() public {
+    function testRotateLeadInvestorAccountOnlyByCurrentLead() public {
         vm.expectRevert(CoinvestedPosition.NotLeadInvestor.selector);
         vm.prank(OWNER);
-        coinvestedPosition.setLeadInvestorAccount(0, LEAD_RESCUE);
+        coinvestedPosition.rotateLeadInvestorAccount(0, LEAD_RESCUE);
 
         vm.expectRevert(CoinvestedPosition.NotLeadInvestor.selector);
         vm.prank(address(0xDEAD));
-        coinvestedPosition.setLeadInvestorAccount(0, LEAD_RESCUE);
+        coinvestedPosition.rotateLeadInvestorAccount(0, LEAD_RESCUE);
 
         vm.prank(LEAD_A);
-        coinvestedPosition.setLeadInvestorAccount(0, LEAD_RESCUE);
-        (address acc, ) = coinvestedPosition.leadInvestors(0);
+        coinvestedPosition.rotateLeadInvestorAccount(0, LEAD_RESCUE);
+        (address acc, , ) = coinvestedPosition.leadInvestors(0);
         assertEq(acc, LEAD_RESCUE, "rotation did not persist");
     }
 
-    function testSetLeadInvestorAccountRejectsZeroAddress() public {
+    function testRotateLeadInvestorAccountRejectsZeroAddress() public {
         vm.expectRevert(CoinvestedPosition.ZeroLeadInvestorAddress.selector);
         vm.prank(LEAD_A);
-        coinvestedPosition.setLeadInvestorAccount(0, address(0));
+        coinvestedPosition.rotateLeadInvestorAccount(0, address(0));
     }
 
-    function testSetLeadInvestorAccountRevertsOnIndexOutOfBounds() public {
+    function testRotateLeadInvestorAccountRevertsOnIndexOutOfBounds() public {
         vm.expectRevert();
         vm.prank(LEAD_A);
-        coinvestedPosition.setLeadInvestorAccount(99, LEAD_RESCUE);
+        coinvestedPosition.rotateLeadInvestorAccount(99, LEAD_RESCUE);
     }
 
-    function testSetLeadInvestorAccountEmitsEvent() public {
+    function testRotateLeadInvestorAccountEmitsEvent() public {
         vm.expectEmit(true, true, true, true);
-        emit CoinvestedPosition.LeadInvestorAccountChanged(0, LEAD_A, LEAD_RESCUE);
+        emit CoinvestedPosition.LeadInvestorAccountRotated(0, LEAD_A, LEAD_RESCUE);
         vm.prank(LEAD_A);
-        coinvestedPosition.setLeadInvestorAccount(0, LEAD_RESCUE);
+        coinvestedPosition.rotateLeadInvestorAccount(0, LEAD_RESCUE);
     }
 
     function testWithdrawAsLeadInvestorRejectsNonLead() public {

@@ -59,14 +59,14 @@ contract FeeDistributor {
         // sum carry fractions to use as the denominator for proportional distribution
         uint256 profitFractionsSum = 0;
         for (uint256 i = 0; i < investorCount; i++) {
-            (, uint64 profitFraction) = coinvestedPosition.leadInvestors(i);
+            (, uint32 profitFraction, ) = coinvestedPosition.leadInvestors(i);
             profitFractionsSum += profitFraction;
         }
 
         // distribute proportionally; last investor absorbs rounding dust
         uint256 remainingFee = feeAmount;
         for (uint256 i = 0; i < investorCount - 1; i++) {
-            (address account, uint64 profitFraction) = coinvestedPosition.leadInvestors(i);
+            (address account, uint32 profitFraction, ) = coinvestedPosition.leadInvestors(i);
             uint256 share = (uint256(profitFraction) * feeAmount) / profitFractionsSum;
             if (share != 0) {
                 currency.safeTransfer(account, share);
@@ -75,7 +75,7 @@ contract FeeDistributor {
         }
         // send the last leadInvestor's share along with any rounding dust
         if (remainingFee != 0) {
-            (address lastAccount, ) = coinvestedPosition.leadInvestors(investorCount - 1);
+            (address lastAccount, , ) = coinvestedPosition.leadInvestors(investorCount - 1);
             currency.safeTransfer(lastAccount, remainingFee);
         }
 

@@ -52,7 +52,7 @@ contract CoinvestedPositionERC2771Test is CoinvestedPositionTestBase {
         CoinvestedPositionCloneFactory freshFactory = new CoinvestedPositionCloneFactory(address(freshLogic));
 
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](1);
-        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT});
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT, recoveryArmedAt: 0});
 
         CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
             owner: OWNER,
@@ -89,7 +89,7 @@ contract CoinvestedPositionERC2771Test is CoinvestedPositionTestBase {
 
         // Carry split: 2 tokens * (200e6 - 100e6) = 200e6 carry; 10% to LEAD_A
         uint256 carry = (tokenBuyAmount * (TOKEN_PRICE - BASE_PRICE)) / 1e18;
-        uint256 expectedLeadA = (uint256(CARRY_10PCT) * carry) / type(uint64).max;
+        uint256 expectedLeadA = (uint256(CARRY_10PCT) * carry) / type(uint32).max;
         assertEq(eurc.balanceOf(LEAD_A), expectedLeadA, "LEAD_A carry wrong");
         assertEq(eurc.balanceOf(RECEIVER), currencyAmount - expectedLeadA, "RECEIVER payout wrong");
 

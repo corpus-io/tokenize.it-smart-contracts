@@ -40,10 +40,10 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
     address public constant FEE_COLLECTOR = 0x4109709eCFa91A80626ff3989d68F67f5b1DD124;
 
     // ── Test constants ────────────────────────────────────────────────────────
-    // 5% of uint64.max (floor)
-    uint64 public constant CARRY_5PCT = type(uint64).max / 20;
-    // 2% of uint64.max (floor)
-    uint64 public constant CARRY_2PCT = type(uint64).max / 50;
+    // 5% of uint32.max (floor)
+    uint32 public constant CARRY_5PCT = type(uint32).max / 20;
+    // 2% of uint32.max (floor)
+    uint32 public constant CARRY_2PCT = type(uint32).max / 50;
 
     // ── Shared state ──────────────────────────────────────────────────────────
     // EURe: 18 decimals (used for cross-currency tests)
@@ -97,8 +97,8 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
     function _defaultLeadInvestors() internal pure returns (LeadInvestor[] memory) {
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](2);
-        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT});
-        leadInvestors[1] = LeadInvestor({account: LEAD_B, profitFraction: CARRY_5PCT});
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT, recoveryArmedAt: 0});
+        leadInvestors[1] = LeadInvestor({account: LEAD_B, profitFraction: CARRY_5PCT, recoveryArmedAt: 0});
         return leadInvestors;
     }
 
@@ -171,12 +171,14 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         assertEq(address(coinvestedPosition.token()), address(token), "token");
         assertEq(coinvestedPosition.basePrice(), 100e6, "basePrice");
         assertEq(coinvestedPosition.getLeadInvestorsCount(), 2, "leadInvestors length");
-        (address acc0, uint64 frac0) = coinvestedPosition.leadInvestors(0);
+        (address acc0, uint32 frac0, uint64 since0) = coinvestedPosition.leadInvestors(0);
         assertEq(acc0, LEAD_A, "LEAD_A account");
         assertEq(frac0, CARRY_10PCT, "LEAD_A fraction");
-        (address acc1, uint64 frac1) = coinvestedPosition.leadInvestors(1);
+        assertEq(since0, 0, "LEAD_A recoveryArmedAt");
+        (address acc1, uint32 frac1, uint64 since1) = coinvestedPosition.leadInvestors(1);
         assertEq(acc1, LEAD_B, "LEAD_B account");
         assertEq(frac1, CARRY_5PCT, "LEAD_B fraction");
+        assertEq(since1, 0, "LEAD_B recoveryArmedAt");
     }
 
     function testFuzz_InitBasePriceDecimalsAndPriceStoredCorrectly(uint8 decimals, uint256 basePrice) public {
@@ -269,7 +271,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
     function testInitZeroAddressLeadInvestorReverts() public {
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](1);
-        leadInvestors[0] = LeadInvestor({account: address(0), profitFraction: CARRY_10PCT});
+        leadInvestors[0] = LeadInvestor({account: address(0), profitFraction: CARRY_10PCT, recoveryArmedAt: 0});
         CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
             owner: OWNER,
             leadInvestors: leadInvestors,
@@ -285,7 +287,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
     function testInitCarryFractionZeroReverts() public {
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](1);
-        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: 0});
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: 0, recoveryArmedAt: 0});
         CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
             owner: OWNER,
             leadInvestors: leadInvestors,
@@ -300,10 +302,18 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
     }
 
     function testInitCarryFractionsSumOverflowReverts() public {
-        // (max/2 + 1) + (max/2 + 1) = max + 1: sum overflows uint64 → arithmetic revert
+        // (max/2 + 1) + (max/2 + 1) = max + 1: sum overflows uint32 → arithmetic revert
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](2);
-        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: type(uint64).max / 2 + 1});
-        leadInvestors[1] = LeadInvestor({account: LEAD_B, profitFraction: type(uint64).max / 2 + 1});
+        leadInvestors[0] = LeadInvestor({
+            account: LEAD_A,
+            profitFraction: type(uint32).max / 2 + 1,
+            recoveryArmedAt: 0
+        });
+        leadInvestors[1] = LeadInvestor({
+            account: LEAD_B,
+            profitFraction: type(uint32).max / 2 + 1,
+            recoveryArmedAt: 0
+        });
         CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
             owner: OWNER,
             leadInvestors: leadInvestors,
@@ -319,7 +329,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
     function testInitCarryFractionsSumMaxAccepted() public {
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](1);
-        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: type(uint64).max});
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: type(uint32).max, recoveryArmedAt: 0});
         CoinvestedPosition coinvestedPositionBoundary = _deployCoinvestedPosition(
             bytes32(0),
             100e6,
@@ -498,8 +508,8 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         _setupBuy(10e18, 200e6);
         _fundBuyer(eurc, 200e6);
         uint256 profit = 100e6;
-        uint256 carryA = (uint256(CARRY_10PCT) * profit) / type(uint64).max;
-        uint256 carryB = (uint256(CARRY_5PCT) * profit) / type(uint64).max;
+        uint256 carryA = (uint256(CARRY_10PCT) * profit) / type(uint32).max;
+        uint256 carryB = (uint256(CARRY_5PCT) * profit) / type(uint32).max;
         uint256 coinvestorShare = 200e6 - carryA - carryB;
         vm.expectEmit(true, true, false, true, address(coinvestedPosition));
         emit CoinvestorCredited(eurc, coinvestorShare);
@@ -517,8 +527,8 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         _fundBuyer(eurc, 400e6);
 
         uint256 carry = 200e6;
-        uint256 expectedA = (uint256(CARRY_10PCT) * carry) / type(uint64).max;
-        uint256 expectedB = (uint256(CARRY_5PCT) * carry) / type(uint64).max;
+        uint256 expectedA = (uint256(CARRY_10PCT) * carry) / type(uint32).max;
+        uint256 expectedB = (uint256(CARRY_5PCT) * carry) / type(uint32).max;
         uint256 expectedReceiver = 400e6 - expectedA - expectedB;
 
         // base price 100e6, sell 2 tokens for 200e6 each => 400e6 proceeds, of which 200e6 are carry
@@ -586,8 +596,8 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         uint256 remaining = currencyAmount - fee;
         // scaledBasePrice = 100e6 (same dec), basePayout for 2 tokens = 200e6
         uint256 carry = remaining > 200e6 ? remaining - 200e6 : 0;
-        uint256 expectedA = (uint256(CARRY_10PCT) * carry) / type(uint64).max;
-        uint256 expectedB = (uint256(CARRY_5PCT) * carry) / type(uint64).max;
+        uint256 expectedA = (uint256(CARRY_10PCT) * carry) / type(uint32).max;
+        uint256 expectedB = (uint256(CARRY_5PCT) * carry) / type(uint32).max;
         uint256 expectedReceiver = remaining - expectedA - expectedB;
 
         vm.prank(BUYER);
@@ -706,9 +716,13 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         // Paid: 800e6. Fee: 0. Remaining: 800e6. BasePayout: 600e6. Carry: 200e6.
         // Lead investors: 5% + 2% + 10%
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](3);
-        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_5PCT}); // 5%
-        leadInvestors[1] = LeadInvestor({account: LEAD_B, profitFraction: CARRY_2PCT}); // 2%
-        leadInvestors[2] = LeadInvestor({account: TOKEN_RECEIVER, profitFraction: CARRY_10PCT}); // 10%
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_5PCT, recoveryArmedAt: 0}); // 5%
+        leadInvestors[1] = LeadInvestor({account: LEAD_B, profitFraction: CARRY_2PCT, recoveryArmedAt: 0}); // 2%
+        leadInvestors[2] = LeadInvestor({
+            account: TOKEN_RECEIVER,
+            profitFraction: CARRY_10PCT,
+            recoveryArmedAt: 0
+        }); // 10%
         CoinvestedPosition coinvestedPositionThreeLeads = _deployCoinvestedPosition(
             bytes32(0),
             300e6,
@@ -729,9 +743,9 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         eurc.approve(address(coinvestedPositionThreeLeads), paid);
 
         uint256 carry = 200e6;
-        uint256 shareA = (uint256(CARRY_5PCT) * carry) / type(uint64).max;
-        uint256 shareB = (uint256(CARRY_2PCT) * carry) / type(uint64).max;
-        uint256 shareC = (uint256(CARRY_10PCT) * carry) / type(uint64).max;
+        uint256 shareA = (uint256(CARRY_5PCT) * carry) / type(uint32).max;
+        uint256 shareB = (uint256(CARRY_2PCT) * carry) / type(uint32).max;
+        uint256 shareC = (uint256(CARRY_10PCT) * carry) / type(uint32).max;
 
         assertEq(token.balanceOf(address(coinvestedPositionThreeLeads)), 2e18, "wrong token amount");
 
@@ -795,8 +809,8 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         // Base cost was 200e6 eurc, which equals 200€. Proceeds are 400e18 eure, which equals 400€. Carry is 200e18 eure = 200€.
         // All decimals must be handled correctly here.
         uint256 carry = 200e18;
-        uint256 expectedA = (uint256(CARRY_10PCT) * carry) / type(uint64).max;
-        uint256 expectedB = (uint256(CARRY_5PCT) * carry) / type(uint64).max;
+        uint256 expectedA = (uint256(CARRY_10PCT) * carry) / type(uint32).max;
+        uint256 expectedB = (uint256(CARRY_5PCT) * carry) / type(uint32).max;
         uint256 expectedReceiver = paid - expectedA - expectedB;
 
         vm.prank(BUYER);
@@ -834,8 +848,8 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         eurc.approve(address(coinvestedPosition18), paid);
 
         uint256 carry = 200e6;
-        uint256 expectedA = (uint256(CARRY_10PCT) * carry) / type(uint64).max;
-        uint256 expectedB = (uint256(CARRY_5PCT) * carry) / type(uint64).max;
+        uint256 expectedA = (uint256(CARRY_10PCT) * carry) / type(uint32).max;
+        uint256 expectedB = (uint256(CARRY_5PCT) * carry) / type(uint32).max;
         uint256 expectedReceiver = paid - expectedA - expectedB;
 
         vm.prank(BUYER);
@@ -855,8 +869,8 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         _fundBuyer(eurc, paid);
 
         uint256 carry = 200e6 - 100e6; // 100e6
-        uint256 expectedA = (uint256(CARRY_10PCT) * carry) / type(uint64).max;
-        uint256 expectedB = (uint256(CARRY_5PCT) * carry) / type(uint64).max;
+        uint256 expectedA = (uint256(CARRY_10PCT) * carry) / type(uint32).max;
+        uint256 expectedB = (uint256(CARRY_5PCT) * carry) / type(uint32).max;
         uint256 expectedReceiver = paid - expectedA - expectedB;
 
         assertEq(token.balanceOf(address(coinvestedPosition)), 10e18, "wrong token amount before");
@@ -897,8 +911,8 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
         // basePayout = 5*100e6 = 500e6, carry = 250e6
         uint256 t1carry = 250e6;
-        uint256 t1A = (uint256(CARRY_10PCT) * t1carry) / type(uint64).max;
-        uint256 t1B = (uint256(CARRY_5PCT) * t1carry) / type(uint64).max;
+        uint256 t1A = (uint256(CARRY_10PCT) * t1carry) / type(uint32).max;
+        uint256 t1B = (uint256(CARRY_5PCT) * t1carry) / type(uint32).max;
 
         vm.prank(BUYER);
         coinvestedPosition.buy(5e18, t1paid, TOKEN_RECEIVER);
@@ -926,8 +940,8 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         // scaledBasePrice: 100e6 scaled to 18 dec = 100e18
         // basePayout = 40 * 100e18 = 4000e18, carry = 4000e18
         uint256 t2carry = 4000e18;
-        uint256 t2A = (uint256(CARRY_10PCT) * t2carry) / type(uint64).max;
-        uint256 t2B = (uint256(CARRY_5PCT) * t2carry) / type(uint64).max;
+        uint256 t2A = (uint256(CARRY_10PCT) * t2carry) / type(uint32).max;
+        uint256 t2B = (uint256(CARRY_5PCT) * t2carry) / type(uint32).max;
 
         vm.prank(BUYER);
         coinvestedPosition.buy(40e18, t2paid, TOKEN_RECEIVER);
@@ -979,7 +993,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
         // Use a fresh coinvestedPosition with single 10% lead investor to simplify
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](1);
-        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT});
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT, recoveryArmedAt: 0});
         CoinvestedPosition coinvestedPositionSweep = _deployCoinvestedPosition(bytes32(0), 100e6, eurc, leadInvestors);
 
         vm.prank(ADMIN);
@@ -999,7 +1013,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         eurc.approve(address(coinvestedPositionSweep), paid);
 
         uint256 carry = 1000e6; // 2000e6 - 1000e6 basePayout
-        uint256 expectedA = (uint256(CARRY_10PCT) * carry) / type(uint64).max;
+        uint256 expectedA = (uint256(CARRY_10PCT) * carry) / type(uint32).max;
         uint256 expectedReceiver = 2000e6 - expectedA + 500e6; // BUYER payment minus A's share, plus extra
 
         vm.prank(BUYER);
@@ -1014,7 +1028,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
     function testBuyAutoSweepCarryZeroWithExtra() public {
         // tokenPrice == basePrice → carry=0; coinvestor gets everything (paid) plus auto-swept extra
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](1);
-        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT});
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT, recoveryArmedAt: 0});
         CoinvestedPosition coinvestedPositionZeroCarry = _deployCoinvestedPosition(
             bytes32(0),
             100e6,
@@ -1081,14 +1095,14 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
     ///      Extracted to avoid stack-too-deep in the fuzz entry point.
     function _assertCarrySplit(
         uint8 numLeads,
-        uint64[] memory carries,
+        uint32[] memory carries,
         address[] memory leadAddrs,
         uint256 spent,
         uint256 carry
     ) internal view {
         uint256 totalLeadShares;
         for (uint8 i = 0; i < numLeads; i++) {
-            uint256 expectedShare = (uint256(carries[i]) * carry) / type(uint64).max;
+            uint256 expectedShare = (uint256(carries[i]) * carry) / type(uint32).max;
             assertEq(eurc.balanceOf(leadAddrs[i]), expectedShare, "lead share mismatch");
             totalLeadShares += expectedShare;
         }
@@ -1103,7 +1117,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
     ///      3. Σ all payouts == currency spent by the BUYER (conservation).
     function testFuzz_ComplexCarrySplitMultiLeadInvestors(
         uint8 numLeads,
-        uint64[10] memory rawCarries,
+        uint32[10] memory rawCarries,
         uint96 tokenAmt,
         uint64 priceAboveBase
     ) public {
@@ -1113,7 +1127,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
         // Arrays hoisted so they survive the inner scope and reach the assertion
         address[] memory leadAddrs = new address[](numLeads);
-        uint64[] memory carries = new uint64[](numLeads);
+        uint32[] memory carries = new uint32[](numLeads);
         uint256 spent;
         uint256 carry;
 
@@ -1122,14 +1136,18 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         {
             uint256 tokenPrice = uint256(100e6) + uint256(priceAboveBase);
 
-            // Cap each fraction so the sum can't overflow uint64:
-            //   maxPerInvestor × numLeads ≤ uint64.max   ✓
+            // Cap each fraction so the sum can't overflow uint32:
+            //   maxPerInvestor × numLeads ≤ uint32.max   ✓
             LeadInvestor[] memory leadInvestors = new LeadInvestor[](numLeads);
             for (uint8 i = 0; i < numLeads; i++) {
-                carries[i] = uint64(bound(uint256(rawCarries[i]), 1, type(uint64).max / uint64(numLeads)));
+                carries[i] = uint32(bound(uint256(rawCarries[i]), 1, type(uint32).max / uint32(numLeads)));
                 // Low addresses that don't collide with any named test constant
                 leadAddrs[i] = address(uint160(0x2000 + i));
-                leadInvestors[i] = LeadInvestor({account: leadAddrs[i], profitFraction: carries[i]});
+                leadInvestors[i] = LeadInvestor({
+                    account: leadAddrs[i],
+                    profitFraction: carries[i],
+                    recoveryArmedAt: 0
+                });
             }
 
             CoinvestedPosition fuzzPosition = _deployCoinvestedPosition(
@@ -1249,8 +1267,8 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
         // carry = tokenPrice - scaledBasePrice (for 1 token) = scaledBasePrice
         uint256 carry = scaledBasePrice;
-        uint256 expectedA = (uint256(CARRY_10PCT) * carry) / type(uint64).max;
-        uint256 expectedB = (uint256(CARRY_5PCT) * carry) / type(uint64).max;
+        uint256 expectedA = (uint256(CARRY_10PCT) * carry) / type(uint32).max;
+        uint256 expectedB = (uint256(CARRY_5PCT) * carry) / type(uint32).max;
         uint256 expectedReceiver = tokenPrice - expectedA - expectedB;
 
         assertEq(eure.balanceOf(LEAD_A), expectedA, "LEAD_A carry");
@@ -1313,8 +1331,8 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
         // carry = tokenPrice - scaledBasePrice (for 1 token) = scaledBasePrice
         uint256 carry = scaledBasePrice;
-        uint256 expectedA = (uint256(CARRY_10PCT) * carry) / type(uint64).max;
-        uint256 expectedB = (uint256(CARRY_5PCT) * carry) / type(uint64).max;
+        uint256 expectedA = (uint256(CARRY_10PCT) * carry) / type(uint32).max;
+        uint256 expectedB = (uint256(CARRY_5PCT) * carry) / type(uint32).max;
         uint256 expectedReceiver = tokenPrice - expectedA - expectedB;
 
         assertEq(buyCurrency.balanceOf(LEAD_A), expectedA, "LEAD_A carry");
@@ -1500,5 +1518,208 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         vm.prank(OWNER);
         vm.expectRevert(NoExitSet.selector);
         coinvestedPosition.claimExit(0, 0);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // ── Section 14: Owner-driven lead-investor account recovery ──────────────
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// One buy that credits both default lead investors with non-zero carry.
+    /// Returns the block.timestamp at which the credit landed (i.e. when the timer was armed).
+    function _creditBothLeadInvestors() internal returns (uint64 armedAt) {
+        _setupBuy(2e18, 200e6);
+        _fundBuyer(eurc, 400e6);
+        vm.prank(BUYER);
+        coinvestedPosition.buy(2e18, 400e6, TOKEN_RECEIVER);
+        return uint64(block.timestamp);
+    }
+
+    function _recoveryArmedAt(uint256 index) internal view returns (uint64 armedAt) {
+        (, , armedAt) = coinvestedPosition.leadInvestors(index);
+    }
+
+    function _leadInvestorAccount(uint256 index) internal view returns (address account) {
+        (account, , ) = coinvestedPosition.leadInvestors(index);
+    }
+
+    function testOwnerCannotRotateLeadInvestorAccountBeforeAnyCredit() public {
+        assertEq(_recoveryArmedAt(0), 0, "precondition: disarmed");
+        vm.warp(block.timestamp + 10000 days);
+        vm.expectRevert(CoinvestedPosition.LeadInvestorRecoveryLocked.selector);
+        vm.prank(OWNER);
+        coinvestedPosition.ownerRotateLeadInvestorAccount(0, address(0xC0FFEE));
+    }
+
+    function testOwnerCannotRotateLeadInvestorAccountBeforeTimeoutExpires() public {
+        uint64 armedAt = _creditBothLeadInvestors();
+        assertEq(_recoveryArmedAt(0), armedAt, "timer not armed");
+
+        vm.warp(uint256(armedAt) + coinvestedPosition.LEAD_INVESTOR_RECOVERY_TIMEOUT() - 1);
+        vm.expectRevert(CoinvestedPosition.LeadInvestorRecoveryLocked.selector);
+        vm.prank(OWNER);
+        coinvestedPosition.ownerRotateLeadInvestorAccount(0, address(0xC0FFEE));
+    }
+
+    function testOwnerRotateLeadInvestorAccountAtDeadlineSucceeds() public {
+        uint64 armedAt = _creditBothLeadInvestors();
+        address newAccount = address(0xC0FFEE);
+        vm.warp(uint256(armedAt) + coinvestedPosition.LEAD_INVESTOR_RECOVERY_TIMEOUT());
+
+        vm.expectEmit(true, true, true, true);
+        emit CoinvestedPosition.LeadInvestorAccountRecovered(0, LEAD_A, newAccount);
+        vm.prank(OWNER);
+        coinvestedPosition.ownerRotateLeadInvestorAccount(0, newAccount);
+
+        assertEq(_leadInvestorAccount(0), newAccount, "account not rotated");
+        assertEq(_recoveryArmedAt(0), 0, "timer not disarmed for new account");
+    }
+
+    function testWithdrawAsLeadInvestorDisarmsRecoveryTimer() public {
+        _creditBothLeadInvestors();
+        vm.prank(LEAD_A);
+        coinvestedPosition.withdrawAsLeadInvestor(0, IERC20(address(eurc)));
+        assertEq(_recoveryArmedAt(0), 0, "timer not disarmed by pull");
+
+        vm.warp(block.timestamp + 10000 days);
+        vm.expectRevert(CoinvestedPosition.LeadInvestorRecoveryLocked.selector);
+        vm.prank(OWNER);
+        coinvestedPosition.ownerRotateLeadInvestorAccount(0, address(0xC0FFEE));
+    }
+
+    function testRotateLeadInvestorAccountDisarmsRecoveryTimer() public {
+        _creditBothLeadInvestors();
+        vm.prank(LEAD_A);
+        coinvestedPosition.rotateLeadInvestorAccount(0, address(0xBEEF));
+        assertEq(_recoveryArmedAt(0), 0, "timer not disarmed by self-rotation");
+
+        vm.warp(block.timestamp + 10000 days);
+        vm.expectRevert(CoinvestedPosition.LeadInvestorRecoveryLocked.selector);
+        vm.prank(OWNER);
+        coinvestedPosition.ownerRotateLeadInvestorAccount(0, address(0xC0FFEE));
+    }
+
+    function testEachCreditOverwritesRecoveryTimer() public {
+        uint64 firstArmedAt = _creditBothLeadInvestors();
+        uint64 timeout = coinvestedPosition.LEAD_INVESTOR_RECOVERY_TIMEOUT();
+
+        // Second buy halfway through the first timeout — supply fresh tokens since the first
+        // buy emptied the contract's token balance.
+        vm.warp(uint256(firstArmedAt) + timeout / 2);
+        vm.prank(ADMIN);
+        token.mint(address(coinvestedPosition), 2e18);
+        _fundBuyer(eurc, 400e6);
+        vm.prank(BUYER);
+        coinvestedPosition.buy(2e18, 400e6, TOKEN_RECEIVER);
+        uint64 secondArmedAt = uint64(block.timestamp);
+        assertEq(_recoveryArmedAt(0), secondArmedAt, "timer not refreshed by second credit");
+        assertGt(secondArmedAt, firstArmedAt, "precondition: time advanced");
+
+        // At firstArmedAt + timeout, rotation should still revert
+        vm.warp(uint256(firstArmedAt) + timeout);
+        vm.expectRevert(CoinvestedPosition.LeadInvestorRecoveryLocked.selector);
+        vm.prank(OWNER);
+        coinvestedPosition.ownerRotateLeadInvestorAccount(0, address(0xC0FFEE));
+
+        // At secondArmedAt + timeout, rotation succeeds
+        vm.warp(uint256(secondArmedAt) + timeout);
+        vm.prank(OWNER);
+        coinvestedPosition.ownerRotateLeadInvestorAccount(0, address(0xC0FFEE));
+        assertEq(_leadInvestorAccount(0), address(0xC0FFEE));
+    }
+
+    function testZeroCarryDoesNotArmRecoveryTimer() public {
+        // tokenPrice == basePrice → profit == 0 → carry == 0 for all leads
+        _setupBuy(2e18, 100e6);
+        _fundBuyer(eurc, 200e6);
+        vm.prank(BUYER);
+        coinvestedPosition.buy(2e18, 200e6, TOKEN_RECEIVER);
+
+        assertEq(_recoveryArmedAt(0), 0, "LEAD_A timer armed despite zero carry");
+        assertEq(_recoveryArmedAt(1), 0, "LEAD_B timer armed despite zero carry");
+    }
+
+    function testSingleCurrencyPullDisarmsRecoveryTimer() public {
+        // First credit in eurc, then switch to eure and credit again.
+        _creditBothLeadInvestors();
+
+        // Top up tokens, switch currency, and buy again so credit accrues in eure.
+        vm.prank(ADMIN);
+        token.mint(address(coinvestedPosition), 2e18);
+        vm.prank(OWNER);
+        coinvestedPosition.setCurrency(IERC20(address(eure)), 100e18, 200e18);
+
+        uint256 paid = 400e18;
+        eure.mint(BUYER, paid);
+        vm.prank(BUYER);
+        eure.approve(address(coinvestedPosition), paid);
+        vm.prank(BUYER);
+        coinvestedPosition.buy(2e18, paid, TOKEN_RECEIVER);
+
+        // LEAD_A has unclaimed credit in BOTH eurc and eure
+        assertGt(coinvestedPosition.leadInvestorCredit(0, IERC20(address(eurc))), 0, "no eurc credit");
+        assertGt(coinvestedPosition.leadInvestorCredit(0, IERC20(address(eure))), 0, "no eure credit");
+
+        // Pulling only eurc still disarms the recovery timer.
+        vm.prank(LEAD_A);
+        coinvestedPosition.withdrawAsLeadInvestor(0, IERC20(address(eurc)));
+        assertEq(_recoveryArmedAt(0), 0, "single-currency pull did not disarm timer");
+
+        // Owner cannot recover even with eure credit still sitting unclaimed.
+        vm.warp(block.timestamp + 10000 days);
+        vm.expectRevert(CoinvestedPosition.LeadInvestorRecoveryLocked.selector);
+        vm.prank(OWNER);
+        coinvestedPosition.ownerRotateLeadInvestorAccount(0, address(0xC0FFEE));
+    }
+
+    function testOwnerRotateLeadInvestorAccountOnlyOwner() public {
+        uint64 armedAt = _creditBothLeadInvestors();
+        vm.warp(uint256(armedAt) + coinvestedPosition.LEAD_INVESTOR_RECOVERY_TIMEOUT());
+
+        vm.expectRevert("Ownable: caller is not the owner");
+        vm.prank(LEAD_A);
+        coinvestedPosition.ownerRotateLeadInvestorAccount(0, address(0xC0FFEE));
+
+        vm.expectRevert("Ownable: caller is not the owner");
+        vm.prank(address(0xBEEF));
+        coinvestedPosition.ownerRotateLeadInvestorAccount(0, address(0xC0FFEE));
+    }
+
+    function testFuzz_OwnerRotateLeadInvestorAccountOnlyOwner(address caller) public {
+        vm.assume(caller != OWNER && caller != address(0) && caller != TRUSTED_FORWARDER);
+        uint64 armedAt = _creditBothLeadInvestors();
+        vm.warp(uint256(armedAt) + coinvestedPosition.LEAD_INVESTOR_RECOVERY_TIMEOUT());
+
+        vm.expectRevert("Ownable: caller is not the owner");
+        vm.prank(caller);
+        coinvestedPosition.ownerRotateLeadInvestorAccount(0, address(0xC0FFEE));
+    }
+
+    function testOwnerRotateLeadInvestorAccountRejectsZeroAddress() public {
+        uint64 armedAt = _creditBothLeadInvestors();
+        vm.warp(uint256(armedAt) + coinvestedPosition.LEAD_INVESTOR_RECOVERY_TIMEOUT());
+
+        vm.expectRevert(CoinvestedPosition.ZeroLeadInvestorAddress.selector);
+        vm.prank(OWNER);
+        coinvestedPosition.ownerRotateLeadInvestorAccount(0, address(0));
+    }
+
+    function testPostRecoveryReArmRequired() public {
+        uint64 armedAt = _creditBothLeadInvestors();
+        vm.warp(uint256(armedAt) + coinvestedPosition.LEAD_INVESTOR_RECOVERY_TIMEOUT());
+
+        vm.prank(OWNER);
+        coinvestedPosition.ownerRotateLeadInvestorAccount(0, address(0xC0FFEE));
+        assertEq(_recoveryArmedAt(0), 0, "timer not disarmed after owner rotation");
+
+        // Immediately after, owner cannot rotate again.
+        vm.expectRevert(CoinvestedPosition.LeadInvestorRecoveryLocked.selector);
+        vm.prank(OWNER);
+        coinvestedPosition.ownerRotateLeadInvestorAccount(0, address(0xDEAD));
+
+        // Long wait alone is insufficient — no new credit, timer stays disarmed.
+        vm.warp(block.timestamp + 10000 days);
+        vm.expectRevert(CoinvestedPosition.LeadInvestorRecoveryLocked.selector);
+        vm.prank(OWNER);
+        coinvestedPosition.ownerRotateLeadInvestorAccount(0, address(0xDEAD));
     }
 }
