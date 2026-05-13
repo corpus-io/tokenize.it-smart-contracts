@@ -146,7 +146,7 @@ contract CoinvestedPositionCreditTrackingTest is CoinvestedPositionTestBase {
 
             // Withdraw lead A — their credit zeroes
             vm.prank(LEAD_A);
-            coinvestedPosition.withdrawAsLeadInvestor(0, IERC20(address(currencyA)));
+            coinvestedPosition.withdrawAsLeadInvestor(0, IERC20(address(currencyA)), LEAD_A);
             assertEq(currencyA.balanceOf(LEAD_A), cA, "p1: leadA withdraw");
             assertEq(coinvestedPosition.leadInvestorCredit(0, IERC20(address(currencyA))), 0, "p1: leadA credit zero");
             _assertTotalCreditMatchesSum(IERC20(address(currencyA)));
@@ -242,19 +242,19 @@ contract CoinvestedPositionCreditTrackingTest is CoinvestedPositionTestBase {
         // ── Final: drain all, verify balances and conservation ────────────────
         {
             vm.prank(LEAD_A);
-            coinvestedPosition.withdrawAsLeadInvestor(0, IERC20(address(currencyA)));
+            coinvestedPosition.withdrawAsLeadInvestor(0, IERC20(address(currencyA)), LEAD_A);
             vm.prank(LEAD_A);
-            coinvestedPosition.withdrawAsLeadInvestor(0, IERC20(address(currencyB)));
+            coinvestedPosition.withdrawAsLeadInvestor(0, IERC20(address(currencyB)), LEAD_A);
 
             vm.prank(LEAD_B);
-            coinvestedPosition.withdrawAsLeadInvestor(1, IERC20(address(currencyA)));
+            coinvestedPosition.withdrawAsLeadInvestor(1, IERC20(address(currencyA)), LEAD_B);
             vm.prank(LEAD_B);
-            coinvestedPosition.withdrawAsLeadInvestor(1, IERC20(address(currencyB)));
+            coinvestedPosition.withdrawAsLeadInvestor(1, IERC20(address(currencyB)), LEAD_B);
 
             vm.prank(LEAD_C);
-            coinvestedPosition.withdrawAsLeadInvestor(2, IERC20(address(currencyA)));
+            coinvestedPosition.withdrawAsLeadInvestor(2, IERC20(address(currencyA)), LEAD_C);
             vm.prank(LEAD_C);
-            coinvestedPosition.withdrawAsLeadInvestor(2, IERC20(address(currencyB)));
+            coinvestedPosition.withdrawAsLeadInvestor(2, IERC20(address(currencyB)), LEAD_C);
 
             vm.prank(OWNER);
             coinvestedPosition.withdrawAsCoinvestor(IERC20(address(currencyA)), COINVESTOR_DEST);

@@ -121,14 +121,14 @@ contract CoinvestedPositionPullPayoutsTest is CoinvestedPositionTestBase {
 
         // LEAD_B (not blacklisted) can withdraw; coinvestor can withdraw to any address.
         vm.prank(LEAD_B);
-        coinvestedPosition.withdrawAsLeadInvestor(1, IERC20(address(blacklistCurrency)));
+        coinvestedPosition.withdrawAsLeadInvestor(1, IERC20(address(blacklistCurrency)), LEAD_B);
         vm.prank(OWNER);
         coinvestedPosition.withdrawAsCoinvestor(IERC20(address(blacklistCurrency)), RECEIVER);
 
-        // LEAD_A withdraw reverts at currency layer — but only LEAD_A is affected.
+        // LEAD_A pulling to themselves reverts at currency layer — but only LEAD_A is affected.
         vm.expectRevert("blacklisted recipient");
         vm.prank(LEAD_A);
-        coinvestedPosition.withdrawAsLeadInvestor(0, IERC20(address(blacklistCurrency)));
+        coinvestedPosition.withdrawAsLeadInvestor(0, IERC20(address(blacklistCurrency)), LEAD_A);
     }
 
     function testBlacklistedCoinvestorDestinationDoesNotBlockLeadInvestors() public {
@@ -139,9 +139,9 @@ contract CoinvestedPositionPullPayoutsTest is CoinvestedPositionTestBase {
 
         // Lead investors are unaffected.
         vm.prank(LEAD_A);
-        coinvestedPosition.withdrawAsLeadInvestor(0, IERC20(address(blacklistCurrency)));
+        coinvestedPosition.withdrawAsLeadInvestor(0, IERC20(address(blacklistCurrency)), LEAD_A);
         vm.prank(LEAD_B);
-        coinvestedPosition.withdrawAsLeadInvestor(1, IERC20(address(blacklistCurrency)));
+        coinvestedPosition.withdrawAsLeadInvestor(1, IERC20(address(blacklistCurrency)), LEAD_B);
 
         // Owner routes coinvestor share to an unblacklisted address.
         address altDest = address(0xABCD);
@@ -166,13 +166,13 @@ contract CoinvestedPositionPullPayoutsTest is CoinvestedPositionTestBase {
 
         // Credit follows the index: LEAD_RESCUE can now withdraw it.
         vm.prank(LEAD_RESCUE);
-        coinvestedPosition.withdrawAsLeadInvestor(0, IERC20(address(blacklistCurrency)));
+        coinvestedPosition.withdrawAsLeadInvestor(0, IERC20(address(blacklistCurrency)), LEAD_RESCUE);
 
         assertEq(blacklistCurrency.balanceOf(LEAD_RESCUE), expectedA, "rescue address didn't receive credit");
         assertEq(coinvestedPosition.leadInvestorCredit(0, IERC20(address(blacklistCurrency))), 0, "credit not zeroed");
         vm.expectRevert(CoinvestedPosition.NotLeadInvestor.selector);
         vm.prank(LEAD_A);
-        coinvestedPosition.withdrawAsLeadInvestor(0, IERC20(address(blacklistCurrency)));
+        coinvestedPosition.withdrawAsLeadInvestor(0, IERC20(address(blacklistCurrency)), LEAD_A);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -217,13 +217,41 @@ contract CoinvestedPositionPullPayoutsTest is CoinvestedPositionTestBase {
         _setupAndBuy(2e18, 200e6, 400e6);
         vm.expectRevert(CoinvestedPosition.NotLeadInvestor.selector);
         vm.prank(address(0xBEEF));
-        coinvestedPosition.withdrawAsLeadInvestor(0, IERC20(address(blacklistCurrency)));
+        coinvestedPosition.withdrawAsLeadInvestor(0, IERC20(address(blacklistCurrency)), address(0xBEEF));
     }
 
     function testWithdrawAsLeadInvestorRevertsOnZeroCredit() public {
         vm.expectRevert(ZeroAmount.selector);
         vm.prank(LEAD_A);
-        coinvestedPosition.withdrawAsLeadInvestor(0, IERC20(address(blacklistCurrency)));
+        coinvestedPosition.withdrawAsLeadInvestor(0, IERC20(address(blacklistCurrency)), LEAD_A);
+    }
+
+    function testWithdrawAsLeadInvestorRejectsZeroDestination() public {
+        _setupAndBuy(2e18, 200e6, 400e6);
+        vm.expectRevert(ZeroReceiverAddress.selector);
+        vm.prank(LEAD_A);
+        coinvestedPosition.withdrawAsLeadInvestor(0, IERC20(address(blacklistCurrency)), address(0));
+    }
+
+    function testWithdrawAsLeadInvestorRoutesAroundBlacklistedRegisteredAddress() public {
+        // LEAD_A's registered address is blacklisted; they can still pull to a fresh address
+        // without permanently rotating the slot.
+        blacklistCurrency.setBlacklisted(LEAD_A, true);
+        _setupAndBuy(2e18, 200e6, 400e6);
+
+        uint256 expectedA = (uint256(CARRY_10PCT) * 200e6) / type(uint32).max;
+        address altDest = address(0xBADCAFE);
+
+        vm.prank(LEAD_A);
+        coinvestedPosition.withdrawAsLeadInvestor(0, IERC20(address(blacklistCurrency)), altDest);
+
+        assertEq(blacklistCurrency.balanceOf(altDest), expectedA, "altDest did not receive credit");
+        assertEq(blacklistCurrency.balanceOf(LEAD_A), 0, "blacklisted address received funds");
+        assertEq(coinvestedPosition.leadInvestorCredit(0, IERC20(address(blacklistCurrency))), 0, "credit not zeroed");
+
+        // Slot still points at LEAD_A — no permanent rotation was required.
+        (address acc, , ) = coinvestedPosition.leadInvestors(0);
+        assertEq(acc, LEAD_A, "slot was unexpectedly rotated");
     }
 
     function testWithdrawAsCoinvestorOnlyOwner() public {

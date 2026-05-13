@@ -1573,7 +1573,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
     function testWithdrawAsLeadInvestorDisarmsRecoveryTimer() public {
         _creditBothLeadInvestors();
         vm.prank(LEAD_A);
-        coinvestedPosition.withdrawAsLeadInvestor(0, IERC20(address(eurc)));
+        coinvestedPosition.withdrawAsLeadInvestor(0, IERC20(address(eurc)), LEAD_A);
         assertEq(_recoveryArmedAt(0), 0, "timer not disarmed by pull");
 
         vm.warp(block.timestamp + 10000 days);
@@ -1657,7 +1657,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
         // Pulling only eurc still disarms the recovery timer.
         vm.prank(LEAD_A);
-        coinvestedPosition.withdrawAsLeadInvestor(0, IERC20(address(eurc)));
+        coinvestedPosition.withdrawAsLeadInvestor(0, IERC20(address(eurc)), LEAD_A);
         assertEq(_recoveryArmedAt(0), 0, "single-currency pull did not disarm timer");
 
         // Owner cannot recover even with eure credit still sitting unclaimed.

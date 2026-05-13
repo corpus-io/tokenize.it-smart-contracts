@@ -107,7 +107,7 @@ contract CoinvestedPositionDistributionTest is Test {
             if (credit != 0) {
                 (address account, , ) = position.leadInvestors(i);
                 vm.prank(account);
-                position.withdrawAsLeadInvestor(i, _currency);
+                position.withdrawAsLeadInvestor(i, _currency, account);
             }
         }
         if (position.coinvestorCredit(_currency) != 0) {

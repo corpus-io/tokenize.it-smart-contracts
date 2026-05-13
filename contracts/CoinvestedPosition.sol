@@ -76,8 +76,15 @@ contract CoinvestedPosition is TokenSwapBase {
     event LeadInvestorCredited(uint256 indexed index, IERC20 indexed currency, uint256 amount);
     /// @notice The coinvestor's share was credited to their pull-payout balance.
     event CoinvestorCredited(IERC20 indexed currency, uint256 amount);
-    /// @notice A lead investor withdrew their pending credit.
-    event LeadInvestorWithdrawn(uint256 indexed index, IERC20 indexed currency, uint256 amount);
+    /// @notice A lead investor withdrew their pending credit. `to` is the chosen destination,
+    ///         which may differ from the slot's current account (e.g. when routing around a
+    ///         currency-level blacklist on the registered address).
+    event LeadInvestorWithdrawn(
+        uint256 indexed index,
+        IERC20 indexed currency,
+        address indexed to,
+        uint256 amount
+    );
     /// @notice The coinvestor withdrew their pending credit to `to` (credit portion only).
     event CoinvestorWithdrawn(IERC20 indexed currency, address indexed to, uint256 amount);
     /// @notice Untracked balance (currency on the contract above `totalCredit`) was swept to the
@@ -372,21 +379,27 @@ contract CoinvestedPosition is TokenSwapBase {
     }
 
     /**
-     * @notice Withdraw a lead investor's accumulated credit in `_currency` to their account.
+     * @notice Withdraw a lead investor's accumulated credit in `_currency` to `to`.
+     * @dev Only callable by the slot's current account, but the destination is chosen at withdraw
+     *      time so the lead investor can route around currency-level blacklists on their registered
+     *      address without permanently rotating the slot. Disarms the owner-recovery timer
+     *      regardless of `to` — the call is still signed by the slot's current account, which is
+     *      the liveness signal.
      * @param index lead investor index
      * @param _currency currency to withdraw
+     * @param to destination address; must be non-zero
      */
-    function withdrawAsLeadInvestor(uint256 index, IERC20 _currency) external nonReentrant {
-        address account = leadInvestors[index].account;
-        require(_msgSender() == account, NotLeadInvestor());
+    function withdrawAsLeadInvestor(uint256 index, IERC20 _currency, address to) external nonReentrant {
+        require(to != address(0), ZeroReceiverAddress());
+        require(_msgSender() == leadInvestors[index].account, NotLeadInvestor());
         uint256 amount = leadInvestorCredit[index][_currency];
         require(amount != 0, ZeroAmount());
         leadInvestorCredit[index][_currency] = 0;
         totalCredit[_currency] -= amount;
         // a successful pull proves the lead investor holds keys; disarm the recovery timer.
         leadInvestors[index].recoveryArmedAt = 0;
-        _currency.safeTransfer(account, amount);
-        emit LeadInvestorWithdrawn(index, _currency, amount);
+        _currency.safeTransfer(to, amount);
+        emit LeadInvestorWithdrawn(index, _currency, to, amount);
     }
 
     /**
