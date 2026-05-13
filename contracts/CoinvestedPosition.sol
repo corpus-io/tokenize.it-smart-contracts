@@ -59,9 +59,26 @@ contract CoinvestedPosition is TokenSwapBase {
     error NotLeadInvestor();
     error ZeroLockedUntil();
 
+    /// @notice The payment currency and base price were updated to a new denomination.
     event CurrencyChanged(address indexed currency, uint256 basePrice);
+    /// @notice This contract claimed its share of a dividend distribution.
     event DistributionClaimed(address indexed distribution, address indexed currency, uint256 amount);
+    /// @notice This contract claimed exit proceeds for its full token balance.
     event ExitClaimed(address indexed exit, address indexed currency, uint256 received);
+    /// @notice A lead investor's carry was credited to their pull-payout balance.
+    event LeadInvestorCredited(uint256 indexed index, IERC20 indexed currency, uint256 amount);
+    /// @notice The coinvestor's share was credited to their pull-payout balance.
+    event CoinvestorCredited(IERC20 indexed currency, uint256 amount);
+    /// @notice A lead investor withdrew their pending credit.
+    event LeadInvestorWithdrawn(uint256 indexed index, IERC20 indexed currency, uint256 amount);
+    /// @notice The coinvestor withdrew their pending credit to `to` (credit portion only).
+    event CoinvestorWithdrawn(IERC20 indexed currency, address indexed to, uint256 amount);
+    /// @notice Untracked balance (currency on the contract above `totalCredit`) was swept to the
+    ///         coinvestor `to` during a coinvestor withdrawal. Emitted only when the surplus is non-zero,
+    ///         so credit-side numbers stay clean for consumers that sum {CoinvestorCredited} amounts.
+    event CoinvestorSwept(IERC20 indexed currency, address indexed to, uint256 amount);
+    /// @notice A lead investor rotated their own address.
+    event LeadInvestorAccountChanged(uint256 indexed index, address indexed oldAccount, address indexed newAccount);
 
     /// lead investors and their carry fractions
     LeadInvestor[] public leadInvestors;
@@ -83,21 +100,6 @@ contract CoinvestedPosition is TokenSwapBase {
     /// of currency `c` may exceed this (accidentally-sent currency is "untracked"); the difference
     /// is swept into the coinvestor share when `withdrawAsCoinvestor` is called.
     mapping(IERC20 => uint256) public totalCredit;
-
-    /// @notice A lead investor's carry was credited to their pull-payout balance.
-    event LeadInvestorCredited(uint256 indexed index, IERC20 indexed currency, uint256 amount);
-    /// @notice The coinvestor's share was credited to their pull-payout balance.
-    event CoinvestorCredited(IERC20 indexed currency, uint256 amount);
-    /// @notice A lead investor withdrew their pending credit.
-    event LeadInvestorWithdrawn(uint256 indexed index, IERC20 indexed currency, uint256 amount);
-    /// @notice The coinvestor withdrew their pending credit to `to` (credit portion only).
-    event CoinvestorWithdrawn(IERC20 indexed currency, address indexed to, uint256 amount);
-    /// @notice Untracked balance (currency on the contract above `totalCredit`) was swept to the
-    ///         coinvestor `to` during a coinvestor withdrawal. Emitted only when the surplus is non-zero,
-    ///         so credit-side numbers stay clean for consumers that sum {CoinvestorCredited} amounts.
-    event CoinvestorSwept(IERC20 indexed currency, address indexed to, uint256 amount);
-    /// @notice A lead investor rotated their own address.
-    event LeadInvestorAccountChanged(uint256 indexed index, address indexed oldAccount, address indexed newAccount);
 
     /**
      * This constructor creates a logic contract that is used to clone new contracts.
