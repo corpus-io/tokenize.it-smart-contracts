@@ -224,6 +224,7 @@ contract Crowdinvesting is
     function _activateDynamicPricing(IPriceDynamic _priceOracle, uint256 _priceMin, uint256 _priceMax) internal {
         require(address(_priceOracle) != address(0), ZeroPriceOracleAddress());
         priceOracle = _priceOracle;
+        require(_priceMin != 0, ZeroPrice());
         require(_priceMin <= priceBase, PriceMinExceedsPriceBase());
         priceMin = _priceMin;
         require(priceBase <= _priceMax, PriceMaxBelowPriceBase());
@@ -257,6 +258,7 @@ contract Crowdinvesting is
             if (price < priceMin) {
                 return priceMin;
             }
+            require(price != 0, ZeroPrice());
             return price;
         }
 

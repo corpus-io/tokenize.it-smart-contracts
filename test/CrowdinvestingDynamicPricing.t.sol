@@ -263,8 +263,19 @@ contract CrowdinvestingDynamicPricingTest is Test {
         assertTrue(currentPrice == maxPrice, "Price should be equal to max PRICE");
     }
 
+    function testActivateDynamicPricingZeroMinPriceReverts() public {
+        MinPriceOracle minPriceOracle = new MinPriceOracle();
+        uint256 priceBase = crowdinvesting.priceBase();
+
+        vm.startPrank(COMPANY_ADMIN);
+        crowdinvesting.pause();
+        vm.expectRevert(ZeroPrice.selector);
+        crowdinvesting.activateDynamicPricing(IPriceDynamic(minPriceOracle), 0, priceBase);
+        vm.stopPrank();
+    }
+
     function testMinPrice(uint256 minPrice) public {
-        vm.assume(minPrice <= PRICE);
+        vm.assume(minPrice != 0 && minPrice <= PRICE);
         vm.warp(0);
 
         // deploy max PRICE oracle

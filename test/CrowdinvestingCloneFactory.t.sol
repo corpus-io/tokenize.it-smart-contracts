@@ -116,6 +116,7 @@ contract CrowdinvestingCloneFactoryTest is Test {
         vm.assume(EXAMPLE_MIN_AMOUNT_PER_RECEIVER > 0);
         vm.assume(_maxAmountPerReceiver >= EXAMPLE_MIN_AMOUNT_PER_RECEIVER);
         vm.assume(_tokenPrice > 0);
+        vm.assume(_tokenPriceMin != 0 || address(_priceOracle) == address(0));
         vm.assume(_tokenPriceMin <= _tokenPrice);
         vm.assume(_tokenPriceMax >= _tokenPrice);
         vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerReceiver);
@@ -279,6 +280,7 @@ contract CrowdinvestingCloneFactoryTest is Test {
         vm.assume(_minAmountPerReceiver > 0);
         vm.assume(_maxAmountPerReceiver >= _minAmountPerReceiver);
         vm.assume(_priceBase > 0);
+        vm.assume(_tokenPriceMin != 0);
         vm.assume(_tokenPriceMin <= _priceBase);
         vm.assume(_tokenPriceMax >= _priceBase);
         vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerReceiver);
@@ -380,6 +382,7 @@ contract CrowdinvestingCloneFactoryTest is Test {
     ) public {
         vm.assume(address(_currency) != address(0));
         vm.assume(_priceBase > 0);
+        vm.assume(_priceMin != 0 || address(_priceOracle) == address(0));
         vm.assume(_priceMin <= _priceBase);
         vm.assume(_priceMax >= _priceBase);
         vm.assume(_maxAmountOfTokenToBeSold > _maxAmountPerReceiver);
