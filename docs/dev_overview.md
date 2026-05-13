@@ -211,6 +211,9 @@ The owner cannot manufacture the right to rotate by withholding claims — only 
 
 `LEAD_INVESTOR_RECOVERY_TIMEOUT` is a `constant`, not a storage value: making it mutable would let the owner shrink the window to zero immediately before rotating, defeating the design. Legal teams pick the literal pre-deployment.
 
+**Coinvestor recovery**
+The Coinvestor can help lead investors with recovery in case of key loss. But who can help the coinvestor if they lose access to their account? In that case, only the token admin can help through burn & mint, see [dev_overview.md](dev_overview.md#burning) for more information.
+
 ### TimeLock (TimeLock.sol)
 
 Holds ERC20 tokens on behalf of an owner and blocks withdrawals until a configured timestamp. The typical use case is locking up tokens received through a private offer — the PrivateOfferFactory can deploy both contracts in one transaction, minting directly into the TimeLock.
