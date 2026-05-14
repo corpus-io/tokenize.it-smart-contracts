@@ -277,7 +277,7 @@ contract CoinvestedPosition is TokenSwapBase {
     /**
      * @notice Claim this contract's eligible dividend share from `_distribution` and split it among lead investors.
      * @dev The full received amount is treated as profit. Each lead investor receives their carry (profitFraction
-     *      of profit); remainder goes to receiver. Any trusted currency may be used.
+     *      of profit); remainder goes to the coinvestor. Any trusted currency may be used.
      * @param _distribution the Distribution (dividend) contract to claim from
      * @param _minPayout minimum currency the call must receive; passed through to the distribution
      */
@@ -295,9 +295,9 @@ contract CoinvestedPosition is TokenSwapBase {
     /**
      * @notice Claim exit proceeds for this contract's full token balance and split them among the receiver and lead investors.
      * @dev Requires tokenExitRegistry.exit() to be set; that also acts as the unlock signal.
-     *      If proceeds < base, receiver gets everything.
+     *      If proceeds < base, the coinvestor gets everything.
      *      Profit (proceeds minus base price payout) is split: each lead investor receives their carry
-     *      (profitFraction of profit); remainder goes to receiver.
+     *      (profitFraction of profit); remainder goes to the coinvestor.
      *      Any currency may be used. When the exit currency differs from the stored currency, provide
      *      _basePrice expressing the base price in the exit currency's units.
      * @param _minCurrencyAmount minimum currency the call must receive; passed through to the exit contract.
@@ -366,6 +366,9 @@ contract CoinvestedPosition is TokenSwapBase {
      *      Reads and writes the slot once each: the struct fits in a single storage slot, so a
      *      memory round-trip collapses to one SLOAD and one SSTORE while preserving the (unchanged)
      *      profitFraction field.
+     *      Trust note: once the timeout has elapsed, the owner may rotate to any non-zero address
+     *      (including their own). Lead investors must monitor `recoveryArmedAt` and disarm via
+     *      withdrawal or self-rotation if they wish to keep their slot.
      * @param index lead investor slot to rotate
      * @param newAccount new address for the slot; must be non-zero
      */

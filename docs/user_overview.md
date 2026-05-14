@@ -89,14 +89,27 @@ The CoinvestedPosition contract implements this arrangement. It holds tokens on 
 
 **Parties involved:**
 
-- **Co-investor**: The co-investor whose capital bought the tokens. Owns the contract and receives at least `basePrice` (a EURO reference price) per token across any proceeds. Picks the destination address at withdrawal time.
-- **Lead investors**: Each has a `profitFraction` (a share of `uint32.max`). Lead investors receive their profit — the proceeds above the co-investor's `basePrice` — split according to their fractions.
+- **Co-investor**: The co-investor whose capital bought the tokens.
+- **Lead investors**: Players who helped the Co-investor get access to this investment opportunity. They get carry when there is profit to distribute.
+
+**How proceeds are split:**
+Terms:
+
+- invested capital: what the coinvestor spent to get the tokens
+- proceeds: what is received when giving the tokens away
+- profit: proceeds - invested capital, or 0 if proceeds < invested capital
+- carry: profit × a lead investor's profit fraction
+
+Co-investor gets: proceeds − sum of all carries
+Lead investors get: their respective carry
+
+Technically, the profit fraction of the lead investors can be 100%. But usually it is below 10%.
 
 **Three credit paths:**
 
-1. **Token sale**: A buyer purchases tokens from the contract at the set price. After fees, the co-investor's base-price portion and the lead-investor carry are credited to per-recipient pull balances on the contract. Starts paused; owner unpauses when ready to sell.
-2. **Dividends**: The contract owner claims a dividend Distribution on behalf of the contract; the entire received amount is credited as carry (lead investors and remainder to the co-investor).
-3. **Exit**: The contract owner participates in an Exit contract by redeeming the full token balance; the base-price portion is credited to the co-investor, carry to the lead investors.
+1. **Token sale** (`buy()`): A buyer purchases tokens at the set price. Proceeds = currency paid minus fees. Invested capital = base price × tokens sold. The split formula above is applied; both shares land in per-recipient pull balances. Starts paused; owner unpauses when ready to sell.
+2. **Dividends** (`claimDistribution`): The owner claims a dividend Distribution on behalf of the contract. The full amount received is considered profit split between coinvestor and lead investors.
+3. **Exit** (`claimExit`): The owner redeems the full token balance in an Exit contract. Proceeds = currency received from the exit. Invested capital = base price × tokens redeemed, re-expressed in the exit currency if it differs from the stored currency.
 
 **Pull payouts:** Funds are never pushed to recipients. Each lead investor calls `withdrawAsLeadInvestor` to claim their own credit, supplying a destination at withdrawal time; the co-investor calls `withdrawAsCoinvestor` likewise. The destination address is chosen at withdrawal time. A blocked recipient cannot stall a sale, a dividend, or an exit for everyone else.
 
