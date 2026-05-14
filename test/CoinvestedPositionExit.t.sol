@@ -723,7 +723,7 @@ contract CoinvestedPositionExitTest is Test {
     // ─────────────────────────────────────────────────────────────────────────
 
     /// VI-A: CoinvestedPosition already holds exitCurrency before claimExit()
-    /// Pre-existing 500e6 EURc should NOT inflate carry; RECEIVER sweeps it too
+    /// Pre-existing 500e6 EURc should NOT inflate carry and is NOT recoverable — stays stuck on the contract
     function testVIA_PreExistingExitCurrencyBalance() public {
         uint256 pricePerToken = 200e6;
         Exit exitContract = _deployExit(bytes32(0), eurc, pricePerToken, CP_TOKEN_AMOUNT);
@@ -740,11 +740,10 @@ contract CoinvestedPositionExitTest is Test {
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
         vm.prank(OWNER);
         coinvestedPosition.claimExit(1, 0);
-        // Auto-sweep inside _credit captures the 500e6 pre-existing EURc into coinvestor credit.
         _drainCredits(coinvestedPosition, IERC20(address(eurc)));
 
         // received computed via before-snapshot excludes the 500e6 pre-existing
-        // => received = 40,000e6; carry = 20,000e6; A=2,000; B=1,000; RECEIVER gets 37,000 + 500 = 37,500
+        // => received = 40,000e6; carry = 20,000e6; A=2,000; B=1,000; RECEIVER gets 37,000
         uint256 aGot = eurc.balanceOf(LEAD_A) - beforeA;
         uint256 bGot = eurc.balanceOf(LEAD_B) - beforeB;
         uint256 rGot = eurc.balanceOf(RECEIVER) - beforeR;
@@ -754,12 +753,16 @@ contract CoinvestedPositionExitTest is Test {
         uint256 expectedB = (uint256(CARRY_5PCT) * carry) / type(uint32).max;
         assertEq(aGot, expectedA, "VIA: A was inflated by pre-existing");
         assertEq(bGot, expectedB, "VIA: B was inflated by pre-existing");
-        // RECEIVER gets: (received - A - B) + preExisting (via sweep)
-        assertEq(rGot, (40_000e6 - expectedA - expectedB) + preExisting, "VIA: wrong RECEIVER payout");
+        // RECEIVER gets only the dividend remainder — pre-existing is NOT swept.
+        assertEq(rGot, 40_000e6 - expectedA - expectedB, "VIA: wrong RECEIVER payout");
 
-        // Sum = A + B + RECEIVER = received + preExisting
-        uint256 totalOut = aGot + bGot + rGot;
-        assertEq(totalOut, 40_000e6 + preExisting, "VIA: total does not equal received + pre-existing");
+        // Pre-existing balance is unrecoverable: it stays on the contract.
+        assertEq(
+            eurc.balanceOf(address(coinvestedPosition)),
+            preExisting,
+            "VIA: pre-existing should remain stuck on the contract"
+        );
+        assertEq(aGot + bGot + rGot, 40_000e6, "VIA: total does not equal received");
         assertEq(token.balanceOf(address(coinvestedPosition)), 0, "VIA: cp still holds tokens");
     }
 
@@ -909,7 +912,7 @@ contract CoinvestedPositionExitTest is Test {
         _assertInvariant(totalCurrency, rGot, payouts, address(coinvestedPositionFuzz));
     }
 
-    /// IX-B: Fuzz pre-existing exitCurrency balance; carry unaffected; RECEIVER sweeps all
+    /// IX-B: Fuzz pre-existing exitCurrency balance; carry unaffected; pre-existing stays stuck on the contract
     function testFuzz_PreExistingBalance(uint64 preExisting) public {
         vm.assume(preExisting > 0);
 
@@ -927,7 +930,6 @@ contract CoinvestedPositionExitTest is Test {
         tokenExitRegistry.setExit(token, Exit(address(exitContract)));
         vm.prank(OWNER);
         coinvestedPosition.claimExit(1, 0);
-        // Auto-sweep inside _credit captures the pre-existing EURc into coinvestor credit.
         _drainCredits(coinvestedPosition, IERC20(address(eurc)));
 
         uint256 received = 40_000e6; // snapshot-based, excludes preExisting
@@ -942,8 +944,13 @@ contract CoinvestedPositionExitTest is Test {
         assertEq(aGot, expectedA, "IX-B: A carry was affected by preExisting");
         assertEq(bGot, expectedB, "IX-B: B carry was affected by preExisting");
 
-        // Sum check: A + B + RECEIVER = received + preExisting (RECEIVER sweeps all)
-        assertEq(aGot + bGot + rGot, received + uint256(preExisting), "IX-B: wrong total sum");
+        // Distributed total equals `received` only; pre-existing stays stuck on the contract.
+        assertEq(aGot + bGot + rGot, received, "IX-B: wrong total sum");
+        assertEq(
+            eurc.balanceOf(address(coinvestedPosition)),
+            uint256(preExisting),
+            "IX-B: pre-existing should remain stuck on the contract"
+        );
         assertEq(token.balanceOf(address(coinvestedPosition)), 0, "IX-B: cp still holds tokens");
     }
 

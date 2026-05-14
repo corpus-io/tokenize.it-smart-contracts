@@ -25,7 +25,6 @@ contract CoinvestedPositionCreditTrackingTest is CoinvestedPositionTestBase {
     uint32 public constant CARRY_3PCT = uint32((uint256(type(uint32).max) * 3) / 100);
 
     uint256 public constant BASE_PRICE_A = 100e6;
-    uint256 public constant EXTRA = 77e6; // accidentally-sent currencyA
 
     FakePaymentToken currencyA; // 6 decimals
     FakePaymentToken currencyB; // 18 decimals
@@ -105,11 +104,10 @@ contract CoinvestedPositionCreditTrackingTest is CoinvestedPositionTestBase {
         for (uint256 i = 0; i < coinvestedPosition.getLeadInvestorsCount(); i++) {
             sum += coinvestedPosition.leadInvestorCredit(i, currency);
         }
-        assertEq(sum, coinvestedPosition.totalCredit(currency), "totalCredit != sum of credits");
         assertEq(
             FakePaymentToken(address(currency)).balanceOf(address(coinvestedPosition)),
-            coinvestedPosition.totalCredit(currency),
-            "balance != totalCredit"
+            sum,
+            "balance != sum of credits"
         );
     }
 
@@ -118,7 +116,7 @@ contract CoinvestedPositionCreditTrackingTest is CoinvestedPositionTestBase {
         uint256 totalCarryA_A; // lead A total currencyA
         uint256 totalCarryB_A; // lead B total currencyA
         uint256 totalCarryC_A; // lead C total currencyA
-        uint256 totalCoinvestorA; // coinvestor total currencyA (credit + sweep)
+        uint256 totalCoinvestorA; // coinvestor total currencyA
 
         // ── Phase 1: buy 2 tokens at 200e6 currencyA ─────────────────────────
         {
@@ -127,7 +125,6 @@ contract CoinvestedPositionCreditTrackingTest is CoinvestedPositionTestBase {
             assertEq(coinvestedPosition.leadInvestorCredit(1, IERC20(address(currencyA))), 0, "p1: leadB not 0");
             assertEq(coinvestedPosition.leadInvestorCredit(2, IERC20(address(currencyA))), 0, "p1: leadC not 0");
             assertEq(coinvestedPosition.coinvestorCredit(IERC20(address(currencyA))), 0, "p1: coinvestor not 0");
-            assertEq(coinvestedPosition.totalCredit(IERC20(address(currencyA))), 0, "p1: total credit not 0");
 
             _enableBuy(200e6);
             _buy(IERC20(address(currencyA)), 2e18);
@@ -151,18 +148,17 @@ contract CoinvestedPositionCreditTrackingTest is CoinvestedPositionTestBase {
             assertEq(coinvestedPosition.leadInvestorCredit(0, IERC20(address(currencyA))), 0, "p1: leadA credit zero");
             _assertTotalCreditMatchesSum(IERC20(address(currencyA)));
 
-            // Send extra untracked currencyA to contract; coinvestor withdraw sweeps it
-            currencyA.mint(address(coinvestedPosition), EXTRA);
+            // Coinvestor withdraws their credit; no sweep behavior anymore.
             vm.prank(OWNER);
             coinvestedPosition.withdrawAsCoinvestor(IERC20(address(currencyA)), COINVESTOR_DEST);
-            assertEq(currencyA.balanceOf(COINVESTOR_DEST), cInv + EXTRA, "p1: coinvestor withdraw+sweep");
+            assertEq(currencyA.balanceOf(COINVESTOR_DEST), cInv, "p1: coinvestor withdraw");
             assertEq(coinvestedPosition.coinvestorCredit(IERC20(address(currencyA))), 0, "p1: coinvestor credit zero");
             _assertTotalCreditMatchesSum(IERC20(address(currencyA)));
 
             totalCarryA_A += cA;
             totalCarryB_A += cB;
             totalCarryC_A += cC;
-            totalCoinvestorA += cInv + EXTRA;
+            totalCoinvestorA += cInv;
         }
 
         // ── Phase 2: buy 1 token at 150e6 currencyA ──────────────────────────
@@ -276,12 +272,12 @@ contract CoinvestedPositionCreditTrackingTest is CoinvestedPositionTestBase {
         assertEq(currencyA.balanceOf(address(coinvestedPosition)), 0, "coinvestedPosition holds residual currencyA");
         assertEq(currencyB.balanceOf(address(coinvestedPosition)), 0, "coinvestedPosition holds residual currencyB");
 
-        // Conservation: all currencyA in (2 buys + extra) == all out
+        // Conservation: all currencyA in (2 buys) == all out
         uint256 outA = currencyA.balanceOf(LEAD_A) +
             currencyA.balanceOf(LEAD_B) +
             currencyA.balanceOf(LEAD_C) +
             currencyA.balanceOf(COINVESTOR_DEST);
-        assertEq(outA, 400e6 + 150e6 + EXTRA, "currencyA conservation");
+        assertEq(outA, 400e6 + 150e6, "currencyA conservation");
 
         // Conservation: all currencyB in == all out
         uint256 outB = currencyB.balanceOf(LEAD_A) +

@@ -56,8 +56,6 @@ struct CoinvestedPositionInitializerArguments {
  *      profit is 0 and the coinvestor receives everything.
  * @dev Payouts are pull-based. Each lead investor calls `withdrawAsLeadInvestor` for their slot.
  *      The owner (coinvestor) calls `withdrawAsCoinvestor` with an explicit destination address.
- *      Any accidentally-sent currency (balance above `totalCredit`) is swept to the
- *      coinvestor at withdrawal time.
  */
 contract CoinvestedPosition is TokenSwapBase {
     using SafeERC20 for IERC20;
@@ -87,12 +85,8 @@ contract CoinvestedPosition is TokenSwapBase {
         address indexed receiver,
         uint256 amount
     );
-    /// @notice The coinvestor withdrew their pending credit to `receiver` (credit portion only).
+    /// @notice The coinvestor withdrew their pending credit to `receiver`.
     event CoinvestorWithdrawn(IERC20 indexed currency, address indexed receiver, uint256 amount);
-    /// @notice Untracked balance (currency on the contract above `totalCredit`) was swept to the
-    ///         coinvestor `receiver` during a coinvestor withdrawal. Emitted only when the surplus is non-zero,
-    ///         so credit-side numbers stay clean for consumers that sum CoinvestorCredited amounts.
-    event CoinvestorSwept(IERC20 indexed currency, address indexed receiver, uint256 amount);
     /// @notice A lead investor rotated their own slot's account via rotateLeadInvestorAccount.
     event LeadInvestorAccountRotated(uint256 indexed index, address indexed oldAccount, address indexed newAccount);
     /// @notice The owner exercised the recovery path and rotated a lead investor slot's account
@@ -125,10 +119,6 @@ contract CoinvestedPosition is TokenSwapBase {
     mapping(uint256 => mapping(IERC20 => uint256)) public leadInvestorCredit;
     /// Pending pull-payout for the coinvestor (owner), keyed by currency.
     mapping(IERC20 => uint256) public coinvestorCredit;
-    /// Sum of `coinvestorCredit[c] + Σ leadInvestorCredit[i][c]`. The contract's actual balance
-    /// of currency `c` may exceed this (accidentally-sent currency is "untracked"); the difference
-    /// is swept to the coinvestor when `withdrawAsCoinvestor` is called.
-    mapping(IERC20 => uint256) public totalCredit;
 
     /**
      * This constructor creates a logic contract that is used to clone new contracts.
@@ -244,9 +234,7 @@ contract CoinvestedPosition is TokenSwapBase {
      *      than transferred — so a single bad recipient cannot block the calling flow.
      * @dev `profit = max(gross - basePortion, 0)`. Each lead investor receives `profitFraction × profit`.
      *      The coinvestor receives everything else (`gross - Σ carries`), which is the dominant share
-     *      whenever lead investors collectively hold a small profit fraction. Accidentally-sent currency
-     *      (balance above `totalCredit`) is left untracked here and swept into the coinvestor share at
-     *      withdrawAsCoinvestor time.
+     *      in most cases.
      * @param gross total amount of `_currency` to distribute (must already be on the contract)
      * @param basePortion threshold below which all of `gross` goes to the coinvestor; 0 for dividends
      * @param _currency the ERC20 currency to credit
@@ -272,7 +260,6 @@ contract CoinvestedPosition is TokenSwapBase {
             coinvestorCredit[_currency] += coinvestorShare;
             emit CoinvestorCredited(_currency, coinvestorShare);
         }
-        totalCredit[_currency] += gross;
     }
 
     /**
@@ -400,7 +387,6 @@ contract CoinvestedPosition is TokenSwapBase {
         uint256 amount = leadInvestorCredit[index][_currency];
         require(amount != 0, ZeroAmount());
         leadInvestorCredit[index][_currency] = 0;
-        totalCredit[_currency] -= amount;
         // a successful pull proves the lead investor holds keys; disarm the recovery timer.
         leadInvestors[index].recoveryArmedAt = 0;
         _currency.safeTransfer(_receiver, amount);
@@ -408,9 +394,7 @@ contract CoinvestedPosition is TokenSwapBase {
     }
 
     /**
-     * @notice Withdraw the coinvestor's accumulated credit in `_currency` to `_receiver`. Also sweeps
-     *      any "untracked" balance of `_currency` (e.g. accidentally-transferred funds) into the
-     *      same withdrawal — preserving the original "settle sweeps the contract balance" semantics.
+     * @notice Withdraw the coinvestor's accumulated credit in `_currency` to `_receiver`.
      * @dev The coinvestor is the contract owner; the destination is chosen at withdraw time
      *      so the owner can route around currency-level blacklists on any single address.
      * @param _currency currency to withdraw
@@ -419,17 +403,11 @@ contract CoinvestedPosition is TokenSwapBase {
     function withdrawAsCoinvestor(IERC20 _currency, address _receiver) external onlyOwner nonReentrant {
         require(_receiver != address(0), ZeroReceiverAddress());
         require(address(_currency) != address(token), CurrencyEqualsToken());
-        uint256 owed = coinvestorCredit[_currency];
-        uint256 untracked = _currency.balanceOf(address(this)) - totalCredit[_currency];
-        uint256 amount = owed + untracked;
+        uint256 amount = coinvestorCredit[_currency];
         require(amount != 0, ZeroAmount());
         coinvestorCredit[_currency] = 0;
-        totalCredit[_currency] -= owed; // untracked was never in totalCredit
         _currency.safeTransfer(_receiver, amount);
-        // Emit credit and surplus separately so consumers can reconcile CoinvestorCredited
-        // numbers against CoinvestorWithdrawn without surplus polluting the math.
-        if (owed != 0) emit CoinvestorWithdrawn(_currency, _receiver, owed);
-        if (untracked != 0) emit CoinvestorSwept(_currency, _receiver, untracked);
+        emit CoinvestorWithdrawn(_currency, _receiver, amount);
     }
 
     /**
