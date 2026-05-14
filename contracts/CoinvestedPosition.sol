@@ -34,7 +34,12 @@ struct CoinvestedPositionInitializerArguments {
     IERC20 baseCurrency;
     /// token being held
     Token token;
-    /// unix timestamp before which unpause() is blocked; must be non-zero
+    /// Unix timestamp before which `unpause()` and `setCurrency()` are blocked. Unpausing is what
+    /// enables the position to be sold via `buy()`, so this acts as a "no-selling-before" gate.
+    /// The timelock is OPTIONAL — many deployments don't need one. Must be non-zero; we reject `0`
+    /// so a deployer who forgot to set this field gets a loud revert instead of a silent "no lock".
+    /// Pass `1` (or any past timestamp) to explicitly opt out — the gate
+    /// `block.timestamp >= lockedUntil` is then already satisfied at deploy time.
     uint64 lockedUntil;
     /// registry contract; if an exit is set for the token, it can be claimed
     GlobalTokenExitRegistry tokenExitRegistry;
@@ -104,7 +109,11 @@ contract CoinvestedPosition is TokenSwapBase {
     LeadInvestor[] public leadInvestors;
     /// base price per token in bits of the current currency (always expressed in current currency's decimals)
     uint256 public basePrice;
-    /// unix timestamp before which unpause() is blocked; must be non-zero
+    /// Unix timestamp before which `unpause()` and `setCurrency()` are blocked. Unpausing is what
+    /// enables the position to be sold via `buy()`, so this acts as a "no-selling-before" gate.
+    /// The timelock is OPTIONAL — many deployments don't need one. Must be non-zero; we reject `0`
+    /// so a deployer who forgot to set this field gets a loud revert instead of a silent "no lock".
+    /// Pass `1` (or any past timestamp) to explicitly opt out — the gate is then satisfied at deploy time.
     uint64 public lockedUntil;
     /// registry contract; if an exit is set for the token, an exit reward can be claimed from that
     /// address even if lockedUntil has not passed yet
@@ -163,7 +172,9 @@ contract CoinvestedPosition is TokenSwapBase {
     }
 
     /**
-     * @notice Unpause the contract. Blocked until lockedUntil has passed.
+     * @notice Unpause the contract, enabling `buy()` so the position can be sold. Blocked until
+     *      `lockedUntil` has passed; when no timelock was configured (`lockedUntil` set to `1` or any
+     *      past timestamp at init), this is callable immediately.
      */
     function unpause() external override onlyOwner {
         require(tokenPrice != 0, ZeroPrice());

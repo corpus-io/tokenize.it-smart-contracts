@@ -100,7 +100,9 @@ The CoinvestedPosition contract implements this arrangement. It holds tokens on 
 
 **Pull payouts:** Funds are never pushed to recipients. Each lead investor calls `withdrawAsLeadInvestor` to claim their own credit, supplying a destination at withdrawal time; the co-investor calls `withdrawAsCoinvestor` likewise. The destination address is chosen at withdrawal time. A blocked recipient cannot stall a sale, a dividend, or an exit for everyone else.
 
-**Currency flexibility**: The base price is fixed at initialization. After the timelock has expired, the owner can switch to a different trusted ERC-20 currency, supplying the base price re-expressed in the new currency, or just update the base price.
+**Currency flexibility**: The base price is fixed at initialization. After the timelock has expired (or immediately, if the position was deployed without one), the owner can switch to a different trusted ERC-20 currency, supplying the base price re-expressed in the new currency, or just update the base price.
+
+**Optional timelock**: A `lockedUntil` timestamp gates `unpause()` and `setCurrency()`. It is optional — the contract's value lies in the economic split, not in restricting when the position can be sold, and many deployments don't need a lock at all. To deploy without one, pass `1` (or any past timestamp) at initialization. When the underlying investment agreement does require a holding period, set `lockedUntil` to the end of that period.
 
 **Lost-keys recovery:** If a lead investor stops responding to credited carry for `LEAD_INVESTOR_RECOVERY_TIMEOUT` (currently 90 days) after their most recent credit event, the co-investor (owner) can rotate that slot's account to recover the stranded carry. The lead investor disarms this right at any time by withdrawing credit or rotating their own slot — both are liveness signals — so the recovery path only fires when the lead investor has genuinely fallen silent.
 

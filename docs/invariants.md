@@ -198,6 +198,7 @@ The following statements about the smart contracts should always be true
 ### Sale / pause / currency
 
 - The contract starts paused; no tokens can be sold until the owner unpauses it.
+- The lock period, if any, is fixed at deploy time and immutable.
 - The owner can only unpause after the lock period has passed and a token price has been set.
 - The owner can change the currency, but only after the lock period has passed.
 - Only trusted currencies can be used for token sales, distribution claims, or currency changes.
