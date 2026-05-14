@@ -31,7 +31,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
     event TokensBought(address indexed BUYER, uint256 tokenAmount, uint256 currencyAmount);
     event ReceiverChanged(address indexed newReceiver);
     event TokenPriceChanged(uint256 newTokenPrice);
-    event CurrencyChanged(address indexed currency, uint256 basePrice);
+    event CurrencyChanged(address indexed currency, uint256 basePrice, uint256 tokenPrice);
     event CoinvestorCredited(IERC20 indexed currency, uint256 amount);
 
     // ── Well-known addresses ──────────────────────────────────────────────────
@@ -397,7 +397,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
     function testSetCurrencyEmitsEvent() public {
         vm.expectEmit(true, false, false, true, address(coinvestedPosition));
-        emit CurrencyChanged(address(eure), 50e18);
+        emit CurrencyChanged(address(eure), 50e18, 1e18);
         vm.prank(OWNER);
         coinvestedPosition.setCurrency(IERC20(address(eure)), 50e18, 1e18);
     }
