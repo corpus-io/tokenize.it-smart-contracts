@@ -20,8 +20,8 @@ abstract contract CoinvestedPositionTestBase is Test {
     address public constant TOKEN_RECEIVER = 0x5109709EcFA91a80626ff3989d68f67F5B1dD125;
 
     // ── Test constants ────────────────────────────────────────────────────────
-    // 10% of uint64.max (floor)
-    uint64 public constant CARRY_10PCT = type(uint64).max / 10;
+    // 10% of uint32.max (floor)
+    uint32 public constant CARRY_10PCT = type(uint32).max / 10;
 
     // ── Shared state ──────────────────────────────────────────────────────────
     AllowList allowList;
@@ -44,5 +44,25 @@ abstract contract CoinvestedPositionTestBase is Test {
         coinvestedPosition.setTokenPrice(tokenPrice);
         vm.prank(OWNER);
         coinvestedPosition.unpause();
+    }
+
+    /// Drain pending pull-payout credits in `_currency` for every lead investor and the coinvestor
+    /// of `position`. Used after buy/claimDistribution/claimExit so legacy push-style balance
+    /// assertions continue to work. The coinvestor share is routed to `RECEIVER` so tests that
+    /// asserted balanceOf(RECEIVER) continue to hold.
+    function _drainCredits(CoinvestedPosition position, IERC20 _currency) internal {
+        uint256 leadCount = position.getLeadInvestorsCount();
+        for (uint256 i = 0; i < leadCount; i++) {
+            uint256 credit = position.leadInvestorCredit(i, _currency);
+            if (credit != 0) {
+                (address account, , ) = position.leadInvestors(i);
+                vm.prank(account);
+                position.withdrawAsLeadInvestor(i, _currency, account);
+            }
+        }
+        if (position.coinvestorCredit(_currency) != 0) {
+            vm.prank(position.owner());
+            position.withdrawAsCoinvestor(_currency, RECEIVER);
+        }
     }
 }

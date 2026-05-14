@@ -51,3 +51,21 @@ Two base contracts would cover 7 of the 10 cases, but the saving is marginal and
 **Decision:** After deploying a clone, each factory explicitly calls `isTrustedForwarder(_trustedForwarder)` on the new clone and reverts if the result is false.
 
 **Rationale:** The `trustedForwarder` is an extremely privileged position: it can impersonate any address when calling contracts that implement ERC2771. If the logic contract were deployed with the wrong forwarder set (e.g. due to a misconfiguration or a compromised implementation), every clone created from it would silently inherit that wrong forwarder — giving an attacker the ability to act as any user across all deployed instances. The post-deploy check catches this at deployment time and prevents a bad clone from ever being returned to the caller.
+
+---
+
+## CoinvestedPosition: Pull Payouts and Owner-Driven Recovery
+
+**Decision:** `CoinvestedPosition` never pushes currency to lead investors or to the co-investor. Each credit-side action (`buy`, `claimDistribution`, `claimExit`) adds to per-recipient pull balances; recipients withdraw on their own schedule. Additionally, the owner may rotate a lead investor's slot if that lead investor's `recoveryArmedAt` has been set for at least `LEAD_INVESTOR_RECOVERY_TIMEOUT` (90 days) without any withdrawal or self-rotation.
+
+**Rationale:**
+
+The contract is designed to support currencies like USDC / USDT / EURC that enforce blacklists inside the token contract. With a push model, a single blacklisted recipient would cause every credit-side action to revert: one bad address could indefinitely stall buys, dividend claims, and exit redemptions for everyone else on the contract. Pull payouts decouple the credit event from the transfer, so a revert affects only the recipient who attempts it. The co-investor (contract owner) additionally picks the destination at withdrawal time, so if their primary address gets blacklisted they can route to a fresh address without any contract intervention.
+
+A lead investor who loses their keys can never claim, and their carry sits in the contract indefinitely. The owner-recovery mechanism addresses this and is gated by three properties to keep it from being easily exploitable by the owner:
+
+1. **Per-lead-investor recovery timer (`recoveryArmedAt`)** armed only when that specific lead investor receives non-zero carry, and disarmed immediately by any withdrawal (in any currency) or self-rotation. The owner cannot manufacture the right to rotate by withholding claims — only credit events arm the timer, and the lead investor controls the disarm.
+2. **A long minimum wait** (`LEAD_INVESTOR_RECOVERY_TIMEOUT`, 90 days). The window is large enough that a live lead investor has ample opportunity to respond. Legal teams pick the literal pre-deployment.
+3. **No post-deploy mutability of the timeout.** The constant is `public constant`, not a storage value, so the owner cannot shrink it before rotating.
+
+A simpler design was considered and rejected: a single global activity timer over all credit-side actions. That fails because most credit events are `onlyOwner` (`claimDistribution`, `claimExit`), so the owner could trivially game it by suppressing claims. The per-lead-investor timer ties the recovery right to a signal the owner does not control.

@@ -21,7 +21,7 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
     address public constant currencyReceiver = 0x4109709eCFa91A80626ff3989d68F67f5b1DD124;
 
     // ── Test constants ────────────────────────────────────────────────────────
-    uint64 public constant CARRY_5PCT = type(uint64).max / 20;
+    uint32 public constant CARRY_5PCT = type(uint32).max / 20;
 
     // ── Shared state ──────────────────────────────────────────────────────────
     CoinvestedPositionCloneFactory coinvestedPositionCloneFactory;
@@ -69,7 +69,6 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
         return
             CoinvestedPositionInitializerArguments({
                 owner: OWNER,
-                receiver: RECEIVER,
                 leadInvestors: leadInvestors,
                 basePrice: 80e6,
                 baseCurrency: IERC20(address(eurc)),
@@ -115,7 +114,7 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
         uint256 investmentAmount = Math.ceilDiv(tokenAmount * tokenPrice, 10 ** token.decimals());
 
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](1);
-        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT});
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT, recoveryArmedAt: 0});
 
         CoinvestedPositionInitializerArguments memory coinvestedPositionArgs = _buildCoinvestedPositionArgs(
             leadInvestors
@@ -180,8 +179,8 @@ contract CoinvestedPositionPrivateOfferTest is CoinvestedPositionTestBase {
 
         // Build a CoinvestedPosition with 2 lead investors as the fee roster source
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](2);
-        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT});
-        leadInvestors[1] = LeadInvestor({account: leadB, profitFraction: CARRY_5PCT});
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT, recoveryArmedAt: 0});
+        leadInvestors[1] = LeadInvestor({account: leadB, profitFraction: CARRY_5PCT, recoveryArmedAt: 0});
 
         CoinvestedPositionInitializerArguments memory coinvestedPositionArgs = _buildCoinvestedPositionArgs(
             leadInvestors

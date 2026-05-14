@@ -52,9 +52,9 @@ contract CoinvestedPositionDistributionTest is Test {
 
     // ── Carry constants ───────────────────────────────────────────────────────
     /// 10% of uint64.max
-    uint64 public constant CARRY_10PCT = type(uint64).max / 10;
+    uint32 public constant CARRY_10PCT = type(uint32).max / 10;
     /// 5% of uint64.max
-    uint64 public constant CARRY_5PCT = type(uint64).max / 20;
+    uint32 public constant CARRY_5PCT = type(uint32).max / 20;
 
     // ── Token/Distribution setup ──────────────────────────────────────────────
     uint256 public constant TOKEN_SUPPLY = 1000e18;
@@ -96,6 +96,25 @@ contract CoinvestedPositionDistributionTest is Test {
 
     /// Default CoinvestedPosition: basePrice=100e6 EURc, LEAD_A=10%, LEAD_B=5%
     CoinvestedPosition coinvestedPosition;
+
+    /// Drain pending pull-payout credits in `_currency` for every lead investor and the coinvestor
+    /// of `position`. Used after claimDistribution so legacy push-style balance assertions still hold.
+    /// Coinvestor share is routed to RECEIVER for backward compatibility with existing assertions.
+    function _drainCredits(CoinvestedPosition position, IERC20 _currency) internal {
+        uint256 leadCount = position.getLeadInvestorsCount();
+        for (uint256 i = 0; i < leadCount; i++) {
+            uint256 credit = position.leadInvestorCredit(i, _currency);
+            if (credit != 0) {
+                (address account, , ) = position.leadInvestors(i);
+                vm.prank(account);
+                position.withdrawAsLeadInvestor(i, _currency, account);
+            }
+        }
+        if (position.coinvestorCredit(_currency) != 0) {
+            vm.prank(position.owner());
+            position.withdrawAsCoinvestor(_currency, RECEIVER);
+        }
+    }
 
     // ─────────────────────────────────────────────────────────────────────────
     // ── setUp ─────────────────────────────────────────────────────────────────
@@ -162,8 +181,8 @@ contract CoinvestedPositionDistributionTest is Test {
 
     function _defaultLeadInvestors() internal pure returns (LeadInvestor[] memory) {
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](2);
-        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT});
-        leadInvestors[1] = LeadInvestor({account: LEAD_B, profitFraction: CARRY_5PCT});
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT, recoveryArmedAt: 0});
+        leadInvestors[1] = LeadInvestor({account: LEAD_B, profitFraction: CARRY_5PCT, recoveryArmedAt: 0});
         return leadInvestors;
     }
 
@@ -175,7 +194,6 @@ contract CoinvestedPositionDistributionTest is Test {
     ) internal returns (CoinvestedPosition) {
         CoinvestedPositionInitializerArguments memory args = CoinvestedPositionInitializerArguments({
             owner: OWNER,
-            receiver: RECEIVER,
             leadInvestors: leadInvestors,
             basePrice: basePrice,
             baseCurrency: IERC20(address(baseCurrency)),
@@ -232,9 +250,9 @@ contract CoinvestedPositionDistributionTest is Test {
             );
     }
 
-    /// @dev Compute expected lead-investor payout: floor(profitFraction * received / uint64.max)
-    function _leadShare(uint64 profitFraction, uint256 received) internal pure returns (uint256) {
-        return (uint256(profitFraction) * received) / type(uint64).max;
+    /// @dev Compute expected lead-investor payout: floor(profitFraction * received / uint32.max)
+    function _leadShare(uint32 profitFraction, uint256 received) internal pure returns (uint256) {
+        return (uint256(profitFraction) * received) / type(uint32).max;
     }
 
     /// @dev Assert key invariant: sum of all payouts equals received
@@ -266,6 +284,7 @@ contract CoinvestedPositionDistributionTest is Test {
 
         vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
+        _drainCredits(coinvestedPosition, distribution.currency());
 
         uint256 aGot = usdc.balanceOf(LEAD_A) - beforeA;
         uint256 bGot = usdc.balanceOf(LEAD_B) - beforeB;
@@ -329,6 +348,7 @@ contract CoinvestedPositionDistributionTest is Test {
 
         vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
+        _drainCredits(coinvestedPosition, distribution.currency());
 
         uint256 aGot = usdc.balanceOf(LEAD_A) - beforeA;
         uint256 bGot = usdc.balanceOf(LEAD_B) - beforeB;
@@ -357,12 +377,24 @@ contract CoinvestedPositionDistributionTest is Test {
     /// @dev Deploy a CoinvestedPosition with 3 lead investors: A=7%, B=13%, C=3%
     function _threeLeadInvestors() internal pure returns (LeadInvestor[] memory) {
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](3);
-        // 7% ≈ type(uint64).max * 7 / 100
-        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: uint64((type(uint64).max / 100) * 7)});
-        // 13% ≈ type(uint64).max * 13 / 100
-        leadInvestors[1] = LeadInvestor({account: LEAD_B, profitFraction: uint64((type(uint64).max / 100) * 13)});
-        // 3% ≈ type(uint64).max * 3 / 100
-        leadInvestors[2] = LeadInvestor({account: LEAD_C, profitFraction: uint64((type(uint64).max / 100) * 3)});
+        // 7% ≈ type(uint32).max * 7 / 100
+        leadInvestors[0] = LeadInvestor({
+            account: LEAD_A,
+            profitFraction: uint32((type(uint32).max / 100) * 7),
+            recoveryArmedAt: 0
+        });
+        // 13% ≈ type(uint32).max * 13 / 100
+        leadInvestors[1] = LeadInvestor({
+            account: LEAD_B,
+            profitFraction: uint32((type(uint32).max / 100) * 13),
+            recoveryArmedAt: 0
+        });
+        // 3% ≈ type(uint32).max * 3 / 100
+        leadInvestors[2] = LeadInvestor({
+            account: LEAD_C,
+            profitFraction: uint32((type(uint32).max / 100) * 3),
+            recoveryArmedAt: 0
+        });
         return leadInvestors;
     }
 
@@ -416,6 +448,7 @@ contract CoinvestedPositionDistributionTest is Test {
 
         vm.prank(OWNER);
         coinvestedPosition3.claimDistribution(Distribution(address(distribution)), 0);
+        _drainCredits(coinvestedPosition3, distribution.currency());
 
         assertEq(usdc.balanceOf(LEAD_A) - beforeA, expectedA, "DI-III-A: wrong LEAD_A payout");
         assertEq(usdc.balanceOf(LEAD_B) - beforeB, expectedB, "DI-III-A: wrong LEAD_B payout");
@@ -483,17 +516,17 @@ contract CoinvestedPositionDistributionTest is Test {
         // percentages calculated the same way as contracts do, to get the rounding error right
         assertEq(
             expectedA,
-            ((coinvestedPosition3Eligible * (((type(uint64).max) / 100) * 7)) / type(uint64).max),
+            ((coinvestedPosition3Eligible * (((type(uint32).max) / 100) * 7)) / type(uint32).max),
             "expectedA wrong"
         );
         assertEq(
             expectedB,
-            ((coinvestedPosition3Eligible * (((type(uint64).max) / 100) * 13)) / type(uint64).max),
+            ((coinvestedPosition3Eligible * (((type(uint32).max) / 100) * 13)) / type(uint32).max),
             "expectedB wrong"
         );
         assertEq(
             expectedC,
-            ((coinvestedPosition3Eligible * (((type(uint64).max) / 100) * 3)) / type(uint64).max),
+            ((coinvestedPosition3Eligible * (((type(uint32).max) / 100) * 3)) / type(uint32).max),
             "expectedC wrong"
         );
 
@@ -504,6 +537,7 @@ contract CoinvestedPositionDistributionTest is Test {
 
         vm.prank(OWNER);
         coinvestedPosition3.claimDistribution(Distribution(address(distribution)), 0);
+        _drainCredits(coinvestedPosition3, distribution.currency());
 
         assertEq(eure.balanceOf(LEAD_A) - beforeA, expectedA, "DI-III-B: wrong LEAD_A EURe payout");
         assertEq(eure.balanceOf(LEAD_B) - beforeB, expectedB, "DI-III-B: wrong LEAD_B EURe payout");
@@ -538,6 +572,7 @@ contract CoinvestedPositionDistributionTest is Test {
         // Must not revert
         vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
+        _drainCredits(coinvestedPosition, distribution.currency());
 
         uint256 aGot = usdc.balanceOf(LEAD_A) - beforeA;
         uint256 bGot = usdc.balanceOf(LEAD_B) - beforeB;
@@ -587,6 +622,7 @@ contract CoinvestedPositionDistributionTest is Test {
 
         vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
+        _drainCredits(coinvestedPosition, distribution.currency());
 
         uint256 aGot = usdc.balanceOf(LEAD_A) - beforeA;
         uint256 bGot = usdc.balanceOf(LEAD_B) - beforeB;
@@ -684,6 +720,7 @@ contract CoinvestedPositionDistributionTest is Test {
 
         vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
+        _drainCredits(coinvestedPosition, distribution.currency());
 
         uint256 aGot = usdc.balanceOf(LEAD_A) - beforeA;
         uint256 bGot = usdc.balanceOf(LEAD_B) - beforeB;
@@ -731,6 +768,7 @@ contract CoinvestedPositionDistributionTest is Test {
 
             vm.prank(OWNER);
             coinvestedPosition.claimDistribution(Distribution(address(usdcDistribution)), 0);
+            _drainCredits(coinvestedPosition, usdcDistribution.currency());
 
             uint256 aGot = usdc.balanceOf(LEAD_A) - beforeA;
             uint256 bGot = usdc.balanceOf(LEAD_B) - beforeB;
@@ -769,6 +807,7 @@ contract CoinvestedPositionDistributionTest is Test {
 
             vm.prank(OWNER);
             coinvestedPosition.claimDistribution(Distribution(address(eureDistribution)), 0);
+            _drainCredits(coinvestedPosition, eureDistribution.currency());
 
             uint256 aGot = eure.balanceOf(LEAD_A) - beforeA;
             uint256 bGot = eure.balanceOf(LEAD_B) - beforeB;
@@ -813,6 +852,8 @@ contract CoinvestedPositionDistributionTest is Test {
 
         vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
+        // Auto-sweep inside _credit captures the 300e6 pre-seeded USDC into coinvestor credit.
+        _drainCredits(coinvestedPosition, distribution.currency());
 
         uint256 aGot = usdc.balanceOf(LEAD_A) - beforeA;
         uint256 bGot = usdc.balanceOf(LEAD_B) - beforeB;
@@ -886,6 +927,7 @@ contract CoinvestedPositionDistributionTest is Test {
 
         vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
+        _drainCredits(coinvestedPosition, distribution.currency());
 
         uint256 aGot = usdc.balanceOf(LEAD_A) - beforeA;
         uint256 bGot = usdc.balanceOf(LEAD_B) - beforeB;
@@ -971,21 +1013,21 @@ contract CoinvestedPositionDistributionTest is Test {
         uint64 otherTokenAmount,
         uint96 fuzzPricePerToken,
         uint8 numLeads,
-        uint64 carryA,
-        uint64 carryB,
-        uint64 carryC
+        uint32 carryA,
+        uint32 carryB,
+        uint32 carryC
     ) public {
         vm.assume(coinvestedPositionTokenAmount > 0);
         vm.assume(otherTokenAmount > 0);
         // uint64 * 1e18 + uint64 * 1e18 << uint256.max, so no overflow check needed
         vm.assume(numLeads >= 1 && numLeads <= 3);
 
-        vm.assume(carryA >= 1 && carryA <= type(uint64).max / 10);
-        if (numLeads >= 2) vm.assume(carryB >= 1 && carryB <= type(uint64).max / 10);
+        vm.assume(carryA >= 1 && carryA <= type(uint32).max / 10);
+        if (numLeads >= 2) vm.assume(carryB >= 1 && carryB <= type(uint32).max / 10);
         else carryB = 0;
-        if (numLeads >= 3) vm.assume(carryC >= 1 && carryC <= type(uint64).max / 10);
+        if (numLeads >= 3) vm.assume(carryC >= 1 && carryC <= type(uint32).max / 10);
         else carryC = 0;
-        vm.assume(uint256(carryA) + uint256(carryB) + uint256(carryC) < type(uint64).max);
+        vm.assume(uint256(carryA) + uint256(carryB) + uint256(carryC) < type(uint32).max);
 
         vm.assume(fuzzPricePerToken >= 1);
 
@@ -995,9 +1037,11 @@ contract CoinvestedPositionDistributionTest is Test {
         uint256 coinvestedPositionEligible;
         {
             LeadInvestor[] memory leadInvestors = new LeadInvestor[](numLeads);
-            leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: carryA});
-            if (numLeads >= 2) leadInvestors[1] = LeadInvestor({account: LEAD_B, profitFraction: carryB});
-            if (numLeads >= 3) leadInvestors[2] = LeadInvestor({account: LEAD_C, profitFraction: carryC});
+            leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: carryA, recoveryArmedAt: 0});
+            if (numLeads >= 2)
+                leadInvestors[1] = LeadInvestor({account: LEAD_B, profitFraction: carryB, recoveryArmedAt: 0});
+            if (numLeads >= 3)
+                leadInvestors[2] = LeadInvestor({account: LEAD_C, profitFraction: carryC, recoveryArmedAt: 0});
 
             Token fuzzToken;
             uint256 snapFuzz;
@@ -1034,7 +1078,6 @@ contract CoinvestedPositionDistributionTest is Test {
                 CoinvestedPositionInitializerArguments
                     memory coinvestedPositionArgs = CoinvestedPositionInitializerArguments({
                         owner: OWNER,
-                        receiver: RECEIVER,
                         leadInvestors: leadInvestors,
                         basePrice: BASE_PRICE_EURC,
                         baseCurrency: IERC20(address(eurc)),
@@ -1115,6 +1158,7 @@ contract CoinvestedPositionDistributionTest is Test {
 
         vm.prank(OWNER);
         coinvestedPositionFuzz.claimDistribution(Distribution(address(distributionFuzz)), 0);
+        _drainCredits(coinvestedPositionFuzz, distributionFuzz.currency());
 
         uint256 totalGot = 0;
         {
@@ -1153,6 +1197,7 @@ contract CoinvestedPositionDistributionTest is Test {
 
         vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(stub)), minPayout);
+        _drainCredits(coinvestedPosition, stub.currency());
         assertEq(usdc.balanceOf(address(coinvestedPosition)), 0, "cp should hold no usdc after settle");
     }
 
