@@ -6,7 +6,7 @@ pragma solidity 0.8.34;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "./common/Errors.sol";
@@ -46,7 +46,7 @@ struct VestingPlan {
  * committing to a vesting plan without revealing the details). In the latter case, the details can be revealed later, which
  * must happen before the tokens can be released.
  */
-contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
+contract Vesting is Initializable, ERC2771ContextUpgradeable, Ownable2StepUpgradeable, ReentrancyGuardUpgradeable {
     error ZeroHash();
     error InvalidHash();
     error CommitmentRevokedBeforeCliff();
@@ -55,6 +55,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     error NewStartTimeNotAfterEndTime();
     error OnlyBeneficiary();
     error NotAllowedToChangeBeneficiary();
+    error CommitmentAlreadyExists();
 
     event Commit(bytes32 hash);
     event ERC20Released(uint64 id, uint256 amount);
@@ -91,11 +92,12 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
      * @param _owner address of the owner of the contract
      * @param _token address of the token to be vested
      */
-    function initialize(address _owner, address _token) public initializer {
+    function initialize(address _owner, address _token) external initializer {
         require(_owner != address(0), ZeroOwnerAddress());
         require(_token != address(0), ZeroTokenAddress());
-        __Ownable_init();
-        transferOwnership(_owner);
+        __Ownable2Step_init();
+        __ReentrancyGuard_init();
+        _transferOwnership(_owner);
         managers[_owner] = true;
         token = _token;
     }
@@ -164,7 +166,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
     /**
      * @dev Amount of tokens that could be released at a given time.
      */
-    function releasable(uint64 _id, uint64 _time) public view returns (uint256) {
+    function releasable(uint64 _id, uint64 _time) external view returns (uint256) {
         return vestedAmount(_id, _time) - released(_id);
     }
 
@@ -176,6 +178,7 @@ contract Vesting is Initializable, ERC2771ContextUpgradeable, OwnableUpgradeable
      */
     function commit(bytes32 _hash) external onlyManager {
         require(_hash != bytes32(0), ZeroHash());
+        require(commitments[_hash] == 0, CommitmentAlreadyExists());
         // the value is interpreted as maximum end date of the vesting
         // for real world use cases, type(uint64).max is "unlimited"
         commitments[_hash] = type(uint64).max;

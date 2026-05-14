@@ -12,11 +12,26 @@ Beyond being an ERC20 token, it has fine grained access control to:
 
 Also, this is the only contract in this repository that is deployed using an ERC1967-proxy. This means that it can be upgraded. Since this token is legally bound to the company, we want to make sure that we can offer our customers options if a security issue arises or regulation enforces changes.
 
+### Security recommendation
+
+The `DEFAULT_ADMIN_ROLE` should always be held by a well-configured multisig. A compromised admin key can upgrade the contract, burn all tokens, or revoke every role. Using a multisig raises the bar for an attacker.
+
 ### Minting
 
 Minting is very central to the usage of this contract. The MintAllower role (see [access control](https://docs.openzeppelin.com/contracts/4.x/access-control)) can give an address a minting allowance. For example the admin (or CEO) of the company might need a minting allowance to create new shares. Each investment or vesting contract also needs a minting allowance in order to function.
 The allowances are stored in the map `mintingAllowance`.
 Addresses with the MintAllower role can mint tokens regardless of their own allowance (since they can change it at any time, enforcing the minting allowance would be pointless).
+
+### Burning
+
+The `BURNER_ROLE` can remove tokens from any address at any time. Two use cases are intended:
+
+1. **Token recovery:** an investor who bought tokens directly from the company and can prove their identity but has lost access to their original address could ask to have the tokens burned from the old address and re-minted to a new one after the company re-verifies them.
+2. **Legal compliance:** courts or regulators may order the removal of specific tokens. The token is legally bound to the company, so the company must have the means to comply — "law is law" as opposed to "code is law".
+
+Every burn is an on-chain transaction and can therefore be audited and challenged in court. The primary value of tokenized equity in this framework is auditability and tradeability, not decentralisation.
+
+Because the token is an upgradeable proxy, the `DEFAULT_ADMIN_ROLE` already has this power implicitly — they could upgrade the logic contract to add any capability. The explicit `BURNER_ROLE` exists so that routine burn operations can be delegated to a separate address without handing out the even more powerful admin role.
 
 ### Requirements
 
@@ -122,16 +137,38 @@ Automated exit redemption: holders send tokens and receive a fixed currency payo
 
 ### CoinvestedPosition (CoinvestedPosition.sol)
 
-Extends `TokenSwapBase`. Holds tokens for a co-investor and manages carry distributions to lead investors.
+Extends `TokenSwapBase`. Holds tokens for a co-investor and manages carry distributions to lead investors via a pull-payout model.
 
 **Key details:**
 
 - Initialized paused; the owner unpauses when ready to sell, but only after `lockedUntil` has passed and a non-zero `tokenPrice` has been set.
 - `basePrice` is set in the smallest units of `baseCurrency` at initialization.
-- `leadInvestors`: array of `{account, profitFraction}`. `profitFraction` documents who is eligible to how much of the carry. The fractions are scaled with uint64max, so uint64max == 1 == 100% of carry.
+- `leadInvestors`: array of `{account, profitFraction, recoveryArmedAt}`. `profitFraction` is the carry share scaled by `uint32.max` (so `uint32.max` ≙ 100% of profit). `recoveryArmedAt` is the per-lead-investor owner-recovery timer (see below).
 - `lockedUntil` blocks both `unpause()` and `setCurrency()` until the timestamp has passed. During the lock period, tokens can only leave the contract through `claimExit()`.
 - `tokenExitRegistry`: the GlobalTokenExitRegistry consulted by `claimExit()`. An exit registered there acts as the unlock signal — the contract redeems its full token balance via the registered exit regardless of `lockedUntil`.
-- `setCurrency(currency, basePrice)` lets the owner switch the reference currency after `lockedUntil` has passed; the caller must supply the new `basePrice` expressed in the new currency's units.
+- `setCurrency(currency, basePrice, tokenPrice)` lets the owner switch the reference currency after `lockedUntil` has passed; the caller must supply the new prices in the new currency's units.
+
+**Pull-payout model**
+
+CoinvestedPosition never pushes currency to lead investors or to the co-investor. Three credit paths add to per-recipient pull balances held on the contract:
+
+1. `buy()`: buyer purchases tokens; fee deducted; the remainder is credited via `_credit(remaining, basePortion, currency)` where `basePortion = basePrice * tokenAmount / 10**token.decimals()`.
+2. `claimDistribution(distribution, minPayout)`: the owner claims the contract's share from a `Distribution`; the full received amount is treated as carry-eligible profit (`basePortion = 0`).
+3. `claimExit(minCurrencyAmount, basePrice)`: the owner redeems the full token balance via an `Exit`; carry is what remains after the basePayout portion. See "Effective base price in `claimExit()`" below.
+
+Internally, `_credit(gross, basePortion, currency)`:
+
+- Computes `profit = max(gross - basePortion, 0)`.
+- For each lead investor whose `floor(profitFraction * profit / uint32.max)` is non-zero, adds that carry to `leadInvestorCredit[index][currency]` and (re-)arms `recoveryArmedAt` for that lead investor with `block.timestamp`.
+- Adds the remaining `gross - Σ carries` to `coinvestorCredit[currency]`.
+- Increments `totalCredit[currency]` by `gross`. The invariant `Σ leadInvestorCredit[i][c] + coinvestorCredit[c] == totalCredit[c]` holds after every credit and every withdrawal.
+
+Recipients withdraw on their own schedule:
+
+- `withdrawAsLeadInvestor(index, currency, to)`: only callable by the current account at slot `index`. Sends the full pending credit to `to`, zeros the credit, decrements `totalCredit`, and disarms `recoveryArmedAt` for this lead investor. The destination is chosen at withdraw time (not pinned to the slot's registered account) so a lead investor whose registered address gets blacklisted by the currency can route a withdrawal elsewhere without permanently rotating the slot.
+- `withdrawAsCoinvestor(currency, to)`: only callable by the owner. Sends `coinvestorCredit[currency]` plus any "untracked" balance (`balanceOf(this) - totalCredit[currency]`) to `to`. The latter sweeps accidentally-sent currency into the co-investor's share at withdrawal time — equivalent to the previous "settle sweeps the contract balance" semantics, but decoupled from the credit event so a blocked recipient cannot stall the sweep. Emits `CoinvestorWithdrawn` and (separately, only if non-zero) `CoinvestorSwept` so consumers can reconcile credit-side totals against the surplus.
+
+The motivation for pull over push: a blacklisted or otherwise reverting recipient (a USDC/EURC-style currency-level blacklist is the canonical case) cannot block the credit-side flow because no transfer is attempted at that time. Funds are held on the contract until each recipient chooses a destination and withdraws.
 
 **Effective base price in `claimExit()`**
 
@@ -150,11 +187,32 @@ Two distinct base price values appear here:
    The rate convention is the same as `tokenPrice` (see [price.md](price.md)): exit-currency bits per `10**referenceCurrency.decimals()` reference-currency bits.
 3. **Caller-supplied fallback**: if neither of the above applies, `claimExit()` requires a non-zero `_basePrice` parameter, which the caller must express in exit-currency units.
 
-- Three payout paths all funnel into `_settle(carry, currency)`:
-  1. `buy()`: buyer purchases tokens; fee deducted; co-investor gets base price portion; lead investors split carry.
-  2. `claimDistribution(dist, minPayout)`: claims from a `Distribution` contract; all received currency treated as carry.
-  3. `claimExit(minCurrencyAmount, basePrice)`: redeems full token balance via an `Exit` contract, carry is calculated from proceeds, tokenAmount and basePrice.
-- `_settle()` sweeps the contract's full balance of `_currency` to `receiver` after lead investor shares are distributed, covering both the base price portion and any rounding dust, as well currency the contract may have held before settlement.
+**Lead-investor account rotation and owner-driven recovery**
+
+CoinvestedPosition is a long-lived contract — an exit can be years away — so lead investors may lose access to their keys before they ever pull. Two on-chain mechanisms address this without exposing the carry pool to opportunistic owner behavior:
+
+- `rotateLeadInvestorAccount(index, newAccount)` — callable only by the current account at slot `index`. Replaces the account at that slot, disarms `recoveryArmedAt`, and emits `LeadInvestorAccountRotated`. Typical uses: pre-emptive rotation to a fresh wallet, or recovery from a currency-level blacklist (the blacklisted address can still sign EVM transactions; blacklisting is enforced inside the currency contract, not at the EVM level). Because pull credits are keyed by `index` rather than by `account`, any pending balances automatically follow the new address — no migration step is needed.
+
+- `ownerRotateLeadInvestorAccount(index, newAccount)` — callable only by the owner. Replaces the account at slot `index` if and only if `recoveryArmedAt != 0` **and** `block.timestamp >= recoveryArmedAt + LEAD_INVESTOR_RECOVERY_TIMEOUT` (a contract constant, currently `90 days`). The new account starts with `recoveryArmedAt = 0`, so a follow-up recovery requires another credit event plus a full timeout. Emits `LeadInvestorAccountRecovered` — a distinct event so indexers can attribute the action to the owner rather than the lead investor.
+
+**Recovery-timer state machine**
+
+`recoveryArmedAt` is a per-lead-investor flag that tracks whether the owner has the right to rotate that slot:
+
+| State                                           | Transition                                                                                     |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `recoveryArmedAt = 0` (disarmed)                | Initial state. Owner cannot rotate.                                                            |
+| Non-zero credit accrues for this lead investor  | `_credit` sets `recoveryArmedAt = uint64(block.timestamp)`. Each new credit pushes it forward. |
+| Lead investor calls `withdrawAsLeadInvestor`    | `recoveryArmedAt` resets to `0`. Pulling any currency disarms the timer.                       |
+| Lead investor calls `rotateLeadInvestorAccount` | `recoveryArmedAt` resets to `0`. Self-rotation also disarms.                                   |
+| `block.timestamp ≥ recoveryArmedAt + TIMEOUT`   | Owner may call `ownerRotateLeadInvestorAccount(index, newAccount)`. Resets to `0` after.       |
+
+The owner cannot manufacture the right to rotate by withholding claims — only credit events arm the timer, and the lead investor can disarm it at any time by pulling credit (in any currency they hold) or by rotating their own slot.
+
+`LEAD_INVESTOR_RECOVERY_TIMEOUT` is a `constant`, not a storage value: making it mutable would let the owner shrink the window to zero immediately before rotating, defeating the design. Legal teams pick the literal pre-deployment.
+
+**Coinvestor recovery**
+The Coinvestor can help lead investors with recovery in case of key loss. But who can help the coinvestor if they lose access to their account? In that case, only the token admin can help through burn & mint, see [dev_overview.md](dev_overview.md#burning) for more information.
 
 ### TimeLock (TimeLock.sol)
 

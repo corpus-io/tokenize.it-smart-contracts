@@ -89,16 +89,20 @@ The CoinvestedPosition contract implements this arrangement. It holds tokens on 
 
 **Parties involved:**
 
-- **Co-investor (receiver)**: The co-investor whose capital bought the tokens. Receives at least `basePrice` (a EURO reference price) per token across any proceeds.
-- **Lead investors**: Each has a `profitFraction` (a share of `uint64.max`). Lead investors receive their profit — the proceeds above the co-investor's `basePrice` — split according to their fractions.
+- **Co-investor**: The co-investor whose capital bought the tokens. Owns the contract and receives at least `basePrice` (a EURO reference price) per token across any proceeds. Picks the destination address at withdrawal time.
+- **Lead investors**: Each has a `profitFraction` (a share of `uint32.max`). Lead investors receive their profit — the proceeds above the co-investor's `basePrice` — split according to their fractions.
 
-**Three payout paths:**
+**Three credit paths:**
 
-1. **Token sale**: A buyer purchases tokens from the contract at the set price. After fees, the co-investor receives the base price portion and lead investors split any surplus (carry). Starts paused; owner unpauses when ready to sell.
-2. **Dividends**: The contract owner claims a dividend Distribution on behalf of the contract, then settles the received currency among lead investors (all dividend proceeds treated as carry) with remainder to the co-investor receiver.
-3. **Exit**: The contract owner participates in an Exit contract by redeeming the full token balance, then splits proceeds: lead investors receive carry above the base price, co-investor receives everything else.
+1. **Token sale**: A buyer purchases tokens from the contract at the set price. After fees, the co-investor's base-price portion and the lead-investor carry are credited to per-recipient pull balances on the contract. Starts paused; owner unpauses when ready to sell.
+2. **Dividends**: The contract owner claims a dividend Distribution on behalf of the contract; the entire received amount is credited as carry (lead investors and remainder to the co-investor).
+3. **Exit**: The contract owner participates in an Exit contract by redeeming the full token balance; the base-price portion is credited to the co-investor, carry to the lead investors.
+
+**Pull payouts:** Funds are never pushed to recipients. Each lead investor calls `withdrawAsLeadInvestor` to claim their own credit, supplying a destination at withdrawal time; the co-investor calls `withdrawAsCoinvestor` likewise. The destination address is chosen at withdrawal time. A blocked recipient cannot stall a sale, a dividend, or an exit for everyone else.
 
 **Currency flexibility**: The base price is fixed at initialization. After the timelock has expired, the owner can switch to a different trusted ERC-20 currency, supplying the base price re-expressed in the new currency, or just update the base price.
+
+**Lost-keys recovery:** If a lead investor stops responding to credited carry for `LEAD_INVESTOR_RECOVERY_TIMEOUT` (currently 90 days) after their most recent credit event, the co-investor (owner) can rotate that slot's account to recover the stranded carry. The lead investor disarms this right at any time by withdrawing credit or rotating their own slot — both are liveness signals — so the recovery path only fires when the lead investor has genuinely fallen silent.
 
 ## Distributions
 

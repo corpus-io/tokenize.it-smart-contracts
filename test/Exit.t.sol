@@ -152,6 +152,20 @@ contract ExitTest is Test {
         factory.createExitClone(bytes32(0), TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, 0);
     }
 
+    function testInitializeZeroOwnerReverts() public {
+        ExitInitializerArguments memory args = ExitInitializerArguments({
+            owner: address(0),
+            token: token,
+            currency: IERC20(address(currency)),
+            pricePerToken: PRICE_PER_TOKEN,
+            lockedUntil: lockedUntil,
+            referenceCurrencies: new IERC20[](0),
+            referenceToExitRates: new uint256[](0)
+        });
+        vm.expectRevert(ZeroOwnerAddress.selector);
+        factory.createExitClone(bytes32("1"), TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, 0);
+    }
+
     function testInitializePastLockedUntilReverts() public {
         ExitInitializerArguments memory args = ExitInitializerArguments({
             owner: OWNER,
@@ -260,6 +274,13 @@ contract ExitTest is Test {
         exitContract.claim(RECIPIENT, 0);
         assertEq(currency.balanceOf(HOLDER), 0, "HOLDER should not receive any currency");
         assertGt(currency.balanceOf(RECIPIENT), 0, "RECIPIENT should have received currency");
+    }
+
+    function testClaimEmitsEvent() public {
+        vm.expectEmit(true, true, false, true, address(exitContract));
+        emit Claimed(HOLDER, RECIPIENT, TOTAL_CURRENCY);
+        vm.prank(HOLDER);
+        exitContract.claim(RECIPIENT, 0);
     }
 
     function testClaimNothingRevertsWhenNoTokens() public {

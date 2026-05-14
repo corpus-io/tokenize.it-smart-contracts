@@ -111,7 +111,7 @@ contract PrivateOfferFactoryTest is Test {
     }
 
     function testDeployWithTimeLock(uint64 _lockedUntil, address tokenReceiver, address timeLockOwner) public {
-        vm.assume(_lockedUntil > block.timestamp);
+        vm.assume(_lockedUntil >= block.timestamp + 30 days);
         vm.assume(_lockedUntil < type(uint64).max / 2);
         vm.assume(tokenReceiver != address(0));
         vm.assume(timeLockOwner != address(0));

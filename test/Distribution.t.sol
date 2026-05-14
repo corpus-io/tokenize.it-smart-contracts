@@ -178,6 +178,20 @@ contract DistributionTest is Test {
         factory.createDistributionClone(bytes32(0), TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, 0);
     }
 
+    function testInitializeZeroOwnerReverts() public {
+        DistributionInitializerArguments memory args = DistributionInitializerArguments({
+            owner: address(0),
+            token: token,
+            snapshotId: snapshotId,
+            currency: IERC20(address(currency)),
+            pricePerToken: PRICE_PER_TOKEN,
+            lockedUntil: lockedUntil,
+            initialReassignments: new Reassignment[](0)
+        });
+        vm.expectRevert(ZeroOwnerAddress.selector);
+        factory.createDistributionClone(bytes32("1"), TRUSTED_FORWARDER, CURRENCY_PROVIDER, args, 0);
+    }
+
     function testInitializeStateVariables() public view {
         assertEq(address(dist.token()), address(token), "unexpected token address");
         assertEq(dist.snapshotId(), snapshotId, "unexpected snapshotId");
@@ -350,6 +364,13 @@ contract DistributionTest is Test {
         assertEq(currency.balanceOf(RECIPIENT), 120e6, "RECIPIENT did not receive HOLDER_A's share");
     }
 
+    function testClaimEmitsEvent() public {
+        vm.expectEmit(true, true, false, true, address(dist));
+        emit Claimed(HOLDER_A, RECIPIENT, 120e6);
+        vm.prank(HOLDER_A);
+        dist.claim(RECIPIENT, 0);
+    }
+
     function testMultipleHoldersClaimIndependently() public {
         vm.prank(HOLDER_A);
         dist.claim(HOLDER_A, 0);
@@ -422,6 +443,14 @@ contract DistributionTest is Test {
         dist.drain(OWNER, currency);
         assertEq(currency.balanceOf(OWNER), TOTAL_CURRENCY, "OWNER should receive full balance after drain");
         assertEq(currency.balanceOf(address(dist)), 0, "dist should be empty after drain");
+    }
+
+    function testDrainEmitsEvent() public {
+        vm.warp(lockedUntil);
+        vm.expectEmit(true, true, false, true, address(dist));
+        emit Drained(OWNER, address(currency), TOTAL_CURRENCY);
+        vm.prank(OWNER);
+        dist.drain(OWNER, currency);
     }
 
     function testDrainAfterPartialClaims() public {
@@ -565,12 +594,11 @@ contract DistributionTest is Test {
         );
     }
 
-    function testReassignSelfIsNoOp() public {
+    function testReassignSelfReverts() public {
         vm.warp(lockedUntil);
-        uint256 eligibleBefore = dist.eligible(HOLDER_A);
+        vm.expectRevert(Distribution.SelfReassignmentNotAllowed.selector);
         vm.prank(OWNER);
-        dist.reassign(HOLDER_A, HOLDER_A, eligibleBefore); // self-reassign
-        assertEq(dist.eligible(HOLDER_A), eligibleBefore, "self-reassign should leave eligible unchanged"); // unchanged
+        dist.reassign(HOLDER_A, HOLDER_A, 1);
     }
 
     function testReassignAfterClaimReverts() public {

@@ -13,8 +13,8 @@ import "./resources/CloneCreators.sol";
 
 contract CrowdinvestingTest is Test {
     event CurrencyReceiverChanged(address indexed);
-    event MinAmountPerBuyerChanged(uint256);
-    event MaxAmountPerBuyerChanged(uint256);
+    event MinAmountPerReceiverChanged(uint256);
+    event MaxAmountPerReceiverChanged(uint256);
     event TokenPriceAndCurrencyChanged(uint256, IERC20 indexed);
     event MaxAmountOfTokenToBeSoldChanged(uint256);
     event TokensBought(address indexed BUYER, uint256 tokenAmount, uint256 currencyAmount);
@@ -50,8 +50,8 @@ contract CrowdinvestingTest is Test {
     uint256 public constant PRICE_MAX = 100 * 10 ** PAYMENT_TOKEN_DECIMALS;
 
     uint256 public constant MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD = 20 * 10 ** 18; // 20 token
-    uint256 public constant MAX_AMOUNT_PER_BUYER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 2; // 10 token
-    uint256 public constant MIN_AMOUNT_PER_BUYER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 200; // 0.1 token
+    uint256 public constant MAX_AMOUNT_PER_RECEIVER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 2; // 10 token
+    uint256 public constant MIN_AMOUNT_PER_RECEIVER = MAX_AMOUNT_OF_TOKEN_TO_BE_SOLD / 200; // 0.1 token
 
     function setUp() public {
         // set up currency
@@ -85,8 +85,8 @@ contract CrowdinvestingTest is Test {
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             OWNER,
             payable(RECEIVER),
-            MIN_AMOUNT_PER_BUYER,
-            MAX_AMOUNT_PER_BUYER,
+            MIN_AMOUNT_PER_RECEIVER,
+            MAX_AMOUNT_PER_RECEIVER,
             PRICE,
             PRICE,
             PRICE,
@@ -123,8 +123,8 @@ contract CrowdinvestingTest is Test {
         vm.assume(duration > 0);
         vm.assume(startDate > 1 hours + 1);
         vm.assume(testDate > 0);
-        // create oracle
-        vm.warp(1 hours + 1); // otherwise, PRICE linear thinks it has to cool down
+        // create oracle before warp so coolDownStart is set at the default (low) timestamp,
+        // ensuring the cooldown expires before any getPrice() call
         PriceLinear priceLinear = PriceLinear(
             priceLinearCloneFactory.createPriceLinearClone(
                 0,
@@ -138,6 +138,7 @@ contract CrowdinvestingTest is Test {
                 true
             )
         );
+        vm.warp(1 hours + 1);
         // check cooldown start
         assertEq(crowdinvesting.coolDownStart(), 0, "Cooldown start not set correctly");
 
@@ -198,8 +199,8 @@ contract CrowdinvestingTest is Test {
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             OWNER,
             payable(RECEIVER),
-            MIN_AMOUNT_PER_BUYER,
-            MAX_AMOUNT_PER_BUYER,
+            MIN_AMOUNT_PER_RECEIVER,
+            MAX_AMOUNT_PER_RECEIVER,
             PRICE,
             PRICE_MIN,
             PRICE_MAX,
@@ -240,8 +241,8 @@ contract CrowdinvestingTest is Test {
         vm.assume(startDate > 1 hours + 1);
         vm.assume(testDate > 0);
 
-        // create oracle
-        vm.warp(1 hours + 1); // otherwise, PRICE linear thinks it has to cool down
+        // create oracle before warp so coolDownStart is set at the default (low) timestamp,
+        // ensuring the cooldown expires before any getPrice() call
         PriceLinear priceLinear = PriceLinear(
             priceLinearCloneFactory.createPriceLinearClone(
                 0,
@@ -255,12 +256,14 @@ contract CrowdinvestingTest is Test {
                 false // PRICE will fall
             )
         );
+        // warp to 1 hours + 2 so block.timestamp strictly exceeds coolDownStart + COOL_DOWN_DURATION
+        vm.warp(1 hours + 2);
 
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             OWNER,
             payable(RECEIVER),
-            MIN_AMOUNT_PER_BUYER,
-            MAX_AMOUNT_PER_BUYER,
+            MIN_AMOUNT_PER_RECEIVER,
+            MAX_AMOUNT_PER_RECEIVER,
             PRICE,
             PRICE_MIN,
             PRICE_MAX,
@@ -321,8 +324,8 @@ contract CrowdinvestingTest is Test {
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             OWNER,
             payable(RECEIVER),
-            MIN_AMOUNT_PER_BUYER,
-            MAX_AMOUNT_PER_BUYER,
+            MIN_AMOUNT_PER_RECEIVER,
+            MAX_AMOUNT_PER_RECEIVER,
             PRICE,
             PRICE_MIN,
             PRICE_MAX,
@@ -422,8 +425,8 @@ contract CrowdinvestingTest is Test {
         CrowdinvestingInitializerArguments memory arguments = CrowdinvestingInitializerArguments(
             OWNER,
             payable(RECEIVER),
-            MIN_AMOUNT_PER_BUYER,
-            MAX_AMOUNT_PER_BUYER,
+            MIN_AMOUNT_PER_RECEIVER,
+            MAX_AMOUNT_PER_RECEIVER,
             PRICE,
             PRICE_MIN,
             PRICE_MAX,

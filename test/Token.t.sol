@@ -523,6 +523,19 @@ contract tokenTest is Test {
         assertTrue(token.balanceOf(PAUSER) == 0);
     }
 
+    function testBurnEmitsEvent() public {
+        uint256 amount = 100;
+        vm.prank(MINT_ALLOWER);
+        token.increaseMintingAllowance(MINTER, amount);
+        vm.prank(MINTER);
+        token.mint(PAUSER, amount);
+
+        vm.expectEmit(true, true, true, true, address(token));
+        emit Token.Burn(PAUSER, amount, BURNER);
+        vm.prank(BURNER);
+        token.burn(PAUSER, amount);
+    }
+
     function testTransferTo0(address _address) public {
         vm.assume(token.balanceOf(_address) == 0);
         vm.assume(_address != address(0));

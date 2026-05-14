@@ -46,8 +46,13 @@ contract TokenSwap is TokenSwapBase {
     error PayoutTooLow();
     using SafeERC20 for IERC20;
 
+    /// address that receives the currency/tokens when tokens are bought/sold
+    address public receiver;
     /// holder. Tokens/currency will be transferred from this address.
     address public holder;
+
+    /// @notice receiver has been changed to `newReceiver`
+    event ReceiverChanged(address indexed newReceiver);
 
     /**
      * @notice `seller` sold `tokenAmount` tokens for `currencyAmount` currency.
@@ -77,16 +82,21 @@ contract TokenSwap is TokenSwapBase {
      */
     function initialize(TokenSwapInitializerArguments memory _arguments) external initializer {
         require(_arguments.tokenPrice != 0, ZeroPrice());
-        _initializeBase(
-            _arguments.owner,
-            _arguments.tokenPrice,
-            _arguments.currency,
-            _arguments.token,
-            _arguments.receiver
-        );
-
+        _initializeBase(_arguments.owner, _arguments.tokenPrice, _arguments.currency, _arguments.token);
+        require(_arguments.receiver != address(0), ZeroReceiverAddress());
+        receiver = _arguments.receiver;
         require(_arguments.holder != address(0), ZeroHolderAddress());
         holder = _arguments.holder;
+    }
+
+    /**
+     * @notice change the receiver to `_receiver`
+     * @param _receiver new receiver
+     */
+    function setReceiver(address _receiver) external onlyOwner {
+        require(_receiver != address(0), ZeroReceiverAddress());
+        receiver = _receiver;
+        emit ReceiverChanged(_receiver);
     }
 
     /**
@@ -99,7 +109,7 @@ contract TokenSwap is TokenSwapBase {
         uint256 _tokenAmount,
         uint256 _maxCurrencyAmount,
         address _tokenReceiver
-    ) public whenNotPaused nonReentrant {
+    ) external whenNotPaused nonReentrant {
         // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
         uint256 currencyAmount = Math.ceilDiv(_tokenAmount * tokenPrice, 10 ** token.decimals());
 
@@ -126,7 +136,7 @@ contract TokenSwap is TokenSwapBase {
         uint256 _tokenAmount,
         uint256 _minCurrencyAmount,
         address _currencyReceiver
-    ) public whenNotPaused nonReentrant {
+    ) external whenNotPaused nonReentrant {
         // rounding down. Seller receives at most the exact price, protecting the holder.
         uint256 currencyAmount = (_tokenAmount * tokenPrice) / (10 ** token.decimals());
 

@@ -25,6 +25,12 @@ error DrainNotYetAvailable();
 /// @notice Reverted when claim() is called but the caller has nothing to claim.
 error NothingToClaim();
 
+/// @notice Emitted when a holder claims their payout
+event Claimed(address indexed sender, address indexed recipient, uint256 currencyAmount);
+
+/// @notice Emitted when the owner drains an ERC20 balance from the contract
+event Drained(address indexed recipient, address indexed erc20, uint256 amount);
+
 /// @notice Reverted when the net payout after fees is below the caller's minimum.
 error PayoutBelowMinimum();
 
@@ -57,6 +63,8 @@ abstract contract PayoutBase is ERC2771ContextUpgradeable, Ownable2StepUpgradeab
         uint256 _pricePerToken,
         uint64 _lockedUntil
     ) internal onlyInitializing {
+        require(_owner != address(0), ZeroOwnerAddress());
+        require(_lockedUntil >= block.timestamp + 30 days, LockedUntilNotInFuture());
         __ReentrancyGuard_init();
         __Ownable2Step_init();
         _transferOwnership(_owner);
@@ -99,7 +107,9 @@ abstract contract PayoutBase is ERC2771ContextUpgradeable, Ownable2StepUpgradeab
      */
     function drain(address _recipient, IERC20 _erc20) external onlyOwner nonReentrant {
         require(block.timestamp >= lockedUntil, DrainNotYetAvailable());
-        _erc20.safeTransfer(_recipient, _erc20.balanceOf(address(this)));
+        uint256 amount = _erc20.balanceOf(address(this));
+        _erc20.safeTransfer(_recipient, amount);
+        emit Drained(_recipient, address(_erc20), amount);
     }
 
     function _msgSender() internal view override(ContextUpgradeable, ERC2771ContextUpgradeable) returns (address) {

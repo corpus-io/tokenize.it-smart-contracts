@@ -87,7 +87,7 @@ contract AllowList is Ownable2StepUpgradeable, ERC2771ContextUpgradeable {
      * Initializes a new AllowList clone.
      * @param _owner the owner of the contract
      */
-    function initialize(address _owner) public initializer {
+    function initialize(address _owner) external initializer {
         require(_owner != address(0), ZeroOwnerAddress());
         _transferOwnership(_owner);
     }
@@ -100,7 +100,7 @@ contract AllowList is Ownable2StepUpgradeable, ERC2771ContextUpgradeable {
         address _owner,
         address[] calldata _addresses,
         uint256[] calldata _attributes
-    ) public initializer {
+    ) external initializer {
         require(_owner != address(0), ZeroOwnerAddress());
         _transferOwnership(_owner);
         _set(_addresses, _attributes);

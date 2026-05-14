@@ -28,3 +28,4 @@ broadcast/
 .npmignore
 .VSCodeCounter/
 *.code-workspace
+.claude/

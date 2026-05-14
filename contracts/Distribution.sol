@@ -47,6 +47,9 @@ contract Distribution is PayoutBase {
 
     /// @notice Reverted when reassign() is called before lockedUntil has elapsed.
     error ReassignmentNotYetAvailable();
+
+    /// @notice Reverted when _from and _to are the same address.
+    error SelfReassignmentNotAllowed();
     using SafeERC20 for IERC20;
 
     uint256 public snapshotId;
@@ -149,6 +152,7 @@ contract Distribution is PayoutBase {
      * @param _amount Amount of currency to reassign
      */
     function _reassign(address _from, address _to, uint256 _amount) internal {
+        require(_from != _to, SelfReassignmentNotAllowed());
         require(_to != address(0), ZeroReceiverAddress());
         require(_amount > 0, ZeroAmount());
         require(_amount <= _grossEligible(_from), ReassignmentExceedsEligible());
@@ -173,5 +177,6 @@ contract Distribution is PayoutBase {
             currency.safeTransfer(feeCollector, fee);
         }
         currency.safeTransfer(_recipient, net);
+        emit Claimed(_msgSender(), _recipient, net);
     }
 }

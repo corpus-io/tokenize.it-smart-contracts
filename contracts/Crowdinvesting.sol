@@ -19,10 +19,10 @@ struct CrowdinvestingInitializerArguments {
     address owner;
     /// address that receives the payment (in currency) when tokens are bought
     address currencyReceiver;
-    /// smallest amount of tokens a buyer is allowed to buy when buying for the first time
-    uint256 minAmountPerBuyer;
-    /// largest amount of tokens a buyer can buy from this contract
-    uint256 maxAmountPerBuyer;
+    /// minimum tokens a receiver address must accumulate from this contract (limit is per receiver address, not per transaction originator)
+    uint256 minAmountPerReceiver;
+    /// maximum tokens a receiver address may accumulate from this contract in total (limit is per receiver address, not per transaction originator)
+    uint256 maxAmountPerReceiver;
     /// price of a token, expressed as amount of bits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2*10^6 ).
     uint256 tokenPrice;
     /// smallest price the contract will accept from a dynamic pricing oracle
@@ -50,7 +50,7 @@ struct CrowdinvestingInitializerArguments {
  *      The buyer can decide how many tokens to buy, but has to buy at least minAmount and can buy at most maxAmount.
  *      The currency the offer is denominated in is set at creation time and can be updated later.
  *      The contract can be paused at any time by the owner, which will prevent any new deals from being made. Then, changes to the contract can be made, like changing the currency, price or requirements.
- *      The contract can be unpaused after "delay", which will allow new deals to be made again.
+ *      The contract can be unpaused 1 hour after the last parameter change, which will allow new deals to be made again.
  *      A company will create only one Crowdinvesting contract for their token.
  * @dev The contract inherits from ERC2771Context in order to be usable with Gas Station Network (GSN) https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support
  */
@@ -67,23 +67,23 @@ contract Crowdinvesting is
     error PriceMinExceedsPriceBase();
     error PriceMaxBelowPriceBase();
     error MaxAmountOfTokenToBeSoldExceeded();
-    error MinAmountPerBuyerNotReached();
-    error MaxAmountPerBuyerExceeded();
+    error MinAmountPerReceiverNotReached();
+    error MaxAmountPerReceiverExceeded();
     error LastBuyDatePassed();
     error OnlyCurrencyContract();
     error PurchaseYieldsTooFewTokens();
     error LastBuyDateNotInFuture();
 
-    /// @notice Minimum waiting time between pause or parameter change and unpause.
-    /// @dev delay is calculated from parameter change to unpause.
+    /// @notice Minimum waiting time between a parameter change and unpause.
+    /// @dev delay is calculated from the last parameter change to unpause.
     uint256 public constant delay = 1 hours;
 
     /// address that receives the currency when tokens are bought
     address public currencyReceiver;
-    /// smallest amount of tokens that can be minted, in bits (bit = smallest subunit of token)
-    uint256 public minAmountPerBuyer;
-    /// largest amount of tokens that can be minted, in bits (bit = smallest subunit of token)
-    uint256 public maxAmountPerBuyer;
+    /// minimum tokens a single receiver address must accumulate, in bits; enforced per receiver address (not per transaction originator)
+    uint256 public minAmountPerReceiver;
+    /// maximum tokens a single receiver address may accumulate from this contract in total, in bits; enforced per receiver address (not per transaction originator)
+    uint256 public maxAmountPerReceiver;
 
     /// The price of a token, expressed as amount of bits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2*10^6 ).
     /// @dev units: [tokenPrice] = [currency_bits]/[token], so for above example: [tokenPrice] = [USDC_bits]/[TOK]
@@ -110,8 +110,8 @@ contract Crowdinvesting is
     /// timestamp of the last time the contract was paused or a parameter was changed
     uint256 public coolDownStart;
 
-    /// This mapping keeps track of how much each buyer has bought, in order to enforce maxAmountPerBuyer
-    mapping(address => uint256) public tokensBought;
+    /// Tracks cumulative tokens delivered to each receiver address; used to enforce minAmountPerReceiver and maxAmountPerReceiver
+    mapping(address => uint256) public tokensBoughtByReceiver;
 
     /// During every buy, the lastBuyDate is checked. If it is in the past, the buy is rejected.
     /// @dev setting this to 0 disables this feature.
@@ -120,12 +120,12 @@ contract Crowdinvesting is
     /// @notice CurrencyReceiver has been changed to `newCurrencyReceiver`
     /// @param newCurrencyReceiver address that receives the payment (in currency) when tokens are bought
     event CurrencyReceiverChanged(address indexed newCurrencyReceiver);
-    /// @notice A buyer must at least own `newMinAmountPerBuyer` tokens after buying. If they already own more, they can buy smaller amounts than this, too.
-    /// @param newMinAmountPerBuyer smallest amount of tokens a buyer can buy is allowed to own after buying.
-    event MinAmountPerBuyerChanged(uint256 newMinAmountPerBuyer);
-    /// @notice A buyer can buy at most `newMaxAmountPerBuyer` tokens, from this contract, even if they split the buys into multiple transactions.
-    /// @param newMaxAmountPerBuyer largest amount of tokens a buyer can buy from this contract
-    event MaxAmountPerBuyerChanged(uint256 newMaxAmountPerBuyer);
+    /// @notice Minimum per-receiver token accumulation limit changed to `newMinAmountPerReceiver`.
+    /// @param newMinAmountPerReceiver new minimum tokens a single receiver address must accumulate
+    event MinAmountPerReceiverChanged(uint256 newMinAmountPerReceiver);
+    /// @notice Maximum per-receiver token accumulation limit changed to `newMaxAmountPerReceiver`.
+    /// @param newMaxAmountPerReceiver new maximum tokens a single receiver address may accumulate from this contract in total
+    event MaxAmountPerReceiverChanged(uint256 newMaxAmountPerReceiver);
     /// @notice Price and currency changed.
     /// @param newTokenPrice new price of a token, expressed as amount of bits of currency per main unit token (e.g.: 2 USDC (6 decimals) per TOK (18 decimals) => price = 2*10^6 ).
     /// @param newCurrency new currency used to pay for the token purchase
@@ -170,13 +170,15 @@ contract Crowdinvesting is
     function initialize(CrowdinvestingInitializerArguments memory _arguments) external initializer {
         require(_arguments.owner != address(0), ZeroOwnerAddress());
         __Ownable2Step_init(); // sets msgSender() as owner
+        __Pausable_init();
+        __ReentrancyGuard_init();
         _transferOwnership(_arguments.owner); // sets owner as owner
 
         require(_arguments.currencyReceiver != address(0), ZeroReceiverAddress());
         require(address(_arguments.currency) != address(0), ZeroCurrencyAddress());
         require(address(_arguments.token) != address(0), ZeroTokenAddress());
-        require(_arguments.minAmountPerBuyer <= _arguments.maxAmountPerBuyer, MinAmountExceedsMaxAmount());
-        require(_arguments.minAmountPerBuyer != 0, ZeroAmount());
+        require(_arguments.minAmountPerReceiver <= _arguments.maxAmountPerReceiver, MinAmountExceedsMaxAmount());
+        require(_arguments.minAmountPerReceiver != 0, ZeroAmount());
         require(_arguments.tokenPrice != 0, ZeroPrice());
         require(_arguments.maxAmountOfTokenToBeSold != 0, ZeroAmount());
         require(
@@ -184,8 +186,8 @@ contract Crowdinvesting is
             UntrustedCurrency()
         );
         currencyReceiver = _arguments.currencyReceiver;
-        minAmountPerBuyer = _arguments.minAmountPerBuyer;
-        maxAmountPerBuyer = _arguments.maxAmountPerBuyer;
+        minAmountPerReceiver = _arguments.minAmountPerReceiver;
+        maxAmountPerReceiver = _arguments.maxAmountPerReceiver;
         priceBase = _arguments.tokenPrice;
         maxAmountOfTokenToBeSold = _arguments.maxAmountOfTokenToBeSold;
         token = _arguments.token;
@@ -211,7 +213,6 @@ contract Crowdinvesting is
         uint256 _priceMax
     ) external onlyOwner whenPaused {
         _activateDynamicPricing(_priceOracle, _priceMin, _priceMax);
-        coolDownStart = block.timestamp;
     }
 
     /**
@@ -223,6 +224,7 @@ contract Crowdinvesting is
     function _activateDynamicPricing(IPriceDynamic _priceOracle, uint256 _priceMin, uint256 _priceMax) internal {
         require(address(_priceOracle) != address(0), ZeroPriceOracleAddress());
         priceOracle = _priceOracle;
+        require(_priceMin != 0, ZeroPrice());
         require(_priceMin <= priceBase, PriceMinExceedsPriceBase());
         priceMin = _priceMin;
         require(priceBase <= _priceMax, PriceMaxBelowPriceBase());
@@ -256,6 +258,7 @@ contract Crowdinvesting is
             if (price < priceMin) {
                 return priceMin;
             }
+            require(price != 0, ZeroPrice());
             return price;
         }
 
@@ -263,21 +266,28 @@ contract Crowdinvesting is
     }
 
     /**
-     * Checks if the buy is valid, and if so, mints the tokens to the buyer.
-     * @param _amount how many tokens to buy, in bits (bit = smallest subunit of token)
-     * @param _tokenReceiver address that will receive the tokens
+     * Validates the purchase against global and per-receiver limits, then delivers the tokens.
+     * The min/max limits are enforced on `_tokenReceiver`, not on `_msgSender()`.
+     * @param _amount how many tokens to deliver, in bits (bit = smallest subunit of token)
+     * @param _tokenReceiver address that will receive the tokens; limits are tracked against this address
      */
     function _checkAndDeliver(uint256 _amount, address _tokenReceiver) internal {
         require(tokensSold + _amount <= maxAmountOfTokenToBeSold, MaxAmountOfTokenToBeSoldExceeded());
-        require(tokensBought[_tokenReceiver] + _amount >= minAmountPerBuyer, MinAmountPerBuyerNotReached());
-        require(tokensBought[_tokenReceiver] + _amount <= maxAmountPerBuyer, MaxAmountPerBuyerExceeded());
+        require(
+            tokensBoughtByReceiver[_tokenReceiver] + _amount >= minAmountPerReceiver,
+            MinAmountPerReceiverNotReached()
+        );
+        require(
+            tokensBoughtByReceiver[_tokenReceiver] + _amount <= maxAmountPerReceiver,
+            MaxAmountPerReceiverExceeded()
+        );
 
         if (lastBuyDate != 0 && block.timestamp > lastBuyDate) {
             revert LastBuyDatePassed();
         }
 
         tokensSold += _amount;
-        tokensBought[_tokenReceiver] += _amount;
+        tokensBoughtByReceiver[_tokenReceiver] += _amount;
 
         if (tokenHolder != address(0)) {
             IERC20(address(token)).safeTransferFrom(tokenHolder, _tokenReceiver, _amount);
@@ -316,7 +326,7 @@ contract Crowdinvesting is
         uint256 _tokenAmount,
         uint256 _maxCurrencyAmount,
         address _tokenReceiver
-    ) public whenNotPaused nonReentrant {
+    ) external whenNotPaused nonReentrant {
         // rounding up to the next whole number. Investor is charged up to one currency bit more in case of a fractional currency bit.
         uint256 currencyAmount = Math.ceilDiv(_tokenAmount * getPrice(), 10 ** token.decimals());
 
@@ -395,25 +405,25 @@ contract Crowdinvesting is
     }
 
     /**
-     * @notice change the minAmountPerBuyer to `_minAmountPerBuyer`
-     * @param _minAmountPerBuyer new minAmountPerBuyer
+     * @notice Set the minimum token accumulation limit per receiver address to `_minAmountPerReceiver`.
+     * @param _minAmountPerReceiver new per-receiver minimum, in bits
      */
-    function setMinAmountPerBuyer(uint256 _minAmountPerBuyer) external onlyOwner whenPaused {
-        require(_minAmountPerBuyer <= maxAmountPerBuyer, MinAmountExceedsMaxAmount());
-        require(_minAmountPerBuyer != 0, ZeroAmount());
-        minAmountPerBuyer = _minAmountPerBuyer;
-        emit MinAmountPerBuyerChanged(_minAmountPerBuyer);
+    function setMinAmountPerReceiver(uint256 _minAmountPerReceiver) external onlyOwner whenPaused {
+        require(_minAmountPerReceiver <= maxAmountPerReceiver, MinAmountExceedsMaxAmount());
+        require(_minAmountPerReceiver != 0, ZeroAmount());
+        minAmountPerReceiver = _minAmountPerReceiver;
+        emit MinAmountPerReceiverChanged(_minAmountPerReceiver);
         coolDownStart = block.timestamp;
     }
 
     /**
-     * @notice change the maxAmountPerBuyer to `_maxAmountPerBuyer`
-     * @param _maxAmountPerBuyer new maxAmountPerBuyer
+     * @notice Set the maximum token accumulation limit per receiver address to `_maxAmountPerReceiver`.
+     * @param _maxAmountPerReceiver new per-receiver maximum, in bits
      */
-    function setMaxAmountPerBuyer(uint256 _maxAmountPerBuyer) external onlyOwner whenPaused {
-        require(minAmountPerBuyer <= _maxAmountPerBuyer, MinAmountExceedsMaxAmount());
-        maxAmountPerBuyer = _maxAmountPerBuyer;
-        emit MaxAmountPerBuyerChanged(_maxAmountPerBuyer);
+    function setMaxAmountPerReceiver(uint256 _maxAmountPerReceiver) external onlyOwner whenPaused {
+        require(minAmountPerReceiver <= _maxAmountPerReceiver, MinAmountExceedsMaxAmount());
+        maxAmountPerReceiver = _maxAmountPerReceiver;
+        emit MaxAmountPerReceiverChanged(_maxAmountPerReceiver);
         coolDownStart = block.timestamp;
     }
 
