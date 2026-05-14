@@ -106,6 +106,8 @@ The CoinvestedPosition contract implements this arrangement. It holds tokens on 
 
 **Lost-keys recovery:** If a lead investor stops responding to credited carry for `LEAD_INVESTOR_RECOVERY_TIMEOUT` (currently 90 days) after their most recent credit event, the co-investor (owner) can rotate that slot's account to recover the stranded carry. The lead investor disarms this right at any time by withdrawing credit or rotating their own slot — both are liveness signals — so the recovery path only fires when the lead investor has genuinely fallen silent.
 
+**A practical note for lead investors:** the recovery clock starts on any non-zero credit, however small. A lead investor who decides a dust credit isn't worth the gas to withdraw is implicitly letting the 90-day clock run; if no liveness signal lands inside that window, the co-investor may rotate the slot away — and any larger future credits go to the new account. To keep the slot, either withdraw the credit (even small amounts) or call `rotateLeadInvestorAccount` as a cheap liveness ping (passing your own current address as `newAccount` is allowed). Both options disarm the timer until the next credit event.
+
 ## Distributions
 
 ### Dividends or similar payouts
