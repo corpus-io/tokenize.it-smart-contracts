@@ -198,23 +198,26 @@ The following statements about the smart contracts should always be true
 ### Sale / pause / currency
 
 - The contract starts paused; no tokens can be sold until the owner unpauses it.
-- The lock period, if any, is fixed at deploy time and immutable.
+- The lock period is fixed at deploy time and immutable.
+- Setting the lock period to a date in the past effectively disables the timelock.
 - The owner can only unpause after the lock period has passed and a token price has been set.
 - The owner can change the currency, but only after the lock period has passed.
 - Only trusted currencies can be used for token sales, distribution claims, or currency changes.
 - During the lock period, the buy function is blocked; tokens can only leave the contract through an exit claim.
+- During the lock period, updating the currency and selling the tokens are not possible.
+- Distribution claims, exit claims, withdrawals, and account rotations are available even during the lock period.
 
 ### Credit and payout (pull-based)
 
 - The fee is deducted from gross proceeds before profit is calculated.
 - Profit is defined as net proceeds (after fee) exceeding the base price payout for the tokens sold or claimed.
-- Each lead investor's credit grows by `floor(profitFraction * profit / uint32.max)` per credit event, with `profitFraction` scaled by `uint32.max`.
+- Each lead investor's credit grows by their fraction of the profit per credit event.
 - If net proceeds do not exceed the base price payout, profit is zero and lead investors are credited nothing.
 - The co-investor's credit grows by everything not allocated to lead-investor carry (`gross - Σ carries`).
-- Funds are credited to per-recipient pull balances, never pushed: a blocked recipient (e.g. a currency-level blacklist) cannot prevent credits from being applied for anyone else.
-- For every currency `c`: `Σ leadInvestorCredit[i][c] + coinvestorCredit[c] == totalCredit[c]` after every credit and every withdrawal.
-- A lead investor can withdraw only their own credit, but may direct the withdrawal to any non-zero destination address (chosen at call time).
-- When the co-investor withdraws, any "untracked" currency balance (above `totalCredit`) — including currency accidentally sent to the contract — is included in the same withdrawal.
+- Funds are credited to per-recipient pull balances.
+- A lead investor can withdraw only their own credit.
+- The co-investor can withdraw only their own credit.
+- A destination address for currency can be chosen at withdrawal time.
 
 ### Distributions and exits
 
@@ -227,12 +230,12 @@ The following statements about the smart contracts should always be true
 ### Account rotation and owner-driven recovery
 
 - A lead investor may rotate their own slot at any time. The new account inherits any pending credit (credit is index-keyed, not address-keyed).
-- The owner may rotate a lead investor's slot if and only if that lead investor has had armed `recoveryArmedAt` for at least `LEAD_INVESTOR_RECOVERY_TIMEOUT` (`recoveryArmedAt != 0 && block.timestamp >= recoveryArmedAt + LEAD_INVESTOR_RECOVERY_TIMEOUT`).
-- `recoveryArmedAt` is initialized to `0` (disarmed) for every lead investor.
-- `recoveryArmedAt` is armed (set to `uint64(block.timestamp)`) only when that specific lead investor's carry credit increases by a non-zero amount.
-- Any successful withdrawal by the lead investor (in any currency) or any self-rotation by the lead investor immediately disarms `recoveryArmedAt` for that slot.
-- After an owner-driven recovery, the new account's `recoveryArmedAt` is `0`; recovering the slot again requires another credit event and a fresh timeout.
-- `LEAD_INVESTOR_RECOVERY_TIMEOUT` is a compile-time constant and cannot be changed post-deployment.
+- The owner may rotate a lead investor's slot if and only if that lead investor has not signalled their liveness within 90 days after the last credit event.
+- At initialization, the recovery timer is disabled for every lead investor.
+- The recovery timer is armed only when that specific lead investor's credit increases.
+- Any successful withdrawal or any self-rotation by the lead investor immediately disarms their recovery timer.
+- After the coinvestor updates a lead investor's account, the new account starts in the non-recoverable state with recovery timer disabled.
+- The 90 day recovery delay is a compile-time constant and cannot be changed post-deployment.
 
 ### Misc
 
