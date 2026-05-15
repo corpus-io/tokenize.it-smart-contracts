@@ -10,7 +10,7 @@ import "./GlobalTokenExitRegistry.sol";
 import "./common/TokenSwapBase.sol";
 
 struct LeadInvestor {
-    /// lead investor address that receives carry
+    /// account authorized to pull this slot's carry (destination is chosen at withdraw time)
     address account;
     /// profit fraction this lead investor receives, divided by uint32.max
     uint32 profitFraction;
@@ -34,7 +34,12 @@ struct CoinvestedPositionInitializerArguments {
     IERC20 baseCurrency;
     /// token being held
     Token token;
-    /// unix timestamp before which unpause() is blocked; must be non-zero
+    /// Unix timestamp before which `unpause()` and `setCurrency()` are blocked. Unpausing is what
+    /// enables the position to be sold via `buy()`, so this acts as a "no-selling-before" gate.
+    /// The timelock is OPTIONAL — many deployments don't need one. Must be non-zero; we reject `0`
+    /// so a deployer who forgot to set this field gets a loud revert instead of a silent "no lock".
+    /// Pass `1` (or any past timestamp) to explicitly opt out — the gate
+    /// `block.timestamp >= lockedUntil` is then already satisfied at deploy time.
     uint64 lockedUntil;
     /// registry contract; if an exit is set for the token, it can be claimed
     GlobalTokenExitRegistry tokenExitRegistry;
@@ -43,19 +48,14 @@ struct CoinvestedPositionInitializerArguments {
 /**
  * @title CoinvestedPosition
  * @author malteish, cjentzsch
- * @notice This contract holds tokens and sells them at a preset price, distributing proceeds
- *      between the coinvestor (owner) and lead investors.
- *      The coinvestor receives basePrice per token sold.
- *      Any remaining proceeds after fees and coinvestor payout are the profit. Each lead investor
- *      receives their carry (profitFraction); the remainder goes to the coinvestor.
- *      If the sale price minus fees is less than the base price, all proceeds go to the coinvestor.
- *      Any trusted currency may be used for exits and dividends; when a currency different from the stored
- *      currency is used, the coinvestor provides an altBasePrice expressing the base price in that
- *      currency's units.
+ * @notice This contract holds tokens and credits sale, dividend, and exit proceeds to the
+ *      coinvestor (owner) and lead investors via pull-payouts.
+ *      Profit = max(gross − base portion, 0), where gross is proceeds after fees and base portion
+ *      is basePrice × tokens (0 for dividends). Each lead investor receives carry = profitFraction × profit;
+ *      the coinvestor receives the rest (base portion + profit − Σ carries). When gross ≤ base portion,
+ *      profit is 0 and the coinvestor receives everything.
  * @dev Payouts are pull-based. Each lead investor calls `withdrawAsLeadInvestor` for their slot.
  *      The owner (coinvestor) calls `withdrawAsCoinvestor` with an explicit destination address.
- *      Any accidentally-sent currency (balance above `totalCredit`) is swept to the
- *      coinvestor at withdrawal time.
  */
 contract CoinvestedPosition is TokenSwapBase {
     using SafeERC20 for IERC20;
@@ -66,8 +66,8 @@ contract CoinvestedPosition is TokenSwapBase {
     error ZeroLockedUntil();
     error LeadInvestorRecoveryLocked();
 
-    /// @notice The payment currency and base price were updated to a new denomination.
-    event CurrencyChanged(address indexed currency, uint256 basePrice);
+    /// @notice The payment currency, base price, and token price were updated to a new denomination.
+    event CurrencyChanged(address indexed currency, uint256 basePrice, uint256 tokenPrice);
     /// @notice This contract claimed its share of a dividend distribution.
     event DistributionClaimed(address indexed distribution, address indexed currency, uint256 amount);
     /// @notice This contract claimed exit proceeds for its full token balance.
@@ -76,16 +76,17 @@ contract CoinvestedPosition is TokenSwapBase {
     event LeadInvestorCredited(uint256 indexed index, IERC20 indexed currency, uint256 amount);
     /// @notice The coinvestor's share was credited to their pull-payout balance.
     event CoinvestorCredited(IERC20 indexed currency, uint256 amount);
-    /// @notice A lead investor withdrew their pending credit. `to` is the chosen destination,
+    /// @notice A lead investor withdrew their pending credit. `receiver` is the chosen destination,
     ///         which may differ from the slot's current account (e.g. when routing around a
     ///         currency-level blacklist on the registered address).
-    event LeadInvestorWithdrawn(uint256 indexed index, IERC20 indexed currency, address indexed to, uint256 amount);
-    /// @notice The coinvestor withdrew their pending credit to `to` (credit portion only).
-    event CoinvestorWithdrawn(IERC20 indexed currency, address indexed to, uint256 amount);
-    /// @notice Untracked balance (currency on the contract above `totalCredit`) was swept to the
-    ///         coinvestor `to` during a coinvestor withdrawal. Emitted only when the surplus is non-zero,
-    ///         so credit-side numbers stay clean for consumers that sum {CoinvestorCredited} amounts.
-    event CoinvestorSwept(IERC20 indexed currency, address indexed to, uint256 amount);
+    event LeadInvestorWithdrawn(
+        uint256 indexed index,
+        IERC20 indexed currency,
+        address indexed receiver,
+        uint256 amount
+    );
+    /// @notice The coinvestor withdrew their pending credit to `receiver`.
+    event CoinvestorWithdrawn(IERC20 indexed currency, address indexed receiver, uint256 amount);
     /// @notice A lead investor rotated their own slot's account via rotateLeadInvestorAccount.
     event LeadInvestorAccountRotated(uint256 indexed index, address indexed oldAccount, address indexed newAccount);
     /// @notice The owner exercised the recovery path and rotated a lead investor slot's account
@@ -96,18 +97,20 @@ contract CoinvestedPosition is TokenSwapBase {
     /// @notice Duration after the most recent unclaimed credit event for a given lead investor
     ///         after which the owner may rotate that slot via ownerRotateLeadInvestorAccount.
     ///         Designed to recover stranded carry when a lead investor has lost access to their keys.
-    ///         A constant rather than a stored value so the owner cannot shrink it post-deploy
-    ///         to seize carry; legal teams set the literal pre-deploy.
     uint64 public constant LEAD_INVESTOR_RECOVERY_TIMEOUT = 90 days;
 
-    /// lead investors and their carry fractions
+    /// lead investors, their carry fractions and recovery timers
     LeadInvestor[] public leadInvestors;
     /// base price per token in bits of the current currency (always expressed in current currency's decimals)
     uint256 public basePrice;
-    /// unix timestamp before which unpause() is blocked; must be non-zero
+    /// Unix timestamp before which `unpause()` and `setCurrency()` are blocked. Unpausing is what
+    /// enables the position to be sold via `buy()`, so this acts as a "no-selling-before" gate.
+    /// The timelock is OPTIONAL — many deployments don't need one. Must be non-zero; we reject `0`
+    /// so a deployer who forgot to set this field gets a loud revert instead of a silent "no lock".
+    /// Pass `1` (or any past timestamp) to explicitly opt out — the gate is then satisfied at deploy time.
     uint64 public lockedUntil;
-    /// registry contract; if an exit is set for the token, an exit reward can be claimed from that
-    /// address even if lockedUntil has not passed yet
+    /// registry mapping each token to its Exit contract (if any). When an Exit is registered,
+    /// `claimExit` may be called even before `lockedUntil` — the company exit itself is the unlock signal.
     GlobalTokenExitRegistry public tokenExitRegistry;
 
     /// Pending pull-payout for a lead investor, keyed by their array index and currency.
@@ -116,10 +119,6 @@ contract CoinvestedPosition is TokenSwapBase {
     mapping(uint256 => mapping(IERC20 => uint256)) public leadInvestorCredit;
     /// Pending pull-payout for the coinvestor (owner), keyed by currency.
     mapping(IERC20 => uint256) public coinvestorCredit;
-    /// Sum of `coinvestorCredit[c] + Σ leadInvestorCredit[i][c]`. The contract's actual balance
-    /// of currency `c` may exceed this (accidentally-sent currency is "untracked"); the difference
-    /// is swept into the coinvestor share when `withdrawAsCoinvestor` is called.
-    mapping(IERC20 => uint256) public totalCredit;
 
     /**
      * This constructor creates a logic contract that is used to clone new contracts.
@@ -158,12 +157,15 @@ contract CoinvestedPosition is TokenSwapBase {
         lockedUntil = _arguments.lockedUntil;
         tokenExitRegistry = _arguments.tokenExitRegistry;
 
-        // Pausing the contract prevents an immediate sell of the tokens. Once they should be sold, update price and unpause.
+        // Pausing the contract prevents an immediate sell of the tokens. Once ready to sell, set tokenPrice via setCurrency and unpause.
         _pause();
     }
 
     /**
-     * @notice Unpause the contract. Blocked until lockedUntil has passed.
+     * @notice Unpause the contract, enabling `buy()` so the position can be sold. Blocked until
+     *      `lockedUntil` has passed. When no timelock was configured (`lockedUntil` set to `1` or any
+     *      past timestamp at init), this is callable immediately. Requires `tokenPrice != 0`, so
+     *      `setCurrency` must be called at least once first — the initializer leaves `tokenPrice` at 0.
      */
     function unpause() external override onlyOwner {
         require(tokenPrice != 0, ZeroPrice());
@@ -187,7 +189,7 @@ contract CoinvestedPosition is TokenSwapBase {
         basePrice = _basePrice;
         tokenPrice = _tokenPrice;
         currency = _currency;
-        emit CurrencyChanged(address(_currency), _basePrice);
+        emit CurrencyChanged(address(_currency), _basePrice, _tokenPrice);
     }
 
     /**
@@ -217,10 +219,10 @@ contract CoinvestedPosition is TokenSwapBase {
 
         uint256 remaining = currencyAmount - fee;
 
-        uint256 payoutCoinvestor = (basePrice * _tokenAmount) / (10 ** token.decimals());
-        _credit(remaining, payoutCoinvestor, currency);
+        uint256 basePortion = (basePrice * _tokenAmount) / (10 ** token.decimals());
+        _credit(remaining, basePortion, currency);
 
-        // transfer tokens from this contract to the buyer's receiver
+        // transfer tokens to _tokenReceiver
         IERC20(address(token)).safeTransfer(_tokenReceiver, _tokenAmount);
 
         emit TokensBought(_msgSender(), _tokenAmount, currencyAmount);
@@ -232,11 +234,9 @@ contract CoinvestedPosition is TokenSwapBase {
      *      than transferred — so a single bad recipient cannot block the calling flow.
      * @dev `profit = max(gross - basePortion, 0)`. Each lead investor receives `profitFraction × profit`.
      *      The coinvestor receives everything else (`gross - Σ carries`), which is the dominant share
-     *      whenever lead investors collectively hold a small profit fraction. Accidentally-sent currency
-     *      (balance above `totalCredit`) is left untracked here and swept into the coinvestor share at
-     *      withdrawAsCoinvestor time.
+     *      in most cases.
      * @param gross total amount of `_currency` to distribute (must already be on the contract)
-     * @param basePortion coinvestor's base-price share before carry; 0 for dividends
+     * @param basePortion threshold below which all of `gross` goes to the coinvestor; 0 for dividends
      * @param _currency the ERC20 currency to credit
      */
     function _credit(uint256 gross, uint256 basePortion, IERC20 _currency) internal {
@@ -260,13 +260,12 @@ contract CoinvestedPosition is TokenSwapBase {
             coinvestorCredit[_currency] += coinvestorShare;
             emit CoinvestorCredited(_currency, coinvestorShare);
         }
-        totalCredit[_currency] += gross;
     }
 
     /**
-     * @notice Claim this contract's eligible dividend share from `_distribution` and split it among lead investors.
+     * @notice Claim this contract's eligible dividend share from `_distribution` and credit it to the coinvestor and lead investors.
      * @dev The full received amount is treated as profit. Each lead investor receives their carry (profitFraction
-     *      of profit); remainder goes to receiver. Any trusted currency may be used.
+     *      of profit); remainder goes to the coinvestor. Any trusted currency may be used.
      * @param _distribution the Distribution (dividend) contract to claim from
      * @param _minPayout minimum currency the call must receive; passed through to the distribution
      */
@@ -282,15 +281,17 @@ contract CoinvestedPosition is TokenSwapBase {
     }
 
     /**
-     * @notice Claim exit proceeds for this contract's full token balance and split them among the receiver and lead investors.
+     * @notice Claim exit proceeds for this contract's full token balance and credit them to the coinvestor and lead investors.
      * @dev Requires tokenExitRegistry.exit() to be set; that also acts as the unlock signal.
-     *      If proceeds < base, receiver gets everything.
-     *      Profit (proceeds minus base price payout) is split: each lead investor receives their carry
-     *      (profitFraction of profit); remainder goes to receiver.
-     *      Any currency may be used. When the exit currency differs from the stored currency, provide
-     *      _basePrice expressing the base price in the exit currency's units.
+     *      If proceeds < base portion, the coinvestor gets everything.
+     *      Profit (proceeds minus base portion) is split: each lead investor receives their carry
+     *      (profitFraction of profit); remainder goes to the coinvestor.
+     *      Any currency the Exit contract uses is accepted — no TRUSTED_CURRENCY check here, since the Exit contract is itself authorized via `tokenExitRegistry`.
+     *      When the exit currency differs from the stored currency, `_basePrice` may be needed; see below.
      * @param _minCurrencyAmount minimum currency the call must receive; passed through to the exit contract.
-     * @param _basePrice base price in exit currency's units; ignored when exit currency matches stored currency
+     * @param _basePrice base price in the exit currency's units. Only consulted when the exit currency
+     *      differs from the stored currency AND the Exit contract reports no reference rate from the
+     *      stored currency (`referenceToExitRate` returns 0); ignored otherwise.
      */
     function claimExit(uint256 _minCurrencyAmount, uint256 _basePrice) external onlyOwner nonReentrant {
         Exit _exit = tokenExitRegistry.exits(token);
@@ -312,33 +313,33 @@ contract CoinvestedPosition is TokenSwapBase {
             }
         }
 
-        uint256 basePayout = (effectiveBasePrice * tokenBalance) / 10 ** token.decimals();
+        uint256 basePortion = (effectiveBasePrice * tokenBalance) / 10 ** token.decimals();
 
         IERC20(address(token)).approve(address(_exit), tokenBalance);
         uint256 before = exitCurrency.balanceOf(address(this));
         _exit.claim(address(this), _minCurrencyAmount);
         uint256 received = exitCurrency.balanceOf(address(this)) - before;
-        _credit(received, basePayout, exitCurrency);
+        _credit(received, basePortion, exitCurrency);
         emit ExitClaimed(address(_exit), address(exitCurrency), received);
     }
 
     /**
      * @notice Rotate the address that controls a given lead-investor slot. Callable only by
-     *      the current account at that slot — typically used for blacklist recovery (a
-     *      blacklisted address is still able to sign this transaction, since blacklisting
-     *      is enforced inside the currency contract, not at the EVM level).
+     *      the current account at that slot.
      * @dev Index-keyed pull credit means any pending balances automatically follow the new
      *      address; no migration step is needed. Also disarms the owner-recovery timer:
-     *      a self-rotation proves the lead investor still holds their keys.
+     *      a rotation, even to the same address, proves the lead investor still holds their keys.
      * @param index lead investor index in the `leadInvestors` array
      * @param newAccount new address for this slot; must be non-zero
      */
     function rotateLeadInvestorAccount(uint256 index, address newAccount) external {
         require(newAccount != address(0), ZeroLeadInvestorAddress());
-        address oldAccount = leadInvestors[index].account;
-        require(_msgSender() == oldAccount, NotLeadInvestor());
-        leadInvestors[index].account = newAccount;
-        leadInvestors[index].recoveryArmedAt = 0;
+        LeadInvestor memory leadInvestor = leadInvestors[index];
+        require(_msgSender() == leadInvestor.account, NotLeadInvestor());
+        address oldAccount = leadInvestor.account;
+        leadInvestor.account = newAccount;
+        leadInvestor.recoveryArmedAt = 0;
+        leadInvestors[index] = leadInvestor;
         emit LeadInvestorAccountRotated(index, oldAccount, newAccount);
     }
 
@@ -352,9 +353,9 @@ contract CoinvestedPosition is TokenSwapBase {
      *      `rotateLeadInvestorAccount`) disarms the timer, blocking this path. The new account starts
      *      disarmed — the owner cannot immediately re-rotate; another credit event plus the full
      *      timeout is required.
-     *      Reads and writes the slot once each: the struct fits in a single storage slot, so a
-     *      memory round-trip collapses to one SLOAD and one SSTORE while preserving the (unchanged)
-     *      profitFraction field.
+     *      Trust note: once the timeout has elapsed, the owner may rotate to any non-zero address
+     *      (including their own). Lead investors must monitor `recoveryArmedAt` and disarm via
+     *      withdrawal or self-rotation if they wish to keep their slot.
      * @param index lead investor slot to rotate
      * @param newAccount new address for the slot; must be non-zero
      */
@@ -374,52 +375,39 @@ contract CoinvestedPosition is TokenSwapBase {
     }
 
     /**
-     * @notice Withdraw a lead investor's accumulated credit in `_currency` to `to`.
-     * @dev Only callable by the slot's current account, but the destination is chosen at withdraw
-     *      time so the lead investor can route around currency-level blacklists on their registered
-     *      address without permanently rotating the slot. Disarms the owner-recovery timer
-     *      regardless of `to` — the call is still signed by the slot's current account, which is
-     *      the liveness signal.
+     * @notice Withdraw a lead investor's accumulated credit in `_currency` to `_receiver`.
+     * @dev Only callable by the slot's current account. Disarms the owner-recovery timer.
      * @param index lead investor index
      * @param _currency currency to withdraw
-     * @param to destination address; must be non-zero
+     * @param _receiver destination address; must be non-zero
      */
-    function withdrawAsLeadInvestor(uint256 index, IERC20 _currency, address to) external nonReentrant {
-        require(to != address(0), ZeroReceiverAddress());
+    function withdrawAsLeadInvestor(uint256 index, IERC20 _currency, address _receiver) external nonReentrant {
+        require(_receiver != address(0), ZeroReceiverAddress());
         require(_msgSender() == leadInvestors[index].account, NotLeadInvestor());
         uint256 amount = leadInvestorCredit[index][_currency];
         require(amount != 0, ZeroAmount());
         leadInvestorCredit[index][_currency] = 0;
-        totalCredit[_currency] -= amount;
         // a successful pull proves the lead investor holds keys; disarm the recovery timer.
         leadInvestors[index].recoveryArmedAt = 0;
-        _currency.safeTransfer(to, amount);
-        emit LeadInvestorWithdrawn(index, _currency, to, amount);
+        _currency.safeTransfer(_receiver, amount);
+        emit LeadInvestorWithdrawn(index, _currency, _receiver, amount);
     }
 
     /**
-     * @notice Withdraw the coinvestor's accumulated credit in `_currency` to `to`. Also sweeps
-     *      any "untracked" balance of `_currency` (e.g. accidentally-transferred funds) into the
-     *      same withdrawal — preserving the original "settle sweeps the contract balance" semantics.
+     * @notice Withdraw the coinvestor's accumulated credit in `_currency` to `_receiver`.
      * @dev The coinvestor is the contract owner; the destination is chosen at withdraw time
      *      so the owner can route around currency-level blacklists on any single address.
      * @param _currency currency to withdraw
-     * @param to destination address; must be non-zero
+     * @param _receiver destination address; must be non-zero
      */
-    function withdrawAsCoinvestor(IERC20 _currency, address to) external onlyOwner nonReentrant {
-        require(to != address(0), ZeroReceiverAddress());
+    function withdrawAsCoinvestor(IERC20 _currency, address _receiver) external onlyOwner nonReentrant {
+        require(_receiver != address(0), ZeroReceiverAddress());
         require(address(_currency) != address(token), CurrencyEqualsToken());
-        uint256 owed = coinvestorCredit[_currency];
-        uint256 untracked = _currency.balanceOf(address(this)) - totalCredit[_currency];
-        uint256 amount = owed + untracked;
+        uint256 amount = coinvestorCredit[_currency];
         require(amount != 0, ZeroAmount());
         coinvestorCredit[_currency] = 0;
-        totalCredit[_currency] -= owed; // untracked was never in totalCredit
-        _currency.safeTransfer(to, amount);
-        // Emit credit and surplus separately so consumers can reconcile {CoinvestorCredited}
-        // numbers against {CoinvestorWithdrawn} without surplus dust polluting the math.
-        if (owed != 0) emit CoinvestorWithdrawn(_currency, to, owed);
-        if (untracked != 0) emit CoinvestorSwept(_currency, to, untracked);
+        _currency.safeTransfer(_receiver, amount);
+        emit CoinvestorWithdrawn(_currency, _receiver, amount);
     }
 
     /**

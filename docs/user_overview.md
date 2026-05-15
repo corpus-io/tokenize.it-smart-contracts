@@ -89,20 +89,37 @@ The CoinvestedPosition contract implements this arrangement. It holds tokens on 
 
 **Parties involved:**
 
-- **Co-investor**: The co-investor whose capital bought the tokens. Owns the contract and receives at least `basePrice` (a EURO reference price) per token across any proceeds. Picks the destination address at withdrawal time.
-- **Lead investors**: Each has a `profitFraction` (a share of `uint32.max`). Lead investors receive their profit — the proceeds above the co-investor's `basePrice` — split according to their fractions.
+- **Co-investor**: The co-investor whose capital bought the tokens.
+- **Lead investors**: Players who helped the Co-investor get access to this investment opportunity. They get carry when there is profit to distribute.
+
+**How proceeds are split:**
+Terms:
+
+- invested capital: what the coinvestor spent to get the tokens
+- proceeds: what is received when giving the tokens away
+- profit: proceeds - invested capital, or 0 if proceeds < invested capital
+- carry: profit × a lead investor's profit fraction
+
+Co-investor gets: proceeds − sum of all carries
+Lead investors get: their respective carry
+
+Technically, the profit fraction of the lead investors can be 100%. But usually it is below 10%.
 
 **Three credit paths:**
 
-1. **Token sale**: A buyer purchases tokens from the contract at the set price. After fees, the co-investor's base-price portion and the lead-investor carry are credited to per-recipient pull balances on the contract. Starts paused; owner unpauses when ready to sell.
-2. **Dividends**: The contract owner claims a dividend Distribution on behalf of the contract; the entire received amount is credited as carry (lead investors and remainder to the co-investor).
-3. **Exit**: The contract owner participates in an Exit contract by redeeming the full token balance; the base-price portion is credited to the co-investor, carry to the lead investors.
+1. **Token sale** (`buy()`): A buyer purchases tokens at the set price. Proceeds = currency paid minus fees. Invested capital = base price × tokens sold. The split formula above is applied; both shares land in per-recipient pull balances. Starts paused; owner unpauses when ready to sell.
+2. **Dividends** (`claimDistribution`): The owner claims a dividend Distribution on behalf of the contract. The full amount received is considered profit split between coinvestor and lead investors.
+3. **Exit** (`claimExit`): The owner redeems the full token balance in an Exit contract. Proceeds = currency received from the exit. Invested capital = base price × tokens redeemed, re-expressed in the exit currency if it differs from the stored currency.
 
 **Pull payouts:** Funds are never pushed to recipients. Each lead investor calls `withdrawAsLeadInvestor` to claim their own credit, supplying a destination at withdrawal time; the co-investor calls `withdrawAsCoinvestor` likewise. The destination address is chosen at withdrawal time. A blocked recipient cannot stall a sale, a dividend, or an exit for everyone else.
 
-**Currency flexibility**: The base price is fixed at initialization. After the timelock has expired, the owner can switch to a different trusted ERC-20 currency, supplying the base price re-expressed in the new currency, or just update the base price.
+**Currency flexibility**: The base price is fixed at initialization. After the timelock has expired (or immediately, if the position was deployed without one), the owner can switch to a different trusted ERC-20 currency, supplying the base price re-expressed in the new currency, or just update the base price.
+
+**Optional timelock**: A `lockedUntil` timestamp gates `unpause()` and `setCurrency()`. It is optional — the contract's value lies in the economic split, not in restricting when the position can be sold, and many deployments don't need a lock at all. To deploy without one, pass `1` (or any past timestamp) at initialization. When the underlying investment agreement does require a holding period, set `lockedUntil` to the end of that period.
 
 **Lost-keys recovery:** If a lead investor stops responding to credited carry for `LEAD_INVESTOR_RECOVERY_TIMEOUT` (currently 90 days) after their most recent credit event, the co-investor (owner) can rotate that slot's account to recover the stranded carry. The lead investor disarms this right at any time by withdrawing credit or rotating their own slot — both are liveness signals — so the recovery path only fires when the lead investor has genuinely fallen silent.
+
+**A practical note for lead investors:** the recovery clock starts on any non-zero credit, however small. A lead investor who decides a dust credit isn't worth the gas to withdraw is implicitly letting the 90-day clock run; if no liveness signal lands inside that window, the co-investor may rotate the slot away — and any larger future credits go to the new account. To keep the slot, either withdraw the credit (even small amounts) or call `rotateLeadInvestorAccount` as a cheap liveness ping (passing your own current address as `newAccount` is allowed). Both options disarm the timer until the next credit event.
 
 ## Distributions
 

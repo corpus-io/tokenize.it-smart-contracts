@@ -31,7 +31,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
     event TokensBought(address indexed BUYER, uint256 tokenAmount, uint256 currencyAmount);
     event ReceiverChanged(address indexed newReceiver);
     event TokenPriceChanged(uint256 newTokenPrice);
-    event CurrencyChanged(address indexed currency, uint256 basePrice);
+    event CurrencyChanged(address indexed currency, uint256 basePrice, uint256 tokenPrice);
     event CoinvestorCredited(IERC20 indexed currency, uint256 amount);
 
     // ── Well-known addresses ──────────────────────────────────────────────────
@@ -397,7 +397,7 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
 
     function testSetCurrencyEmitsEvent() public {
         vm.expectEmit(true, false, false, true, address(coinvestedPosition));
-        emit CurrencyChanged(address(eure), 50e18);
+        emit CurrencyChanged(address(eure), 50e18, 1e18);
         vm.prank(OWNER);
         coinvestedPosition.setCurrency(IERC20(address(eure)), 50e18, 1e18);
     }
@@ -980,84 +980,66 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // ── Section 9: _settle() Sweep Behavior ──────────────────────────────────
+    // ── Section 9: Pre-existing balance isolation (buy path) ─────────────────
     // ─────────────────────────────────────────────────────────────────────────
 
-    function testBuyAutoSweepsExtraSameCurrency() public {
-        // Extra 500e6 EURc sent before buy. Buy 10 tokens at 200e6, basePrice=100e6.
-        // _credit auto-sweeps the 500e6 untracked balance into coinvestor credit during buy.
-
-        // Use a fresh coinvestedPosition with single 10% lead investor to simplify
+    /// Pre-existing balance of the buy currency on the contract must NOT inflate carry or
+    /// coinvestor credit during buy(). buy() credits `currencyAmount - fee`, not a balance delta,
+    /// so any pre-existing balance is unrelated to the accounting and stays stuck on the contract.
+    function testBuyPreExistingSameCurrencyBalanceDoesNotAffectAccounting() public {
         LeadInvestor[] memory leadInvestors = new LeadInvestor[](1);
         leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT, recoveryArmedAt: 0});
-        CoinvestedPosition coinvestedPositionSweep = _deployCoinvestedPosition(bytes32(0), 100e6, eurc, leadInvestors);
+        CoinvestedPosition position = _deployCoinvestedPosition(bytes32(0), 100e6, eurc, leadInvestors);
 
         vm.prank(ADMIN);
-        token.mint(address(coinvestedPositionSweep), 10e18);
+        token.mint(address(position), 10e18);
         vm.prank(OWNER);
-        coinvestedPositionSweep.setTokenPrice(200e6);
+        position.setTokenPrice(200e6);
         vm.prank(OWNER);
-        coinvestedPositionSweep.unpause();
+        position.unpause();
 
-        // Send extra currency directly to contract
-        eurc.mint(address(coinvestedPositionSweep), 500e6);
+        // Send extra currency directly to contract — should be ignored by accounting.
+        uint256 preExisting = 500e6;
+        eurc.mint(address(position), preExisting);
 
-        // Buyer pays 2000e6 for 10 tokens
-        uint256 paid = 2000e6;
+        uint256 paid = 2000e6; // 10 tokens × 200e6
         eurc.mint(BUYER, paid);
         vm.prank(BUYER);
-        eurc.approve(address(coinvestedPositionSweep), paid);
-
-        uint256 carry = 1000e6; // 2000e6 - 1000e6 basePayout
-        uint256 expectedA = (uint256(CARRY_10PCT) * carry) / type(uint32).max;
-        uint256 expectedReceiver = 2000e6 - expectedA + 500e6; // BUYER payment minus A's share, plus extra
-
+        eurc.approve(address(position), paid);
         vm.prank(BUYER);
-        coinvestedPositionSweep.buy(10e18, paid, TOKEN_RECEIVER);
+        position.buy(10e18, paid, TOKEN_RECEIVER);
 
-        _drainCredits(coinvestedPositionSweep, IERC20(address(eurc)));
+        // Carry/credit math is based on this buy's `remaining`, not the contract's balance.
+        uint256 carry = 1000e6; // 2000e6 paid - 1000e6 basePortion (10 × 100e6)
+        uint256 expectedLeadCarry = (uint256(CARRY_10PCT) * carry) / type(uint32).max;
+        uint256 expectedCoinvestorCredit = 2000e6 - expectedLeadCarry;
 
-        assertEq(eurc.balanceOf(LEAD_A), expectedA, "A's carry was inflated by extra balance");
-        assertEq(eurc.balanceOf(RECEIVER), expectedReceiver, "RECEIVER did not get share + extra");
-    }
-
-    function testBuyAutoSweepCarryZeroWithExtra() public {
-        // tokenPrice == basePrice → carry=0; coinvestor gets everything (paid) plus auto-swept extra
-        LeadInvestor[] memory leadInvestors = new LeadInvestor[](1);
-        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: CARRY_10PCT, recoveryArmedAt: 0});
-        CoinvestedPosition coinvestedPositionZeroCarry = _deployCoinvestedPosition(
-            bytes32(0),
-            100e6,
-            eurc,
-            leadInvestors
+        assertEq(
+            position.leadInvestorCredit(0, IERC20(address(eurc))),
+            expectedLeadCarry,
+            "lead carry was inflated by pre-existing balance"
+        );
+        assertEq(
+            position.coinvestorCredit(IERC20(address(eurc))),
+            expectedCoinvestorCredit,
+            "coinvestor credit was inflated by pre-existing balance"
         );
 
-        vm.prank(ADMIN);
-        token.mint(address(coinvestedPositionZeroCarry), 10e18);
-        vm.prank(OWNER);
-        coinvestedPositionZeroCarry.setTokenPrice(100e6);
-        vm.prank(OWNER);
-        coinvestedPositionZeroCarry.unpause();
-
-        eurc.mint(address(coinvestedPositionZeroCarry), 300e6); // extra
-
-        uint256 paid = 100e6; // 1 token at base price
-        eurc.mint(BUYER, paid);
-        vm.prank(BUYER);
-        eurc.approve(address(coinvestedPositionZeroCarry), paid);
-
-        vm.prank(BUYER);
-        coinvestedPositionZeroCarry.buy(1e18, paid, TOKEN_RECEIVER);
-
-        _drainCredits(coinvestedPositionZeroCarry, IERC20(address(eurc)));
-
-        assertEq(eurc.balanceOf(LEAD_A), 0, "lead investor got non-zero carry when carry=0");
-        assertEq(eurc.balanceOf(RECEIVER), paid + 300e6, "RECEIVER did not get all including extra");
+        // Drain credits — pre-existing balance remains stuck on the contract.
+        _drainCredits(position, IERC20(address(eurc)));
+        assertEq(eurc.balanceOf(LEAD_A), expectedLeadCarry, "LEAD_A withdrew wrong amount");
+        assertEq(eurc.balanceOf(RECEIVER), expectedCoinvestorCredit, "RECEIVER got wrong amount");
+        assertEq(
+            eurc.balanceOf(address(position)),
+            preExisting,
+            "pre-existing balance should remain stuck on the contract"
+        );
     }
 
-    function testAutoSweepIsPerCurrencyOnly() public {
-        // Active currency = EURe; a pre-existing EURc balance is on the contract.
-        // _credit on EURe does not touch EURc — only the active currency is auto-swept.
+    /// A different (non-active) currency sitting on the contract must NOT be touched by
+    /// the active-currency buy flow.
+    function testBuyPreExistingDifferentCurrencyBalanceUntouched() public {
+        // Switch active currency to EURe; pre-seed an unrelated EURc balance.
         vm.prank(OWNER);
         coinvestedPosition.setCurrency(IERC20(address(eure)), 100e18, 200e18);
 
@@ -1066,25 +1048,25 @@ contract CoinvestedPositionTest is CoinvestedPositionTestBase {
         vm.prank(OWNER);
         coinvestedPosition.unpause();
 
-        // Put EURc on the contract — it is untracked and unrelated to the EURe flow
-        eurc.mint(address(coinvestedPosition), 1000e6);
+        uint256 preExistingEurc = 1000e6;
+        eurc.mint(address(coinvestedPosition), preExistingEurc);
 
         uint256 paid = 200e18;
         eure.mint(BUYER, paid);
         vm.prank(BUYER);
         eure.approve(address(coinvestedPosition), paid);
-
         vm.prank(BUYER);
         coinvestedPosition.buy(1e18, paid, TOKEN_RECEIVER);
 
-        // EURe was fully credited and is drained; EURc is left untouched.
         _drainCredits(coinvestedPosition, IERC20(address(eure)));
-        assertEq(eurc.balanceOf(address(coinvestedPosition)), 1000e6, "EURc was touched by EURe flow");
+
+        // EURe was fully credited and drained; EURc is left untouched.
         assertEq(eure.balanceOf(address(coinvestedPosition)), 0, "EURe not fully distributed");
+        assertEq(eurc.balanceOf(address(coinvestedPosition)), preExistingEurc, "EURc was touched by EURe flow");
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // ── Section 10: Fuzz ──────────────────────────────────────────────────────
+    // ── Section 10: Fuzz ─────────────────────────────────────────────────────
     // ─────────────────────────────────────────────────────────────────────────
 
     /// @dev Verify lead-investor balances and the RECEIVER after a buy.

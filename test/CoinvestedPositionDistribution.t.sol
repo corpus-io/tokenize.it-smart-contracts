@@ -852,7 +852,6 @@ contract CoinvestedPositionDistributionTest is Test {
 
         vm.prank(OWNER);
         coinvestedPosition.claimDistribution(Distribution(address(distribution)), 0);
-        // Auto-sweep inside _credit captures the 300e6 pre-seeded USDC into coinvestor credit.
         _drainCredits(coinvestedPosition, distribution.currency());
 
         uint256 aGot = usdc.balanceOf(LEAD_A) - beforeA;
@@ -867,12 +866,13 @@ contract CoinvestedPositionDistributionTest is Test {
         assertEq(aGot, expectedA, "DI-IX: wrong LEAD_A carry");
         assertEq(bGot, expectedB, "DI-IX: wrong LEAD_B carry");
 
-        // RECEIVER gets dividend share + 300e6 pre-existing via sweep
-        uint256 expectedR = received - expectedA - expectedB + preExisting;
+        // RECEIVER gets the dividend remainder only — pre-existing balance is NOT swept.
+        uint256 expectedR = received - expectedA - expectedB;
         assertEq(rGot, expectedR, "DI-IX: wrong RECEIVER payout");
 
-        // Total: A + B + RECEIVER = 200e6 + 300e6 = 500e6
-        assertEq(aGot + bGot + rGot, received + preExisting, "DI-IX: total sum mismatch");
+        // Pre-existing balance is unrecoverable: it stays on the contract.
+        assertEq(usdc.balanceOf(address(coinvestedPosition)), preExisting, "DI-IX: pre-existing should remain stuck");
+        assertEq(aGot + bGot + rGot, received, "DI-IX: total sum mismatch");
     }
 
     // ─────────────────────────────────────────────────────────────────────────

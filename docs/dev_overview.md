@@ -145,6 +145,7 @@ Extends `TokenSwapBase`. Holds tokens for a co-investor and manages carry distri
 - `basePrice` is set in the smallest units of `baseCurrency` at initialization.
 - `leadInvestors`: array of `{account, profitFraction, recoveryArmedAt}`. `profitFraction` is the carry share scaled by `uint32.max` (so `uint32.max` ≙ 100% of profit). `recoveryArmedAt` is the per-lead-investor owner-recovery timer (see below).
 - `lockedUntil` blocks both `unpause()` and `setCurrency()` until the timestamp has passed. During the lock period, tokens can only leave the contract through `claimExit()`.
+- The timelock is **optional**. CoinvestedPosition's primary purpose is the economic split between co-investor and lead investors; the timelock is a secondary feature for deployments whose underlying investment agreement requires a holding period. Deployments that don't need a lock pass `1` (or any past timestamp) at initialization — the gate `block.timestamp >= lockedUntil` is then already satisfied and `unpause()` / `setCurrency()` are callable immediately. Unlike `TimeLock`, `Exit`, and `Distribution` (where the timelock is load-bearing and a 30-day minimum is enforced in `__PayoutBase_init`), no minimum duration is enforced here. `0` is still rejected as a likely "forgot to set this field" mistake; "no lock" must be expressed explicitly.
 - `tokenExitRegistry`: the GlobalTokenExitRegistry consulted by `claimExit()`. An exit registered there acts as the unlock signal — the contract redeems its full token balance via the registered exit regardless of `lockedUntil`.
 - `setCurrency(currency, basePrice, tokenPrice)` lets the owner switch the reference currency after `lockedUntil` has passed; the caller must supply the new prices in the new currency's units.
 
@@ -209,7 +210,7 @@ CoinvestedPosition is a long-lived contract — an exit can be years away — so
 
 The owner cannot manufacture the right to rotate by withholding claims — only credit events arm the timer, and the lead investor can disarm it at any time by pulling credit (in any currency they hold) or by rotating their own slot.
 
-`LEAD_INVESTOR_RECOVERY_TIMEOUT` is a `constant`, not a storage value: making it mutable would let the owner shrink the window to zero immediately before rotating, defeating the design. Legal teams pick the literal pre-deployment.
+**Trust model.** Once `recoveryArmedAt + LEAD_INVESTOR_RECOVERY_TIMEOUT` has elapsed, the owner can rotate the slot to _any_ non-zero address, including their own. This is meant to help the lead investor in question regain access to their slot. Lead investors should defend against potentially malicious coinvestor actions by claiming proceeds within the 90 day window.
 
 **Coinvestor recovery**
 The Coinvestor can help lead investors with recovery in case of key loss. But who can help the coinvestor if they lose access to their account? In that case, only the token admin can help through burn & mint, see [dev_overview.md](dev_overview.md#burning) for more information.
