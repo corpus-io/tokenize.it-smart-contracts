@@ -300,20 +300,19 @@ contract CoinvestedPosition is TokenSwapBase {
         require(tokenBalance > 0, ZeroAmount());
 
         IERC20 exitCurrency = _exit.currency();
-        uint256 effectiveBasePrice;
-        if (address(exitCurrency) == address(currency)) {
-            effectiveBasePrice = basePrice;
-        } else {
+        // Aggregate base value for the full balance, expressed in the stored currency's units.
+        uint256 basePortion = (basePrice * tokenBalance) / 10 ** token.decimals();
+        if (address(exitCurrency) != address(currency)) {
+            // Converting basePrice instead of basePortion would introduce larger rounding errors.
             uint256 rate = _exit.referenceToExitRate(currency);
             if (rate > 0) {
-                effectiveBasePrice = (basePrice * rate) / 10 ** IERC20Metadata(address(currency)).decimals();
+                basePortion = (basePortion * rate) / 10 ** IERC20Metadata(address(currency)).decimals();
             } else {
+                // No on-chain rate: the caller supplies the base price already in the exit currency's units.
                 require(_basePrice > 0, ZeroPrice());
-                effectiveBasePrice = _basePrice;
+                basePortion = (_basePrice * tokenBalance) / 10 ** token.decimals();
             }
         }
-
-        uint256 basePortion = (effectiveBasePrice * tokenBalance) / 10 ** token.decimals();
 
         IERC20(address(token)).approve(address(_exit), tokenBalance);
         uint256 before = exitCurrency.balanceOf(address(this));

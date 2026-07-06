@@ -1488,4 +1488,69 @@ contract CoinvestedPositionExitTest is Test {
         vm.prank(OWNER);
         coinvestedPosition.claimExit(1, 0);
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // ── XVI. Cross-currency reference-rate rounding (TKNZITDD-22) ─────────────
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// XVI: With a high-decimal base currency (EURe, 18) and a low-decimal exit currency
+    ///      (EURc, 6) plus an on-chain reference rate, the base price must be converted on
+    ///      the AGGREGATE (base price × balance), not per token. Converting per token first
+    ///      floors the value to whole exit-currency bits before scaling by the balance, and
+    ///      the balance amplifies that per-token truncation into a large base-portion error.
+    ///
+    ///      Uses the "unlucky" numbers from TKNZITDD-22: basePrice = 1.9e12 EURe bits/token,
+    ///      rate 1:1, so the per-token converted price is 1.9 exit-currency bits — floored to 1,
+    ///      discarding 0.9 bit per token. Over 1e12 full tokens that is a 900,000e6 base-portion
+    ///      error (buggy base portion 1,000,000e6 vs correct 1,900,000e6).
+    ///
+    ///      A single lead investor with 100% carry makes the coinvestor's credit equal the
+    ///      realized base portion exactly (coinvestorShare = gross − profit = basePortion),
+    ///      isolating the base-portion conversion rounding from profitFraction rounding. The
+    ///      test fails if that rounding error exceeds 1 exit-currency bit.
+    function testXVI_CrossCurrencyReferenceRateRoundingWithinOneBit() public {
+        uint256 basePrice = 1_900_000_000_000; // 1.9e12 EURe bits per full token
+        uint256 rate = 1e6; // referenceToExitRate[EURe]: 1 EURe (1e18 bits) = 1 EURc (1e6 bits)
+        uint256 exitPricePerToken = 2; // 2 EURc bits per full token
+        uint256 tokenBalance = 1_000_000_000_000e18; // 1e12 full tokens
+
+        // Single lead with 100% carry → coinvestorCredit == realized base portion exactly.
+        LeadInvestor[] memory leadInvestors = new LeadInvestor[](1);
+        leadInvestors[0] = LeadInvestor({account: LEAD_A, profitFraction: type(uint32).max, recoveryArmedAt: 0});
+
+        CoinvestedPosition cp = _deployCoinvestedPosition(bytes32("2"), basePrice, eure, leadInvestors);
+        vm.prank(ADMIN);
+        token.mint(address(cp), tokenBalance);
+
+        // Exit in EURc (6 dec) with a reference rate from EURe (18 dec). Funded for the full balance.
+        Exit exitContract = _deployExitWithReferenceRate(
+            bytes32("2"),
+            eurc,
+            exitPricePerToken,
+            tokenBalance,
+            IERC20(address(eure)),
+            rate
+        );
+
+        vm.prank(ADMIN);
+        tokenExitRegistry.setExit(token, Exit(address(exitContract)));
+        vm.prank(OWNER);
+        cp.claimExit(1, 0); // _basePrice ignored: exit provides a reference rate
+
+        // Full-precision base portion: convert the aggregate base value, not the per-token price.
+        uint256 aggregateBase = (basePrice * tokenBalance) / (10 ** token.decimals()); // EURe bits
+        uint256 exactBasePortion = (aggregateBase * rate) / (10 ** eure.decimals()); // EURc bits
+
+        // At 100% lead carry the coinvestor's credit is exactly the realized base portion.
+        uint256 realizedBasePortion = cp.coinvestorCredit(IERC20(address(eurc)));
+
+        uint256 roundingError = realizedBasePortion > exactBasePortion
+            ? realizedBasePortion - exactBasePortion
+            : exactBasePortion - realizedBasePortion;
+
+        assertLe(roundingError, 1, "XVI: base-portion rounding error exceeds 1 exit-currency bit");
+
+        // Sanity: the rate path ran and profit was positive (carry credited to the lead).
+        assertGt(cp.leadInvestorCredit(0, IERC20(address(eurc))), 0, "XVI: expected non-zero lead carry");
+    }
 }
