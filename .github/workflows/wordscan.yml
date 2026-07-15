@@ -9,7 +9,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v1
         with:
-          node-version: 16.x
+          node-version: 24.x
       # Contracts that inherit ERC2771Context(Upgradeable) must use _msgSender()/_msgData() instead of msg.sender/msg.data.
       # The list is derived dynamically so newly added ERC2771 contracts are automatically covered.
       - run: |

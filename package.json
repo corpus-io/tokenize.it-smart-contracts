@@ -121,6 +121,7 @@
     "**/follow-redirects": "^1.16.0",
     "**/flatted": "^3.4.2",
     "**/braces": "^3.0.3",
-    "**/undici": "^5.29.0"
+    "**/undici": "^5.29.0",
+    "**/serialize-javascript": "^7.0.5"
   }
 }
