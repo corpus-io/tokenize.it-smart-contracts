@@ -82,7 +82,7 @@ All contracts accept a `trustedForwarder` in their constructor (immutable). Beca
 
 ## Code Style
 
-- Solidity version: `pragma solidity 0.8.23;` — pinned, no `^` or `~`
+- Solidity version: `pragma solidity 0.8.34;` — pinned, no `^` or `~`
 - License: `AGPL-3.0-only`
 - Line width: 120 characters
 - Double quotes in Solidity strings
