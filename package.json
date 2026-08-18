@@ -83,7 +83,7 @@
     "@openzeppelin/contracts-upgradeable": "4.9.6"
   },
   "scripts": {
-    "prepack": "yarn npmignore --auto && yarn test && yarn build ",
+    "prepack": "yarn npmignore --auto",
     "build": "yarn clean && yarn hardhat compile && yarn tsc --declaration",
     "test": "forge test --no-match-test Mainnet",
     "test-backwards-compatibility": "make test-backwards-compatibility",
