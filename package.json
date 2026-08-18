@@ -1,6 +1,6 @@
 {
   "name": "@tokenize.it/contracts",
-  "version": "7.1.0",
+  "version": "7.1.1-alpha1",
   "description": "Tokenize.it smart contracts for company tokenization, crowdinvesting, private offers, employee participation, dividend distributions, exits, co-investments and token lockups",
   "keywords": [
     "evm",
