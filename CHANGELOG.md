@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.1.1-alpha1] - 2026-08-18
+
+Test release to validate the automated publishing pipeline. Not for production use.
+
 ## [7.1.0] - 2026-07-15
 
 This release adds a payout layer (dividends and exits), a co-investment vehicle with profit-sharing, a minimal timelock that participates correctly in payouts, and a fully generalized fee system. The new contracts were audited by Hacken; the final report is included in `audits/2026-07_Hacken.pdf`.
