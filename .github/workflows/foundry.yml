@@ -2,6 +2,9 @@ on: [push, workflow_dispatch]
 
 name: test
 
+permissions:
+  contents: read
+
 jobs:
   check:
     name: Foundry project

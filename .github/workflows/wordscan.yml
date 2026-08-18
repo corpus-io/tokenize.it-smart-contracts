@@ -2,6 +2,9 @@ name: scanERC2771ForMsgSender
 
 on: [push]
 
+permissions:
+  contents: read
+
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
